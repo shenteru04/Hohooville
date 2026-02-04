@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trainee Details - Hohoo-Ville Tech</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="d-flex">
+         <!-- Sidebar -->
+        <nav id="sidebar" class="bg-light p-3" style="width: 250px; height: 100vh; position: fixed; overflow-y: auto; top: 0; left: 0;">
+            <div class="sidebar-header mb-4">
+                <h3>Hohoo-Ville Tech</h3>
+                <p class="text-muted">Trainer Portal</p>
+            </div>
+            <ul class="nav flex-column">
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/trainer_dashboard.html">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/pages/my_batches.html">
+                        <i class="fas fa-chalkboard-teacher me-2"></i> My Batches
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/pages/modules.html">
+                        <i class="fas fa-book me-2"></i> Modules
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/pages/attendance.html">
+                        <i class="fas fa-calendar-check me-2"></i> Attendance
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/pages/grading.html">
+                        <i class="fas fa-star me-2"></i> Grading
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/pages/reports.html">
+                        <i class="fas fa-chart-bar me-2"></i> Reports
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Content -->
+        <div class="flex-grow-1" style="margin-left: 250px;">
+             <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+                <div class="container-fluid">
+                    <button type="button" id="sidebarCollapse" class="btn btn-outline-primary me-2 d-lg-none">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="ms-auto d-flex align-items-center">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle"></i> <span id="trainerName">Trainer</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="/Hohoo-ville/frontend/html/trainer/pages/profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="container-fluid mt-4" id="profile-content">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Trainee Profile</h2>
+                    <a href="trainees.html" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2"></i> Back to List</a>
+                </div>
+
+                <!-- Profile Header -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-auto">
+                                <img id="headerTraineePhoto" src="https://via.placeholder.com/120" class="rounded-circle" width="120" height="120" style="object-fit: cover;" alt="Trainee Photo">
+                            </div>
+                            <div class="col-md">
+                                <h3 class="mb-1" id="headerTraineeName">Loading...</h3>
+                                <p class="text-muted mb-0" id="headerTraineeCourse">Loading course...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nav Pills -->
+                <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="pills-profile-tab" data-bs-toggle="pill" data-bs-target="#pills-profile" type="button" role="tab">
+                            <i class="fas fa-user-circle me-1"></i> Profile Details
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="pills-attendance-tab" data-bs-toggle="pill" data-bs-target="#pills-attendance" type="button" role="tab">
+                            <i class="fas fa-calendar-check me-1"></i> Attendance
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="pills-competency-tab" data-bs-toggle="pill" data-bs-target="#pills-competency" type="button" role="tab">
+                            <i class="fas fa-tasks me-1"></i> Competency Progress
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="pills-tabContent">
+                    <!-- Profile Details Tab -->
+                    <div class="tab-pane fade show active" id="pills-profile" role="tabpanel">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="card mb-4">
+                                    <div class="card-header"><i class="fas fa-id-card me-2"></i>Personal Information</div>
+                                    <div class="card-body">
+                                        <dl class="row mb-0">
+                                            <dt class="col-sm-4">Full Name</dt><dd class="col-sm-8" id="profileFullName"></dd>
+                                            <dt class="col-sm-4">Sex</dt><dd class="col-sm-8" id="profileSex"></dd>
+                                            <dt class="col-sm-4">Civil Status</dt><dd class="col-sm-8" id="profileCivilStatus"></dd>
+                                            <dt class="col-sm-4">Birthdate</dt><dd class="col-sm-8" id="profileBirthdate"></dd>
+                                            <dt class="col-sm-4">Age</dt><dd class="col-sm-8" id="profileAge"></dd>
+                                            <dt class="col-sm-4">Birthplace</dt><dd class="col-sm-8" id="profileBirthplace"></dd>
+                                            <dt class="col-sm-4">Nationality</dt><dd class="col-sm-8" id="profileNationality"></dd>
+                                        </dl>
+                                    </div>
+                                </div>
+                                <div class="card mb-4">
+                                    <div class="card-header"><i class="fas fa-phone-alt me-2"></i>Contact & Address</div>
+                                    <div class="card-body">
+                                        <dl class="row mb-0">
+                                            <dt class="col-sm-4">Email</dt><dd class="col-sm-8" id="profileEmail"></dd>
+                                            <dt class="col-sm-4">Phone</dt><dd class="col-sm-8" id="profilePhone"></dd>
+                                            <dt class="col-sm-4">Facebook</dt><dd class="col-sm-8" id="profileFacebook"></dd>
+                                            <dt class="col-sm-4">Address</dt><dd class="col-sm-8" id="profileAddress"></dd>
+                                        </dl>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="card mb-4">
+                                    <div class="card-header"><i class="fas fa-graduation-cap me-2"></i>Training & Background</div>
+                                    <div class="card-body">
+                                        <dl class="row mb-0">
+                                            <dt class="col-sm-4">Batch</dt><dd class="col-sm-8" id="profileBatch"></dd>
+                                            <dt class="col-sm-4">Scholarship</dt><dd class="col-sm-8" id="profileScholarship"></dd>
+                                            <dt class="col-sm-4">Enrollment</dt><dd class="col-sm-8" id="profileEnrollStatus"></dd>
+                                            <hr class="my-3">
+                                            <dt class="col-sm-4">Education</dt><dd class="col-sm-8" id="profileEducation"></dd>
+                                            <dt class="col-sm-4">Employment</dt><dd class="col-sm-8" id="profileEmployment"></dd>
+                                        </dl>
+                                    </div>
+                                </div>
+                                <div class="card mb-4">
+                                    <div class="card-header"><i class="fas fa-folder-open me-2"></i>Submitted Documents</div>
+                                    <div class="card-body">
+                                        <a id="linkValidId" href="#" target="_blank" class="btn btn-outline-primary me-2 disabled"><i class="fas fa-id-badge me-1"></i> View Valid ID</a>
+                                        <a id="linkBirthCert" href="#" target="_blank" class="btn btn-outline-primary disabled"><i class="fas fa-file-alt me-1"></i> View Birth Cert.</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Attendance Tab -->
+                    <div class="tab-pane fade" id="pills-attendance" role="tabpanel">
+                        <div class="card">
+                            <div class="card-header"><h5 class="mb-0">Attendance Summary</h5></div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-4 border-end">
+                                        <h3 class="text-success" id="attPresent">0</h3>
+                                        <small class="text-muted">Present</small>
+                                    </div>
+                                    <div class="col-4 border-end">
+                                        <h3 class="text-danger" id="attAbsent">0</h3>
+                                        <small class="text-muted">Absent</small>
+                                    </div>
+                                    <div class="col-4">
+                                        <h3 class="text-warning" id="attLate">0</h3>
+                                        <small class="text-muted">Late</small>
+                                    </div>
+                                </div>
+                                <!-- A detailed log could be added here in the future -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Competency Tab -->
+                    <div class="tab-pane fade" id="pills-competency" role="tabpanel">
+                        <div class="card">
+                            <div class="card-header"><h5 class="mb-0">Competency Training Progress Report (CTPR)</h5></div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Module</th>
+                                                <th>Lesson / Learning Outcome</th>
+                                                <th>Score</th>
+                                                <th>Remarks</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="competencyTable">
+                                            <!-- Populated by JS -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script src="../../../js/trainer/pages/trainee_details.js"></script>
+    <script>
+        document.getElementById('sidebarCollapse').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.toggle('d-none');
+        });
+    </script>
+</body>
+</html>

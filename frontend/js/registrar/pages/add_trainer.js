@@ -1,0 +1,185 @@
+const API_BASE_URL = 'http://localhost/hohoo-ville/api';
+const UPLOADS_URL = 'http://localhost/hohoo-ville/uploads/trainers/';
+let trainerModal;
+let viewModal;
+
+document.addEventListener('DOMContentLoaded', function() {
+    trainerModal = new bootstrap.Modal(document.getElementById('trainerModal'));
+    viewModal = new bootstrap.Modal(document.getElementById('viewTrainerModal'));
+
+    loadTrainers();
+    
+    const form = document.getElementById('trainerForm');
+    if (form) {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await saveTrainer();
+        });
+    }
+});
+
+async function loadTrainers() {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/role/registrar/trainers.php?action=list`);
+        if (response.data.success) {
+            renderTrainersTable(response.data.data);
+        } else {
+            console.error("Failed to load trainers:", response.data.message);
+        }
+    } catch (error) {
+        console.error('Error loading trainers:', error);
+    }
+}
+
+function renderTrainersTable(trainers) {
+    const tbody = document.getElementById('trainersTableBody');
+    tbody.innerHTML = '';
+    if (!trainers || trainers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No trainers found.</td></tr>';
+        return;
+    }
+
+    trainers.forEach(trainer => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${trainer.trainer_id}</td>
+            <td>${trainer.first_name} ${trainer.last_name}</td>
+            <td>${trainer.email}</td>
+            <td>${trainer.specialization || 'N/A'}</td>
+            <td><span class="badge bg-${trainer.status === 'active' ? 'success' : 'secondary'}">${trainer.status}</span></td>
+            <td>
+                <button class="btn btn-sm btn-info text-white" onclick="viewTrainerDetails(${trainer.trainer_id})"><i class="fas fa-eye"></i></button>
+                <button class="btn btn-sm btn-warning" onclick="editTrainer(${trainer.trainer_id})"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-sm btn-danger" onclick="deleteTrainer(${trainer.trainer_id})"><i class="fas fa-trash"></i></button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+window.openAddModal = function() {
+    document.getElementById('trainerForm').reset();
+    document.getElementById('trainerId').value = '';
+    document.getElementById('trainerModalLabel').textContent = 'Add New Trainer';
+    trainerModal.show();
+}
+
+async function saveTrainer() {
+    const form = document.getElementById('trainerForm');
+    const trainerId = document.getElementById('trainerId').value;
+    const action = trainerId ? 'update' : 'add';
+    
+    const formData = new FormData();
+    formData.append('first_name', document.getElementById('firstName').value);
+    formData.append('last_name', document.getElementById('lastName').value);
+    formData.append('email', document.getElementById('email').value);
+    formData.append('phone', document.getElementById('phone').value);
+    formData.append('specialization', document.getElementById('specialization').value);
+    formData.append('address', document.getElementById('address').value);
+    formData.append('nttc_no', document.getElementById('nttcNo').value);
+    formData.append('nc_level', document.getElementById('ncLevel').value);
+    
+    if(document.getElementById('nttcFile').files[0]) formData.append('nttc_file', document.getElementById('nttcFile').files[0]);
+    if(document.getElementById('tmFile').files[0]) formData.append('tm_file', document.getElementById('tmFile').files[0]);
+    if(document.getElementById('ncFile').files[0]) formData.append('nc_file', document.getElementById('ncFile').files[0]);
+    if(document.getElementById('expFile').files[0]) formData.append('experience_file', document.getElementById('expFile').files[0]);
+
+    if (trainerId) {
+        formData.append('trainer_id', trainerId);
+    }
+
+    try {
+        const response = await axios.post(`${API_BASE_URL}/role/registrar/trainers.php?action=${action}`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        if (response.data.success) {
+            alert(`Trainer ${trainerId ? 'updated' : 'added'} successfully!${!trainerId ? ' Default password is their last name.' : ''}`);
+            trainerModal.hide();
+            loadTrainers();
+        } else {
+            alert('Error: ' + response.data.message);
+        }
+    } catch (error) {
+        console.error(`Error saving trainer:`, error);
+        alert('An error occurred while saving the trainer.');
+    }
+}
+
+window.editTrainer = async function(id) {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/role/registrar/trainers.php?action=get&id=${id}`);
+        if (response.data.success) {
+            const trainer = response.data.data;
+            document.getElementById('trainerId').value = trainer.trainer_id;
+            document.getElementById('firstName').value = trainer.first_name;
+            document.getElementById('lastName').value = trainer.last_name;
+            document.getElementById('email').value = trainer.email;
+            document.getElementById('phone').value = trainer.phone_number;
+            document.getElementById('specialization').value = trainer.specialization;
+            document.getElementById('address').value = trainer.address;
+            document.getElementById('nttcNo').value = trainer.nttc_no;
+            document.getElementById('ncLevel').value = trainer.nc_level;
+
+            document.getElementById('trainerModalLabel').textContent = 'Edit Trainer';
+            trainerModal.show();
+        } else {
+            alert('Error: ' + response.data.message);
+        }
+    } catch (error) {
+        console.error('Error fetching trainer details:', error);
+    }
+}
+
+window.viewTrainerDetails = async function(id) {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/role/registrar/trainers.php?action=get&id=${id}`);
+        if (response.data.success) {
+            const trainer = response.data.data;
+            const body = document.getElementById('viewTrainerBody');
+            
+            const createFileLink = (file, label) => {
+                if (!file) return `<p class="mb-1"><strong class="text-muted">${label}:</strong> N/A</p>`;
+                return `<p class="mb-1"><strong class="text-muted">${label}:</strong> <a href="${UPLOADS_URL}${file}" target="_blank">${file}</a></p>`;
+            };
+
+            body.innerHTML = `
+                <h5>${trainer.first_name} ${trainer.last_name}</h5>
+                <p><strong>Email:</strong> ${trainer.email}</p>
+                <p><strong>Phone:</strong> ${trainer.phone_number || 'N/A'}</p>
+                <p><strong>Address:</strong> ${trainer.address || 'N/A'}</p>
+                <p><strong>Specialization:</strong> ${trainer.specialization || 'N/A'}</p>
+                <p><strong>Status:</strong> <span class="badge bg-${trainer.status === 'active' ? 'success' : 'secondary'}">${trainer.status}</span></p>
+                <hr>
+                <h6>Certifications</h6>
+                <p><strong>NTTC No:</strong> ${trainer.nttc_no || 'N/A'}</p>
+                <p><strong>NC Level:</strong> ${trainer.nc_level || 'N/A'}</p>
+                ${createFileLink(trainer.nttc_file, 'NTTC Certificate')}
+                ${createFileLink(trainer.tm_file, 'TM Certificate')}
+                ${createFileLink(trainer.nc_file, 'NC Certificate')}
+                ${createFileLink(trainer.experience_file, 'Experience Docs')}
+            `;
+            viewModal.show();
+        } else {
+            alert('Error: ' + response.data.message);
+        }
+    } catch (error) {
+        console.error('Error fetching trainer details:', error);
+    }
+}
+
+window.deleteTrainer = async function(id) {
+    if (!confirm('Are you sure you want to delete this trainer? This action cannot be undone.')) {
+        return;
+    }
+    try {
+        const response = await axios.delete(`${API_BASE_URL}/role/registrar/trainers.php?action=delete&id=${id}`);
+        if (response.data.success) {
+            alert('Trainer deleted successfully!');
+            loadTrainers();
+        } else {
+            alert('Error: ' + response.data.message);
+        }
+    } catch (error) {
+        console.error('Error deleting trainer:', error);
+    }
+}

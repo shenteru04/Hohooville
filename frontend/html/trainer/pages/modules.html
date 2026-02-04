@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Modules - Hohoo-Ville</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Custom Field Styles */
+        .field-label:hover {
+            background-color: #e9ecef !important;
+        }
+        
+        .field-content[contenteditable="true"] {
+            cursor: text !important;
+        }
+        
+        .field-content[contenteditable="false"] {
+            cursor: pointer;
+        }
+        
+        .custom-field-block {
+            transition: box-shadow 0.2s;
+        }
+        
+        .custom-field-block:hover {
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        
+        /* Lesson Content Editor */
+        #lessonContent {
+            background-color: #ffffff;
+        }
+        
+        #lessonContent:focus {
+            outline: none;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+        
+        /* Input field styles inside custom fields */
+        .custom-field-block .input-group {
+            margin-bottom: 0.5rem;
+        }
+        
+        .custom-field-block .input-group:last-child {
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="d-flex">
+        <!-- Sidebar -->
+        <nav id="sidebar" class="bg-light p-3" style="width: 250px; height: 100vh; position: fixed; overflow-y: auto; top: 0; left: 0;">
+            <div class="sidebar-header mb-4">
+                <h3>Hohoo-Ville Tech</h3>
+                <p class="text-muted">Trainer Portal</p>
+            </div>
+            <ul class="nav flex-column">
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/trainer_dashboard.html">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/pages/my_batches.html">
+                        <i class="fas fa-chalkboard-teacher me-2"></i> My Batches
+                    </a>
+                </li>
+
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/pages/modules.html">
+                        <i class="fas fa-book me-2"></i> Modules
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link active" href="/Hohoo-ville/frontend/html/trainer/pages/attendance.html">
+                        <i class="fas fa-calendar-check me-2"></i> Attendance
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/pages/grading.html">
+                        <i class="fas fa-star me-2"></i> Grading
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/pages/reports.html">
+                        <i class="fas fa-chart-bar me-2"></i> Reports
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Content -->
+        <div class="flex-grow-1" style="margin-left: 250px;">
+            <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+                <div class="container-fluid">
+                    <div class="ms-auto d-flex align-items-center">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle"></i> Trainer
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="container-fluid mt-4">
+                <h2 class="mb-4">Manage Modules</h2>
+
+                <div class="card">
+                    <div class="card-header">
+                        <ul class="nav nav-tabs card-header-tabs" id="moduleTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="core-tab" data-bs-toggle="tab" data-bs-target="#core-panel" type="button" role="tab">Core Competencies</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="common-tab" data-bs-toggle="tab" data-bs-target="#common-panel" type="button" role="tab">Common Competencies</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="basic-tab" data-bs-toggle="tab" data-bs-target="#basic-panel" type="button" role="tab">Basic Competencies</button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Select Qualification</label>
+                            <select class="form-select" id="qualificationSelect">
+                                <option value="">Loading...</option>
+                            </select>
+                        </div>
+                        <div class="tab-content" id="moduleTabsContent">
+                            <!-- Core Competencies Tab -->
+                            <div class="tab-pane fade show active" id="core-panel" role="tabpanel">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="card-title">Core Competencies Modules</h5>
+                                    <button class="btn btn-primary" onclick="openCreateModuleModal('core')">
+                                        <i class="fas fa-plus"></i> Add Core Unit
+                                    </button>
+                                </div>
+
+                                <div id="modulesListCore" class="row">
+                                    <!-- Modules will be loaded here -->
+                                </div>
+                            </div>
+                            
+                            <!-- Common Competencies Tab -->
+                            <div class="tab-pane fade" id="common-panel" role="tabpanel">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="card-title">Common Competencies Modules</h5>
+                                    <button class="btn btn-primary" onclick="openCreateModuleModal('common')">
+                                        <i class="fas fa-plus"></i> Add Common Unit
+                                    </button>
+                                </div>
+                                <div id="modulesListCommon" class="row">
+                                    <p class="text-muted">Select a qualification to see common competency modules.</p>
+                                </div>
+                            </div>
+
+                            <!-- Basic Competencies Tab -->
+                            <div class="tab-pane fade" id="basic-panel" role="tabpanel">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="card-title">Basic Competencies Modules</h5>
+                                    <button class="btn btn-primary" onclick="openCreateModuleModal('basic')">
+                                        <i class="fas fa-plus"></i> Add Basic Unit
+                                    </button>
+                                </div>
+                                <div id="modulesListBasic" class="row">
+                                    <p class="text-muted">Select a qualification to see basic competency modules.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Module Modal -->
+    <div class="modal fade" id="createModuleModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="moduleModalTitle">Create Core Competency Module</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createModuleForm">
+                        <input type="hidden" id="moduleId">
+                        <div class="mb-3">
+                            <label class="form-label">Module Title</label>
+                            <input type="text" class="form-control" id="moduleTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="moduleDescription" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveModuleBtn">Save Module</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Learning Competency Modal -->
+    <div class="modal fade" id="createCompetencyModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="competencyModalTitle">Add Learning Outcome</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createCompetencyForm">
+                        <input type="hidden" id="competencyModuleId">
+                        <input type="hidden" id="competencyId">
+                        <div class="mb-3">
+                            <label class="form-label">Learning Outcome Title</label>
+                            <input type="text" class="form-control" id="competencyTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="competencyDescription" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveCompetencyBtn">Save Competency</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Module Details Modal -->
+    <div class="modal fade" id="viewModuleModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="viewModuleTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="viewModuleDescription" class="text-muted mb-4"></p>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0">Learning Outcomes</h6>
+                        <button class="btn btn-primary btn-sm" id="btnAddOutcomeInModal">
+                            <i class="fas fa-plus"></i> Add Outcome
+                        </button>
+                    </div>
+                    
+                    <div id="viewModuleOutcomes" class="list-group">
+                        <!-- Outcomes populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+  
+    <!-- Manage Lesson Modal -->
+<div class="modal fade" id="manageLessonModal" tabindex="-1" aria-labelledby="manageLessonModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="manageLessonModalLabel">Manage Learning Outcome Content & Quiz</h5>
+                <input type="hidden" id="manageLessonId">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Nav Tabs -->
+                <ul class="nav nav-tabs" id="lessonTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="content-tab" data-bs-toggle="tab" data-bs-target="#content-pane" type="button" role="tab" aria-controls="content-pane" aria-selected="true">
+                            <i class="fas fa-file-alt me-2"></i>Lesson Content
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="quiz-tab" data-bs-toggle="tab" data-bs-target="#quiz-pane" type="button" role="tab" aria-controls="quiz-pane" aria-selected="false">
+                            <i class="fas fa-question-circle me-2"></i>Quiz & Answer Key
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="task-sheet-tab" data-bs-toggle="tab" data-bs-target="#task-sheet-pane" type="button" role="tab" aria-controls="task-sheet-pane" aria-selected="false">
+                            <i class="fas fa-tasks me-2"></i>Task Sheet
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings-pane" type="button" role="tab" aria-controls="settings-pane" aria-selected="false">
+                            <i class="fas fa-cog me-2"></i>Settings
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab Panes -->
+                <div class="tab-content p-3 border border-top-0" id="lessonTabsContent">
+                    <!-- Lesson Content Pane -->
+                    <div class="tab-pane fade show active" id="content-pane" role="tabpanel" aria-labelledby="content-tab">
+                        <!-- This part is for Core Competencies -->
+                        <div id="coreContentManager">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0">Information Sheets</h6>
+                                <button class="btn btn-sm btn-success" onclick="openContentEditor('content')">
+                                    <i class="fas fa-plus"></i> Add Information Sheet
+                                </button>
+                            </div>
+                            <div id="lessonContentsList" class="list-group"></div>
+                        </div>
+
+                        <!-- This part is for Basic/Common Competencies -->
+                        <div id="fileContentManager" class="d-none">
+                            <div class="mb-3">
+                                <label for="lessonFileUpload" class="form-label">Upload Information Sheet (PDF, DOCX, PPTX)</label>
+                                <input class="form-control" type="file" id="lessonFileUpload" accept=".pdf,.doc,.docx,.ppt,.pptx">
+                            </div>
+                            <div id="currentLessonFileContainer" class="d-none">
+                                <p><strong>Current File:</strong> <a href="#" id="currentLessonFileLink" target="_blank"></a></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quiz & Answer Key Pane -->
+                    <div class="tab-pane fade" id="quiz-pane" role="tabpanel" aria-labelledby="quiz-tab">
+                        <div class="d-flex justify-content-end mb-2">
+                            <button class="btn btn-sm btn-success" onclick="addQuestion()">
+                                <i class="fas fa-plus"></i> Add Question
+                            </button>
+                        </div>
+                        <div id="questionsContainer">
+                            <!-- Quiz questions from JS will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Task Sheet Pane -->
+                    <div class="tab-pane fade" id="task-sheet-pane" role="tabpanel" aria-labelledby="task-sheet-tab">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0">Task Sheets</h6>
+                            <button class="btn btn-sm btn-success" onclick="openContentEditor('task')">
+                                <i class="fas fa-plus"></i> Add Task Sheet
+                            </button>
+                        </div>
+                        <div id="taskSheetsList" class="list-group">
+                            <!-- Task sheets will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Settings Pane -->
+                    <div class="tab-pane fade" id="settings-pane" role="tabpanel" aria-labelledby="settings-tab">
+                        <div class="mb-3">
+                            <label for="postingDate" class="form-label">Posting Date</label>
+                            <input type="datetime-local" class="form-control" id="postingDate">
+                            <div class="form-text">Set a future date and time to make this lesson visible to trainees. Leave blank to post immediately.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="quizDeadline" class="form-label">Quiz Deadline</label>
+                            <input type="datetime-local" class="form-control" id="quizDeadline">
+                            <div class="form-text">Optional: Set a deadline for the quiz. Submissions after this date may not be allowed.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="saveLessonSettingsAndQuiz()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- Content Editor Modal -->
+    <div class="modal fade" id="contentEditorModal" tabindex="-1" aria-labelledby="contentEditorModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="contentEditorModalLabel">Edit Content</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editorItemId">
+                    <input type="hidden" id="editorItemType">
+                    <div class="mb-3">
+                        <label for="editorItemTitle" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="editorItemTitle" placeholder="e.g., Information Sheet 1.1-1">
+                    </div>
+                    <div class="d-flex justify-content-end mb-2">
+                        <button class="btn btn-sm btn-outline-secondary me-2" onclick="insertTrainerInput('editorContent')">
+                            <i class="fas fa-plus-square"></i> Add Field
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary me-2" onclick="insertTable('editorContent')">
+                            <i class="fas fa-table"></i> Add Table
+                        </button>
+                        <button class="btn btn-sm btn-outline-info" onclick="insertInteractiveQuestion('editorContent')">
+                            <i class="fas fa-check-circle"></i> Add Quick Check
+                        </button>
+                    </div>
+                    <div id="editorContent" class="p-2 border rounded" style="min-height: 400px; background-color: #f8f9fa;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="saveContent()">Save Content</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script src="../../../js/trainer/pages/modules.js"></script>
+    <script>
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.clear();
+            window.location.href = '../../login.html';
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Schedules - Hohoo-Ville</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="d-flex">
+        <!-- Sidebar -->
+        <nav id="sidebar" class="bg-light p-3" style="width: 250px; height: 100vh; position: fixed; overflow-y: auto; top: 0; left: 0;">
+            <div class="sidebar-header mb-4">
+                <h3>Hohoo-Ville</h3>
+                <p class="text-muted">Registrar Portal</p>
+            </div>
+
+            <ul class="nav flex-column" id="sidebarNav">
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="../registrar_dashboard.html">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
+                </li>
+                
+                <!-- Enrollment Management -->
+                <li class="nav-item mb-2">
+                    <a class="nav-link collapsed" data-bs-toggle="collapse" href="#enrollmentSubmenu" role="button" aria-expanded="false">
+                        <i class="fas fa-user-plus me-2"></i> Enrollment
+                    </a>
+                    <div class="collapse" id="enrollmentSubmenu" data-bs-parent="#sidebarNav">
+                        <ul class="nav flex-column ms-3">
+                            <li class="nav-item"><a class="nav-link" href="trainee_application_list.html">Trainee Application List</a></li>
+                        </ul>
+                    </div>
+                </li>
+
+               
+                <!-- Training Management -->
+                <li class="nav-item mb-2">
+                    <a class="nav-link" data-bs-toggle="collapse" href="#trainingSubmenu" role="button" aria-expanded="true">
+                        <i class="fas fa-chalkboard me-2"></i> Training
+                    </a>
+                    <div class="collapse show" id="trainingSubmenu" data-bs-parent="#sidebarNav">
+                        <ul class="nav flex-column ms-3">
+                            <li class="nav-item"><a class="nav-link" href="create_qualification.html">Create Qualification</a></li>
+                            <li class="nav-item"><a class="nav-link" href="add_trainer.html">Add Trainer</a></li>
+                            <li class="nav-item"><a class="nav-link" href="manage_batches.html">Manage Batches</a></li>
+                            <li class="nav-item"><a class="nav-link active" href="schedule.html">Schedule</a></li>
+                        </ul>
+                    </div>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Page Content -->
+        <div class="flex-grow-1" style="margin-left: 250px;">
+            <!-- Top Navigation -->
+            <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+                <div class="container-fluid">
+                    <div class="ms-auto d-flex align-items-center">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle"></i> Registrar
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <div class="container-fluid mt-4">
+                <h2 class="mb-4">Manage Schedules</h2>
+
+                <!-- Schedules Table -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">Open Batches</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="schedulesTable">
+                                <thead>
+                                    <tr>
+                                        <th>Batch Name</th>
+                                        <th>Qualification</th>
+                                        <th>Trainer</th>
+                                        <th>Schedule</th>
+                                        <th>Room</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="schedulesTableBody">
+                                    <!-- Data populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign Schedule Modal -->
+    <div class="modal fade" id="assignScheduleModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="assignModalTitle">Assign Schedule</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="assignScheduleForm">
+                        <input type="hidden" id="assignBatchId">
+                        <div class="mb-3">
+                            <label class="form-label">Batch</label>
+                            <p id="assignBatchName" class="fw-bold"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label for="assignTrainerSelect" class="form-label">Trainer</label>
+                            <select id="assignTrainerSelect" class="form-select">
+                                <option value="">Unassign</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="assignScheduleSelect" class="form-label">Schedule</label>
+                            <select id="assignScheduleSelect" class="form-select">
+                                <option value="">Not Set</option>
+                                <option value="MWF (8:00 AM - 12:00 PM)">MWF (8:00 AM - 12:00 PM)</option>
+                                <option value="MWF (1:00 PM - 5:00 PM)">MWF (1:00 PM - 5:00 PM)</option>
+                                <option value="TTH (8:00 AM - 12:00 PM)">TTH (8:00 AM - 12:00 PM)</option>
+                                <option value="TTH (1:00 PM - 5:00 PM)">TTH (1:00 PM - 5:00 PM)</option>
+                                <option value="Saturday (8:00 AM - 5:00 PM)">Saturday (8:00 AM - 5:00 PM)</option>
+                                <option value="Day Shift (8:00 AM - 5:00 PM)">Day Shift (8:00 AM - 5:00 PM)</option>
+                                <option value="Night Shift (6:00 PM - 10:00 PM)">Night Shift (6:00 PM - 10:00 PM)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="assignRoomInput" class="form-label">Room / Venue</label>
+                            <input type="text" id="assignRoomInput" class="form-control">
+                        </div>
+                        <div class="text-end">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Save Schedule</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <!-- Axios -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <!-- Custom JS -->
+    <script src="../../../js/registrar/pages/schedule.js"></script>
+    <script>
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.clear();
+            window.location.href = '../../login.html';
+        });
+    </script>
+</body>
+</html>

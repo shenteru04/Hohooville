@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Qualification - Hohoo-Ville</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="d-flex">
+        <!-- Sidebar -->
+        <nav id="sidebar" class="bg-light p-3" style="width: 250px; height: 100vh; position: fixed; overflow-y: auto; top: 0; left: 0;">
+            <div class="sidebar-header mb-4">
+                <h3>Hohoo-Ville</h3>
+                <p class="text-muted">Registrar Portal</p>
+            </div>
+            <ul class="nav flex-column">
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="../registrar_dashboard.html">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link" data-bs-toggle="collapse" href="#enrollmentSubmenu" role="button" aria-expanded="false">
+                        <i class="fas fa-user-plus me-2"></i> Enrollment
+                    </a>
+                    <div class="collapse" id="enrollmentSubmenu">
+                        <ul class="nav flex-column ms-3">
+                            <li class="nav-item"><a class="nav-link" href="trainee_application_list.html">Trainee Application List</a></li>
+                        </ul>
+                    </div>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link" data-bs-toggle="collapse" href="#trainingSubmenu" role="button" aria-expanded="true">
+                        <i class="fas fa-chalkboard me-2"></i> Training
+                    </a>
+                    <div class="collapse show" id="trainingSubmenu">
+                        <li class="nav-item"><a class="nav-link active" href="create_qualification.html">Create Qualification</a></li>
+                        <li class="nav-item"><a class="nav-link" href="add_trainer.html">Add Trainer</a></li>
+                        <li class="nav-item"><a class="nav-link" href="manage_batches.html">Manage Batches</a></li>
+                        <li class="nav-item"><a class="nav-link" href="schedule.html">Schedule</a></li>
+                    </div>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Content -->
+        <div class="flex-grow-1" style="margin-left: 250px;">
+            <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+                <div class="container-fluid">
+                    <div class="ms-auto d-flex align-items-center">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle"></i> Registrar
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="container-fluid mt-4">
+                <h2 class="mb-4">Create New Qualification</h2>
+                <div class="card">
+                    <div class="card-header">Qualification Details</div>
+                    <div class="card-body">
+                        <form id="createQualificationForm">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Qualification / Course Name</label>
+                                    <input type="text" class="form-control" id="courseName" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">CTPR Number</label>
+                                    <input type="text" class="form-control" id="ctprNumber">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Nominal Duration</label>
+                                    <input type="text" class="form-control" id="duration" placeholder="e.g. 260 Hours" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Training Cost</label>
+                                    <input type="number" class="form-control" id="trainingCost" step="0.01">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-control" id="description" rows="3"></textarea>
+                            </div>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> This qualification will be sent to the Admin for approval before it can be used for batches or modules.
+                            </div>
+                            <button type="submit" class="btn btn-primary">Submit for Approval</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container-fluid mt-4 mb-5">
+                <div class="card">
+                    <div class="card-header bg-success text-white">Approved Qualifications</div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Qualification / Course Name</th>
+                                        <th>CTPR Number</th>
+                                        <th>Duration</th>
+                                        <th>Training Cost</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="qualificationsTableBody">
+                                    <!-- Data populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script src="../../../js/registrar/pages/create_qualification.js"></script>
+    <script>
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.clear();
+            window.location.href = '../../login.html';
+        });
+    </script>
+</body>
+</html>

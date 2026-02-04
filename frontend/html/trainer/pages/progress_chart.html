@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progress Chart - Hohoo-ville</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* TESDA Chart Styling */
+        .tesda-chart-container {
+            overflow-x: auto;
+            background: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .tesda-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+        }
+        .tesda-table th, .tesda-table td {
+            border: 1px solid #000;
+            padding: 5px;
+            min-width: 40px;
+        }
+        .tesda-table th {
+            background-color: #f8f9fa;
+            text-align: center;
+            font-weight: bold;
+            vertical-align: middle;
+        }
+        .tesda-header {
+            text-align: center;
+            margin-bottom: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .tesda-header h2 { font-weight: bold; margin: 5px 0; font-size: 18px; }
+        .tesda-header h3 { font-weight: bold; margin: 5px 0; font-size: 16px; }
+        .tesda-header p { margin: 2px 0; }
+        
+        /* Editing Styles */
+        [contenteditable="true"]:focus {
+            outline: 2px solid #0d6efd;
+            background-color: #e7f3ff;
+        }
+        .progress-mark {
+            text-align: center;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+ <!-- Sidebar -->
+        <nav id="sidebar" class="bg-light p-3" style="width: 250px; height: 100vh; position: fixed; overflow-y: auto; top: 0; left: 0;">
+            <div class="sidebar-header mb-4">
+                <h3>Hohoo-Ville Tech</h3>
+                <p class="text-muted">Trainer Portal</p>
+            </div>
+            <ul class="nav flex-column">
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/trainer_dashboard.html">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/pages/my_batches.html">
+                        <i class="fas fa-chalkboard-teacher me-2"></i> My Batches
+                    </a>
+                </li>
+
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/pages/modules.html">
+                        <i class="fas fa-book me-2"></i> Modules
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/pages/attendance.html">
+                        <i class="fas fa-calendar-check me-2"></i> Attendance
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/pages/grading.html">
+                        <i class="fas fa-star me-2"></i> Grading
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/pages/reports.html">
+                        <i class="fas fa-file-alt me-2"></i> Reports
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link active" href="/Hohoo-ville/frontend/html/trainer/pages/progress_chart.html">
+                        <i class="fas fa-chart-bar me-2"></i> Progress Chart
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+<div class="main-content" style="margin-left: 250px; padding: 20px;">
+    <div class="container-fluid">
+        <div class="row mb-3">
+            <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <h4 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Achievement / Progress Chart</h4>
+                <div class="d-flex flex-wrap gap-2">
+                    <div class="btn-group" role="group" aria-label="Chart Actions">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('excelInput').click()" title="Upload Excel">
+                            <i class="fas fa-file-upload me-1"></i> Upload
+                        </button>
+                        <input type="file" id="excelInput" accept=".xlsx, .xls" hidden>
+                        
+                        <button class="btn btn-sm btn-outline-primary" onclick="generateEIMTemplate()" title="Generate New EIM Template">
+                            <i class="fas fa-magic me-1"></i> Template
+                        </button>
+                        
+                        <button class="btn btn-sm btn-success" onclick="saveChart()" title="Save Current Chart">
+                            <i class="fas fa-save me-1"></i> Save
+                        </button>
+                    </div>
+                    <div class="input-group input-group-sm" style="width: auto;">
+                        <select id="savedChartsSelect" class="form-select" title="Load a saved chart">
+                            <option value="">Load a saved chart...</option>
+                        </select>
+                        <button class="btn btn-info" onclick="loadSelectedChart()"><i class="fas fa-download me-1"></i>Load</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body py-2">
+                        <small class="text-muted me-3">Quick Tools:</small>
+                        <button class="btn btn-sm btn-outline-success me-1" onclick="insertSymbol('✓')">✓ (Completed)</button>
+                        <button class="btn btn-sm btn-outline-warning me-1" onclick="insertSymbol('IP')">IP (In Progress)</button>
+                        <button class="btn btn-sm btn-outline-danger me-1" onclick="insertSymbol('')">Clear</button>
+                        <div class="vr mx-2"></div>
+                        <input type="text" id="chartTitle" class="form-control form-control-sm d-inline-block w-auto" placeholder="Chart Title (e.g., Batch 2026 EIM)">
+                        <input type="hidden" id="currentChartId">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div id="chartContainer" class="tesda-chart-container">
+                    <div class="text-center text-muted py-5">Upload an Excel file or click "Generate EIM Template" to start.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<script src="../../../js/trainer/pages/progress_chart.js"></script>
+</body>
+</html>

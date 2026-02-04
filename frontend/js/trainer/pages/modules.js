@@ -1,0 +1,1085 @@
+const API_BASE_URL = 'http://localhost/hohoo-ville/api';
+const LESSON_UPLOADS_URL = 'http://localhost/hohoo-ville/uploads/lessons/';
+let moduleModal, competencyModal, manageLessonModal, viewModuleModal, contentEditorModal;
+let currentModules = [];
+let currentCompetencyType = 'core'; // Default to core
+let currentViewedModuleId = null;
+let fieldCounter = 0; // Counter for unique field IDs
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Remove Attendance and Grading pages from sidebar
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+        const links = sidebar.querySelectorAll('a');
+        links.forEach(link => {
+            const href = link.getAttribute('href') || '';
+            if (href.includes('attendance') || href.includes('grading') || href.includes('my_trainees.html')) {
+                const parent = link.closest('li') || link;
+                parent.remove();
+            }
+        });
+
+        // Add Progress Chart link
+        const ul = sidebar.querySelector('ul');
+        if (ul && !ul.querySelector('a[href="progress_chart.html"]')) {
+            const newLi = document.createElement('li');
+            newLi.className = 'nav-item';
+            newLi.innerHTML = `
+                <a class="nav-link" href="progress_chart.html">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    <span>Progress Chart</span>
+                </a>
+            `;
+            ul.appendChild(newLi);
+        }
+    }
+
+    const createModuleEl = document.getElementById('createModuleModal');
+    if (createModuleEl) moduleModal = new bootstrap.Modal(createModuleEl);
+
+    const createCompetencyEl = document.getElementById('createCompetencyModal');
+    if (createCompetencyEl) competencyModal = new bootstrap.Modal(createCompetencyEl);
+
+    const manageLessonEl = document.getElementById('manageLessonModal');
+    if (manageLessonEl) manageLessonModal = new bootstrap.Modal(manageLessonEl);
+
+    const viewModuleEl = document.getElementById('viewModuleModal');
+    if (viewModuleEl) viewModuleModal = new bootstrap.Modal(viewModuleEl);
+
+    const contentEditorEl = document.getElementById('contentEditorModal');
+    if (contentEditorEl) contentEditorModal = new bootstrap.Modal(contentEditorEl);
+
+    // --- Fix for stacked Bootstrap modals ---
+    document.addEventListener('show.bs.modal', function (event) {
+        const activeModals = document.querySelectorAll('.modal.show');
+        if (activeModals.length > 0) {
+            const highestZIndex = Array.from(activeModals)
+                .map(modal => parseFloat(window.getComputedStyle(modal).zIndex))
+                .reduce((max, z) => Math.max(max, z), 0);
+            event.target.style.zIndex = highestZIndex + 10;
+            setTimeout(() => {
+                const backdrops = document.querySelectorAll('.modal-backdrop');
+                const newBackdrop = backdrops[backdrops.length - 1];
+                if (newBackdrop) {
+                    newBackdrop.style.zIndex = highestZIndex + 9;
+                }
+            }, 0);
+        }
+    });
+
+    document.addEventListener('hidden.bs.modal', function () {
+        if (document.querySelectorAll('.modal.show').length > 0) {
+            document.body.classList.add('modal-open');
+        }
+    });
+    // --- End of fix ---
+
+    if (viewModuleEl) {
+        viewModuleEl.addEventListener('hidden.bs.modal', () => {
+            currentViewedModuleId = null;
+        });
+    }
+
+    loadQualifications();
+
+    const qualificationSelect = document.getElementById('qualificationSelect');
+    qualificationSelect.addEventListener('change', () => loadDataForTab(currentCompetencyType));
+
+    document.getElementById('core-tab').addEventListener('click', () => {
+        currentCompetencyType = 'core';
+        loadDataForTab('core');
+    });
+    document.getElementById('common-tab').addEventListener('click', () => {
+        currentCompetencyType = 'common';
+        loadDataForTab('common');
+    });
+    document.getElementById('basic-tab').addEventListener('click', () => {
+        currentCompetencyType = 'basic';
+        loadDataForTab('basic');
+    });
+
+    function loadDataForTab(type) {
+        const courseId = qualificationSelect.value;
+        document.getElementById('modulesListCore').innerHTML = '';
+        document.getElementById('modulesListCommon').innerHTML = '';
+        document.getElementById('modulesListBasic').innerHTML = '';
+        if (courseId) loadModules(courseId, type);
+    }
+
+    document.getElementById('saveModuleBtn').addEventListener('click', saveModule);
+    document.getElementById('saveCompetencyBtn').addEventListener('click', saveCompetency);
+});
+
+window.insertTrainerInput = function(targetId = 'lessonContent') {
+    const label = prompt("Enter a label for the new field:", "Custom Field");
+    if (label === null || label.trim() === "") {
+        return;
+    }
+
+    const editor = document.getElementById(targetId);
+    const fieldId = `field_${fieldCounter++}`;
+    
+    // Remove placeholder text if it exists
+    const placeholder = editor.querySelector('p.text-muted');
+    if (placeholder) {
+        placeholder.remove();
+    }
+    
+    const fieldBlock = document.createElement('div');
+    fieldBlock.className = 'custom-field-block mb-3 p-3 border rounded';
+    fieldBlock.id = fieldId;
+    fieldBlock.style.backgroundColor = '#f8f9fa';
+    fieldBlock.innerHTML = `
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <strong class="field-label" contenteditable="true" style="cursor: text; padding: 2px 5px; border: 1px dashed #dee2e6; border-radius: 3px;">${label}</strong>
+        <div>
+            <button type="button" class="btn btn-sm btn-outline-success me-1" onclick="addInputFieldInside('${fieldId}')" title="Add Input Field">
+                <i class="fas fa-plus-circle"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="editFieldContent('${fieldId}', true)" title="Edit Content">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteField('${fieldId}')" title="Delete Field">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    </div>
+    <div class="field-content" contenteditable="true" style="min-height: 50px; padding: 10px; background-color: rgb(255, 255, 255); border: 2px solid rgb(13, 110, 253); border-radius: 4px; cursor: pointer;" onclick="editFieldContent('${fieldId}')"></div>
+`;
+
+    editor.appendChild(fieldBlock);
+
+    // Focus the new field
+    const contentDiv = fieldBlock.querySelector('.field-content');
+    if (contentDiv) contentDiv.focus();
+};
+
+window.addInputFieldInside = function(fieldId) {
+    const field = document.getElementById(fieldId);
+    if (!field) return;
+    
+    const contentDiv = field.querySelector('.field-content');
+    
+    // Remove placeholder if present
+    const placeholder = contentDiv.querySelector('em');
+    if (placeholder) {
+        placeholder.remove();
+    }
+    
+    // Create a new input field
+    const inputId = `input_${Date.now()}`;
+    const inputHtml = `
+<div class="input-group mb-2" id="${inputId}" style="position: relative;" contenteditable="false">
+    <span class="input-group-text" style="cursor: pointer;" title="Click to remove bullet" onclick="this.remove()">&bull;</span>
+    <input type="text" class="form-control" placeholder="Enter value here...">
+    <button class="btn btn-outline-danger btn-sm" type="button" onclick="document.getElementById('${inputId}').remove()" title="Remove Input">
+        <i class="fas fa-times"></i>
+    </button>
+</div>
+    `;
+    
+    contentDiv.insertAdjacentHTML('beforeend', inputHtml);
+};
+
+window.editFieldContent = function(fieldId, fromButton = false) {
+    const field = document.getElementById(fieldId);
+    if (!field) return;
+    
+    const contentDiv = field.querySelector('.field-content');
+    const currentlyEditable = contentDiv.getAttribute('contenteditable') === 'true';
+    
+    if (currentlyEditable) {
+        // If triggered by clicking inside the content, do nothing (keep editing)
+        if (!fromButton) {
+            return;
+        }
+
+        // Stop editing
+        contentDiv.setAttribute('contenteditable', 'false');
+        contentDiv.style.border = '1px solid #dee2e6';
+        contentDiv.style.backgroundColor = 'white';
+        
+        // If content is empty, show placeholder
+        if (contentDiv.innerHTML.trim() === '' || contentDiv.innerHTML.trim() === '<br>') {
+            contentDiv.innerHTML = '<em style="color: #6c757d;">Click "Edit" or click here to add content...</em>';
+        }
+    } else {
+        // Start editing
+        // Remove placeholder if present
+        if (contentDiv.querySelector('em')) {
+            contentDiv.innerHTML = '';
+        }
+        
+        contentDiv.setAttribute('contenteditable', 'true');
+        contentDiv.style.border = '2px solid #0d6efd';
+        contentDiv.style.backgroundColor = '#ffffff';
+        contentDiv.focus();
+        
+        // Place cursor at the end
+        const range = document.createRange();
+        const sel = window.getSelection();
+        if (contentDiv.childNodes.length > 0) {
+            range.setStartAfter(contentDiv.childNodes[contentDiv.childNodes.length - 1]);
+        } else {
+            range.setStart(contentDiv, 0);
+        }
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+    }
+};
+
+window.deleteField = function(fieldId) {
+    if (!confirm('Are you sure you want to delete this field?')) {
+        return;
+    }
+    
+    const field = document.getElementById(fieldId);
+    if (field) {
+        field.remove();
+    }
+};
+
+window.insertTable = function(targetId = 'lessonContent') {
+    const editor = document.getElementById(targetId);
+    // Remove placeholder text if it exists
+    const placeholder = editor.querySelector('p.text-muted');
+    if (placeholder) {
+        placeholder.remove();
+    }
+
+    const tableId = `table_${Date.now()}`;
+    const block = document.createElement('div');
+    block.className = 'custom-field-block mb-3 p-3 border rounded bg-white';
+    block.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <strong contenteditable="true" class="field-label" style="cursor: text; border: 1px dashed #dee2e6; padding: 0 5px;">Table Title</strong>
+            <div>
+                <button class="btn btn-sm btn-outline-primary" onclick="addTableRow('${tableId}')" title="Add Row"><i class="fas fa-plus"></i> Row</button>
+                <button class="btn btn-sm btn-outline-primary" onclick="addTableCol('${tableId}')" title="Add Column"><i class="fas fa-plus"></i> Col</button>
+                <button class="btn btn-sm btn-outline-info" onclick="addTableCheckboxCol('${tableId}')" title="Add Checkbox Column"><i class="fas fa-check-square"></i> Checkbox</button>
+                <button class="btn btn-sm btn-outline-danger" onclick="this.closest('.custom-field-block').remove()" title="Delete Table"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-bordered mb-0" id="${tableId}" style="background-color: white;">
+                <thead>
+                    <tr>
+                        <th><span contenteditable="true">Header 1</span> <button contenteditable="false" class="btn btn-xs btn-outline-danger p-0 px-1 ms-2" onclick="deleteTableCol(this)" title="Delete Column">&times;</button></th>
+                        <th><span contenteditable="true">Header 2</span> <button contenteditable="false" class="btn btn-xs btn-outline-danger p-0 px-1 ms-2" onclick="deleteTableCol(this)" title="Delete Column">&times;</button></th>
+                        <th class="table-actions-header" style="width: 1%;" contenteditable="false">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td class="text-center" contenteditable="false"><button class="btn btn-sm btn-outline-danger" onclick="deleteTableRow(this)" title="Delete Row"><i class="fas fa-trash-alt"></i></button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+    editor.appendChild(block);
+};
+
+window.deleteTableRow = function(btn) {
+    const row = btn.closest('tr');
+    const tbody = row.closest('tbody');
+
+    if (tbody.rows.length <= 1) {
+        alert("Cannot delete the last row.");
+        return;
+    }
+
+    if (!confirm('Are you sure you want to delete this row?')) return;
+    
+    if (row) {
+        row.remove();
+    }
+};
+
+window.deleteTableCol = function(btn) {
+    if (!confirm('Are you sure you want to delete this column?')) return;
+
+    const th = btn.closest('th');
+    if (!th) return;
+    
+    const table = th.closest('table');
+    const colIndex = Array.from(th.parentNode.children).indexOf(th);
+
+    if (colIndex === -1) return;
+
+    // Prevent deleting the last content column if it's the only one left before actions
+    if (table.tHead.rows[0].cells.length <= 2) {
+        alert("Cannot delete the last column.");
+        return;
+    }
+
+    // Remove header cell and corresponding body cells
+    table.querySelectorAll('tr').forEach(row => {
+        if (row.cells[colIndex]) row.cells[colIndex].remove();
+    });
+};
+
+window.addTableRow = function(tableId) {
+    const table = document.getElementById(tableId);
+    const headerRow = table.tHead.rows[0];
+    const colCount = headerRow.cells.length - 1; // Subtract 1 for the actions column
+    const tbody = table.tBodies[0];
+    
+    // Check existing first row to determine column types
+    const referenceRow = tbody.rows.length > 0 ? tbody.rows[0] : null;
+    
+    const row = tbody.insertRow();
+    for(let i=0; i<colCount; i++) {
+        const cell = row.insertCell();
+        if (referenceRow && referenceRow.cells[i].querySelector('input[type="checkbox"]')) {
+            cell.contentEditable = "false";
+            cell.style.textAlign = "center";
+            cell.innerHTML = '<input type="checkbox" class="form-check-input" style="cursor: pointer;">';
+        } else {
+            cell.contentEditable = "true";
+        }
+    }
+    // Add the actions cell
+    const actionCell = row.insertCell();
+    actionCell.className = 'text-center';
+    actionCell.contentEditable = false;
+    actionCell.innerHTML = '<button class="btn btn-sm btn-outline-danger" onclick="deleteTableRow(this)" title="Delete Row"><i class="fas fa-trash-alt"></i></button>';
+};
+
+window.addTableCheckboxCol = function(tableId) {
+    const table = document.getElementById(tableId);
+    const headerRow = table.tHead.rows[0];
+    const actionsHeader = headerRow.querySelector('.table-actions-header');
+
+    // Add to header
+    const th = document.createElement('th');
+    th.style.textAlign = "center";
+    th.style.width = "50px";
+    th.innerHTML = `<span contenteditable="true">Check</span> <button contenteditable="false" class="btn btn-xs btn-outline-danger p-0 px-1 ms-2" onclick="deleteTableCol(this)" title="Delete Column">&times;</button>`;
+    
+    if (actionsHeader) {
+        headerRow.insertBefore(th, actionsHeader);
+    } else {
+        headerRow.appendChild(th);
+    }
+
+    // Add to body rows
+    const colIndex = Array.from(headerRow.children).indexOf(th);
+    for(let i=0; i<table.tBodies[0].rows.length; i++) {
+        const row = table.tBodies[0].rows[i];
+        const cell = row.insertCell(colIndex);
+        cell.contentEditable = "false";
+        cell.style.textAlign = "center";
+        cell.innerHTML = '<input type="checkbox" class="form-check-input" style="cursor: pointer;">';
+    }
+};
+
+window.addTableCol = function(tableId) {
+    const table = document.getElementById(tableId);
+    const headerRow = table.tHead.rows[0];
+    const actionsHeader = headerRow.querySelector('.table-actions-header');
+
+    // Add to header
+    const th = document.createElement('th');
+    const headerText = "Header " + (headerRow.cells.length);
+    th.innerHTML = `<span contenteditable="true">${headerText}</span> <button contenteditable="false" class="btn btn-xs btn-outline-danger p-0 px-1 ms-2" onclick="deleteTableCol(this)" title="Delete Column">&times;</button>`;
+    
+    if (actionsHeader) {
+        headerRow.insertBefore(th, actionsHeader);
+    } else {
+        headerRow.appendChild(th);
+    }
+
+    // Add to body rows
+    const colIndex = Array.from(headerRow.children).indexOf(th);
+    for(let i=0; i<table.tBodies[0].rows.length; i++) {
+        const row = table.tBodies[0].rows[i];
+        const cell = row.insertCell(colIndex);
+        cell.contentEditable = "true";
+    }
+};
+
+window.insertInteractiveQuestion = function() {
+    const question = prompt("Enter the question for the quick check:");
+    if (!question || question.trim() === "") {
+        return;
+    }
+
+    const options = [];
+    let optionText;
+    while (true) {
+        optionText = prompt(`Enter option ${options.length + 1} (or cancel to finish):`);
+        if (optionText === null) {
+            break;
+        }
+        if (optionText.trim() !== "") {
+            options.push(optionText.trim());
+        } else {
+            break;
+        }
+    }
+
+    if (options.length < 2) {
+        alert("Please add at least two options for the question.");
+        return;
+    }
+
+    const editor = document.getElementById('lessonContent');
+    const uniqueId = 'interactive_q_' + Date.now();
+
+    // Remove placeholder text if it exists
+    const placeholder = editor.querySelector('p.text-muted');
+    if (placeholder) {
+        placeholder.remove();
+    }
+
+    let optionsHtml = '';
+    options.forEach((opt, index) => {
+        const optionId = `${uniqueId}_${index}`;
+        optionsHtml += `
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="${uniqueId}" id="${optionId}">
+            <label class="form-check-label" for="${optionId}">${opt}</label>
+        </div>
+        `;
+    });
+
+    const questionBlock = document.createElement('div');
+    questionBlock.className = 'alert alert-info my-3';
+    questionBlock.style.backgroundColor = '#e7f3ff';
+    questionBlock.style.borderLeft = '4px solid #0d6efd';
+    questionBlock.innerHTML = `
+    <h6 class="fw-bold mb-2">📝 Quick Check: ${question}</h6>
+    <div class="ms-3">
+        ${optionsHtml}
+    </div>
+`;
+
+    editor.appendChild(questionBlock);
+};
+
+async function loadQualifications() {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/role/registrar/qualifications.php?action=list`);
+        if (response.data.success) {
+            const select = document.getElementById('qualificationSelect');
+            select.innerHTML = '<option value="">Select Qualification</option>';
+            response.data.data.forEach(q => {
+                select.innerHTML += `<option value="${q.course_id}">${q.course_name}</option>`;
+            });
+        }
+    } catch (error) {
+        console.error('Error loading qualifications:', error);
+    }
+}
+
+async function loadModules(courseId, competencyType = 'core') {
+    let containerId;
+    if (competencyType === 'core') containerId = 'modulesListCore';
+    else if (competencyType === 'common') containerId = 'modulesListCommon';
+    else containerId = 'modulesListBasic';
+
+    const container = document.getElementById(containerId);
+    container.innerHTML = '<div class="col-12 text-center"><div class="spinner-border"></div></div>';
+
+    try {
+        const response = await axios.get(`${API_BASE_URL}/role/trainer/modules.php?action=list`, { params: { course_id: courseId, type: competencyType } });
+        container.innerHTML = '';
+
+        if (response.data.success && response.data.data.length > 0) {
+            currentModules = response.data.data;
+            const spineColors = ['#34495e', '#2980b9', '#27ae60', '#8e44ad', '#c0392b', '#d35400'];
+
+            response.data.data.forEach((module, index) => {
+                const color = spineColors[index % spineColors.length];
+
+                container.innerHTML += `
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100 border-0 shadow-sm" style="border-radius: 4px 12px 12px 4px;">
+                        <div class="d-flex h-100">
+                            <!-- Book Spine -->
+                            <div style="width: 24px; background-color: ${color}; border-radius: 4px 0 0 4px; position: relative; flex-shrink: 0; box-shadow: inset -2px 0 5px rgba(0,0,0,0.2);">
+                                <div style="position: absolute; top: 15px; bottom: 15px; left: 6px; width: 1px; background: rgba(255,255,255,0.3);"></div>
+                                <div style="position: absolute; top: 15px; bottom: 15px; left: 10px; width: 1px; background: rgba(255,255,255,0.3);"></div>
+                            </div>
+                            
+                            <!-- Book Cover Content -->
+                            <div class="flex-grow-1 d-flex flex-column bg-white p-0" style="border: 1px solid #dee2e6; border-left: none; border-radius: 0 12px 12px 0;">
+                                <div class="card-body pb-2">
+                                    <h5 class="card-title fw-bold text-dark" style="font-family: 'Times New Roman', serif; letter-spacing: 0.5px;">${module.module_title}</h5>
+                                    <div class="mb-2" style="height: 3px; width: 30px; background-color: ${color};"></div>
+                                    <p class="card-text text-muted small" style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; min-height: 3em;">
+                                        ${module.module_description || 'No description available.'}
+                                    </p>
+                                    <div class="mt-2">
+                                        <span class="badge bg-light text-secondary border">
+                                            <i class="fas fa-bookmark me-1"></i> ${module.lessons ? module.lessons.length : 0} Outcomes
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-light border-top-0 d-flex justify-content-between align-items-center py-2" style="border-radius: 0 0 12px 0;">
+                                    <button class="btn btn-sm btn-outline-dark" onclick="openViewModuleModal(${module.module_id})" title="Read">
+                                        <i class="fas fa-book-open me-1"></i> Open
+                                    </button>
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="editModule(${module.module_id})" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteModule(${module.module_id})" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                `;
+            });
+        } else {
+            container.innerHTML = `<div class="col-12"><div class="alert alert-info">No ${competencyType} competency modules found. Create one to get started.</div></div>`;
+        }
+
+        if (currentViewedModuleId) {
+            openViewModuleModal(currentViewedModuleId);
+        }
+    } catch (error) {
+        console.error('Error loading modules:', error);
+        container.innerHTML = '<div class="col-12"><div class="alert alert-danger">Error loading modules.</div></div>';
+    }
+}
+
+async function saveModule() {
+    const id = document.getElementById('moduleId').value;
+    const courseId = document.getElementById('qualificationSelect').value;
+    const title = document.getElementById('moduleTitle').value;
+    const description = document.getElementById('moduleDescription').value;
+
+    if (!courseId) {
+        alert('Please select a qualification first.');
+        return;
+    }
+
+    if (!title) {
+        alert('Module title is required.');
+        return;
+    }
+
+    const action = id ? 'update-module' : 'add-module';
+    const payload = {
+        course_id: courseId,
+        competency_type: currentCompetencyType,
+        module_title: title, 
+        module_description: description
+    };
+
+    if (id) payload.module_id = id;
+
+    try {
+        const response = await axios.post(`${API_BASE_URL}/role/trainer/modules.php?action=${action}`, payload);
+        if (response.data.success) {
+            alert(`Module ${id ? 'updated' : 'created'} successfully`);
+            moduleModal.hide();
+            document.getElementById('createModuleForm').reset();
+            loadModules(courseId, currentCompetencyType);
+        } else {
+            alert('Error: ' + response.data.message);
+        }
+    } catch (error) {
+        console.error('Error saving module:', error);
+        alert('Failed to save module');
+    }
+}
+
+async function saveCompetency() {
+    const id = document.getElementById('competencyId').value;
+    const moduleId = document.getElementById('competencyModuleId').value;
+    const title = document.getElementById('competencyTitle').value;
+    const description = document.getElementById('competencyDescription').value;
+
+    if (!title) {
+        alert('Learning Outcome title is required.');
+        return;
+    }
+
+    const action = id ? 'update-competency' : 'add-competency';
+    const payload = {
+        module_id: moduleId,
+        lesson_title: title,
+        lesson_description: description
+    };
+
+    if (id) payload.lesson_id = id;
+
+    try {
+        const response = await axios.post(`${API_BASE_URL}/role/trainer/modules.php?action=${action}`, payload);
+        if (response.data.success) {
+            alert(`Learning Outcome ${id ? 'updated' : 'added'} successfully`);
+            competencyModal.hide();
+            document.getElementById('createCompetencyForm').reset();
+            loadModules(document.getElementById('qualificationSelect').value, currentCompetencyType);
+        } else {
+            alert('Error: ' + response.data.message);
+        }
+    } catch (error) {
+        console.error('Error saving learning outcome:', error);
+        alert('Failed to save learning outcome');
+    }
+}
+
+async function deleteModule(id) {
+    if (!confirm('Are you sure you want to delete this module? All competencies inside it will also be deleted.')) return;
+
+    try {
+        const response = await axios.delete(`${API_BASE_URL}/role/trainer/modules.php?action=delete-module&id=${id}`);
+        if (response.data.success) {
+            alert('Module deleted successfully');
+            loadModules(document.getElementById('qualificationSelect').value, currentCompetencyType);
+        } else {
+            alert('Error: ' + response.data.message);
+        }
+    } catch (error) {
+        console.error('Error deleting module:', error);
+    }
+}
+
+async function deleteCompetency(id) {
+    if (!confirm('Are you sure you want to delete this learning outcome?')) return;
+
+    try {
+        const response = await axios.delete(`${API_BASE_URL}/role/trainer/modules.php?action=delete-competency&id=${id}`);
+        if (response.data.success) {
+            alert('Learning Outcome deleted successfully');
+            loadModules(document.getElementById('qualificationSelect').value, currentCompetencyType);
+        } else {
+            alert('Error: ' + response.data.message);
+        }
+    } catch (error) {
+        console.error('Error deleting learning outcome:', error);
+    }
+}
+
+window.openCreateModuleModal = function(type = 'core') {
+    if (!moduleModal) return;
+    document.getElementById('createModuleForm').reset();
+    document.getElementById('moduleId').value = '';
+    const typeName = type.charAt(0).toUpperCase() + type.slice(1);
+    document.getElementById('moduleModalTitle').textContent = `Create ${typeName} Competency Module`;
+    moduleModal.show();
+}
+
+window.editModule = function(id) {
+    if (!moduleModal) return;
+    const module = currentModules.find(m => m.module_id == id);
+    if (!module) return;
+
+    document.getElementById('moduleId').value = module.module_id;
+    document.getElementById('moduleTitle').value = module.module_title;
+    document.getElementById('moduleDescription').value = module.module_description || '';
+    document.getElementById('moduleModalTitle').textContent = 'Edit Core Competency Module';
+    moduleModal.show();
+}
+
+window.openCreateCompetencyModal = function(moduleId) {
+    if (!competencyModal) return;
+    document.getElementById('createCompetencyForm').reset();
+    document.getElementById('competencyModuleId').value = moduleId;
+    document.getElementById('competencyId').value = '';
+    document.getElementById('competencyModalTitle').textContent = 'Add Learning Outcome';
+    competencyModal.show();
+}
+
+window.editCompetency = function(id, moduleId) {
+    if (!competencyModal) return;
+    const module = currentModules.find(m => m.module_id == moduleId);
+    if (!module) return;
+
+    const comp = module.lessons.find(l => l.lesson_id == id);
+    if (!comp) return;
+
+    document.getElementById('competencyModuleId').value = moduleId;
+    document.getElementById('competencyId').value = comp.lesson_id;
+    document.getElementById('competencyTitle').value = comp.lesson_title;
+    document.getElementById('competencyDescription').value = comp.lesson_description || '';
+    document.getElementById('competencyModalTitle').textContent = 'Edit Learning Outcome';
+    competencyModal.show();
+}
+
+window.openManageLessonModal = async function(lessonId) {
+    if (!manageLessonModal) return;
+    document.getElementById('manageLessonId').value = lessonId;
+    
+    // Reset all panes
+    document.getElementById('lessonContentsList').innerHTML = '';
+    document.getElementById('taskSheetsList').innerHTML = '';
+    document.getElementById('questionsContainer').innerHTML = '';
+    document.getElementById('lessonFileUpload').value = '';
+    document.getElementById('postingDate').value = '';
+    const deadlineInput = document.getElementById('quizDeadline');
+    if (deadlineInput) deadlineInput.value = '';
+
+    try {
+        const response = await axios.get(`${API_BASE_URL}/role/trainer/modules.php?action=get-lesson-details&lesson_id=${lessonId}`);
+        if (response.data.success) {
+            const data = response.data.data;
+            const competencyType = data.competency_type;
+            document.getElementById('manageLessonModal').dataset.competencyType = competencyType;
+
+            const coreManager = document.getElementById('coreContentManager');
+            const fileManager = document.getElementById('fileContentManager');
+
+            if (competencyType === 'core') {
+                coreManager.classList.remove('d-none');
+                fileManager.classList.add('d-none');
+                renderLessonContentsList(data.contents || []);
+            } else { // basic or common
+                coreManager.classList.add('d-none');
+                fileManager.classList.remove('d-none');
+                const fileContainer = document.getElementById('currentLessonFileContainer');
+                const fileLink = document.getElementById('currentLessonFileLink');
+                if (data.lesson_file_path) {
+                    fileLink.href = LESSON_UPLOADS_URL + data.lesson_file_path;
+                    fileLink.textContent = data.lesson_file_path;
+                    fileContainer.classList.remove('d-none');
+                } else {
+                    fileContainer.classList.add('d-none');
+                }
+            }
+
+            renderTaskSheetsList(data.task_sheets || []);
+            document.getElementById('postingDate').value = data.posting_date || '';
+            if (deadlineInput && data.deadline) deadlineInput.value = data.deadline;
+
+            if (data.quiz && data.quiz.length > 0) {
+                data.quiz.forEach(q => addQuestion(q));
+            }
+        } else {
+            // Still show the modal but with empty lists on failure
+            renderLessonContentsList([]);
+            document.getElementById('fileContentManager').classList.add('d-none');
+            renderTaskSheetsList([]);
+            alert('Could not load lesson details: ' + response.data.message);
+        }
+    } catch (error) {
+        console.error('Error loading lesson details:', error);
+        alert('Failed to load lesson details');
+    }
+
+    manageLessonModal.show();
+}
+
+function renderLessonContentsList(contents) {
+    const container = document.getElementById('lessonContentsList');
+    container.innerHTML = '';
+    if (contents.length === 0) {
+        container.innerHTML = '<div class="list-group-item text-center text-muted">No information sheets added yet.</div>';
+        return;
+    }
+    contents.forEach(item => {
+        container.innerHTML += `
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-file-alt me-2"></i>${item.title}</span>
+                <div>
+                    <button class="btn btn-sm btn-outline-primary" onclick="openContentEditor('content', ${item.content_id})">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteContentItem('content', ${item.content_id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+}
+
+function renderTaskSheetsList(taskSheets) {
+    const container = document.getElementById('taskSheetsList');
+    container.innerHTML = '';
+    if (taskSheets.length === 0) {
+        container.innerHTML = '<div class="list-group-item text-center text-muted">No task sheets added yet.</div>';
+        return;
+    }
+    taskSheets.forEach(item => {
+        container.innerHTML += `
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-tasks me-2"></i>${item.title}</span>
+                <div>
+                    <button class="btn btn-sm btn-outline-primary" onclick="openContentEditor('task', ${item.task_sheet_id})">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteContentItem('task', ${item.task_sheet_id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+}
+
+window.openContentEditor = async function(type, itemId = null) {
+    document.getElementById('editorItemType').value = type;
+    document.getElementById('editorItemId').value = itemId || '';
+    document.getElementById('editorItemTitle').value = '';
+    document.getElementById('editorContent').innerHTML = '';
+    document.getElementById('contentEditorModalLabel').textContent = `${itemId ? 'Edit' : 'Add'} ${type === 'content' ? 'Information Sheet' : 'Task Sheet'}`;
+
+    if (itemId) {
+        // Fetch existing content to edit
+        const response = await axios.get(`${API_BASE_URL}/role/trainer/modules.php?action=get-${type}&id=${itemId}`);
+        if (response.data.success) {
+            const item = response.data.data;
+            document.getElementById('editorItemTitle').value = item.title;
+            document.getElementById('editorContent').innerHTML = item.content || '';
+        } else {
+            alert('Error fetching content: ' + response.data.message);
+            return;
+        }
+    }
+
+    contentEditorModal.show();
+}
+
+window.addQuestion = function(data = null) {
+    const container = document.getElementById('questionsContainer');
+    const qIndex = container.children.length;
+
+    const questionText = data ? data.question_text : '';
+    const questionType = data ? data.question_type : 'multiple_choice';
+
+    let optionsHtml = '';
+    if (data && data.options) {
+        data.options.forEach((opt, oIndex) => {
+            optionsHtml += createOptionHtml(qIndex, oIndex, opt.option_text, opt.is_correct == 1);
+        });
+    } else {
+        optionsHtml += createOptionHtml(qIndex, 0, '', false);
+        optionsHtml += createOptionHtml(qIndex, 1, '', false);
+    }
+
+    const qDiv = document.createElement('div');
+    qDiv.className = 'card mb-3 question-item';
+    qDiv.innerHTML = `
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <strong>Question ${qIndex + 1}</strong>
+            <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('.question-item').remove()">Remove</button>
+        </div>
+        <div class="card-body">
+            <input type="text" class="form-control mb-2 question-text" placeholder="Enter question" value="${questionText}">
+            <select class="form-select mb-2 question-type" onchange="toggleOptions(this)">
+                <option value="multiple_choice" ${questionType === 'multiple_choice' ? 'selected' : ''}>Multiple Choice</option>
+                <option value="true_false" ${questionType === 'true_false' ? 'selected' : ''}>True/False</option>
+            </select>
+            <div class="options-list">
+                ${optionsHtml}
+            </div>
+            <button type="button" class="btn btn-sm btn-secondary mt-2 add-option-btn" onclick="addOption(this, ${qIndex})" style="${questionType === 'true_false' ? 'display:none;' : ''}">+ Add Option</button>
+        </div>
+    `;
+
+    container.appendChild(qDiv);
+}
+
+window.createOptionHtml = function(qIndex, oIndex, text, isCorrect) {
+    return `
+        <div class="input-group mb-2 option-item">
+            <button class="btn btn-outline-danger btn-sm" type="button" onclick="this.closest('.option-item').remove()">X</button>
+            <input type="text" class="form-control option-text" placeholder="Option text" value="${text}">
+            <div class="input-group-text" title="Mark as correct answer">
+                <input class="form-check-input mt-0" type="radio" name="correct_answer_${qIndex}" ${isCorrect ? 'checked' : ''}>
+            </div>
+        </div>
+    `;
+}
+
+window.addOption = function(btn, qIndex) {
+    const optionsList = btn.previousElementSibling;
+    const oIndex = optionsList.children.length;
+    const div = document.createElement('div');
+    div.innerHTML = createOptionHtml(qIndex, oIndex, '', false);
+    optionsList.appendChild(div.firstElementChild);
+}
+
+window.toggleOptions = function(select) {
+    const cardBody = select.closest('.card-body');
+    const addBtn = cardBody.querySelector('.add-option-btn');
+    const optionsList = cardBody.querySelector('.options-list');
+
+    if (select.value === 'true_false') {
+        addBtn.style.display = 'none';
+        optionsList.innerHTML = `
+            ${createOptionHtml(0, 0, 'True', false)}
+            ${createOptionHtml(0, 1, 'False', false)}
+        `;
+
+        const qIndex = Array.from(document.getElementById('questionsContainer').children).indexOf(select.closest('.question-item'));
+        optionsList.querySelectorAll('input[type="radio"]').forEach(r => r.name = `correct_answer_${qIndex}`);
+    } else {
+        addBtn.style.display = 'inline-block';
+    }
+}
+
+window.saveContent = async function() {
+    const lessonId = document.getElementById('manageLessonId').value;
+    const itemId = document.getElementById('editorItemId').value;
+    const itemType = document.getElementById('editorItemType').value;
+    const title = document.getElementById('editorItemTitle').value;
+
+    if (!title) {
+        alert('Title is required.');
+        return;
+    }
+
+    const editor = document.getElementById('editorContent');
+    editor.querySelectorAll('input[type="text"]').forEach(input => input.setAttribute('value', input.value));
+    editor.querySelectorAll('input[type="checkbox"]').forEach(input => {
+        if (input.checked) input.setAttribute('checked', 'checked');
+        else input.removeAttribute('checked');
+    });
+    const content = editor.innerHTML;
+
+    const action = `save-${itemType}`;
+    const payload = {
+        lesson_id: lessonId,
+        title: title,
+        content: content
+    };
+    if (itemId) payload.id = itemId;
+
+    try {
+        const response = await axios.post(`${API_BASE_URL}/role/trainer/modules.php?action=${action}`, payload);
+        if (response.data.success) {
+            alert('Content saved successfully!');
+            contentEditorModal.hide();
+            // Refresh the list in the manage lesson modal
+            openManageLessonModal(lessonId);
+        } else {
+            alert('Error: ' + response.data.message);
+        }
+    } catch (error) {
+        console.error('Error saving content:', error);
+        alert('An error occurred while saving content.');
+    }
+}
+
+window.saveLessonSettingsAndQuiz = async function() {
+    if (!manageLessonModal) return;
+    const lessonId = document.getElementById('manageLessonId').value;
+    
+    const postingDate = document.getElementById('postingDate').value;
+    const deadline = document.getElementById('quizDeadline') ? document.getElementById('quizDeadline').value : null;
+    const competencyType = document.getElementById('manageLessonModal').dataset.competencyType;
+    
+    const questions = [];
+    document.querySelectorAll('.question-item').forEach((qDiv, qIndex) => {
+        const qText = qDiv.querySelector('.question-text').value;
+        const qType = qDiv.querySelector('.question-type').value;
+
+        const options = [];
+        qDiv.querySelectorAll('.option-item').forEach((oDiv, oIndex) => {
+            options.push({
+                text: oDiv.querySelector('.option-text').value,
+                is_correct: oDiv.querySelector('input[type="radio"]').checked
+            });
+        });
+
+        questions.push({
+            text: qText,
+            type: qType,
+            options: options
+        });
+    });
+
+    try {
+        const formData = new FormData();
+        formData.append('lesson_id', lessonId);
+        formData.append('posting_date', postingDate);
+        formData.append('deadline', deadline);
+        formData.append('quiz', JSON.stringify(questions)); // Send quiz as JSON string
+
+        if (competencyType !== 'core') {
+            const fileInput = document.getElementById('lessonFileUpload');
+            if (fileInput.files.length > 0) {
+                formData.append('lesson_file', fileInput.files[0]);
+            }
+        }
+
+        const response = await axios.post(`${API_BASE_URL}/role/trainer/modules.php?action=save-lesson-settings`, formData);
+        if (response.data.success) {
+            alert('Lesson settings and quiz saved successfully!');
+        }
+    } catch (error) {
+        console.error('Error saving:', error);
+        alert('Failed to save details');
+    }
+}
+
+window.deleteContentItem = async function(type, id) {
+    if (!confirm(`Are you sure you want to delete this ${type === 'content' ? 'information sheet' : 'task sheet'}?`)) {
+        return;
+    }
+    const lessonId = document.getElementById('manageLessonId').value;
+    const action = `delete-${type}`;
+    try {
+        const response = await axios.delete(`${API_BASE_URL}/role/trainer/modules.php?action=${action}&id=${id}`);
+        if (response.data.success) {
+            alert('Item deleted successfully.');
+            openManageLessonModal(lessonId); // Refresh the list
+        } else {
+            alert('Error: ' + response.data.message);
+        }
+    } catch (error) {
+        console.error('Error deleting item:', error);
+    }
+}
+
+window.openViewModuleModal = function(moduleId) {
+    if (!viewModuleModal) return;
+    const module = currentModules.find(m => m.module_id == moduleId);
+    if (!module) return;
+
+    currentViewedModuleId = moduleId;
+
+    document.getElementById('viewModuleTitle').textContent = module.module_title;
+    document.getElementById('viewModuleDescription').textContent = module.module_description || 'No description available.';
+
+    const btnAdd = document.getElementById('btnAddOutcomeInModal');
+    btnAdd.onclick = function() {
+        openCreateCompetencyModal(moduleId);
+    };
+
+    const list = document.getElementById('viewModuleOutcomes');
+    list.innerHTML = '';
+
+    if (module.lessons && module.lessons.length > 0) {
+        module.lessons.forEach(comp => {
+            list.innerHTML += `
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1">${comp.lesson_title}</h6>
+                            <p class="mb-1 text-muted small">${comp.lesson_description || ''}</p>
+                        </div>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-primary" onclick="openManageLessonModal(${comp.lesson_id})">
+                                <i class="fas fa-cog"></i> Manage
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="editCompetency(${comp.lesson_id}, ${moduleId})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="deleteCompetency(${comp.lesson_id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+    } else {
+        list.innerHTML = '<div class="list-group-item text-muted">No learning outcomes added yet.</div>';
+    }
+
+    viewModuleModal.show();
+}

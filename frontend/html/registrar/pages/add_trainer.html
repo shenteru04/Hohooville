@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Trainers - Hohoo-Ville</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="d-flex">
+        <!-- Sidebar -->
+        <nav id="sidebar" class="bg-light p-3" style="width: 250px; height: 100vh; position: fixed; overflow-y: auto; top: 0; left: 0;">
+            <div class="sidebar-header mb-4">
+                <h3>Hohoo-Ville</h3>
+                <p class="text-muted">Registrar Portal</p>
+            </div>
+            <ul class="nav flex-column" id="sidebarNav">
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="../registrar_dashboard.html">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
+                </li>
+                
+                <!-- Enrollment Management -->
+                <li class="nav-item mb-2">
+                    <a class="nav-link collapsed" data-bs-toggle="collapse" href="#enrollmentSubmenu" role="button" aria-expanded="false">
+                        <i class="fas fa-user-plus me-2"></i> Enrollment
+                    </a>
+                    <div class="collapse" id="enrollmentSubmenu" data-bs-parent="#sidebarNav">
+                        <ul class="nav flex-column ms-3">
+                            <li class="nav-item"><a class="nav-link" href="trainee_application_list.html">Trainee Application List</a></li>
+                        </ul>
+                    </div>
+                </li>
+
+               <!-- Training Management -->
+                <li class="nav-item mb-2">
+                    <a class="nav-link" data-bs-toggle="collapse" href="#trainingSubmenu" role="button" aria-expanded="true">
+                        <i class="fas fa-chalkboard me-2"></i> Training
+                    </a>
+                    <div class="collapse show" id="trainingSubmenu" data-bs-parent="#sidebarNav">
+                        <ul class="nav flex-column ms-3">
+                            <li class="nav-item"><a class="nav-link" href="create_qualification.html">Create Qualification</a></li>
+                            <li class="nav-item"><a class="nav-link active" href="add_trainer.html">Add Trainer</a></li>
+                            <li class="nav-item"><a class="nav-link" href="manage_batches.html">Manage Batches</a></li>
+                            <li class="nav-item"><a class="nav-link" href="schedule.html">Schedule</a></li>
+                        </ul>
+                    </div>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Content -->
+        <div class="flex-grow-1" style="margin-left: 250px;">
+            <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+                <div class="container-fluid">
+                    <div class="ms-auto d-flex align-items-center">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle"></i> Registrar
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <div class="container-fluid mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Manage Trainers</h2>
+                    <button class="btn btn-primary" onclick="openAddModal()">
+                        <i class="fas fa-plus me-2"></i>Add New Trainer
+                    </button>
+                </div>
+
+                <!-- Trainers Table -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">Trainer List</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="trainersTable">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Specialization</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="trainersTableBody">
+                                    <!-- Data populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Trainer Modal -->
+    <div class="modal fade" id="trainerModal" tabindex="-1" aria-labelledby="trainerModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="trainerModalLabel">Add New Trainer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="trainerForm" enctype="multipart/form-data">
+                        <input type="hidden" id="trainerId">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="firstName" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Last Name</label>
+                                <input type="text" class="form-control" id="lastName" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Email Address</label>
+                                <input type="email" class="form-control" id="email" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Phone Number</label>
+                                <input type="text" class="form-control" id="phone">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Specialization</label>
+                            <input type="text" class="form-control" id="specialization" placeholder="e.g. Computer Systems Servicing">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Address</label>
+                            <textarea class="form-control" id="address" rows="2"></textarea>
+                        </div>
+
+                        <h5 class="mt-4 mb-3">Certifications & Documents</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">NTTC Number</label>
+                                <input type="text" class="form-control" id="nttcNo">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">NTTC Certificate</label>
+                                <input type="file" class="form-control" id="nttcFile" accept=".pdf,.jpg,.png">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Trainer Methodology (TM) Certificate</label>
+                                <input type="file" class="form-control" id="tmFile" accept=".pdf,.jpg,.png">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Work Experience Documents</label>
+                                <input type="file" class="form-control" id="expFile" accept=".pdf,.jpg,.png">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">National Certificate (NC) Level</label>
+                                <input type="text" class="form-control" id="ncLevel" placeholder="e.g. NC II">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">NC Certificate</label>
+                                <input type="file" class="form-control" id="ncFile" accept=".pdf,.jpg,.png">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary">Save Trainer</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Trainer Details Modal -->
+    <div class="modal fade" id="viewTrainerModal" tabindex="-1" aria-labelledby="viewTrainerModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="viewTrainerModalLabel">Trainer Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="viewTrainerBody">
+                    <!-- Details will be populated by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script src="../../../js/registrar/pages/add_trainer.js"></script>
+    <script>
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.clear();
+            window.location.href = '../../login.html';
+        });
+    </script>
+</body>
+</html>

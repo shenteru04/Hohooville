@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Modules - Hohoo-Ville</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .ai-generate-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            padding: 15px;
+            color: white;
+            margin-bottom: 20px;
+        }
+        .ai-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .loading-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 400px;
+        }
+        .spinner-custom {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner-custom mx-auto mb-3"></div>
+            <h5>Generating Lesson with AI</h5>
+            <p class="text-muted mb-0">Please wait while Claude creates your TESDA-compliant lesson...</p>
+        </div>
+    </div>
+
+    <div class="d-flex">
+         <!-- Sidebar -->
+        <nav id="sidebar" class="bg-light p-3" style="width: 250px; height: 100vh; position: fixed; overflow-y: auto; top: 0; left: 0;">
+            <div class="sidebar-header mb-4">
+                <h3>Hohoo-Ville Tech</h3>
+                <p class="text-muted">Trainer Portal</p>
+            </div>
+            <ul class="nav flex-column">
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/trainer_dashboard.html">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/pages/my_batches.html">
+                        <i class="fas fa-chalkboard-teacher me-2"></i> My Batches
+                    </a>
+                </li>
+
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/pages/modules-enhanced.html">
+                        <i class="fas fa-book me-2"></i> Modules
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/pages/attendance.html">
+                        <i class="fas fa-calendar-check me-2"></i> Attendance
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link active" href="/Hohoo-ville/frontend/html/trainer/pages/grading.html">
+                        <i class="fas fa-star me-2"></i> Grading
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/pages/reports.html">
+                        <i class="fas fa-chart-bar me-2"></i> Reports
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Content -->
+        <div class="flex-grow-1" style="margin-left: 250px;">
+            <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+                <div class="container-fluid">
+                    <div class="ms-auto d-flex align-items-center">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle"></i> Trainer
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="container-fluid mt-4">
+                <h2 class="mb-4">Manage Modules</h2>
+
+                <div class="card">
+                    <div class="card-header">
+                        <ul class="nav nav-tabs card-header-tabs" id="moduleTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="core-tab" data-bs-toggle="tab" data-bs-target="#core" type="button" role="tab">Core Competencies</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="other-tab" data-bs-toggle="tab" data-bs-target="#other" type="button" role="tab">Other Competencies</button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <div class="tab-content" id="moduleTabsContent">
+                            <!-- Core Competencies Tab -->
+                            <div class="tab-pane fade show active" id="core" role="tabpanel">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="card-title">Core Competencies Modules</h5>
+                                    <button class="btn btn-primary" onclick="openCreateModuleModal()">
+                                        <i class="fas fa-plus"></i> Create Competency Module
+                                    </button>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Select Qualification</label>
+                                    <select class="form-select" id="qualificationSelect">
+                                        <option value="">Loading...</option>
+                                    </select>
+                                </div>
+
+                                <div id="modulesList" class="row">
+                                    <!-- Modules will be loaded here -->
+                                </div>
+                            </div>
+                            
+                            <!-- Other Competencies Tab (Placeholder) -->
+                            <div class="tab-pane fade" id="other" role="tabpanel">
+                                <p class="text-muted">Content for other competencies will be added later.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Module Modal -->
+    <div class="modal fade" id="createModuleModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="moduleModalTitle">Create Core Competency Module</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createModuleForm">
+                        <input type="hidden" id="moduleId">
+                        <div class="mb-3">
+                            <label class="form-label">Module Title</label>
+                            <input type="text" class="form-control" id="moduleTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="moduleDescription" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveModuleBtn">Save Module</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Learning Competency Modal -->
+    <div class="modal fade" id="createCompetencyModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="competencyModalTitle">Add Learning Outcome</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createCompetencyForm">
+                        <input type="hidden" id="competencyModuleId">
+                        <input type="hidden" id="competencyId">
+                        <div class="mb-3">
+                            <label class="form-label">Learning Outcome Title</label>
+                            <input type="text" class="form-control" id="competencyTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="competencyDescription" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveCompetencyBtn">Save Competency</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Module Details Modal -->
+    <div class="modal fade" id="viewModuleModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="viewModuleTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="viewModuleDescription" class="text-muted mb-4"></p>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0">Learning Outcomes</h6>
+                        <button class="btn btn-primary btn-sm" id="btnAddOutcomeInModal">
+                            <i class="fas fa-plus"></i> Add Outcome
+                        </button>
+                    </div>
+                    
+                    <div id="viewModuleOutcomes" class="list-group">
+                        <!-- Outcomes populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Lesson Content & Quiz Modal -->
+    <div class="modal fade" id="manageLessonModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Manage Learning Outcome Content & Quiz</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="manageLessonId">
+                    
+                    <ul class="nav nav-tabs mb-3" id="manageLessonTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="content-tab" data-bs-toggle="tab" data-bs-target="#contentPanel" type="button">Lesson Content</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="quiz-tab" data-bs-toggle="tab" data-bs-target="#quizPanel" type="button">Quiz & Answer Key</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settingsPanel" type="button">Settings</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <!-- Content Tab -->
+                        <div class="tab-pane fade show active" id="contentPanel">
+                            <!-- AI Generation Section -->
+                            <div class="ai-generate-section">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">
+                                            <i class="fas fa-magic me-2"></i>AI-Powered Lesson Generator
+                                            <span class="ai-badge">POWERED BY CLAUDE</span>
+                                        </h6>
+                                        <small>Generate TESDA-compliant EIM NC II lessons automatically</small>
+                                    </div>
+                                    <button class="btn btn-light btn-sm" onclick="showAIPromptModal()">
+                                        <i class="fas fa-robot me-1"></i> Generate with AI
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="form-label mb-0">Lesson Content</label>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertTemplate()">
+                                        <i class="fas fa-file-code"></i> Insert Template
+                                    </button>
+                                </div>
+                                <textarea class="form-control" id="lessonContent" rows="15" placeholder="Enter lesson content here..."></textarea>
+                                <div class="form-text">You can use HTML tags for formatting if needed.</div>
+                            </div>
+                        </div>
+
+                        <!-- Quiz Tab -->
+                        <div class="tab-pane fade" id="quizPanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6>Quiz Questions</h6>
+                                <button type="button" class="btn btn-sm btn-success" onclick="addQuestion()">
+                                    <i class="fas fa-plus"></i> Add Question
+                                </button>
+                            </div>
+                            <div id="questionsContainer">
+                                <!-- Questions will be added here dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Settings Tab -->
+                        <div class="tab-pane fade" id="settingsPanel">
+                            <div class="mb-3">
+                                <label class="form-label">Posting Date</label>
+                                <input type="datetime-local" class="form-control" id="postingDate">
+                                <div class="form-text">The lesson and quiz will be visible to trainees starting from this date.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="saveLessonDetails()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Prompt Modal -->
+    <div class="modal fade" id="aiPromptModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-robot me-2"></i>AI Lesson Generator
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Tip:</strong> Be specific about the topic. Example: "Install single-phase wiring" or "Test electrical circuits with multimeter"
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">What topic should this lesson cover?</label>
+                        <textarea class="form-control" id="aiTopicInput" rows="3" placeholder="Example: Installing electrical conduits and raceways according to PEC standards"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Estimated Duration (hours)</label>
+                        <input type="number" class="form-control" id="aiDurationInput" value="4" min="1" max="40">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="generateLessonWithAI()">
+                        <i class="fas fa-magic me-1"></i> Generate Lesson
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script src="../../../js/trainer/pages/modules-ai-enhanced.js"></script>
+    <script>
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.clear();
+            window.location.href = '../../login.html';
+        });
+    </script>
+</body>
+</html>

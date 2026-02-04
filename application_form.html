@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trainee Application - Hohoo-Ville Technical School</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .application-container { max-width: 900px; margin: 50px auto; }
+        .step-indicator { font-weight: bold; color: #0d6efd; }
+    </style>
+</head>
+<body>
+    <div class="container application-container">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white text-center py-4">
+                <h3><i class="fas fa-user-graduate me-2"></i>Trainee Application Form</h3>
+                <p class="mb-0">Please fill in your details accurately.</p>
+            </div>
+            <div class="card-body p-4">
+                <form id="applicationForm" enctype="multipart/form-data">
+                    
+                    <!-- Page 1 -->
+                    <div id="step1">
+                        <div class="d-flex justify-content-between mb-4">
+                            <span class="step-indicator">Page 1 of 2: Personal Information</span>
+                        </div>
+
+                        <!-- 1. Personal Information -->
+                        <h5 class="mb-3 text-primary border-bottom pb-2">1. Personal Information</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Last Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="last_name" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">First Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="first_name" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Middle Name</label>
+                                <input type="text" class="form-control" name="middle_name">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Extension (Jr, Sr)</label>
+                                <input type="text" class="form-control" name="extension_name">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Sex <span class="text-danger">*</span></label>
+                                <select class="form-select" name="sex" required>
+                                    <option value="">Select</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Civil Status <span class="text-danger">*</span></label>
+                                <select class="form-select" name="civil_status" required>
+                                    <option value="">Select</option>
+                                    <option value="Single">Single</option>
+                                    <option value="Married">Married</option>
+                                    <option value="Separated">Separated</option>
+                                    <option value="Widowed">Widowed</option>
+                                    <option value="Common-law">Common-law</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Birthdate <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" name="birthdate" id="birthdate" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Age</label>
+                                <input type="text" class="form-control" name="age" id="age" readonly>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Birthplace (City/Municipality)</label>
+                                <input type="text" class="form-control" name="birthplace_city">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Birthplace (Province)</label>
+                                <input type="text" class="form-control" name="birthplace_province">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Birthplace (Region)</label>
+                                <input type="text" class="form-control" name="birthplace_region">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Nationality</label>
+                                <input type="text" class="form-control" name="nationality" value="Filipino">
+                            </div>
+                        </div>
+
+                        <!-- 2. Contact & Address -->
+                        <h5 class="mb-3 mt-4 text-primary border-bottom pb-2">2. Contact & Address Information</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">House No. / Street <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="house_no_street" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Barangay <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="barangay" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">District</label>
+                                <input type="text" class="form-control" name="district">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">City / Municipality <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="city_municipality" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Province <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="province" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Region</label>
+                                <input type="text" class="form-control" name="region">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Contact Number <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="phone" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Email Address <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" name="email" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Facebook Account</label>
+                                <input type="text" class="form-control" name="facebook_account">
+                            </div>
+                        </div>
+
+                        <!-- 3. Education Background -->
+                        <h5 class="mb-3 mt-4 text-primary border-bottom pb-2">3. Education Background</h5>
+                        <div class="mb-3">
+                            <label class="form-label d-block">Educational Attainment (Before Training) <span class="text-danger">*</span></label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check"><input class="form-check-input" type="radio" name="educational_attainment" value="No Grade Completed" required> <label class="form-check-label">No Grade Completed</label></div>
+                                    <div class="form-check"><input class="form-check-input" type="radio" name="educational_attainment" value="Elementary Undergraduate"> <label class="form-check-label">Elementary Undergraduate</label></div>
+                                    <div class="form-check"><input class="form-check-input" type="radio" name="educational_attainment" value="Elementary Graduate"> <label class="form-check-label">Elementary Graduate</label></div>
+                                    <div class="form-check"><input class="form-check-input" type="radio" name="educational_attainment" value="Junior High (K-12)"> <label class="form-check-label">Junior High (K-12)</label></div>
+                                    <div class="form-check"><input class="form-check-input" type="radio" name="educational_attainment" value="Senior High (K-12)"> <label class="form-check-label">Senior High (K-12)</label></div>
+                                    <div class="form-check"><input class="form-check-input" type="radio" name="educational_attainment" value="High School Graduate"> <label class="form-check-label">High School Graduate</label></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check"><input class="form-check-input" type="radio" name="educational_attainment" value="Post-Secondary Non-Tertiary Undergraduate"> <label class="form-check-label">Post-Secondary Non-Tertiary Undergraduate</label></div>
+                                    <div class="form-check"><input class="form-check-input" type="radio" name="educational_attainment" value="Post-Secondary Non-Tertiary Graduate"> <label class="form-check-label">Post-Secondary Non-Tertiary Graduate</label></div>
+                                    <div class="form-check"><input class="form-check-input" type="radio" name="educational_attainment" value="College Undergraduate"> <label class="form-check-label">College Undergraduate</label></div>
+                                    <div class="form-check"><input class="form-check-input" type="radio" name="educational_attainment" value="College Graduate"> <label class="form-check-label">College Graduate</label></div>
+                                    <div class="form-check"><input class="form-check-input" type="radio" name="educational_attainment" value="Masteral"> <label class="form-check-label">Masteral</label></div>
+                                    <div class="form-check"><input class="form-check-input" type="radio" name="educational_attainment" value="Doctorate"> <label class="form-check-label">Doctorate</label></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. Employment Information -->
+                        <h5 class="mb-3 mt-4 text-primary border-bottom pb-2">4. Employment Information</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Employment Status</label>
+                                <select class="form-select" name="employment_status" id="employmentStatus">
+                                    <option value="Unemployed">Unemployed</option>
+                                    <option value="Wage-Employed">Wage-Employed</option>
+                                    <option value="Self-Employed">Self-Employed</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Employment Type (if Wage-Employed)</label>
+                                <select class="form-select" name="employment_type" id="employmentType" disabled>
+                                    <option value="">N/A</option>
+                                    <option value="Regular">Regular</option>
+                                    <option value="Casual">Casual</option>
+                                    <option value="Job Order">Job Order</option>
+                                    <option value="Probationary">Probationary</option>
+                                    <option value="Contractual">Contractual</option>
+                                    <option value="Permanent">Permanent</option>
+                                    <option value="Temporary">Temporary</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 5. Learner Classification -->
+                        <h5 class="mb-3 mt-4 text-primary border-bottom pb-2">5. Learner / Trainee Classification</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Student"> <label class="form-check-label">Student</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Out-of-School Youth"> <label class="form-check-label">Out-of-School Youth</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Industry Worker"> <label class="form-check-label">Industry Worker</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Farmers and Fishermen"> <label class="form-check-label">Farmers and Fishermen</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Displaced Worker"> <label class="form-check-label">Displaced Worker</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="OFW"> <label class="form-check-label">Overseas Filipino Worker (OFW)</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Repatriated OFW"> <label class="form-check-label">Returned / Repatriated OFW</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="TESDA Alumni"> <label class="form-check-label">TESDA Alumni</label></div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Victim of Natural Disasters"> <label class="form-check-label">Victim of Natural Disasters</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="IP"> <label class="form-check-label">Indigenous People</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Inmates"> <label class="form-check-label">Inmates / Detainees</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Rebel Returnees"> <label class="form-check-label">Rebel Returnees</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="AFP/PNP Wounded"> <label class="form-check-label">Family Members of AFP/PNP Wounded/KIA</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Balik Probinsya"> <label class="form-check-label">Balik Probinsya</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Others"> <label class="form-check-label">Others</label></div>
+                            </div>
+                        </div>
+
+                        <!-- 6. Disability -->
+                        <h5 class="mb-3 mt-4 text-primary border-bottom pb-2">6. Disability Information</h5>
+                        <div class="mb-3">
+                            <label class="form-label">Person with Disability?</label>
+                            <div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="is_pwd" value="yes" id="pwdYes">
+                                    <label class="form-check-label" for="pwdYes">Yes</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="is_pwd" value="no" id="pwdNo" checked>
+                                    <label class="form-check-label" for="pwdNo">No</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="disabilityDetails" style="display: none;">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Type of Disability</label>
+                                    <select class="form-select" name="disability_type">
+                                        <option value="">Select</option>
+                                        <option value="Mental/Intellectual">Mental / Intellectual</option>
+                                        <option value="Visual">Visual</option>
+                                        <option value="Hearing">Hearing</option>
+                                        <option value="Speech">Speech</option>
+                                        <option value="Orthopedic">Orthopedic</option>
+                                        <option value="Learning">Learning Disability</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Cause of Disability</label>
+                                    <select class="form-select" name="disability_cause">
+                                        <option value="">Select</option>
+                                        <option value="Congenital">Congenital / Inborn</option>
+                                        <option value="Illness">Illness</option>
+                                        <option value="Injury">Injury</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-4">
+                            <button type="button" class="btn btn-primary btn-lg" onclick="nextPage()">Next Page <i class="fas fa-arrow-right ms-2"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Page 2 -->
+                    <div id="step2" style="display: none;">
+                        <div class="d-flex justify-content-between mb-4">
+                            <span class="step-indicator">Page 2 of 2: Training & Requirements</span>
+                        </div>
+
+                        <!-- 7. Course / Training Details -->
+                        <h5 class="mb-3 text-primary border-bottom pb-2">7. Course / Training Details</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Qualification / Course Name <span class="text-danger">*</span></label>
+                                <select class="form-select" id="courseSelect" name="course_id" required>
+                                    <option value="">Loading courses...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Training Batch <span class="text-danger">*</span></label>
+                                <select class="form-select" id="batchSelect" name="batch_id" required>
+                                    <option value="">Loading batches...</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 8. Scholarship Information -->
+                        <h5 class="mb-3 mt-4 text-primary border-bottom pb-2">8. Scholarship Information</h5>
+                        <div class="mb-3">
+                            <label class="form-label">Scholarship Type</label>
+                            <select class="form-select" name="scholarship_type">
+                                <option value="Not a Scholar">Not a Scholar</option>
+                                <option value="TWSP">TWSP</option>
+                                <option value="PESFA">PESFA</option>
+                                <option value="STEP">STEP</option>
+                                <option value="Others">Others</option>
+                            </select>
+                        </div>
+
+                        <!-- 9. Requirements Upload -->
+                        <h5 class="mb-3 mt-4 text-primary border-bottom pb-2">9. Requirements Upload</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Valid ID (Scanned/Photo) <span class="text-danger">*</span></label>
+                                <input type="file" class="form-control" name="valid_id" accept="image/*,.pdf" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Birth Certificate <span class="text-danger">*</span></label>
+                                <input type="file" class="form-control" name="birth_cert" accept="image/*,.pdf" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">1x1 or 2x2 ID Picture <span class="text-danger">*</span></label>
+                                <input type="file" class="form-control" name="photo" accept="image/*" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Additional Documents (Optional)</label>
+                            <input type="file" class="form-control" name="additional_docs" accept="image/*,.pdf">
+                        </div>
+
+                        <!-- 10. Privacy Consent -->
+                        <h5 class="mb-3 mt-4 text-primary border-bottom pb-2">10. Privacy Consent & Declaration</h5>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="privacyConsent" name="privacy_consent" required>
+                            <label class="form-check-label" for="privacyConsent">
+                                I hereby certify that I have read and understood the TESDA Privacy Notice and agree to the processing of my personal information. I declare that all information provided is true and correct.
+                            </label>
+                        </div>
+
+                        <!-- 11. Signature -->
+                        <h5 class="mb-3 mt-4 text-primary border-bottom pb-2">11. Signature</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Digital Signature (Type Full Name) <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="digital_signature" placeholder="e.g. Juan D. Dela Cruz" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Date Submitted</label>
+                                <input type="text" class="form-control" readonly id="dateSubmitted">
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="button" class="btn btn-secondary btn-lg" onclick="prevPage()"><i class="fas fa-arrow-left me-2"></i> Previous</button>
+                            <button type="submit" class="btn btn-success btn-lg" id="submitBtn" disabled>Submit Application</button>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script src="frontend/js/application_form.js"></script>
+    <script>
+        // Set current date
+        document.getElementById('dateSubmitted').value = new Date().toISOString().split('T')[0];
+    </script>
+</body>
+</html>

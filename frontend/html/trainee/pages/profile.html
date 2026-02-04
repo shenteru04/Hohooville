@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - Hohoo-Ville</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="d-flex">
+        <!-- Sidebar -->
+        <nav id="sidebar" class="bg-light p-3" style="width: 250px; height: 100vh; position: fixed; overflow-y: auto;">
+            <div class="sidebar-header mb-4">
+                <h3>Hohoo-Ville</h3>
+                <p class="text-muted">Student Portal</p>
+            </div>
+            <ul class="nav flex-column">
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainee/trainee_dashboard.html">
+                        <i class="fas fa-home me-2"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainee/pages/my_training.html">
+                        <i class="fas fa-book-open me-2"></i> My Training
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainee/pages/my_grades.html">
+                        <i class="fas fa-star me-2"></i> My Grades
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Content -->
+        <div class="flex-grow-1" style="margin-left: 250px;">
+            <nav class="navbar navbar-light bg-white border-bottom px-4 py-3">
+                <span class="navbar-brand mb-0 h1">My Profile</span>
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-circle me-2"></i> <span id="traineeName">Trainee</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="/Hohoo-ville/frontend/html/trainee/pages/profile.html"><i class="fas fa-user me-2"></i> Profile</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt me-2"></i> Logout</a></li>
+                    </ul>
+                </div>
+            </nav>
+
+            <div class="container-fluid p-4">
+                <!-- Profile Header -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-auto">
+                                <img id="headerTraineePhoto" src="https://ui-avatars.com/api/?name=Trainee&background=random" class="rounded-circle" width="120" height="120" style="object-fit: cover;" alt="Trainee Photo">
+                            </div>
+                            <div class="col-md">
+                                <h3 class="mb-1" id="headerTraineeName">Loading...</h3>
+                                <p class="text-muted mb-0" id="headerTraineeCourse">Loading course...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-7">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <i class="fas fa-edit me-2"></i>Update Your Contact Information
+                            </div>
+                            <div class="card-body">
+                                <form id="profileForm">
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">First Name</label>
+                                            <input type="text" class="form-control" id="firstName" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Last Name</label>
+                                            <input type="text" class="form-control" id="lastName" required>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Email Address</label>
+                                            <input type="email" class="form-control" id="email" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Phone Number</label>
+                                            <input type="text" class="form-control" id="phone">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Facebook Account URL</label>
+                                        <input type="text" class="form-control" id="facebook">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Address</label>
+                                        <textarea class="form-control" id="address" rows="2" readonly></textarea>
+                                        <div class="form-text">Address details can only be updated through the registrar's office.</div>
+                                    </div>
+                                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                        <button type="submit" class="btn btn-primary" id="saveProfileBtn">
+                                            <i class="fas fa-save me-2"></i>Save Changes
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-5">
+                        <div class="card mb-4">
+                            <div class="card-header"><i class="fas fa-id-card me-2"></i>Personal Information</div>
+                            <div class="card-body">
+                                <dl class="row mb-0">
+                                    <dt class="col-sm-5">Sex</dt><dd class="col-sm-7" id="profileSex"></dd>
+                                    <dt class="col-sm-5">Civil Status</dt><dd class="col-sm-7" id="profileCivilStatus"></dd>
+                                    <dt class="col-sm-5">Birthdate</dt><dd class="col-sm-7" id="profileBirthdate"></dd>
+                                    <dt class="col-sm-5">Age</dt><dd class="col-sm-7" id="profileAge"></dd>
+                                    <dt class="col-sm-5">Birthplace</dt><dd class="col-sm-7" id="profileBirthplace"></dd>
+                                    <dt class="col-sm-5">Nationality</dt><dd class="col-sm-7" id="profileNationality"></dd>
+                                    <dt class="col-sm-5">Education</dt><dd class="col-sm-7" id="profileEducation"></dd>
+                                </dl>
+                            </div>
+                        </div>
+                        <div class="card mb-4">
+                            <div class="card-header"><i class="fas fa-graduation-cap me-2"></i>Training Information</div>
+                            <div class="card-body">
+                                <dl class="row mb-0">
+                                    <dt class="col-sm-5">Username</dt><dd class="col-sm-7" id="profileUsername"></dd>
+                                    <dt class="col-sm-5">Batch</dt><dd class="col-sm-7" id="profileBatch"></dd>
+                                    <dt class="col-sm-5">Scholarship</dt><dd class="col-sm-7" id="profileScholarship"></dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script src="../../../js/trainee/pages/profile.js"></script>
+</body>
+</html>

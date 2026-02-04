@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qualification Approval - Hohoo-Ville Technical School</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="d-flex">
+         <!-- Sidebar -->
+        <nav id="sidebar" class="bg-light p-3" style="width: 250px; height: 100vh; position: fixed; overflow-y: auto; top: 0; left: 0;">
+            <div class="sidebar-header mb-4">
+                <h3>Hohoo-Ville Tech</h3>
+                <p class="text-muted">Management System</p>
+            </div>
+
+            <ul class="nav flex-column">
+    <li class="nav-item mb-2">
+        <a class="nav-link" href="/Hohoo-ville/frontend/html/admin/admin_dashboard.html">
+            <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+        </a>
+    </li>
+    <li class="nav-item mb-2">
+        <a class="nav-link" data-bs-toggle="collapse" href="#enrollmentSubmenu" role="button" aria-expanded="true">
+            <i class="fas fa-user-plus me-2"></i> Enrollment Management
+        </a>
+        <div class="collapse show" id="enrollmentSubmenu">
+            <ul class="nav flex-column ms-3">
+                <li class="nav-item"><a class="nav-link" href="/Hohoo-ville/frontend/html/admin/pages/view_trainees.html">View Trainees</a></li>
+                <li class="nav-item"><a class="nav-link active" href="/Hohoo-ville/frontend/html/admin/pages/approval_queue.html">Approval Queue</a></li>
+            </ul>
+        </div>
+    </li>
+    <li class="nav-item mb-2">
+        <a class="nav-link" data-bs-toggle="collapse" href="#trainerSubmenu" role="button" aria-expanded="false">
+            <i class="fas fa-chalkboard-teacher me-2"></i> Trainer Management
+        </a>
+        <div class="collapse" id="trainerSubmenu">
+            <ul class="nav flex-column ms-3">
+                <li class="nav-item"><a class="nav-link" href="/Hohoo-ville/frontend/html/admin/pages/view_trainers.html">View Trainers</a></li>
+            </ul>
+        </div>
+    </li>
+    <li class="nav-item mb-2">
+        <a class="nav-link" data-bs-toggle="collapse" href="#qualificationSubmenu" role="button" aria-expanded="false">
+            <i class="fas fa-graduation-cap me-2"></i> Qualifications
+        </a>
+        <div class="collapse" id="qualificationSubmenu">
+            <ul class="nav flex-column ms-3">
+                <li class="nav-item"><a class="nav-link" href="/Hohoo-ville/frontend/html/admin/pages/manage_qualifications.html">Qualification Approval</a></li>
+            </ul>
+        </div>
+    </li>
+    <li class="nav-item mb-2">
+        <a class="nav-link" href="/Hohoo-ville/frontend/html/admin/pages/reports.html">
+            <i class="fas fa-chart-bar me-2"></i> Reports & Analytics
+        </a>
+    </li>
+    <li class="nav-item mb-2">
+        <a class="nav-link" href="/Hohoo-ville/frontend/html/admin/pages/user_management.html">
+            <i class="fas fa-users-cog me-2"></i> User Management
+        </a>
+    </li>
+</ul>
+        </nav>
+
+        <!-- Page Content -->
+        <div class="flex-grow-1" style="margin-left: 250px;">
+            <!-- Top Navigation -->
+            <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+                <div class="container-fluid">
+                    <button type="button" id="sidebarCollapse" class="btn btn-outline-primary me-2 d-lg-none">
+                        <i class="fas fa-bars"></i>
+                    </button>
+
+                    <div class="ms-auto d-flex align-items-center">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle"></i> <span id="userName">Admin</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                                <li><a class="dropdown-item" href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <div class="container-fluid mt-4">
+                <h2 class="mb-4">Qualification Approval & Management</h2>
+
+                <!-- Add/Edit Qualification Form -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title" id="formTitle">Add New Qualification</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="qualificationForm">
+                            <input type="hidden" id="qualificationId">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="courseName" class="form-label">Course Name</label>
+                                    <input type="text" class="form-control" id="courseName" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="ctprNumber" class="form-label">CTPR Number</label>
+                                    <input type="text" class="form-control" id="ctprNumber">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="duration" class="form-label">Duration</label>
+                                    <input type="text" class="form-control" id="duration" placeholder="e.g., 6 months" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="trainingCost" class="form-label">Training Cost</label>
+                                    <input type="number" class="form-control" id="trainingCost" step="0.01">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" rows="3"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" required>
+                                    <option value="pending">Pending</option>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                    <option value="rejected">Rejected</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary" id="submitBtn">Add Qualification</button>
+                            <button type="button" class="btn btn-secondary" id="cancelBtn" style="display: none;">Cancel</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Qualifications Table -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">Qualifications List</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="qualificationsTable">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Course Name</th>
+                                        <th>CTPR No.</th>
+                                        <th>Cost</th>
+                                        <th>Duration</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="qualificationsTableBody">
+                                    <!-- Data populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <!-- Axios -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <!-- Custom JS -->
+    <script src="../../../js/admin/pages/manage_qualifications.js"></script>
+    
+    <script>
+        // Logout functionality
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '../../login.html';
+        });
+
+        // Sidebar toggle for mobile
+        const sidebarCollapseBtn = document.getElementById('sidebarCollapse');
+        if (sidebarCollapseBtn) {
+            sidebarCollapseBtn.addEventListener('click', function() {
+                const sidebar = document.getElementById('sidebar');
+                sidebar.classList.toggle('d-none');
+            });
+        }
+    </script>
+</body>
+</html>

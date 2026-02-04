@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trainee Dashboard - Hohoo-Ville</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="d-flex">
+        <!-- Sidebar -->
+        <nav id="sidebar" class="bg-light p-3" style="width: 250px; height: 100vh; position: fixed; overflow-y: auto;">
+            <div class="sidebar-header mb-4">
+                <h3>Hohoo-Ville</h3>
+                <p class="text-muted">Student Portal</p>
+            </div>
+            <ul class="nav flex-column">
+                <li class="nav-item mb-2">
+                    <a class="nav-link active" href="/Hohoo-ville/frontend/html/trainee/trainee_dashboard.html">
+                        <i class="fas fa-home me-2"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainee/pages/my_training.html">
+                        <i class="fas fa-book-open me-2"></i> My Training
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainee/pages/my_grades.html">
+                        <i class="fas fa-star me-2"></i> My Grades
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Content -->
+        <div class="flex-grow-1" style="margin-left: 250px;">
+            <nav class="navbar navbar-light bg-white border-bottom px-4 py-3">
+                <span class="navbar-brand mb-0 h1">Dashboard</span>
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-circle me-2"></i> <span id="traineeName">Trainee</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="/Hohoo-ville/frontend/html/trainee/pages/profile.html"><i class="fas fa-user me-2"></i> Profile</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt me-2"></i> Logout</a></li>
+                    </ul>
+                </div>
+            </nav>
+
+            <div class="container-fluid p-4">
+                <!-- Welcome Banner -->
+                <div class="alert alert-primary mb-4" role="alert">
+                    <h4 class="alert-heading">Welcome back!</h4>
+                    <p class="mb-0">You are currently enrolled in: <strong id="activeCourseName">Loading...</strong></p>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card text-white bg-success h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">Attendance Rate</h5>
+                                <h2 class="display-4" id="attendanceRate">0%</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-white bg-info h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">Current Grade</h5>
+                                <h2 class="display-4" id="currentGrade">N/A</h2>
+                                <p class="card-text" id="competencyStatus">Status: Pending</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-white bg-warning h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">Next Class</h5>
+                                <p class="card-text fs-5" id="nextClassTime">Loading...</p>
+                                <p class="card-text"><i class="fas fa-map-marker-alt me-2"></i> <span id="nextClassRoom">...</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity / Quick Links -->
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                Course Details
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>Batch:</strong> <span id="batchName">...</span></p>
+                                        <p><strong>Start Date:</strong> <span id="startDate">...</span></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>Schedule:</strong> <span id="schedule">...</span></p>
+                                        <p><strong>End Date:</strong> <span id="endDate">...</span></p>
+                                    </div>
+                                </div>
+                                <a href="/Hohoo-ville/frontend/html/trainee/pages/my_training.html" class="btn btn-primary mt-3">Go to Modules</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">Quick Actions</div>
+                            <div class="list-group list-group-flush">
+                                <a href="/Hohoo-ville/frontend/html/trainee/pages/my_training.html" class="list-group-item list-group-item-action">
+                                    <i class="fas fa-book me-2 text-primary"></i> View Modules
+                                </a>
+                                <a href="/Hohoo-ville/frontend/html/trainee/pages/my_grades.html" class="list-group-item list-group-item-action">
+                                    <i class="fas fa-chart-bar me-2 text-success"></i> Check Grades
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script src="../../js/trainee/trainee_dashboard.js"></script>
+</body>
+</html>
