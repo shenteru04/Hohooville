@@ -27,20 +27,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 parent.remove();
             }
         });
-
-        // Add Progress Chart link
-        const ul = sidebar.querySelector('ul');
-        if (ul && !ul.querySelector('a[href="progress_chart.html"]')) {
-            const newLi = document.createElement('li');
-            newLi.className = 'nav-item';
-            newLi.innerHTML = `
-                <a class="nav-link" href="progress_chart.html">
-                    <i class="fas fa-chart-bar me-2"></i>
-                    <span>Progress Chart</span>
-                </a>
-            `;
-            ul.appendChild(newLi);
-        }
     }
 
     document.getElementById('reportForm').addEventListener('submit', function(e) {

@@ -272,7 +272,7 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label">Qualification / Course Name <span class="text-danger">*</span></label>
-                                <select class="form-select" id="courseSelect" name="course_id" required>
+                                <select class="form-select" id="courseSelect" name="qualification_id" required>
                                     <option value="">Loading courses...</option>
                                 </select>
                             </div>
@@ -288,12 +288,8 @@
                         <h5 class="mb-3 mt-4 text-primary border-bottom pb-2">8. Scholarship Information</h5>
                         <div class="mb-3">
                             <label class="form-label">Scholarship Type</label>
-                            <select class="form-select" name="scholarship_type">
-                                <option value="Not a Scholar">Not a Scholar</option>
-                                <option value="TWSP">TWSP</option>
-                                <option value="PESFA">PESFA</option>
-                                <option value="STEP">STEP</option>
-                                <option value="Others">Others</option>
+                            <select class="form-select" name="scholarship_type" id="scholarshipSelect">
+                                <option value="">Loading scholarships...</option>
                             </select>
                         </div>
 
@@ -331,8 +327,15 @@
                         <h5 class="mb-3 mt-4 text-primary border-bottom pb-2">11. Signature</h5>
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label">Digital Signature (Type Full Name) <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" name="digital_signature" placeholder="e.g. Juan D. Dela Cruz" required>
+                                <div class="form-label">Digital Signature (Sign below) <span class="text-danger">*</span></div>
+                                <div id="signaturePreviewArea" class="border rounded p-2 bg-light text-center" style="cursor: pointer; min-height: 150px;">
+                                    <img id="signaturePreview" src="" alt="Signature Preview" style="max-width: 100%; max-height: 140px; display: none;">
+                                    <span id="signaturePlaceholder" class="text-muted">Click here to sign</span>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="clearSignatureBtn" style="display: none;">
+                                    <i class="fas fa-eraser me-1"></i> Clear Signature
+                                </button>
+                                <input type="hidden" name="digital_signature" id="digitalSignatureInput" required value="">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Date Submitted</label>
@@ -347,6 +350,27 @@
                     </div>
 
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signature Modal -->
+    <div class="modal fade" id="signatureModal" tabindex="-1" aria-labelledby="signatureModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="signatureModalLabel">Provide Your Signature</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="border rounded bg-white">
+                        <canvas id="signatureCanvas" height="200" style="width: 100%; touch-action: none; cursor: crosshair;"></canvas>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="clearCanvasBtn">Clear</button>
+                    <button type="button" class="btn btn-primary" id="saveSignatureBtn">Save Signature</button>
+                </div>
             </div>
         </div>
     </div>

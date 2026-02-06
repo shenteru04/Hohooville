@@ -53,7 +53,7 @@ function listTrainees($conn) {
                 JOIN
                     tbl_trainee_hdr AS th ON e.trainee_id = th.trainee_id
                 LEFT JOIN
-                    tbl_course AS c ON b.course_id = c.course_id
+                    tbl_qualifications AS c ON b.qualification_id = c.qualification_id
                 ";
         
         $params = [$trainerId];

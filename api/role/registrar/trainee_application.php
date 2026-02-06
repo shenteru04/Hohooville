@@ -40,8 +40,8 @@ function getPendingApplications($conn) {
                   JOIN tbl_trainee_hdr h ON e.trainee_id = h.trainee_id
                   LEFT JOIN tbl_trainee_dtl d ON h.trainee_id = d.trainee_id
                   LEFT JOIN tbl_trainee_ftr f ON h.trainee_id = f.trainee_id
-                  LEFT JOIN tbl_offered_courses oc ON e.offered_id = oc.offered_id
-                  LEFT JOIN tbl_course c ON oc.course_id = c.course_id
+                  LEFT JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
+                  LEFT JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id
                   LEFT JOIN tbl_batch b ON e.batch_id = b.batch_id
                   WHERE e.status = 'pending'
                   ORDER BY e.enrollment_date DESC";
@@ -67,8 +67,8 @@ function getUnqualifiedApplications($conn) {
                   JOIN tbl_trainee_hdr h ON e.trainee_id = h.trainee_id
                   LEFT JOIN tbl_trainee_dtl d ON h.trainee_id = d.trainee_id
                   LEFT JOIN tbl_trainee_ftr f ON h.trainee_id = f.trainee_id
-                  LEFT JOIN tbl_offered_courses oc ON e.offered_id = oc.offered_id
-                  LEFT JOIN tbl_course c ON oc.course_id = c.course_id
+                  LEFT JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
+                  LEFT JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id
                   LEFT JOIN tbl_batch b ON e.batch_id = b.batch_id
                   WHERE e.status = 'unqualified'
                   ORDER BY e.enrollment_date DESC";

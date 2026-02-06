@@ -24,8 +24,8 @@ class TraineeDetails {
             $queryInfo = "SELECT t.*, c.course_name, b.batch_name, e.status as enrollment_status, s.scholarship_name
                          FROM tbl_trainee_hdr t
                          LEFT JOIN tbl_enrollment e ON t.trainee_id = e.trainee_id
-                         LEFT JOIN tbl_offered_courses oc ON e.offered_id = oc.offered_id
-                         LEFT JOIN tbl_course c ON oc.course_id = c.course_id
+                         LEFT JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
+                         LEFT JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id
                          LEFT JOIN tbl_batch b ON e.batch_id = b.batch_id
                          LEFT JOIN tbl_scholarship s ON t.trainee_id = s.trainee_id
                          WHERE t.trainee_id = ?";

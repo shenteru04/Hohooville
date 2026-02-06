@@ -5,23 +5,41 @@ const API_BASE_URL = 'http://localhost/hohoo-ville/api';
 let currentQualifications = [];
 
 // Axios Instance Configuration
-let apiClient;
+const apiClient = axios.create({
+    baseURL: API_BASE_URL,
+    timeout: 10000,
+    headers: {
+        'Content-Type': 'application/json'
+    }
+});
+
+// Add token to requests
+apiClient.interceptors.request.use(
+    config => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    error => Promise.reject(error)
+);
+
+// Handle response errors
+apiClient.interceptors.response.use(
+    response => response,
+    error => {
+        if (error.response && error.response.status === 401) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '../../../login.html';
+        }
+        return Promise.reject(error);
+    }
+);
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Axios
-    if (typeof axios !== 'undefined') {
-        apiClient = axios.create({
-            baseURL: API_BASE_URL,
-            timeout: 10000,
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-        initializePage();
-    } else {
-        console.error('Axios is not defined. Please check your HTML includes.');
-        alert('System Error: Axios library is missing.');
-    }
+    initializePage();
 });
 
 function initializePage() {
@@ -48,6 +66,35 @@ function initializePage() {
     if (cancelBtn) {
         cancelBtn.addEventListener('click', resetForm);
     }
+
+    // Table Action Event Listener
+    const tableBody = document.getElementById('qualificationsTableBody');
+    if (tableBody) {
+        tableBody.addEventListener('click', (e) => {
+            const button = e.target.closest('button[data-action]');
+            if (!button) return;
+
+            const action = button.dataset.action;
+            const id = button.dataset.id;
+
+            if (!action || !id) return;
+
+            switch (action) {
+                case 'approve':
+                    approveQualification(id);
+                    break;
+                case 'reject':
+                    rejectQualification(id);
+                    break;
+                case 'edit':
+                    editQualification(id);
+                    break;
+                case 'delete':
+                    deleteQualification(id);
+                    break;
+            }
+        });
+    }
 }
 
 async function loadQualifications() {
@@ -56,11 +103,11 @@ async function loadQualifications() {
         if (response.data.success) {
             renderTable(response.data.data);
         } else {
-            alert('Error loading qualifications: ' + (response.data.message || 'Unknown error'));
+            showAlert('Error loading qualifications: ' + (response.data.message || 'Unknown error'), 'danger');
         }
     } catch (error) {
         console.error('Error loading qualifications:', error);
-        alert('Error loading qualifications. Please check console.');
+        showAlert('Error loading qualifications. Please check console.', 'danger');
     }
 }
 
@@ -90,13 +137,13 @@ function renderTable(data) {
         let actionBtns = '';
         if (item.status === 'pending') {
             actionBtns = `
-                <button class="btn btn-success btn-sm me-1" onclick="approveQualification(${item.course_id})" title="Approve"><i class="fas fa-check"></i></button>
-                <button class="btn btn-danger btn-sm me-1" onclick="rejectQualification(${item.course_id})" title="Reject"><i class="fas fa-times"></i></button>
+                <button class="btn btn-success btn-sm me-1" data-action="approve" data-id="${item.course_id}" title="Approve"><i class="fas fa-check"></i></button>
+                <button class="btn btn-danger btn-sm me-1" data-action="reject" data-id="${item.course_id}" title="Reject"><i class="fas fa-times"></i></button>
             `;
         }
         actionBtns += `
-            <button class="btn btn-warning btn-sm me-1" onclick="editQualification(${item.course_id})" title="Edit"><i class="fas fa-edit"></i></button>
-            <button class="btn btn-outline-danger btn-sm" onclick="deleteQualification(${item.course_id})" title="Delete"><i class="fas fa-trash"></i></button>
+            <button class="btn btn-warning btn-sm me-1" data-action="edit" data-id="${item.course_id}" title="Edit"><i class="fas fa-edit"></i></button>
+            <button class="btn btn-outline-danger btn-sm" data-action="delete" data-id="${item.course_id}" title="Delete"><i class="fas fa-trash"></i></button>
         `;
             
         row.innerHTML = `
@@ -112,15 +159,15 @@ function renderTable(data) {
     });
 }
 
-window.approveQualification = async function(id) {
+async function approveQualification(id) {
     if (!confirm('Approve this qualification? It will become available for trainers.')) return;
     updateStatus(id, 'active');
-};
+}
 
-window.rejectQualification = async function(id) {
+async function rejectQualification(id) {
     if (!confirm('Reject this qualification?')) return;
     updateStatus(id, 'rejected');
-};
+}
 
 async function updateStatus(id, status) {
     try {
@@ -129,14 +176,14 @@ async function updateStatus(id, status) {
             status: status
         });
         if (response.data.success) {
-            alert(`Qualification ${status} successfully`);
+            showAlert(`Qualification ${status} successfully`, 'success');
             loadQualifications();
         } else {
-            alert('Error: ' + response.data.message);
+            showAlert('Error: ' + response.data.message, 'danger');
         }
     } catch (error) {
         console.error('Error updating status:', error);
-        alert('Error updating status');
+        showAlert('Error updating status', 'danger');
     }
 }
 
@@ -153,15 +200,15 @@ async function addQualification() {
     try {
         const response = await apiClient.post('/role/admin/manage_qualifications.php?action=add', data);
         if (response.data.success) {
-            alert('Qualification added successfully');
+            showAlert('Qualification added successfully', 'success');
             resetForm();
             loadQualifications();
         } else {
-            alert('Error: ' + response.data.message);
+            showAlert('Error: ' + response.data.message, 'danger');
         }
     } catch (error) {
         console.error('Error adding qualification:', error);
-        alert('Error adding qualification');
+        showAlert('Error adding qualification', 'danger');
     }
 }
 
@@ -179,15 +226,15 @@ async function updateQualification(id) {
     try {
         const response = await apiClient.post('/role/admin/manage_qualifications.php?action=update', data);
         if (response.data.success) {
-            alert('Qualification updated successfully');
+            showAlert('Qualification updated successfully', 'success');
             resetForm();
             loadQualifications();
         } else {
-            alert('Error: ' + response.data.message);
+            showAlert('Error: ' + response.data.message, 'danger');
         }
     } catch (error) {
         console.error('Error updating qualification:', error);
-        alert('Error updating qualification');
+        showAlert('Error updating qualification', 'danger');
     }
 }
 
@@ -197,14 +244,14 @@ async function deleteQualification(id) {
     try {
         const response = await apiClient.delete(`/role/admin/manage_qualifications.php?action=delete&id=${id}`);
         if (response.data.success) {
-            alert('Qualification deleted successfully');
+            showAlert('Qualification deleted successfully', 'success');
             loadQualifications();
         } else {
-            alert('Error deleting qualification');
+            showAlert('Error deleting qualification', 'danger');
         }
     } catch (error) {
         console.error('Error deleting qualification:', error);
-        alert('Error deleting qualification');
+        showAlert('Error deleting qualification', 'danger');
     }
 }
 
@@ -233,4 +280,31 @@ function resetForm() {
     document.getElementById('submitBtn').textContent = 'Add Qualification';
     document.getElementById('formTitle').textContent = 'Add New Qualification';
     document.getElementById('cancelBtn').style.display = 'none';
+}
+
+function showAlert(message, type) {
+    // Remove existing alerts
+    const existingAlerts = document.querySelectorAll('.alert-notification');
+    existingAlerts.forEach(alert => alert.remove());
+
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show alert-notification`;
+    alertDiv.style.position = 'fixed';
+    alertDiv.style.top = '80px';
+    alertDiv.style.right = '20px';
+    alertDiv.style.zIndex = '9999';
+    alertDiv.style.minWidth = '300px';
+    alertDiv.style.maxWidth = '500px';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Auto dismiss after 5 seconds
+    setTimeout(() => {
+        alertDiv.classList.remove('show');
+        setTimeout(() => alertDiv.remove(), 150);
+    }, 5000);
 }

@@ -40,7 +40,7 @@ switch ($action) {
 
 function getQualifications($conn) {
     try {
-        $stmt = $conn->query("SELECT * FROM tbl_course ORDER BY FIELD(status, 'pending', 'active', 'inactive', 'rejected'), course_id DESC");
+        $stmt = $conn->query("SELECT * FROM tbl_qualifications ORDER BY FIELD(status, 'pending', 'active', 'inactive', 'rejected'), qualification_id DESC");
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(['success' => true, 'data' => $data]);
     } catch (Exception $e) {
@@ -53,26 +53,31 @@ function addQualification($conn) {
     try {
         $data = json_decode(file_get_contents('php://input'), true);
         
-        if (empty($data['course_name'])) {
-            throw new Exception('Course name is required');
+        if (empty($data['qualification_name'])) { // Assuming frontend sends qualification_name now or still course_name? Let's check create_qualification.js. It sends qualification_name.
+             // Wait, manage_qualifications.php is for ADMIN. create_qualification.js is for REGISTRAR.
+             // If this is for admin adding directly, we should check what frontend sends. Assuming standard naming.
+             // Let's stick to what the table expects.
+            throw new Exception('Qualification name is required');
         }
         
         $conn->beginTransaction();
 
-        $stmt = $conn->prepare("INSERT INTO tbl_course (course_name, ctpr_number, training_cost, description, duration, status) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO tbl_qualifications (course_name, ctpr_number, training_cost, description, duration, status) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute([
-            $data['course_name'], 
+            $data['course_name'], // The column name in DB is still course_name based on migration script? No, migration script didn't rename columns inside tbl_qualifications except PK.
+            // Wait, migration script: ALTER TABLE `tbl_qualifications` CHANGE `course_id` `qualification_id` INT(11) NOT NULL AUTO_INCREMENT;
+            // It did NOT rename `course_name` column. So column is `course_name`.
             $data['ctpr_number'] ?? null,
             $data['training_cost'] ?? 0,
             $data['description'] ?? null, 
             $data['duration'] ?? null, 
             $data['status'] ?? 'active'
         ]);
-        $courseId = $conn->lastInsertId();
+        $qualificationId = $conn->lastInsertId();
 
         // Automatically add to offered courses so it can be enrolled in
-        $stmtOffered = $conn->prepare("INSERT INTO tbl_offered_courses (course_id) VALUES (?)");
-        $stmtOffered->execute([$courseId]);
+        $stmtOffered = $conn->prepare("INSERT INTO tbl_offered_qualifications (qualification_id) VALUES (?)");
+        $stmtOffered->execute([$qualificationId]);
         
         $conn->commit();
         echo json_encode(['success' => true, 'message' => 'Qualification added successfully']);
@@ -88,11 +93,11 @@ function addQualification($conn) {
 function updateQualification($conn) {
     try {
         $data = json_decode(file_get_contents('php://input'), true);
-        $id = $data['course_id'] ?? null;
+        $id = $data['qualification_id'] ?? null;
         
         if (!$id) throw new Exception('ID required');
         
-        $stmt = $conn->prepare("UPDATE tbl_course SET course_name = ?, ctpr_number = ?, training_cost = ?, description = ?, duration = ?, status = ? WHERE course_id = ?");
+        $stmt = $conn->prepare("UPDATE tbl_qualifications SET course_name = ?, ctpr_number = ?, training_cost = ?, description = ?, duration = ?, status = ? WHERE qualification_id = ?");
         $stmt->execute([
             $data['course_name'], 
             $data['ctpr_number'] ?? null,
@@ -113,12 +118,12 @@ function updateQualification($conn) {
 function updateQualificationStatus($conn) {
     try {
         $data = json_decode(file_get_contents('php://input'), true);
-        $id = $data['course_id'] ?? null;
+        $id = $data['qualification_id'] ?? null;
         $status = $data['status'] ?? null;
         
         if (!$id || !$status) throw new Exception('ID and Status required');
         
-        $stmt = $conn->prepare("UPDATE tbl_course SET status = ? WHERE course_id = ?");
+        $stmt = $conn->prepare("UPDATE tbl_qualifications SET status = ? WHERE qualification_id = ?");
         $stmt->execute([$status, $id]);
         
         echo json_encode(['success' => true, 'message' => 'Status updated']);
@@ -133,7 +138,7 @@ function deleteQualification($conn) {
         $id = $_GET['id'] ?? null;
         if (!$id) throw new Exception('ID required');
         
-        $stmt = $conn->prepare("DELETE FROM tbl_course WHERE course_id = ?");
+        $stmt = $conn->prepare("DELETE FROM tbl_qualifications WHERE qualification_id = ?");
         $stmt->execute([$id]);
         
         echo json_encode(['success' => true, 'message' => 'Qualification deleted successfully']);

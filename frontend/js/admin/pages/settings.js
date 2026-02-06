@@ -1,6 +1,7 @@
 const API_BASE_URL = 'http://localhost/hohoo-ville/api';
 
 document.addEventListener('DOMContentLoaded', function() {
+    loadSystemSettings();
     
     // Account Settings Form
     const accountForm = document.getElementById('accountSettingsForm');
@@ -13,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const confirmPass = document.getElementById('confirmPassword').value;
 
             if (newPass !== confirmPass) {
-                alert('New passwords do not match!');
+                showAlert('New passwords do not match!', 'warning');
                 return;
             }
 
@@ -28,15 +29,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 if (response.data.success) {
-                    alert('Password changed successfully');
+                    showAlert('Password changed successfully', 'success');
                     accountForm.reset();
                 } else {
-                    alert('Error: ' + response.data.message);
+                    showAlert('Error: ' + response.data.message, 'danger');
                 }
             } catch (error) {
                 console.error('Error changing password:', error);
                 const msg = error.response?.data?.message || 'Failed to change password';
-                alert(msg);
+                showAlert(msg, 'danger');
             }
         });
     }
@@ -46,28 +47,63 @@ document.addEventListener('DOMContentLoaded', function() {
     if (systemForm) {
         systemForm.addEventListener('submit', async function(e) {
             e.preventDefault();
+            
+            const settings = {
+                default_batch_size: document.getElementById('defaultBatchSize').value,
+                session_timeout: document.getElementById('sessionTimeout').value,
+                email_notifications: document.getElementById('emailNotifications').checked ? '1' : '0'
+            };
+
             try {
-                // Mock API call
-                const response = await axios.post(`${API_BASE_URL}/role/admin/settings.php?action=update-system`, {});
+                const response = await axios.post(`${API_BASE_URL}/role/admin/settings.php?action=update-system`, settings);
                 if (response.data.success) {
-                    alert('System settings saved successfully');
+                    showAlert('System settings saved successfully', 'success');
+                } else {
+                    showAlert('Error saving settings', 'danger');
                 }
             } catch (error) {
                 console.error('Error saving settings:', error);
+                showAlert('Failed to save settings', 'danger');
             }
         });
     }
 
     // Quick Actions
-    const actions = ['backupDataBtn', 'clearCacheBtn', 'resetSettingsBtn'];
-    actions.forEach(id => {
-        const btn = document.getElementById(id);
-        if (btn) {
-            btn.addEventListener('click', function() {
-                alert(this.textContent + ' executed successfully (Mock)');
-            });
-        }
-    });
+    const backupBtn = document.getElementById('backupDataBtn');
+    if (backupBtn) {
+        backupBtn.addEventListener('click', async function() {
+            try {
+                backupBtn.disabled = true;
+                backupBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Backing up...';
+                
+                const response = await axios.post(`${API_BASE_URL}/role/admin/settings.php?action=backup-database`);
+                if (response.data.success) {
+                    const blob = new Blob([response.data.data], { type: 'text/sql' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `backup_${new Date().toISOString().slice(0,10)}.sql`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    showAlert('Database backup downloaded successfully', 'success');
+                }
+            } catch (error) {
+                console.error('Backup failed:', error);
+                showAlert('Backup failed', 'danger');
+            } finally {
+                backupBtn.disabled = false;
+                backupBtn.textContent = 'Backup Data';
+            }
+        });
+    }
+
+    const clearCacheBtn = document.getElementById('clearCacheBtn');
+    if (clearCacheBtn) {
+        clearCacheBtn.addEventListener('click', function() {
+            showAlert('Cache cleared (simulated)', 'info');
+        });
+    }
 
     // Logout
     const logoutBtn = document.getElementById('logoutBtn');
@@ -78,3 +114,46 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+async function loadSystemSettings() {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/role/admin/settings.php?action=get-system-settings`);
+        if (response.data.success) {
+            const settings = response.data.data;
+            if (document.getElementById('defaultBatchSize')) 
+                document.getElementById('defaultBatchSize').value = settings.default_batch_size || 20;
+            if (document.getElementById('sessionTimeout')) 
+                document.getElementById('sessionTimeout').value = settings.session_timeout || 60;
+            if (document.getElementById('emailNotifications')) 
+                document.getElementById('emailNotifications').checked = settings.email_notifications == '1';
+        }
+    } catch (error) {
+        console.error('Error loading settings:', error);
+    }
+}
+
+function showAlert(message, type) {
+    // Remove existing alerts
+    const existingAlerts = document.querySelectorAll('.alert-notification');
+    existingAlerts.forEach(alert => alert.remove());
+
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show alert-notification`;
+    alertDiv.style.position = 'fixed';
+    alertDiv.style.top = '80px';
+    alertDiv.style.right = '20px';
+    alertDiv.style.zIndex = '9999';
+    alertDiv.style.minWidth = '300px';
+    alertDiv.style.maxWidth = '500px';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        alertDiv.classList.remove('show');
+        setTimeout(() => alertDiv.remove(), 150);
+    }, 5000);
+}

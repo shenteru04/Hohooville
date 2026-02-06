@@ -20,37 +20,42 @@ class TraineeDashboard {
 
         try {
             // 1. Get Active Course/Batch
-            $courseQuery = "SELECT c.course_name, b.batch_name, b.start_date, b.end_date, oc.schedule, oc.room
+            $courseQuery = "SELECT c.qualification_id AS course_id, c.course_name, b.batch_name, b.start_date, b.end_date, oc.schedule, oc.room
                             FROM tbl_enrollment e
                             JOIN tbl_batch b ON e.batch_id = b.batch_id
-                            JOIN tbl_offered_courses oc ON e.offered_id = oc.offered_id
-                            JOIN tbl_course c ON oc.course_id = c.course_id
+                            JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
+                            JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id
                             WHERE e.trainee_id = ? AND e.status = 'approved' AND b.status = 'open'
                             LIMIT 1";
             $stmt = $this->conn->prepare($courseQuery);
             $stmt->execute([$traineeId]);
             $activeCourse = $stmt->fetch(PDO::FETCH_ASSOC);
 
+            $qualificationId = $activeCourse ? $activeCourse['course_id'] : null;
+
             // 2. Get Attendance Rate
             // Assuming 'present' is the target status. Adjust if 'late' counts as present.
             $attQuery = "SELECT 
                             COUNT(*) as total_days,
                             SUM(CASE WHEN status = 'present' THEN 1 WHEN status = 'late' THEN 1 ELSE 0 END) as present_days
-                         FROM tbl_attendance_dtl 
+                         FROM tbl_attendance 
                          WHERE trainee_id = ?";
             $stmt = $this->conn->prepare($attQuery);
             $stmt->execute([$traineeId]);
             $attendance = $stmt->fetch(PDO::FETCH_ASSOC);
             
             $attendanceRate = 0;
-            if ($attendance['total_days'] > 0) {
+            if ($attendance && $attendance['total_days'] > 0) {
                 $attendanceRate = round(($attendance['present_days'] / $attendance['total_days']) * 100, 1);
             }
 
             // 3. Get Average Grade (Current Course)
-            $gradeQuery = "SELECT total_grade, remarks FROM tbl_grades_hdr WHERE trainee_id = ? ORDER BY date_recorded DESC LIMIT 1";
+            $gradeQuery = "SELECT AVG(score) as total_grade,
+                                  (CASE WHEN AVG(score) >= 80 THEN 'Competent' ELSE 'Not Yet Competent' END) as remarks 
+                           FROM tbl_grades 
+                           WHERE trainee_id = ? AND qualification_id = ?";
             $stmt = $this->conn->prepare($gradeQuery);
-            $stmt->execute([$traineeId]);
+            $stmt->execute([$traineeId, $qualificationId]);
             $grade = $stmt->fetch(PDO::FETCH_ASSOC);
 
             // 4. Get Upcoming Schedule (Mock logic based on batch schedule string)

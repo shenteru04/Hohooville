@@ -23,7 +23,7 @@ switch ($action) {
 
 function getApprovedQualifications($conn) {
     try {
-        $stmt = $conn->query("SELECT * FROM tbl_course WHERE status = 'active' ORDER BY course_name ASC");
+        $stmt = $conn->query("SELECT qualification_id, course_name, ctpr_number, duration, training_cost, status FROM tbl_qualifications WHERE status = 'active' ORDER BY course_name ASC");
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(['success' => true, 'data' => $data]);
     } catch (Exception $e) {
@@ -36,13 +36,13 @@ function createQualification($conn) {
     try {
         $data = json_decode(file_get_contents('php://input'), true);
         
-        if (empty($data['course_name'])) {
-            throw new Exception('Course name is required');
+        if (empty($data['qualification_name'])) {
+            throw new Exception('Qualification name is required');
         }
 
-        $stmt = $conn->prepare("INSERT INTO tbl_course (course_name, ctpr_number, duration, training_cost, description, status) VALUES (?, ?, ?, ?, ?, 'pending')");
+        $stmt = $conn->prepare("INSERT INTO tbl_qualifications (course_name, ctpr_number, duration, training_cost, description, status) VALUES (?, ?, ?, ?, ?, 'pending')");
         $stmt->execute([
-            $data['course_name'],
+            $data['qualification_name'],
             $data['ctpr_number'] ?? null,
             $data['duration'] ?? null,
             $data['training_cost'] ?? 0,

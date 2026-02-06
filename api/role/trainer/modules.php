@@ -65,17 +65,17 @@ switch ($action) {
 }
 
 function listModules($conn) {
-    $courseId = $_GET['course_id'] ?? 0;
+    $qualificationId = $_GET['qualification_id'] ?? 0;
     $type = $_GET['type'] ?? 'core';
 
-    if (!$courseId) {
-        echo json_encode(['success' => false, 'message' => 'Course ID is required.']);
+    if (!$qualificationId) {
+        echo json_encode(['success' => false, 'message' => 'Qualification ID is required.']);
         return;
     }
 
     try {
-        $stmt = $conn->prepare("SELECT * FROM tbl_module WHERE course_id = ? AND competency_type = ? ORDER BY module_id");
-        $stmt->execute([$courseId, $type]);
+        $stmt = $conn->prepare("SELECT * FROM tbl_module WHERE qualification_id = ? AND competency_type = ? ORDER BY module_id");
+        $stmt->execute([$qualificationId, $type]);
         $modules = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         $lessonStmt = $conn->prepare("SELECT * FROM tbl_lessons WHERE module_id = ? ORDER BY lesson_id");
@@ -97,15 +97,15 @@ function saveModule($conn, $action) {
     $title = $data['module_title'];
     $desc = $data['module_description'];
     $type = $data['competency_type'];
-    $courseId = $data['course_id'];
+    $qualificationId = $data['qualification_id'];
 
     try {
         if ($action === 'update-module' && $id) {
             $stmt = $conn->prepare("UPDATE tbl_module SET module_title = ?, module_description = ? WHERE module_id = ?");
             $stmt->execute([$title, $desc, $id]);
         } else {
-            $stmt = $conn->prepare("INSERT INTO tbl_module (course_id, competency_type, module_title, module_description) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$courseId, $type, $title, $desc]);
+            $stmt = $conn->prepare("INSERT INTO tbl_module (qualification_id, competency_type, module_title, module_description) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$qualificationId, $type, $title, $desc]);
         }
         echo json_encode(['success' => true]);
     } catch (Exception $e) {

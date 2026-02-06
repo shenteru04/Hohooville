@@ -1,6 +1,10 @@
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
+    const otpForm = document.getElementById('otpForm');
     const messageDiv = document.getElementById('message');
+    
+    // CAPTCHA State
+    let captchaAnswer = 0;
 
     // Check if user is already logged in and redirect
     const token = localStorage.getItem('token');
@@ -12,11 +16,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Initialize CAPTCHA
+    generateCaptcha();
+
+    // Handle Login Submit
     loginForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
+        const captchaInput = document.getElementById('captchaInput').value;
+        
+        // Basic client-side CAPTCHA check (Server will also verify for Trainer/Trainee)
+        if (parseInt(captchaInput) !== captchaAnswer) {
+            showMessage('Incorrect CAPTCHA answer. Please try again.', 'danger');
+            generateCaptcha();
+            return;
+        }
+
         const submitButton = loginForm.querySelector('button[type="submit"]');
 
         // Reset message
@@ -30,23 +47,28 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const response = await axios.post('http://localhost/hohoo-ville/api/authentication/Authentication.php?action=login', {
                 username: username,
-                password: password
+                password: password,
+                captcha_input: parseInt(captchaInput),
+                captcha_challenge: captchaAnswer
             });
 
             if (response.data && response.data.success) {
-                const { user, token } = response.data.data;
-                
-                // Store user info and token
-                localStorage.setItem('user', JSON.stringify(user));
-                localStorage.setItem('token', token);
+                // Check if OTP is required (Admin/Registrar)
+                if (response.data.data.require_otp) {
+                    sessionStorage.setItem('temp_user_id', response.data.data.user_id);
+                    sessionStorage.setItem('temp_otp_token', response.data.data.otp_token);
+                    showOtpForm();
+                    return;
+                }
 
-                // Redirect to the appropriate dashboard
-                redirectToDashboard(user.role);
+                // Standard Login (Trainer/Trainee)
+                const { user, token } = response.data.data;
+                completeLogin(user, token);
 
             } else {
                 // This case might happen if API returns 200 OK but with success: false
-                messageDiv.textContent = (response.data && response.data.message) ? response.data.message : 'An unexpected error occurred.';
-                messageDiv.style.display = 'block';
+                showMessage((response.data && response.data.message) ? response.data.message : 'An unexpected error occurred.', 'danger');
+                generateCaptcha();
             }
 
         } catch (error) {
@@ -56,21 +78,96 @@ document.addEventListener('DOMContentLoaded', function() {
             if (error.response) {
                 // The request was made and the server responded with a status code outside of 2xx
                 const errorMsg = (error.response.data && error.response.data.message) ? error.response.data.message : 'Invalid credentials or server error.';
-                messageDiv.textContent = errorMsg;
+                showMessage(errorMsg, 'danger');
             } else if (error.request) {
                 // The request was made but no response was received
-                messageDiv.textContent = 'No response from server. Please check your network connection.';
+                showMessage('No response from server. Please check your network connection.', 'danger');
             } else {
                 // Something happened in setting up the request that triggered an Error
-                messageDiv.textContent = 'An error occurred. Please try again.';
+                showMessage('An error occurred. Please try again.', 'danger');
             }
-            messageDiv.style.display = 'block';
+            generateCaptcha();
         } finally {
             // Re-enable button and restore text
             submitButton.disabled = false;
             submitButton.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i>Login';
         }
     });
+
+    // Handle OTP Submit
+    otpForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const otp = document.getElementById('otpInput').value;
+        const userId = sessionStorage.getItem('temp_user_id');
+        const btn = otpForm.querySelector('button[type="submit"]');
+
+        if (!otp || !userId) {
+            showMessage('Please enter the OTP.', 'warning');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = 'Verifying...';
+
+        try {
+            const response = await axios.post('http://localhost/hohoo-ville/api/authentication/Authentication.php?action=verify-otp', {
+                user_id: userId,
+                otp: otp,
+                otp_token: sessionStorage.getItem('temp_otp_token')
+            });
+
+            if (response.data.success) {
+                const { user, token } = response.data.data;
+                sessionStorage.removeItem('temp_user_id');
+                sessionStorage.removeItem('temp_otp_token');
+                completeLogin(user, token);
+            } else {
+                showMessage(response.data.message, 'danger');
+            }
+        } catch (error) {
+            console.error('OTP Verification failed:', error);
+            const msg = error.response?.data?.message || 'Verification failed';
+            showMessage(msg, 'danger');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = 'Verify OTP';
+        }
+    });
+
+    document.getElementById('backToLogin').addEventListener('click', function() {
+        otpForm.style.display = 'none';
+        loginForm.style.display = 'block';
+        messageDiv.style.display = 'none';
+        generateCaptcha();
+    });
+
+    function generateCaptcha() {
+        const num1 = Math.floor(Math.random() * 10) + 1;
+        const num2 = Math.floor(Math.random() * 10) + 1;
+        captchaAnswer = num1 + num2;
+        document.getElementById('captchaQuestion').textContent = `${num1} + ${num2} = ?`;
+        document.getElementById('captchaInput').value = '';
+        document.getElementById('captchaInput').placeholder = 'Enter sum';
+    }
+
+    function showOtpForm() {
+        loginForm.style.display = 'none';
+        otpForm.style.display = 'block';
+        messageDiv.style.display = 'none';
+        showMessage('OTP sent! Please check your database/email.', 'info');
+    }
+
+    function completeLogin(user, token) {
+        localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('token', token);
+        redirectToDashboard(user.role);
+    }
+
+    function showMessage(msg, type) {
+        messageDiv.textContent = msg;
+        messageDiv.className = `alert alert-${type}`;
+        messageDiv.style.display = 'block';
+    }
 
     function redirectToDashboard(role) {
         switch (role) {

@@ -117,7 +117,7 @@ function addUser($conn) {
         }
 
         // Hash password
-        $hashedPassword = password_hash($data['password'], PASSWORD_BCRYPT);
+        $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
         $email = !empty($data['email']) ? $data['email'] : null;
         $status = !empty($data['status']) ? $data['status'] : 'active';
         
@@ -193,7 +193,7 @@ function updateUser($conn) {
             $result = $stmt->execute([$data['role_id'], $data['username'], $email, $status, $data['user_id']]);
         } else {
             // Update user with password
-            $hashedPassword = password_hash($data['password'], PASSWORD_BCRYPT);
+            $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
             $stmt = $conn->prepare("
                 UPDATE tbl_users 
                 SET role_id = ?, username = ?, password = ?, email = ?, status = ?

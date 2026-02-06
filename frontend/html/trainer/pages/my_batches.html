@@ -6,43 +6,107 @@
     <title>My Batches - Hohoo-Ville Technical School</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #858796;
+            --bg-color: #f8f9fc;
+            --text-color: #5a5c69;
+        }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        #sidebar {
+            background: #fff;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            z-index: 1000;
+        }
+        #sidebar .sidebar-header {
+            padding: 1.5rem 1rem;
+            text-align: center;
+            color: var(--primary-color);
+            font-weight: 800;
+        }
+        #sidebar .nav-link {
+            color: var(--text-color);
+            padding: 0.5rem 1rem;
+            margin: 0.1rem 0.5rem;
+            border-radius: 0.35rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        #sidebar .nav-link:hover {
+            background-color: #eaecf4;
+            color: var(--primary-color);
+        }
+        #sidebar .nav-link.active {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+        .card {
+            border: none;
+            border-radius: 0.35rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        }
+        .card-header {
+            background-color: #f8f9fc;
+            border-bottom: 1px solid #e3e6f0;
+            padding: 1rem 1.25rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+    </style>
 </head>
 <body>
     <div class="d-flex">
          <!-- Sidebar -->
-        <nav id="sidebar" class="bg-light p-3" style="width: 250px; height: 100vh; position: fixed; overflow-y: auto; top: 0; left: 0;">
+        <nav id="sidebar" class="p-3" style="width: 250px; height: 100vh; position: fixed; overflow-y: auto; top: 0; left: 0;">
             <div class="sidebar-header mb-4">
-                <h3>Hohoo-Ville Tech</h3>
+                <h3><img src="../../../../img/logo.jpg" alt="Logo" class="me-2" style="height: 35px; width: auto;">Hohooville</h3>
                 <p class="text-muted">Trainer Portal</p>
             </div>
             <ul class="nav flex-column">
-                <li class="nav-item mb-2">
-                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/trainer_dashboard.html">
+                <li class="nav-item mb-1">
+                    <a class="nav-link" href="../trainer_dashboard.html">
                         <i class="fas fa-tachometer-alt me-2"></i> Dashboard
                     </a>
                 </li>
-                <li class="nav-item mb-2">
-                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/pages/my_batches.html">
+                <li class="nav-item mb-1">
+                    <a class="nav-link active" href="my_batches.html">
                         <i class="fas fa-chalkboard-teacher me-2"></i> My Batches
                     </a>
                 </li>
-                <li class="nav-item mb-2">
-                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/pages/modules.html">
+                <li class="nav-item mb-1">
+                    <a class="nav-link" href="trainees.html">
+                        <i class="fas fa-user-graduate me-2"></i> Trainees
+                    </a>
+                </li>
+                <li class="nav-item mb-1">
+                    <a class="nav-link" href="modules.html">
                         <i class="fas fa-book me-2"></i> Modules
                     </a>
                 </li>
-                <li class="nav-item mb-2">
-                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/pages/attendance.html">
+                <li class="nav-item mb-1">
+                    <a class="nav-link" href="attendance.html">
                         <i class="fas fa-calendar-check me-2"></i> Attendance
                     </a>
                 </li>
-                <li class="nav-item mb-2">
-                    <a class="nav-link active" href="/Hohoo-ville/frontend/html/trainer/pages/grading.html">
+                <li class="nav-item mb-1">
+                    <a class="nav-link" href="grading.html">
                         <i class="fas fa-star me-2"></i> Grading
                     </a>
                 </li>
-                <li class="nav-item mb-2">
-                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainer/pages/reports.html">
+                <li class="nav-item mb-1">
+                    <a class="nav-link" href="progress_chart.html">
+                        <i class="fas fa-chart-line me-2"></i> Progress Chart
+                    </a>
+                </li>
+                <li class="nav-item mb-1">
+                    <a class="nav-link" href="reports.html">
                         <i class="fas fa-chart-bar me-2"></i> Reports
                     </a>
                 </li>
@@ -51,18 +115,30 @@
 
         <!-- Content -->
         <div class="flex-grow-1" style="margin-left: 250px;">
-            <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+            <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
                 <div class="container-fluid">
                     <button type="button" id="sidebarCollapse" class="btn btn-outline-primary me-2 d-lg-none">
                         <i class="fas fa-bars"></i>
                     </button>
                     <div class="ms-auto d-flex align-items-center">
+                        <ul class="navbar-nav flex-row me-2">
+                            <li class="nav-item dropdown no-arrow mx-1">
+                                <a class="nav-link dropdown-toggle" href="#" id="alertsDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <i class="fas fa-bell fa-fw"></i>
+                                    <span class="badge bg-danger badge-counter" id="notificationBadge" style="display: none;"></span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end shadow animated--grow-in" aria-labelledby="alertsDropdown" id="notificationList">
+                                    <li><h6 class="dropdown-header">Alerts Center</h6></li>
+                                    <li><span class="dropdown-item text-center small text-muted">No new notifications</span></li>
+                                </ul>
+                            </li>
+                        </ul>
                         <div class="dropdown">
                             <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
                                 <i class="fas fa-user-circle"></i> <span id="trainerName">Trainer</span>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="/Hohoo-ville/frontend/html/trainer/pages/profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                                <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
                             </ul>
@@ -72,7 +148,7 @@
             </nav>
 
             <div class="container-fluid mt-4">
-                <h2 class="mb-4">My Batches</h2>
+                <h2 class="mb-4 text-gray-800">My Batches</h2>
                 <div class="card">
                     <div class="card-header">Assigned Batches</div>
                     <div class="card-body">
@@ -126,6 +202,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
     <script src="../../../js/trainer/pages/my_batches.js"></script>
+    <script src="../../../js/notifications.js"></script>
     <script>
         document.getElementById('sidebarCollapse').addEventListener('click', function() {
             document.getElementById('sidebar').classList.toggle('d-none');

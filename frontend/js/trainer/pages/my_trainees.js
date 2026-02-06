@@ -19,7 +19,7 @@ async function initializePage() {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user || !user.user_id) {
         alert('You are not logged in. Redirecting to login page.');
-        window.location.href = '../../../login.html';
+        window.location.href = '/Hohoo-ville/frontend/login.html';
         return;
     }
 
@@ -34,20 +34,6 @@ async function initializePage() {
                 parent.remove();
             }
         });
-
-        // Add Progress Chart link
-        const ul = sidebar.querySelector('ul');
-        if (ul && !ul.querySelector('a[href="progress_chart.html"]')) {
-            const newLi = document.createElement('li');
-            newLi.className = 'nav-item';
-            newLi.innerHTML = `
-                <a class="nav-link" href="progress_chart.html">
-                    <i class="fas fa-chart-bar me-2"></i>
-                    <span>Progress Chart</span>
-                </a>
-            `;
-            ul.appendChild(newLi);
-        }
     }
 
     try {

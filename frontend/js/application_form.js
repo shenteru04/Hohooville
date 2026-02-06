@@ -1,124 +1,267 @@
-const API_BASE_URL = 'http://localhost/hohoo-ville/api';
-
 document.addEventListener('DOMContentLoaded', function() {
-    loadFormData();
+    const API_BASE_URL = 'http://localhost/hohoo-ville/api';
+    let allBatches = [];
 
-    // Age Calculation
-    document.getElementById('birthdate').addEventListener('change', function() {
-        const dob = new Date(this.value);
-        const today = new Date();
-        let age = today.getFullYear() - dob.getFullYear();
-        const m = today.getMonth() - dob.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
-            age--;
+    // --- Page Navigation ---
+    window.nextPage = function() {
+        if (validateStep1()) {
+            document.getElementById('step1').style.display = 'none';
+            document.getElementById('step2').style.display = 'block';
+            window.scrollTo(0, 0);
         }
-        document.getElementById('age').value = age;
-    });
+    }
 
-    // Employment Type Toggle
-    document.getElementById('employmentStatus').addEventListener('change', function() {
-        const typeSelect = document.getElementById('employmentType');
-        typeSelect.disabled = this.value !== 'Wage-Employed';
-        if (this.value !== 'Wage-Employed') typeSelect.value = '';
-    });
+    window.prevPage = function() {
+        document.getElementById('step2').style.display = 'none';
+        document.getElementById('step1').style.display = 'block';
+        window.scrollTo(0, 0);
+    }
 
-    // PWD Toggle
-    const pwdRadios = document.getElementsByName('is_pwd');
-    pwdRadios.forEach(radio => {
+    // --- Field Logic ---
+    // Age calculation
+    const birthdateInput = document.getElementById('birthdate');
+    if (birthdateInput) {
+        birthdateInput.addEventListener('change', function() {
+            const birthdate = new Date(this.value);
+            const today = new Date();
+            let age = today.getFullYear() - birthdate.getFullYear();
+            const m = today.getMonth() - birthdate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthdate.getDate())) {
+                age--;
+            }
+            document.getElementById('age').value = age >= 0 ? age : '';
+        });
+    }
+
+    // Employment status dependency
+    const employmentStatus = document.getElementById('employmentStatus');
+    if (employmentStatus) {
+        employmentStatus.addEventListener('change', function() {
+            const employmentType = document.getElementById('employmentType');
+            employmentType.disabled = this.value !== 'Wage-Employed';
+            if (employmentType.disabled) {
+                employmentType.value = '';
+            }
+        });
+    }
+
+    // PWD details dependency
+    document.querySelectorAll('input[name="is_pwd"]').forEach(radio => {
         radio.addEventListener('change', function() {
             document.getElementById('disabilityDetails').style.display = this.value === 'yes' ? 'block' : 'none';
         });
     });
+    
+    // Enable submit button on consent
+    const privacyConsent = document.getElementById('privacyConsent');
+    if(privacyConsent){
+        privacyConsent.addEventListener('change', function() {
+            document.getElementById('submitBtn').disabled = !this.checked;
+        });
+    }
 
-    // Privacy Consent Toggle
-    document.getElementById('privacyConsent').addEventListener('change', function() {
-        document.getElementById('submitBtn').disabled = !this.checked;
+    // --- Data Loading ---
+    async function loadInitialData() {
+        try {
+            const response = await axios.get(`${API_BASE_URL}/public/application_data.php?action=get-form-data`);
+            if (response.data.success) {
+                const { courses, scholarships, batches } = response.data.data;
+                populateCourses(courses);
+                populateScholarships(scholarships);
+                allBatches = batches;
+                // Initially populate batches for the first course if available
+                if (courses.length > 0) {
+                    populateBatches(document.getElementById('courseSelect').value);
+                } else {
+                     populateBatches(null); // Show no batches
+                }
+            } else {
+                console.error("Failed to load form data:", response.data.message);
+                alert("Could not load application settings. Please try again later.");
+            }
+        } catch (error) {
+            console.error("Error fetching form data:", error);
+            // alert("A network error occurred while loading application settings.");
+        }
+    }
+
+    function populateCourses(courses) {
+        const select = document.getElementById('courseSelect');
+        select.innerHTML = '<option value="">Select a Qualification</option>';
+        if(courses.length > 0) {
+            courses.forEach(course => {
+                select.innerHTML += `<option value="${course.qualification_id}">${course.course_name}</option>`;
+            });
+        } else {
+            select.innerHTML = '<option value="">No courses are currently offered</option>';
+        }
+    }
+
+    function populateScholarships(scholarships) {
+        const select = document.getElementById('scholarshipSelect');
+        select.innerHTML = '<option value="">Not a Scholar</option>';
+        scholarships.forEach(s => {
+            select.innerHTML += `<option value="${s.scholarship_name}">${s.scholarship_name}</option>`;
+        });
+    }
+
+    function populateBatches(qualificationId) {
+        const batchSelect = document.getElementById('batchSelect');
+        batchSelect.innerHTML = '<option value="">Select a Batch</option>';
+        if (!qualificationId) {
+            batchSelect.innerHTML = '<option value="">Please select a course first</option>';
+            return;
+        }
+
+        const relevantBatches = allBatches.filter(b => b.qualification_id == qualificationId);
+        
+        if (relevantBatches.length > 0) {
+            relevantBatches.forEach(batch => {
+                batchSelect.innerHTML += `<option value="${batch.batch_id}">${batch.batch_name}</option>`;
+            });
+        } else {
+            batchSelect.innerHTML = '<option value="">No open batches for this course</option>';
+        }
+    }
+
+    document.getElementById('courseSelect').addEventListener('change', function() {
+        populateBatches(this.value);
     });
 
+    // --- Signature Pad Logic ---
+    const canvas = document.getElementById('signatureCanvas');
+    const signatureInput = document.getElementById('digitalSignatureInput');
+    const signatureModal = new bootstrap.Modal(document.getElementById('signatureModal'));
+    const signaturePreviewArea = document.getElementById('signaturePreviewArea');
+    
+    if (canvas) {
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+
+        // Resize canvas to match display size for correct coordinate mapping
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#000';
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        // Resize when modal is shown
+        document.getElementById('signatureModal').addEventListener('shown.bs.modal', () => {
+            // Clear any previous drawings and ensure it's ready
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            resizeCanvas();
+            isDrawing = false; // Reset drawing state
+        });
+
+        signaturePreviewArea.addEventListener('click', () => signatureModal.show());
+
+        function startDrawing(e) {
+            isDrawing = true;
+            draw(e);
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+            ctx.beginPath();
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault(); // Prevent scrolling on touch
+
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.clientX || e.touches[0].clientX;
+            const clientY = e.clientY || e.touches[0].clientY;
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        canvas.addEventListener('touchstart', startDrawing);
+        canvas.addEventListener('touchend', stopDrawing);
+        canvas.addEventListener('touchmove', draw);
+
+        document.getElementById('clearCanvasBtn').addEventListener('click', clearCanvas);
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        document.getElementById('saveSignatureBtn').addEventListener('click', () => {
+            const dataUrl = canvas.toDataURL('image/png');
+            signatureInput.value = dataUrl;
+            document.getElementById('signaturePreview').src = dataUrl;
+            document.getElementById('signaturePreview').style.display = 'block';
+            document.getElementById('signaturePlaceholder').style.display = 'none';
+            document.getElementById('clearSignatureBtn').style.display = 'inline-block';
+            signatureModal.hide();
+        });
+
+        document.getElementById('clearSignatureBtn').addEventListener('click', () => {
+            signatureInput.value = '';
+            document.getElementById('signaturePreview').style.display = 'none';
+            document.getElementById('signaturePlaceholder').style.display = 'block';
+            document.getElementById('clearSignatureBtn').style.display = 'none';
+        });
+    }
+
+    // --- Form Submission ---
     document.getElementById('applicationForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
-        const submitBtn = this.querySelector('button[type="submit"]');
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+        if (!document.getElementById('digitalSignatureInput').value) {
+            alert('Please sign the application form.');
+            return;
+        }
 
         const formData = new FormData(this);
-
         try {
-            const response = await axios.post(`${API_BASE_URL}/public/submit_application.php`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
-
+            const response = await axios.post(`${API_BASE_URL}/public/submit_application.php`, formData);
             if (response.data.success) {
-                alert('Application submitted successfully! Please wait for the registrar to contact you.');
-                this.reset();
+                alert('Application submitted successfully!');
+                window.location.reload();
             } else {
                 alert('Error: ' + response.data.message);
             }
         } catch (error) {
             console.error('Submission error:', error);
-            alert('An error occurred while submitting your application.');
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Submit Application';
+            alert('An error occurred while submitting the application.');
         }
     });
+
+    function validateStep1() {
+        const form = document.getElementById('applicationForm');
+        const inputs = form.querySelectorAll('#step1 [required]');
+        for (const input of inputs) {
+            if (input.type === 'radio' || input.type === 'checkbox') {
+                const groupName = input.name;
+                if (!form.querySelector(`input[name="${groupName}"]:checked`)) {
+                    alert(`Please make a selection for "${input.closest('.mb-3').querySelector('label').innerText.replace('*','').trim()}".`);
+                    input.focus();
+                    return false;
+                }
+            } else if (!input.value) {
+                input.focus();
+                alert(`Please fill out the "${input.closest('.mb-3, .col-md-3, .col-md-4').querySelector('label').innerText.replace('*','').trim()}" field.`);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Initial load
+    loadInitialData();
 });
-
-async function loadFormData() {
-    try {
-        const response = await axios.get(`${API_BASE_URL}/public/submit_application.php?action=get-options`);
-        if (response.data.success) {
-            const { courses, batches } = response.data.data;
-            
-            const courseSelect = document.getElementById('courseSelect');
-            courseSelect.innerHTML = '<option value="">Select Qualification</option>';
-            courses.forEach(c => {
-                courseSelect.innerHTML += `<option value="${c.course_id}">${c.course_name}</option>`;
-            });
-
-            const batchSelect = document.getElementById('batchSelect');
-            batchSelect.innerHTML = '<option value="">Select Batch</option>';
-            batches.forEach(b => {
-                batchSelect.innerHTML += `<option value="${b.batch_id}">${b.batch_name}</option>`;
-            });
-        } else {
-            console.error('API returned error:', response.data.message);
-            document.getElementById('courseSelect').innerHTML = '<option value="">Error loading courses</option>';
-            document.getElementById('batchSelect').innerHTML = '<option value="">Error loading batches</option>';
-        }
-    } catch (error) {
-        console.error('Error loading options:', error);
-        document.getElementById('courseSelect').innerHTML = '<option value="">Error loading courses</option>';
-        document.getElementById('batchSelect').innerHTML = '<option value="">Error loading batches</option>';
-    }
-}
-
-window.nextPage = function() {
-    // Simple validation for Page 1
-    const step1 = document.getElementById('step1');
-    const inputs = step1.querySelectorAll('input[required], select[required]');
-    let valid = true;
-    inputs.forEach(input => {
-        if (!input.value) {
-            input.classList.add('is-invalid');
-            valid = false;
-        } else {
-            input.classList.remove('is-invalid');
-        }
-    });
-
-    if (valid) {
-        document.getElementById('step1').style.display = 'none';
-        document.getElementById('step2').style.display = 'block';
-        window.scrollTo(0, 0);
-    } else {
-        alert('Please fill in all required fields on this page.');
-    }
-}
-
-window.prevPage = function() {
-    document.getElementById('step2').style.display = 'none';
-    document.getElementById('step1').style.display = 'block';
-    window.scrollTo(0, 0);
-}

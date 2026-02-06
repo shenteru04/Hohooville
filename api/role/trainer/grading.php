@@ -31,15 +31,15 @@ class TrainerGrading {
     }
 
     private function getLessons() {
-        $courseId = $_GET['course_id'] ?? null;
-        if (!$courseId) {
-            echo json_encode(['success' => false, 'message' => 'Course ID required']);
+        $qualificationId = $_GET['qualification_id'] ?? null;
+        if (!$qualificationId) {
+            echo json_encode(['success' => false, 'message' => 'Qualification ID required']);
             return;
         }
 
         // Fetch existing lessons
-        $stmt = $this->conn->prepare("SELECT lesson_id, day_number, lesson_title FROM tbl_lessons WHERE module_id IN (SELECT module_id FROM tbl_module WHERE course_id = ?) ORDER BY day_number ASC");
-        $stmt->execute([$courseId]);
+        $stmt = $this->conn->prepare("SELECT lesson_id, day_number, lesson_title FROM tbl_lessons WHERE module_id IN (SELECT module_id FROM tbl_module WHERE qualification_id = ?) ORDER BY day_number ASC");
+        $stmt->execute([$qualificationId]);
         $lessons = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         // If no lessons exist, generate 25 days structure for the UI (as requested)
@@ -55,7 +55,7 @@ class TrainerGrading {
 
     private function getGrades() {
         $batchId = $_GET['batch_id'] ?? null;
-        $courseId = $_GET['course_id'] ?? null;
+        $qualificationId = $_GET['qualification_id'] ?? null;
         $day = $_GET['day'] ?? null;
 
         if (!$batchId) {
@@ -64,51 +64,59 @@ class TrainerGrading {
         }
 
         try {
-            if (!$courseId || $courseId === 'null' || $courseId === 'undefined') {
+            if (!$qualificationId || $qualificationId === 'null' || $qualificationId === 'undefined') {
                 // Get Course ID for the batch if not provided or invalid
-                $stmtC = $this->conn->prepare("SELECT oc.course_id FROM tbl_batch b JOIN tbl_enrollment e ON b.batch_id = e.batch_id JOIN tbl_offered_courses oc ON e.offered_id = oc.offered_id WHERE b.batch_id = ? LIMIT 1");
+                $stmtC = $this->conn->prepare("SELECT oc.qualification_id FROM tbl_batch b JOIN tbl_enrollment e ON b.batch_id = e.batch_id JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id WHERE b.batch_id = ? LIMIT 1");
                 $stmtC->execute([$batchId]);
                 $course = $stmtC->fetch(PDO::FETCH_ASSOC);
-                $courseId = $course['course_id'] ?? 0;
+                $qualificationId = $course['qualification_id'] ?? 0;
             }
 
             if ($day) {
                 // Daily View: Fetch Quiz and Practical scores for the specific day
-                // We assume activity_type_id 1 = Quiz, 2 = Practical/Task Sheet
+                // We assume activity_type_id 1 = Quiz, 2 = Practical/Task Sheet from tbl_test
                 $query = "SELECT t.trainee_id, t.first_name, t.last_name,
-                                 (SELECT score FROM tbl_grades_dtl gd 
-                                  JOIN tbl_test tt ON gd.test_id = tt.test_id 
-                                  JOIN tbl_lessons tl ON tt.lesson_id = tl.lesson_id
-                                  WHERE gd.grades_hdr_id = gh.grades_hdr_id AND tl.day_number = ? AND tt.activity_type_id = 1 LIMIT 1) as quiz_score,
-                                 (SELECT score FROM tbl_grades_dtl gd 
-                                  JOIN tbl_test tt ON gd.test_id = tt.test_id 
-                                  JOIN tbl_lessons tl ON tt.lesson_id = tl.lesson_id
-                                  WHERE gd.grades_hdr_id = gh.grades_hdr_id AND tl.day_number = ? AND tt.activity_type_id = 2 LIMIT 1) as practical_score,
-                                 gh.remarks
+                                 q.score as quiz_score,
+                                 p.score as practical_score
                           FROM tbl_enrollment e
                           JOIN tbl_trainee_hdr t ON e.trainee_id = t.trainee_id
-                          LEFT JOIN tbl_grades_hdr gh ON t.trainee_id = gh.trainee_id AND gh.course_id = ?
+                          LEFT JOIN (
+                              SELECT g.trainee_id, g.score FROM tbl_grades g
+                              JOIN tbl_test tt ON g.test_id = tt.test_id
+                              JOIN tbl_lessons l ON tt.lesson_id = l.lesson_id
+                              WHERE l.day_number = ? AND tt.activity_type_id = 1 AND g.qualification_id = ?
+                          ) q ON t.trainee_id = q.trainee_id
+                          LEFT JOIN (
+                              SELECT g.trainee_id, g.score FROM tbl_grades g
+                              JOIN tbl_test tt ON g.test_id = tt.test_id
+                              JOIN tbl_lessons l ON tt.lesson_id = l.lesson_id
+                              WHERE l.day_number = ? AND tt.activity_type_id = 2 AND g.qualification_id = ?
+                          ) p ON t.trainee_id = p.trainee_id
                           WHERE e.batch_id = ? AND e.status = 'approved'
                           ORDER BY t.last_name ASC";
                 $stmt = $this->conn->prepare($query);
-                $stmt->execute([$day, $day, $courseId, $batchId]);
+                $stmt->execute([$day, $qualificationId, $day, $qualificationId, $batchId]);
             } else {
-                // Summary View
+                // Summary View - This now calculates totals from the new tbl_grades
                 $query = "SELECT t.trainee_id, t.first_name, t.last_name, 
-                                 gh.pre_test, gh.post_test, gh.activities, gh.quizzes, gh.task_sheets,
-                                 gh.total_grade, gh.remarks
+                                 (SELECT AVG(g.score) FROM tbl_grades g JOIN tbl_test tt ON g.test_id = tt.test_id WHERE g.trainee_id = t.trainee_id AND g.qualification_id = ? AND tt.activity_type_id = 3) as pre_test,
+                                 (SELECT AVG(g.score) FROM tbl_grades g JOIN tbl_test tt ON g.test_id = tt.test_id WHERE g.trainee_id = t.trainee_id AND g.qualification_id = ? AND tt.activity_type_id = 4) as post_test,
+                                 (SELECT AVG(g.score) FROM tbl_grades g JOIN tbl_test tt ON g.test_id = tt.test_id WHERE g.trainee_id = t.trainee_id AND g.qualification_id = ? AND tt.activity_type_id = 5) as activities,
+                                 (SELECT AVG(g.score) FROM tbl_grades g JOIN tbl_test tt ON g.test_id = tt.test_id WHERE g.trainee_id = t.trainee_id AND g.qualification_id = ? AND tt.activity_type_id = 1) as quizzes,
+                                 (SELECT AVG(g.score) FROM tbl_grades g JOIN tbl_test tt ON g.test_id = tt.test_id WHERE g.trainee_id = t.trainee_id AND g.qualification_id = ? AND tt.activity_type_id = 2) as task_sheets,
+                                 (SELECT AVG(g.score) FROM tbl_grades g WHERE g.trainee_id = t.trainee_id AND g.qualification_id = ?) as total_grade,
+                                 (CASE WHEN (SELECT AVG(g.score) FROM tbl_grades g WHERE g.trainee_id = t.trainee_id AND g.qualification_id = ?) >= 80 THEN 'Competent' ELSE 'Not Yet Competent' END) as remarks
                           FROM tbl_enrollment e
                           JOIN tbl_trainee_hdr t ON e.trainee_id = t.trainee_id
-                          LEFT JOIN tbl_grades_hdr gh ON t.trainee_id = gh.trainee_id AND gh.course_id = ?
                           WHERE e.batch_id = ? AND e.status = 'approved'
                           ORDER BY t.last_name ASC";
                 $stmt = $this->conn->prepare($query);
-                $stmt->execute([$courseId, $batchId]);
+                $stmt->execute([$qualificationId, $qualificationId, $qualificationId, $qualificationId, $qualificationId, $qualificationId, $qualificationId, $batchId]);
             }
             
             $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            echo json_encode(['success' => true, 'data' => $data, 'course_id' => $courseId]);
+            echo json_encode(['success' => true, 'data' => $data, 'qualification_id' => $qualificationId]);
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
@@ -116,11 +124,11 @@ class TrainerGrading {
 
     private function saveGrades() {
         $data = json_decode(file_get_contents('php://input'), true);
-        $courseId = $data['course_id'] ?? null;
+        $qualificationId = $data['qualification_id'] ?? null;
         $day = $data['day'] ?? null;
         $grades = $data['grades'] ?? [];
 
-        if (!$courseId || empty($grades)) {
+        if (!$qualificationId || empty($grades)) {
             echo json_encode(['success' => false, 'message' => 'Missing data']);
             return;
         }
@@ -128,23 +136,16 @@ class TrainerGrading {
         try {
             $this->conn->beginTransaction();
 
-            // Ensure Header Exists
-            $checkStmt = $this->conn->prepare("SELECT grades_hdr_id FROM tbl_grades_hdr WHERE trainee_id = ? AND course_id = ?");
-            $insertHdrStmt = $this->conn->prepare("INSERT INTO tbl_grades_hdr (trainee_id, course_id, date_recorded) VALUES (?, ?, NOW())");
-
-            // Prepare statements for Summary Update
-            $updateSummaryStmt = $this->conn->prepare("UPDATE tbl_grades_hdr SET pre_test=?, post_test=?, activities=?, quizzes=?, task_sheets=?, total_grade=?, remarks=?, date_recorded=NOW() WHERE grades_hdr_id=?");
-            
             // Prepare statements for Daily Update
             // We need to find/create lesson and test records first if they don't exist
             if ($day) {
                 // 1. Ensure Lesson Exists
                 // Find module for course (take first one or create default)
-                $modStmt = $this->conn->prepare("SELECT module_id FROM tbl_module WHERE course_id = ? LIMIT 1");
-                $modStmt->execute([$courseId]);
+                $modStmt = $this->conn->prepare("SELECT module_id FROM tbl_module WHERE qualification_id = ? LIMIT 1");
+                $modStmt->execute([$qualificationId]);
                 $moduleId = $modStmt->fetchColumn();
                 if (!$moduleId) {
-                    $this->conn->prepare("INSERT INTO tbl_module (course_id, module_title) VALUES (?, 'Default Module')")->execute([$courseId]);
+                    $this->conn->prepare("INSERT INTO tbl_module (qualification_id, module_title) VALUES (?, 'Default Module')")->execute([$qualificationId]);
                     $moduleId = $this->conn->lastInsertId();
                 }
 
@@ -173,31 +174,36 @@ class TrainerGrading {
                 $practicalTestId = $getTestId($lessonId, 2);
 
                 // Statement for saving details
-                $delDtlStmt = $this->conn->prepare("DELETE FROM tbl_grades_dtl WHERE grades_hdr_id = ? AND test_id = ?");
-                $insDtlStmt = $this->conn->prepare("INSERT INTO tbl_grades_dtl (grades_hdr_id, test_id, score) VALUES (?, ?, ?)");
+                $upsertStmt = $this->conn->prepare("
+                    INSERT INTO tbl_grades (trainee_id, qualification_id, test_id, score, date_recorded) 
+                    VALUES (?, ?, ?, ?, NOW())
+                    ON DUPLICATE KEY UPDATE score = VALUES(score), date_recorded = NOW()
+                ");
+            } else {
+                 // Prepare statements for Summary Update
+                 // This part needs to be re-evaluated. Saving summary grades directly is not ideal with the new structure.
+                 // For now, we will focus on saving daily grades which is the primary input.
+                 // The summary view is now read-only and calculated.
             }
 
-            foreach ($grades as $g) {
-                $checkStmt->execute([$g['trainee_id'], $courseId]);
-                $hdrId = $checkStmt->fetchColumn();
+            if ($day) {
+                foreach ($grades as $g) {
+                    $traineeId = $g['trainee_id'];
 
-                if (!$hdrId) {
-                    $insertHdrStmt->execute([$g['trainee_id'], $courseId]);
-                    $hdrId = $this->conn->lastInsertId();
+                    // Save Daily Grades (Quiz)
+                    if (isset($g['quiz_score']) && $g['quiz_score'] !== '') {
+                        $upsertStmt->execute([$traineeId, $qualificationId, $quizTestId, $g['quiz_score']]);
+                    }
+
+                    // Save Daily Grades (Practical)
+                    if (isset($g['practical_score']) && $g['practical_score'] !== '') {
+                        $upsertStmt->execute([$traineeId, $qualificationId, $practicalTestId, $g['practical_score']]);
+                    }
                 }
-
-                if ($day) {
-                    // Save Daily Grades
-                    $delDtlStmt->execute([$hdrId, $quizTestId]);
-                    if (isset($g['quiz_score']) && $g['quiz_score'] !== '') $insDtlStmt->execute([$hdrId, $quizTestId, $g['quiz_score']]);
-
-                    $delDtlStmt->execute([$hdrId, $practicalTestId]);
-                    if (isset($g['practical_score']) && $g['practical_score'] !== '') $insDtlStmt->execute([$hdrId, $practicalTestId, $g['practical_score']]);
-                } else {
-                    // Save Summary Grades
-                    $remarks = $g['remarks'] ?? null;
-                    $updateSummaryStmt->execute([$g['pre_test']??0, $g['post_test']??0, $g['activities']??0, $g['quizzes']??0, $g['task_sheets']??0, $g['total_grade']??0, $remarks, $hdrId]);
-                }
+            } else {
+                // Logic for saving summary grades is removed as it's now a calculated view.
+                // If you need to save pre-test/post-test, they should be treated like daily entries
+                // with a specific test_id.
             }
 
             $this->conn->commit();

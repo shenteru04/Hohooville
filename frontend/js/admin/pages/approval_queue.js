@@ -14,6 +14,26 @@ const apiClient = axios.create({
     }
 });
 
+// Add token to requests
+apiClient.interceptors.request.use(
+    config => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    error => Promise.reject(error)
+);
+
+// Handle 401 response errors
+apiClient.interceptors.response.use(response => response, error => {
+    if (error.response && error.response.status === 401) {
+        window.location.href = '../../../login.html';
+    }
+    return Promise.reject(error);
+});
+
 document.addEventListener('DOMContentLoaded', function() {
     reviewModal = new bootstrap.Modal(document.getElementById('reviewModal'));
     loadApprovalQueue();
@@ -27,6 +47,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const id = document.getElementById('reviewEnrollmentId').value;
         rejectEnrollment(id);
     });
+
+    // Event delegation for review buttons
+    const tableBody = document.getElementById('approvalQueueBody');
+    if (tableBody) {
+        tableBody.addEventListener('click', function(e) {
+            const reviewBtn = e.target.closest('.review-btn');
+            if (reviewBtn) {
+                const enrollmentId = reviewBtn.dataset.id;
+                openReviewModal(enrollmentId);
+            }
+        });
+    }
 });
 
 async function loadApprovalQueue() {
@@ -36,10 +68,11 @@ async function loadApprovalQueue() {
             currentQueueData = response.data.data;
             renderQueueTable(response.data.data);
         } else {
-            alert('Error loading queue: ' + response.data.message);
+            showAlert('Error loading queue: ' + response.data.message, 'danger');
         }
     } catch (error) {
         console.error('Error loading approval queue:', error);
+        showAlert('Failed to load approval queue. Please check console.', 'danger');
     }
 }
 
@@ -69,7 +102,7 @@ function renderQueueTable(data) {
             <td>${item.enrollment_date}</td>
             <td><span class="badge bg-warning text-dark">${item.status}</span></td>
             <td>
-                <button class="btn btn-primary btn-sm" onclick="openReviewModal(${item.enrollment_id})">
+                <button class="btn btn-primary btn-sm review-btn" data-id="${item.enrollment_id}">
                     <i class="fas fa-search"></i> Review
                 </button>
             </td>
@@ -78,7 +111,7 @@ function renderQueueTable(data) {
     });
 }
 
-window.openReviewModal = function(id) {
+function openReviewModal(id) {
     const item = currentQueueData.find(i => i.enrollment_id == id);
     if (!item) return;
 
@@ -128,7 +161,7 @@ window.openReviewModal = function(id) {
     setupDocLink('linkBirthCert', item.birth_cert_file);
 
     reviewModal.show();
-};
+}
 
 function setupDocLink(elementId, filename) {
     const el = document.getElementById(elementId);
@@ -155,15 +188,15 @@ async function approveEnrollment(id) {
         });
         
         if (response.data.success) {
-            alert('Enrollment approved successfully');
+            showAlert('Enrollment approved successfully', 'success');
             reviewModal.hide();
             loadApprovalQueue();
         } else {
-            alert('Error: ' + response.data.message);
+            showAlert('Error: ' + response.data.message, 'danger');
         }
     } catch (error) {
         console.error('Error approving enrollment:', error);
-        alert('Error approving enrollment');
+        showAlert('Error approving enrollment', 'danger');
     }
 }
 
@@ -173,14 +206,39 @@ async function rejectEnrollment(id) {
     try {
         const response = await apiClient.post('/role/admin/approval_queue.php?action=reject', { enrollment_id: id });
         if (response.data.success) {
-            alert('Enrollment rejected successfully');
+            showAlert('Enrollment rejected successfully', 'info');
             reviewModal.hide();
             loadApprovalQueue();
         } else {
-            alert('Error: ' + response.data.message);
+            showAlert('Error: ' + response.data.message, 'danger');
         }
     } catch (error) {
         console.error('Error rejecting enrollment:', error);
-        alert('Error rejecting enrollment');
+        showAlert('Error rejecting enrollment', 'danger');
     }
+}
+
+function showAlert(message, type) {
+    // Remove existing alerts
+    const existingAlerts = document.querySelectorAll('.alert-notification');
+    existingAlerts.forEach(alert => alert.remove());
+
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show alert-notification`;
+    alertDiv.style.position = 'fixed';
+    alertDiv.style.top = '80px';
+    alertDiv.style.right = '20px';
+    alertDiv.style.zIndex = '1060'; // Higher than modal backdrop
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Auto dismiss after 5 seconds
+    setTimeout(() => {
+        alertDiv.classList.remove('show');
+        setTimeout(() => alertDiv.remove(), 150);
+    }, 5000);
 }

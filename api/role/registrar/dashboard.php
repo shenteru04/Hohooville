@@ -35,10 +35,10 @@ class RegistrarDashboard {
             $stats = [];
             
             // 1. Statistics Cards
-            $stats['total_trainees'] = $this->conn->query("SELECT COUNT(*) FROM tbl_trainee WHERE status = 'active'")->fetchColumn();
+            $stats['total_trainees'] = $this->conn->query("SELECT COUNT(*) FROM tbl_trainee_hdr WHERE status = 'active'")->fetchColumn();
             $stats['pending_enrollments'] = $this->conn->query("SELECT COUNT(*) FROM tbl_enrollment WHERE status = 'pending'")->fetchColumn();
             $stats['active_batches'] = $this->conn->query("SELECT COUNT(*) FROM tbl_batch WHERE status = 'open'")->fetchColumn();
-            $stats['total_courses'] = $this->conn->query("SELECT COUNT(*) FROM tbl_course WHERE status = 'active'")->fetchColumn();
+            $stats['total_courses'] = $this->conn->query("SELECT COUNT(*) FROM tbl_qualifications WHERE status = 'active'")->fetchColumn();
 
             // 2. Charts Data
             $charts = [];
@@ -47,10 +47,10 @@ class RegistrarDashboard {
             $stmtCourse = $this->conn->query("
                 SELECT c.course_name, COUNT(e.enrollment_id) as count 
                 FROM tbl_enrollment e
-                JOIN tbl_offered_courses oc ON e.offered_id = oc.offered_id
-                JOIN tbl_course c ON oc.course_id = c.course_id
+                JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
+                JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id
                 WHERE e.status = 'approved'
-                GROUP BY c.course_id
+                GROUP BY c.qualification_id
                 LIMIT 10
             ");
             $courseData = $stmtCourse->fetchAll(PDO::FETCH_ASSOC);
@@ -77,9 +77,9 @@ class RegistrarDashboard {
             $stmtRecent = $this->conn->query("
                 SELECT t.first_name, t.last_name, c.course_name, b.batch_name, e.enrollment_date, e.status
                 FROM tbl_enrollment e
-                JOIN tbl_trainee t ON e.trainee_id = t.trainee_id
-                JOIN tbl_offered_courses oc ON e.offered_id = oc.offered_id
-                JOIN tbl_course c ON oc.course_id = c.course_id
+                JOIN tbl_trainee_hdr t ON e.trainee_id = t.trainee_id
+                JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
+                JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id
                 LEFT JOIN tbl_batch b ON e.batch_id = b.batch_id
                 ORDER BY e.enrollment_date DESC
                 LIMIT 5

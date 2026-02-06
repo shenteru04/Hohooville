@@ -11,7 +11,59 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #858796;
+            --bg-color: #f8f9fc;
+            --text-color: #5a5c69;
+        }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        #sidebar {
+            background: #fff;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            z-index: 1000;
+        }
+        #sidebar .sidebar-header {
+            padding: 1.5rem 1rem;
+            text-align: center;
+            color: var(--primary-color);
+            font-weight: 800;
+        }
+        #sidebar .nav-link {
+            color: var(--text-color);
+            padding: 0.5rem 1rem;
+            margin: 0.1rem 0.5rem;
+            border-radius: 0.35rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        #sidebar .nav-link:hover {
+            background-color: #eaecf4;
+            color: var(--primary-color);
+        }
+        #sidebar .nav-link.active {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+        .card {
+            border: none;
+            border-radius: 0.35rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        }
+        .card-header {
+            background-color: #f8f9fc;
+            border-bottom: 1px solid #e3e6f0;
+            padding: 1rem 1.25rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
         @media print {
             .no-print, #sidebar, .navbar {
                 display: none !important;
@@ -26,56 +78,56 @@
 <body>
     <div class="d-flex">
          <!-- Sidebar -->
-        <nav id="sidebar" class="bg-light p-3" style="width: 250px; height: 100vh; position: fixed; overflow-y: auto; top: 0; left: 0;">
-            <div class="sidebar-header mb-4">
-                <h3>Hohoo-Ville Tech</h3>
+        <nav id="sidebar" class="p-3" style="width: 250px; height: 100vh; position: fixed; overflow-y: auto; top: 0; left: 0;">
+            <div class="sidebar-header mb-3">
+                <h3><img src="../../../../img/logo.jpg" alt="Logo" class="me-2" style="height: 35px; width: auto;">Hohooville</h3>
                 <p class="text-muted">Management System</p>
             </div>
 
             <ul class="nav flex-column">
-    <li class="nav-item mb-2">
-        <a class="nav-link" href="/Hohoo-ville/frontend/html/admin/admin_dashboard.html">
+    <li class="nav-item mb-1">
+        <a class="nav-link" href="../admin_dashboard.html">
             <i class="fas fa-tachometer-alt me-2"></i> Dashboard
         </a>
     </li>
-    <li class="nav-item mb-2">
-        <a class="nav-link" data-bs-toggle="collapse" href="#enrollmentSubmenu" role="button" aria-expanded="true">
+    <li class="nav-item mb-1">
+        <a class="nav-link" data-bs-toggle="collapse" href="#enrollmentSubmenu" role="button" aria-expanded="false">
             <i class="fas fa-user-plus me-2"></i> Enrollment Management
         </a>
-        <div class="collapse show" id="enrollmentSubmenu">
+        <div class="collapse" id="enrollmentSubmenu">
             <ul class="nav flex-column ms-3">
-                <li class="nav-item"><a class="nav-link" href="/Hohoo-ville/frontend/html/admin/pages/view_trainees.html">View Trainees</a></li>
-                <li class="nav-item"><a class="nav-link active" href="/Hohoo-ville/frontend/html/admin/pages/approval_queue.html">Approval Queue</a></li>
+                <li class="nav-item"><a class="nav-link" href="view_trainees.html">View Trainees</a></li>
+                <li class="nav-item"><a class="nav-link" href="approval_queue.html">Approval Queue</a></li>
             </ul>
         </div>
     </li>
-    <li class="nav-item mb-2">
+    <li class="nav-item mb-1">
         <a class="nav-link" data-bs-toggle="collapse" href="#trainerSubmenu" role="button" aria-expanded="false">
             <i class="fas fa-chalkboard-teacher me-2"></i> Trainer Management
         </a>
         <div class="collapse" id="trainerSubmenu">
             <ul class="nav flex-column ms-3">
-                <li class="nav-item"><a class="nav-link" href="/Hohoo-ville/frontend/html/admin/pages/view_trainers.html">View Trainers</a></li>
+                <li class="nav-item"><a class="nav-link" href="view_trainers.html">View Trainers</a></li>
             </ul>
         </div>
     </li>
-    <li class="nav-item mb-2">
+    <li class="nav-item mb-1">
         <a class="nav-link" data-bs-toggle="collapse" href="#qualificationSubmenu" role="button" aria-expanded="false">
             <i class="fas fa-graduation-cap me-2"></i> Qualifications
         </a>
         <div class="collapse" id="qualificationSubmenu">
             <ul class="nav flex-column ms-3">
-                <li class="nav-item"><a class="nav-link" href="/Hohoo-ville/frontend/html/admin/pages/manage_qualifications.html">Qualification Approval</a></li>
+                <li class="nav-item"><a class="nav-link" href="manage_qualifications.html">Qualification Approval</a></li>
             </ul>
         </div>
     </li>
-    <li class="nav-item mb-2">
-        <a class="nav-link" href="/Hohoo-ville/frontend/html/admin/pages/reports.html">
+    <li class="nav-item mb-1">
+        <a class="nav-link active" href="reports.html">
             <i class="fas fa-chart-bar me-2"></i> Reports & Analytics
         </a>
     </li>
-    <li class="nav-item mb-2">
-        <a class="nav-link" href="/Hohoo-ville/frontend/html/admin/pages/user_management.html">
+    <li class="nav-item mb-1">
+        <a class="nav-link" href="user_management.html">
             <i class="fas fa-users-cog me-2"></i> User Management
         </a>
     </li>
@@ -85,7 +137,7 @@
         <!-- Page Content -->
         <div class="flex-grow-1" style="margin-left: 250px;">
             <!-- Top Navigation -->
-            <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+            <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
                 <div class="container-fluid">
                     <button type="button" id="sidebarCollapse" class="btn btn-outline-primary me-2 d-lg-none">
                         <i class="fas fa-bars"></i>
@@ -110,7 +162,7 @@
             <!-- Main Content -->
             <div class="container-fluid mt-4">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2>Reports & Analytics</h2>
+                    <h2 class="text-gray-800">Reports & Analytics</h2>
                     <button class="btn btn-secondary no-print" onclick="window.print()">
                         <i class="fas fa-print me-2"></i>Print Report
                     </button>
@@ -189,7 +241,7 @@
         document.getElementById('logoutBtn').addEventListener('click', function() {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            window.location.href = '../../login.html';
+            window.location.href = '../../../login.html';
         });
 
         // Sidebar toggle for mobile
@@ -200,6 +252,47 @@
                 sidebar.classList.toggle('d-none');
             });
         }
+
+        // Sidebar Persistence
+        document.addEventListener("DOMContentLoaded", function() {
+            const sidebar = document.getElementById('sidebar');
+            
+            // 1. Restore Sidebar State (Expand menus) FIRST
+            const sidebarState = JSON.parse(localStorage.getItem('sidebarState')) || [];
+            sidebarState.forEach(id => {
+                const submenu = document.getElementById(id);
+                const toggler = document.querySelector(`[href="#${id}"]`);
+                if (submenu && toggler) {
+                    submenu.classList.add('show');
+                    toggler.setAttribute('aria-expanded', 'true');
+                }
+            });
+
+            // 2. Restore Scroll Position SECOND (after content height is established)
+            if (sidebar) {
+                const scrollPos = localStorage.getItem('sidebarScroll');
+                if (scrollPos) sidebar.scrollTop = parseInt(scrollPos);
+                
+                window.addEventListener('beforeunload', () => {
+                    localStorage.setItem('sidebarScroll', sidebar.scrollTop);
+                });
+            }
+
+            document.querySelectorAll('#sidebar .collapse').forEach(collapse => {
+                collapse.addEventListener('shown.bs.collapse', () => {
+                    const state = JSON.parse(localStorage.getItem('sidebarState')) || [];
+                    if (!state.includes(collapse.id)) {
+                        state.push(collapse.id);
+                        localStorage.setItem('sidebarState', JSON.stringify(state));
+                    }
+                });
+                collapse.addEventListener('hidden.bs.collapse', () => {
+                    let state = JSON.parse(localStorage.getItem('sidebarState')) || [];
+                    state = state.filter(id => id !== collapse.id);
+                    localStorage.setItem('sidebarState', JSON.stringify(state));
+                });
+            });
+        });
     </script>
 </body>
 </html>

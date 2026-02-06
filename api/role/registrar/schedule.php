@@ -44,10 +44,10 @@ function getData($conn) {
                             c.course_name, 
                             b.trainer_id, 
                             CONCAT_WS(' ', t.first_name, t.last_name) as trainer_name,
-                            (SELECT oc.schedule FROM tbl_offered_courses oc JOIN tbl_enrollment e ON oc.offered_id = e.offered_id WHERE e.batch_id = b.batch_id LIMIT 1) as schedule,
-                            (SELECT oc.room FROM tbl_offered_courses oc JOIN tbl_enrollment e ON oc.offered_id = e.offered_id WHERE e.batch_id = b.batch_id LIMIT 1) as room
+                            (SELECT oc.schedule FROM tbl_offered_qualifications oc JOIN tbl_enrollment e ON oc.offered_qualification_id = e.offered_qualification_id WHERE e.batch_id = b.batch_id LIMIT 1) as schedule,
+                            (SELECT oc.room FROM tbl_offered_qualifications oc JOIN tbl_enrollment e ON oc.offered_qualification_id = e.offered_qualification_id WHERE e.batch_id = b.batch_id LIMIT 1) as room
                           FROM tbl_batch b
-                          LEFT JOIN tbl_course c ON b.course_id = c.course_id
+                          LEFT JOIN tbl_qualifications c ON b.qualification_id = c.qualification_id
                           LEFT JOIN tbl_trainer t ON b.trainer_id = t.trainer_id
                           WHERE b.status = 'open'
                           ORDER BY b.batch_id DESC";
@@ -86,14 +86,14 @@ function assignSchedule($conn) {
         ]);
 
         // Find all offered_id's associated with this batch through enrollments
-        $stmtFind = $conn->prepare("SELECT DISTINCT offered_id FROM tbl_enrollment WHERE batch_id = ?");
+        $stmtFind = $conn->prepare("SELECT DISTINCT offered_qualification_id FROM tbl_enrollment WHERE batch_id = ?");
         $stmtFind->execute([$batchId]);
         $offeredIds = $stmtFind->fetchAll(PDO::FETCH_COLUMN);
 
         if (!empty($offeredIds)) {
             // Also update the trainer_id, schedule, and room in all associated offered_courses to maintain consistency
             $placeholders = implode(',', array_fill(0, count($offeredIds), '?'));
-            $stmtOC = $conn->prepare("UPDATE tbl_offered_courses SET trainer_id = ?, schedule = ?, room = ? WHERE offered_id IN ($placeholders)");
+            $stmtOC = $conn->prepare("UPDATE tbl_offered_qualifications SET trainer_id = ?, schedule = ?, room = ? WHERE offered_qualification_id IN ($placeholders)");
             
             $params = array_merge([$trainerId, $data['schedule'] ?: null, $data['room'] ?: null], $offeredIds);
             $stmtOC->execute($params);

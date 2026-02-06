@@ -35,6 +35,12 @@ apiClient.interceptors.response.use(
     }
 );
 
+// State Management
+let allUsers = [];
+let filteredUsers = [];
+let currentPage = 1;
+const itemsPerPage = 10;
+
 // Initialize when script loads
 initUserManagement();
 
@@ -104,6 +110,30 @@ function setupEventListeners() {
             }
         });
     }
+
+    // Filter Event Listeners
+    document.getElementById('searchInput')?.addEventListener('keyup', applyFilters);
+    document.getElementById('roleFilter')?.addEventListener('change', applyFilters);
+    document.getElementById('statusFilter')?.addEventListener('change', applyFilters);
+
+    // Password Toggle
+    const togglePasswordBtn = document.getElementById('togglePassword');
+    if (togglePasswordBtn) {
+        togglePasswordBtn.addEventListener('click', function() {
+            const passwordInput = document.getElementById('password');
+            const icon = this.querySelector('i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+    }
 }
 
 async function loadUsers() {
@@ -113,7 +143,8 @@ async function loadUsers() {
         console.log('Users response:', response.data);
         
         if (response.data.success) {
-            renderUsersTable(response.data.data);
+            allUsers = response.data.data;
+            applyFilters();
         } else {
             showAlert('Error loading users: ' + response.data.message, 'danger');
         }
@@ -123,7 +154,29 @@ async function loadUsers() {
     }
 }
 
-function renderUsersTable(data) {
+function applyFilters() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const roleFilter = document.getElementById('roleFilter').value.toLowerCase();
+    const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
+
+    filteredUsers = allUsers.filter(user => {
+        const matchesSearch = (user.username && user.username.toLowerCase().includes(searchTerm)) || 
+                              (user.email && user.email.toLowerCase().includes(searchTerm));
+        const matchesRole = roleFilter === '' || (user.role_name && user.role_name.toLowerCase() === roleFilter);
+        const matchesStatus = statusFilter === '' || (user.status && user.status.toLowerCase() === statusFilter);
+        return matchesSearch && matchesRole && matchesStatus;
+    });
+
+    currentPage = 1;
+    renderPagination();
+    renderUsersTable();
+}
+
+function renderUsersTable() {
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const paginatedData = filteredUsers.slice(start, end);
+
     const tbody = document.getElementById('usersTableBody');
     if (!tbody) {
         console.error('Table body not found');
@@ -132,25 +185,33 @@ function renderUsersTable(data) {
     
     tbody.innerHTML = '';
     
-    if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No users found</td></tr>';
+    if (paginatedData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No users found matching your criteria</td></tr>';
         return;
     }
     
-    data.forEach(user => {
+    paginatedData.forEach(user => {
         const row = document.createElement('tr');
         const statusBadge = user.status === 'active' 
             ? '<span class="badge bg-success">Active</span>' 
             : '<span class="badge bg-danger">Inactive</span>';
         
+        const avatarUrl = `https://ui-avatars.com/api/?name=${user.username}&background=random&color=fff&size=32`;
+
         row.innerHTML = `
-            <td>${user.user_id}</td>
-            <td>${user.username}</td>
-            <td>${user.email || 'N/A'}</td>
-            <td>${user.role_name}</td>
+            <td class="ps-4">
+                <div class="d-flex align-items-center">
+                    <img src="${avatarUrl}" class="rounded-circle me-3" width="32" height="32" alt="${user.username}">
+                    <div>
+                        <div class="fw-bold text-dark">${user.username}</div>
+                        <div class="small text-muted">${user.email || 'No email'}</div>
+                    </div>
+                </div>
+            </td>
+            <td><span class="badge bg-light text-dark border">${user.role_name}</span></td>
             <td>${statusBadge}</td>
             <td>${formatDate(user.date_created)}</td>
-            <td>
+            <td class="text-end pe-4">
                 <button class="btn btn-warning btn-sm" onclick="editUser(${user.user_id})">
                     <i class="fas fa-edit"></i> Edit
                 </button>
@@ -161,6 +222,44 @@ function renderUsersTable(data) {
         `;
         tbody.appendChild(row);
     });
+}
+
+function renderPagination() {
+    const pagination = document.getElementById('pagination');
+    if (!pagination) return;
+
+    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+    pagination.innerHTML = '';
+
+    if (totalPages <= 1) return;
+
+    // Previous Button
+    const prevLi = document.createElement('li');
+    prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+    prevLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage - 1}); return false;">Previous</a>`;
+    pagination.appendChild(prevLi);
+
+    // Page Numbers
+    for (let i = 1; i <= totalPages; i++) {
+        const li = document.createElement('li');
+        li.className = `page-item ${currentPage === i ? 'active' : ''}`;
+        li.innerHTML = `<a class="page-link" href="#" onclick="changePage(${i}); return false;">${i}</a>`;
+        pagination.appendChild(li);
+    }
+
+    // Next Button
+    const nextLi = document.createElement('li');
+    nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+    nextLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage + 1}); return false;">Next</a>`;
+    pagination.appendChild(nextLi);
+}
+
+window.changePage = function(page) {
+    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+    if (page < 1 || page > totalPages) return;
+    currentPage = page;
+    renderPagination();
+    renderUsersTable();
 }
 
 async function addUser() {
@@ -255,7 +354,6 @@ async function editUser(id) {
             // Password not required for edit
             const passwordField = document.getElementById('password');
             passwordField.required = false;
-            passwordField.value = '';
             passwordField.placeholder = 'Leave blank to keep current password';
             
             // Update modal title
@@ -370,7 +468,7 @@ function resetForm() {
     const passwordField = document.getElementById('password');
     if (passwordField) {
         passwordField.required = true;
-        passwordField.placeholder = '';
+        passwordField.placeholder = 'Minimum 6 characters recommended';
     }
     document.getElementById('userModalTitle').textContent = 'Add New User';
 }

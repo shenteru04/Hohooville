@@ -50,7 +50,7 @@ function listBatches($conn) {
         $query = "SELECT
                     b.batch_id,
                     b.batch_name,
-                    b.course_id,
+                    b.qualification_id,
                     b.start_date,
                     b.end_date,
                     b.status,
@@ -61,7 +61,7 @@ function listBatches($conn) {
                 FROM
                     tbl_batch AS b
                 LEFT JOIN
-                    tbl_course AS c ON b.course_id = c.course_id
+                    tbl_qualifications AS c ON b.qualification_id = c.qualification_id
                 LEFT JOIN
                     tbl_trainer AS t ON b.trainer_id = t.trainer_id
                 ORDER BY
@@ -108,18 +108,18 @@ function getFormData($conn) {
 function addBatch($conn) {
     $data = json_decode(file_get_contents("php://input"));
 
-    if (empty($data->batch_name) || empty($data->start_date) || empty($data->end_date) || empty($data->course_id)) {
+    if (empty($data->batch_name) || empty($data->start_date) || empty($data->end_date) || empty($data->qualification_id)) {
         echo json_encode(['success' => false, 'message' => 'Missing required fields.']);
         http_response_code(400);
         return;
     }
 
     try {
-        $query = "INSERT INTO tbl_batch (course_id, batch_name, trainer_id, scholarship_type, start_date, end_date, status) 
-                  VALUES (:course_id, :batch_name, :trainer_id, :scholarship_type, :start_date, :end_date, :status)";
+        $query = "INSERT INTO tbl_batch (qualification_id, batch_name, trainer_id, scholarship_type, start_date, end_date, status) 
+                  VALUES (:qualification_id, :batch_name, :trainer_id, :scholarship_type, :start_date, :end_date, :status)";
         $stmt = $conn->prepare($query);
 
-        $stmt->bindParam(':course_id', $data->course_id, PDO::PARAM_INT);
+        $stmt->bindParam(':qualification_id', $data->qualification_id, PDO::PARAM_INT);
         $stmt->bindParam(':batch_name', $data->batch_name);
         $stmt->bindParam(':trainer_id', $data->trainer_id, PDO::PARAM_INT);
         $stmt->bindParam(':scholarship_type', $data->scholarship_type);
@@ -142,7 +142,7 @@ function addBatch($conn) {
 function updateBatch($conn) {
     $data = json_decode(file_get_contents("php://input"));
 
-    if (empty($data->batch_id) || empty($data->batch_name) || empty($data->start_date) || empty($data->end_date) || empty($data->course_id)) {
+    if (empty($data->batch_id) || empty($data->batch_name) || empty($data->start_date) || empty($data->end_date) || empty($data->qualification_id)) {
         echo json_encode(['success' => false, 'message' => 'Missing required fields.']);
         http_response_code(400);
         return;
@@ -150,7 +150,7 @@ function updateBatch($conn) {
 
     try {
         $query = "UPDATE tbl_batch SET 
-                    course_id = :course_id, 
+                    qualification_id = :qualification_id, 
                     batch_name = :batch_name, 
                     trainer_id = :trainer_id, 
                     scholarship_type = :scholarship_type, 
@@ -160,7 +160,7 @@ function updateBatch($conn) {
                   WHERE batch_id = :batch_id";
         $stmt = $conn->prepare($query);
 
-        $stmt->bindParam(':course_id', $data->course_id, PDO::PARAM_INT);
+        $stmt->bindParam(':qualification_id', $data->qualification_id, PDO::PARAM_INT);
         $stmt->bindParam(':batch_name', $data->batch_name);
         $stmt->bindParam(':trainer_id', $data->trainer_id, PDO::PARAM_INT);
         $stmt->bindParam(':scholarship_type', $data->scholarship_type);

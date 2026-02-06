@@ -20,11 +20,11 @@ class MyGrades {
 
         try {
             // Fetch Grades Header and Details
-            $query = "SELECT c.course_name, gh.pre_test, gh.post_test, gh.activities, gh.quizzes, gh.task_sheets, gh.total_grade, gh.remarks, gh.date_recorded
-                      FROM tbl_grades_hdr gh
-                      JOIN tbl_course c ON gh.course_id = c.course_id
-                      WHERE gh.trainee_id = ?
-                      ORDER BY gh.date_recorded DESC";
+            $query = "SELECT c.course_name, g.score, g.date_recorded
+                      FROM tbl_grades g
+                      JOIN tbl_qualifications c ON g.qualification_id = c.qualification_id
+                      WHERE g.trainee_id = ?
+                      ORDER BY g.date_recorded DESC";
             
             $stmt = $this->conn->prepare($query);
             $stmt->execute([$traineeId]);

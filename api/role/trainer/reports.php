@@ -38,13 +38,12 @@ class TrainerReports {
         $query = "SELECT 
                     CONCAT(t.first_name, ' ', t.last_name) as trainee_name,
                     c.course_name,
-                    gh.total_grade,
-                    gh.remarks
+                    (SELECT AVG(score) FROM tbl_grades WHERE trainee_id = t.trainee_id AND qualification_id = c.qualification_id) as total_grade,
+                    (CASE WHEN (SELECT AVG(score) FROM tbl_grades WHERE trainee_id = t.trainee_id AND qualification_id = c.qualification_id) >= 80 THEN 'Competent' ELSE 'Not Yet Competent' END) as remarks
                   FROM tbl_enrollment e
                   JOIN tbl_trainee_hdr t ON e.trainee_id = t.trainee_id
-                  JOIN tbl_offered_courses oc ON e.offered_id = oc.offered_id
-                  JOIN tbl_course c ON oc.course_id = c.course_id
-                  LEFT JOIN tbl_grades_hdr gh ON t.trainee_id = gh.trainee_id AND c.course_id = gh.course_id
+                  JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
+                  JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id
                   WHERE e.batch_id = ? AND e.status = 'approved'";
         
         $stmt = $this->conn->prepare($query);
@@ -58,13 +57,12 @@ class TrainerReports {
         // Get trainees and aggregate their attendance details
         $query = "SELECT 
                     CONCAT(t.first_name, ' ', t.last_name) as trainee_name,
-                    SUM(CASE WHEN ad.status = 'present' THEN 1 ELSE 0 END) as present,
-                    SUM(CASE WHEN ad.status = 'absent' THEN 1 ELSE 0 END) as absent,
-                    SUM(CASE WHEN ad.status = 'late' THEN 1 ELSE 0 END) as late
+                    SUM(CASE WHEN a.status = 'present' THEN 1 ELSE 0 END) as present,
+                    SUM(CASE WHEN a.status = 'absent' THEN 1 ELSE 0 END) as absent,
+                    SUM(CASE WHEN a.status = 'late' THEN 1 ELSE 0 END) as late
                   FROM tbl_enrollment e
                   JOIN tbl_trainee_hdr t ON e.trainee_id = t.trainee_id
-                  LEFT JOIN tbl_attendance_dtl ad ON t.trainee_id = ad.trainee_id
-                  LEFT JOIN tbl_attendance_hdr ah ON ad.attendance_hdr_id = ah.attendance_hdr_id
+                  LEFT JOIN tbl_attendance a ON t.trainee_id = a.trainee_id AND a.batch_id = e.batch_id
                   WHERE e.batch_id = ? AND e.status = 'approved'
                   GROUP BY t.trainee_id";
         

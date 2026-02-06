@@ -18,20 +18,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 parent.remove();
             }
         });
-
-        // Add Progress Chart link
-        const ul = sidebar.querySelector('ul');
-        if (ul && !ul.querySelector('a[href="progress_chart.html"]')) {
-            const newLi = document.createElement('li');
-            newLi.className = 'nav-item';
-            newLi.innerHTML = `
-                <a class="nav-link" href="progress_chart.html">
-                    <i class="fas fa-chart-bar me-2"></i>
-                    <span>Progress Chart</span>
-                </a>
-            `;
-            ul.appendChild(newLi);
-        }
     }
 
     const createModuleEl = document.getElementById('createModuleModal');
@@ -99,11 +85,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function loadDataForTab(type) {
-        const courseId = qualificationSelect.value;
+        const qualificationId = qualificationSelect.value;
         document.getElementById('modulesListCore').innerHTML = '';
         document.getElementById('modulesListCommon').innerHTML = '';
         document.getElementById('modulesListBasic').innerHTML = '';
-        if (courseId) loadModules(courseId, type);
+        if (qualificationId) loadModules(qualificationId, type);
     }
 
     document.getElementById('saveModuleBtn').addEventListener('click', saveModule);
@@ -461,6 +447,50 @@ window.insertInteractiveQuestion = function() {
     editor.appendChild(questionBlock);
 };
 
+window.insertCheckboxList = function(targetId = 'editorContent') {
+    const editor = document.getElementById(targetId);
+    if (!editor) return;
+
+    // Remove placeholder
+    const placeholder = editor.querySelector('p.text-muted');
+    if (placeholder) placeholder.remove();
+
+    const listId = `checklist_${Date.now()}`;
+    const block = document.createElement('div');
+    block.className = 'custom-field-block mb-3 p-3 border rounded bg-white';
+    block.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <strong contenteditable="true" class="field-label" style="cursor: text; border: 1px dashed #dee2e6; padding: 0 5px;">Checklist</strong>
+            <div>
+                <button class="btn btn-sm btn-outline-primary" onclick="addChecklistItem('${listId}')" title="Add Item"><i class="fas fa-plus"></i></button>
+                <button class="btn btn-sm btn-outline-danger" onclick="this.closest('.custom-field-block').remove()" title="Delete List"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+        <div id="${listId}">
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox">
+                <label class="form-check-label" contenteditable="true" style="width: 90%; cursor: text; border-bottom: 1px dashed #eee;">Task Item 1</label>
+                <button class="btn btn-xs btn-outline-danger ms-2" onclick="this.closest('.form-check').remove()">&times;</button>
+            </div>
+        </div>
+    `;
+    editor.appendChild(block);
+};
+
+window.addChecklistItem = function(listId) {
+    const list = document.getElementById(listId);
+    if (!list) return;
+    
+    const div = document.createElement('div');
+    div.className = 'form-check mb-2';
+    div.innerHTML = `
+        <input class="form-check-input" type="checkbox">
+        <label class="form-check-label" contenteditable="true" style="width: 90%; cursor: text; border-bottom: 1px dashed #eee;">New Item</label>
+        <button class="btn btn-xs btn-outline-danger ms-2" onclick="this.closest('.form-check').remove()">&times;</button>
+    `;
+    list.appendChild(div);
+};
+
 async function loadQualifications() {
     try {
         const response = await axios.get(`${API_BASE_URL}/role/registrar/qualifications.php?action=list`);
@@ -468,7 +498,7 @@ async function loadQualifications() {
             const select = document.getElementById('qualificationSelect');
             select.innerHTML = '<option value="">Select Qualification</option>';
             response.data.data.forEach(q => {
-                select.innerHTML += `<option value="${q.course_id}">${q.course_name}</option>`;
+                select.innerHTML += `<option value="${q.qualification_id}">${q.course_name}</option>`;
             });
         }
     } catch (error) {
@@ -476,7 +506,7 @@ async function loadQualifications() {
     }
 }
 
-async function loadModules(courseId, competencyType = 'core') {
+async function loadModules(qualificationId, competencyType = 'core') {
     let containerId;
     if (competencyType === 'core') containerId = 'modulesListCore';
     else if (competencyType === 'common') containerId = 'modulesListCommon';
@@ -486,7 +516,7 @@ async function loadModules(courseId, competencyType = 'core') {
     container.innerHTML = '<div class="col-12 text-center"><div class="spinner-border"></div></div>';
 
     try {
-        const response = await axios.get(`${API_BASE_URL}/role/trainer/modules.php?action=list`, { params: { course_id: courseId, type: competencyType } });
+        const response = await axios.get(`${API_BASE_URL}/role/trainer/modules.php?action=list`, { params: { qualification_id: qualificationId, type: competencyType } });
         container.innerHTML = '';
 
         if (response.data.success && response.data.data.length > 0) {
@@ -554,11 +584,11 @@ async function loadModules(courseId, competencyType = 'core') {
 
 async function saveModule() {
     const id = document.getElementById('moduleId').value;
-    const courseId = document.getElementById('qualificationSelect').value;
+    const qualificationId = document.getElementById('qualificationSelect').value;
     const title = document.getElementById('moduleTitle').value;
     const description = document.getElementById('moduleDescription').value;
 
-    if (!courseId) {
+    if (!qualificationId) {
         alert('Please select a qualification first.');
         return;
     }
@@ -570,7 +600,7 @@ async function saveModule() {
 
     const action = id ? 'update-module' : 'add-module';
     const payload = {
-        course_id: courseId,
+        qualification_id: qualificationId,
         competency_type: currentCompetencyType,
         module_title: title, 
         module_description: description
@@ -584,7 +614,7 @@ async function saveModule() {
             alert(`Module ${id ? 'updated' : 'created'} successfully`);
             moduleModal.hide();
             document.getElementById('createModuleForm').reset();
-            loadModules(courseId, currentCompetencyType);
+            loadModules(qualificationId, currentCompetencyType);
         } else {
             alert('Error: ' + response.data.message);
         }

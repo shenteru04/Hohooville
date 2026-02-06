@@ -44,12 +44,12 @@ async function loadStatistics() {
         const response = await apiClient.get('/role/admin/admin_dashboard.php?action=statistics');
         if (response.data.success) {
             const stats = response.data.data;
-            document.getElementById('totalEnrolled').textContent = stats.total_enrolled;
-            document.getElementById('activeQualifications').textContent = stats.active_qualifications;
-            document.getElementById('trainerCount').textContent = stats.trainer_count;
-            document.getElementById('scheduledTrainings').textContent = stats.scheduled_trainings;
-            document.getElementById('pendingEnrollments').textContent = stats.pending_enrollments;
-            document.getElementById('completedThisYear').textContent = stats.completed_this_year;
+            document.getElementById('totalEnrolled').textContent = stats.total_enrolled || 0;
+            document.getElementById('activeQualifications').textContent = stats.active_qualifications || 0;
+            document.getElementById('trainerCount').textContent = stats.trainer_count || 0;
+            document.getElementById('scheduledTrainings').textContent = stats.scheduled_trainings || 0;
+            document.getElementById('pendingEnrollments').textContent = stats.pending_enrollments || 0;
+            document.getElementById('completedThisYear').textContent = stats.completed_this_year || 0;
         }
     } catch (error) {
         console.error('Stats Error:', error);
@@ -63,20 +63,20 @@ async function loadFinancialSummary() {
             const data = response.data.data;
             
             // Update Cards
-            document.getElementById('totalCollected').textContent = '₱' + parseFloat(data.total_collected).toLocaleString();
-            document.getElementById('totalPending').textContent = '₱' + parseFloat(data.total_pending).toLocaleString();
+            document.getElementById('totalCollected').textContent = '₱' + parseFloat(data.total_collected || 0).toLocaleString();
+            document.getElementById('totalPending').textContent = '₱' + parseFloat(data.total_pending || 0).toLocaleString();
 
             // Scholarship Chart
             renderPieChart('scholarshipDistributionChart', scholarshipChart, 
-                data.scholarship_distribution.map(i => i.scholarship_type),
-                data.scholarship_distribution.map(i => i.count),
+                (data.scholarship_distribution || []).map(i => i.scholarship_type),
+                (data.scholarship_distribution || []).map(i => i.count),
                 'Scholarships'
             );
 
             // Revenue Chart
             renderLineChart('monthlyRevenueChart', revenueChart,
-                data.monthly_revenue.map(i => i.month),
-                data.monthly_revenue.map(i => i.revenue),
+                (data.monthly_revenue || []).map(i => i.month),
+                (data.monthly_revenue || []).map(i => i.revenue),
                 'Monthly Revenue (₱)'
             );
         }
@@ -93,22 +93,22 @@ async function loadEnrollmentStats() {
 
             // By Qualification Chart
             renderBarChart('enrollmentByQualificationChart', enrollmentChart,
-                data.by_qualification.map(i => i.title),
-                data.by_qualification.map(i => i.count),
+                (data.by_qualification || []).map(i => i.title),
+                (data.by_qualification || []).map(i => i.count),
                 'Enrolled Trainees'
             );
 
             // Trend Chart
             renderLineChart('enrollmentTrendChart', trendChart,
-                data.monthly_trend.map(i => i.month),
-                data.monthly_trend.map(i => i.count),
+                (data.monthly_trend || []).map(i => i.month),
+                (data.monthly_trend || []).map(i => i.count),
                 'Enrollments'
             );
 
             // Batch Table
             const tbody = document.getElementById('batchTableBody');
             tbody.innerHTML = '';
-            data.by_batch.forEach(batch => {
+            (data.by_batch || []).forEach(batch => {
                 tbody.innerHTML += `
                     <tr>
                         <td>${batch.batch_name}</td>
@@ -130,13 +130,13 @@ async function loadAttendanceOverview() {
             const data = response.data.data;
 
             // Overall Rate
-            const rate = parseFloat(data.overall.attendance_rate || 0).toFixed(1);
+            const rate = parseFloat(data.overall?.attendance_rate || 0).toFixed(1);
             document.getElementById('overallAttendanceRate').textContent = rate + '%';
 
             // Trend Chart
             renderLineChart('attendanceTrendChart', attendanceChart,
-                data.daily_trend.map(i => i.date),
-                data.daily_trend.map(i => i.rate),
+                (data.daily_trend || []).map(i => i.date),
+                (data.daily_trend || []).map(i => i.rate),
                 'Attendance Rate (%)',
                 '#28a745'
             );
@@ -144,7 +144,7 @@ async function loadAttendanceOverview() {
             // Batch Attendance Table
             const tbody = document.getElementById('batchAttendanceTableBody');
             tbody.innerHTML = '';
-            data.by_batch.forEach(batch => {
+            (data.by_batch || []).forEach(batch => {
                 tbody.innerHTML += `
                     <tr>
                         <td>${batch.batch_code}</td>
@@ -168,8 +168,8 @@ async function loadCompetencyResults() {
             
             // Competency Overview Chart
             renderBarChart('competencyChart', competencyChart,
-                data.overview.labels,
-                data.overview.scores,
+                data.overview?.labels || [],
+                data.overview?.scores || [],
                 'Avg Competency Score',
                 '#17a2b8'
             );
@@ -186,7 +186,13 @@ async function loadRecentActivities() {
             const tbody = document.getElementById('recentActivitiesBody');
             tbody.innerHTML = '';
             
-            response.data.data.forEach(log => {
+            const activities = response.data.data || [];
+            if (activities.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No recent activities found.</td></tr>';
+                return;
+            }
+
+            activities.forEach(log => {
                 tbody.innerHTML += `
                     <tr>
                         <td>${log.first_name} ${log.last_name}</td>

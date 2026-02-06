@@ -17,12 +17,38 @@ document.addEventListener('DOMContentLoaded', async function() {
             currentTrainerId = response.data.data.trainer_id;
             // Once we have the trainer ID, load their saved charts
             loadSavedChartsList();
+
+            // Inject new UI for live chart generation
+            const chartControlsContainer = document.querySelector('.card-body'); // A plausible container
+            if (chartControlsContainer) {
+                const liveChartControls = document.createElement('div');
+                liveChartControls.className = 'border-bottom pb-3 mb-3';
+                liveChartControls.innerHTML = `
+                    <h6 class="text-success">Live Progress Chart</h6>
+                    <p class="small text-muted">Generate a chart from a batch to track real-time competency status. Learning outcomes completed by all trainees will be highlighted in green.</p>
+                    <div class="d-flex gap-2 align-items-center">
+                        <select id="batchSelectForChart" class="form-select" style="max-width: 400px;"></select>
+                        <button id="generateLiveChartBtn" class="btn btn-success">
+                            <i class="fas fa-sync-alt me-2"></i>Generate
+                        </button>
+                    </div>
+                `;
+                // Prepend it to the container
+                chartControlsContainer.prepend(liveChartControls);
+
+                document.getElementById('generateLiveChartBtn').addEventListener('click', generateLiveChart);
+                loadBatchesForChart(currentTrainerId);
+            }
         } else {
-            console.error("Could not retrieve trainer ID.");
-            alert("Error: Could not verify trainer identity. Some features might not work.");
+            const msg = response.data.message || "Trainer profile not found.";
+            console.error("Could not retrieve trainer ID:", msg, response.data);
+            alert("Error: " + msg);
         }
     } catch (error) {
         console.error("Error fetching trainer ID:", error);
+        if (error.response && error.response.data && error.response.data.message) {
+             alert("Error: " + error.response.data.message);
+        }
     }
 
     // File Upload Handler
@@ -36,6 +62,69 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 });
+
+async function loadBatchesForChart(trainerId) {
+    if (!trainerId) return;
+    try {
+        // This endpoint needs to exist and list batches for a trainer.
+        // Re-using an endpoint from another page's logic.
+        const response = await axios.get(`${API_BASE_URL}/role/trainer/my_batches.php?trainer_id=${trainerId}`);
+        const select = document.getElementById('batchSelectForChart');
+        if (response.data.success) {
+            select.innerHTML = '<option value="">Select a batch to generate live chart...</option>';
+            response.data.data.forEach(batch => {
+                select.innerHTML += `<option value="${batch.batch_id}">${batch.batch_name} - ${batch.course_name}</option>`;
+            });
+        } else {
+            select.innerHTML = '<option value="">Could not load batches.</option>';
+        }
+    } catch (error) {
+        console.error('Error loading batches for chart:', error);
+        document.getElementById('batchSelectForChart').innerHTML = '<option value="">Error loading batches.</option>';
+    }
+}
+
+/**
+ * Fetches live data for a batch and renders the progress chart.
+ * This requires a new API endpoint: /role/trainer/progress_chart.php?action=get-batch-data
+ * The API should return a JSON object with the following structure:
+ * {
+ *   "success": true,
+ *   "data": {
+ *     "trainees": [ { "trainee_id": 1, "full_name": "John Doe" }, ... ],
+ *     "outcomes": [ { "outcome_id": 101, "outcome_title": "Install PVC", "module_title": "Perform Roughing-in" }, ... ],
+ *     "completion_status": [ { "trainee_id": 1, "outcome_id": 101, "mark": "✓" }, ... ],
+ *     "all_outcomes_completed": [ 102, 105, ... ] // Array of outcome_ids completed by ALL trainees in the batch
+ *   }
+ * }
+ */
+async function generateLiveChart() {
+    const batchId = document.getElementById('batchSelectForChart').value;
+    if (!batchId) {
+        alert('Please select a batch.');
+        return;
+    }
+
+    const btn = document.getElementById('generateLiveChartBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Generating...';
+
+    try {
+        // This is the new API endpoint we need
+        const response = await axios.get(`${API_BASE_URL}/role/trainer/progress_chart.php?action=get-batch-data&batch_id=${batchId}`);
+        if (response.data.success) {
+            renderLiveChart(response.data.data);
+        } else {
+            alert('Error generating chart: ' + response.data.message);
+        }
+    } catch (error) {
+        console.error('Error generating live chart:', error);
+        alert('An error occurred while generating the live chart.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-sync-alt me-2"></i>Generate';
+    }
+}
 
 async function loadSavedChartsList() {
     if (!currentTrainerId) return;
@@ -138,6 +227,70 @@ function renderChart(htmlContent) {
             }
         });
     }
+}
+
+function renderLiveChart(data) {
+    const { trainees, outcomes, completion_status, all_outcomes_completed } = data;
+
+    if (!trainees || !outcomes || trainees.length === 0 || outcomes.length === 0) {
+        document.getElementById('chartContainer').innerHTML = '<div class="alert alert-warning">Not enough data to generate a chart. Ensure the batch has trainees and the qualification has learning outcomes.</div>';
+        return;
+    }
+
+    // Group outcomes by module
+    const modules = outcomes.reduce((acc, outcome) => {
+        const moduleTitle = outcome.module_title || 'Uncategorized';
+        acc[moduleTitle] = acc[moduleTitle] || [];
+        acc[moduleTitle].push(outcome);
+        return acc;
+    }, {});
+    const moduleNames = Object.keys(modules);
+
+    // --- Build Header ---
+    let headerRow1 = `<tr><th rowspan="3">NO.</th><th rowspan="3" style="width: 200px;">NAME OF TRAINEE</th><th colspan="${outcomes.length}">CORE COMPETENCIES</th></tr>`;
+    
+    let headerRow2 = `<tr>`;
+    moduleNames.forEach(moduleName => {
+        headerRow2 += `<th colspan="${modules[moduleName].length}">${moduleName}</th>`;
+    });
+    headerRow2 += `</tr>`;
+
+    let headerRow3 = `<tr>`;
+    outcomes.forEach(outcome => {
+        const isCompleted = all_outcomes_completed.includes(outcome.outcome_id);
+        const style = isCompleted ? 'style="background-color: #1cc88a; color: white;"' : '';
+        headerRow3 += `<th ${style} data-outcome-id="${outcome.outcome_id}">${outcome.outcome_title}</th>`;
+    });
+    headerRow3 += `</tr>`;
+
+    // --- Build Body ---
+    let bodyHtml = '';
+    trainees.forEach((trainee, index) => {
+        bodyHtml += `<tr data-trainee-id="${trainee.trainee_id}">`;
+        bodyHtml += `<td class="text-center">${index + 1}</td>`;
+        bodyHtml += `<td>${trainee.full_name}</td>`;
+        
+        outcomes.forEach(outcome => {
+            const status = completion_status.find(s => s.trainee_id == trainee.trainee_id && s.outcome_id == outcome.outcome_id);
+            const mark = status ? status.mark : ''; // e.g., '✓' or 'IP'
+            let markClass = '';
+            if (mark === '✓') markClass = 'text-success fw-bold';
+            if (mark === 'IP') markClass = 'text-warning';
+
+            bodyHtml += `<td class="progress-mark ${markClass}">${mark}</td>`;
+        });
+        bodyHtml += `</tr>`;
+    });
+
+    const tableHtml = `
+        <table class="tesda-table" id="progressTable">
+            <thead>${headerRow1}${headerRow2}${headerRow3}</thead>
+            <tbody>${bodyHtml}</tbody>
+        </table>
+    `;
+
+    // Use the existing renderChart function to inject the HTML and make it editable
+    renderChart(tableHtml);
 }
 
 function generateEIMTemplate() {

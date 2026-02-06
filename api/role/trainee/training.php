@@ -53,11 +53,11 @@ function getLessonsForTrainee($conn) {
     $traineeId = $_GET['trainee_id'] ?? 0;
 
     // Find the trainee's course
-    $stmt = $conn->prepare("SELECT oc.course_id FROM tbl_enrollment e JOIN tbl_offered_courses oc ON e.offered_id = oc.offered_id WHERE e.trainee_id = ? AND e.status = 'approved' LIMIT 1");
+    $stmt = $conn->prepare("SELECT oc.qualification_id FROM tbl_enrollment e JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id WHERE e.trainee_id = ? AND e.status = 'approved' LIMIT 1");
     $stmt->execute([$traineeId]);
-    $courseId = $stmt->fetchColumn();
+    $qualificationId = $stmt->fetchColumn();
 
-    if (!$courseId) {
+    if (!$qualificationId) {
         echo json_encode(['success' => true, 'data' => []]);
         return;
     }
@@ -70,23 +70,27 @@ function getLessonsForTrainee($conn) {
                 l.lesson_id, l.lesson_title, l.posting_date, l.lesson_file_path,
                 t.test_id,
                 t.deadline as quiz_deadline,
-                (SELECT gd.score 
-                 FROM tbl_grades_dtl gd 
-                 JOIN tbl_test tt ON gd.test_id = tt.test_id 
-                 JOIN tbl_grades_hdr gh ON gd.grades_hdr_id = gh.grades_hdr_id 
-                 WHERE tt.lesson_id = l.lesson_id AND tt.activity_type_id = 1 AND gh.trainee_id = ? LIMIT 1) as score,
+                (SELECT g.score 
+                 FROM tbl_grades g 
+                 JOIN tbl_test tt ON g.test_id = tt.test_id 
+                 WHERE tt.lesson_id = l.lesson_id AND tt.activity_type_id = 1 AND g.trainee_id = ? LIMIT 1) as score,
                 (SELECT COUNT(qq.question_id) 
                  FROM tbl_quiz_questions qq 
                  WHERE qq.test_id = t.test_id) as total_questions
               FROM tbl_module m
               JOIN tbl_lessons l ON m.module_id = l.module_id
               LEFT JOIN tbl_test t ON l.lesson_id = t.lesson_id AND t.activity_type_id = 1
-              WHERE m.course_id = ? AND (l.posting_date IS NULL OR l.posting_date <= NOW())
+              WHERE m.qualification_id = ? AND (l.posting_date IS NULL OR l.posting_date <= NOW())
               ORDER BY m.module_id, l.lesson_id";
     
-    $stmt = $conn->prepare($query);
-    $stmt->execute([$traineeId, $courseId]);
-    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    try {
+        $stmt = $conn->prepare($query);
+        $stmt->execute([$traineeId, $qualificationId]);
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+        return;
+    }
 
     // Group lessons by module
     $modules = [];
@@ -113,11 +117,16 @@ function getLessonsForTrainee($conn) {
         }
     }
 
-    $submission_statuses = [];
+    $submission_counts = [];
+    $submitted_task_sheet_ids = [];
     if (!empty($lesson_ids)) {
-        $status_stmt = $conn->prepare("SELECT lesson_id, status FROM tbl_task_sheet_submissions WHERE trainee_id = ? AND lesson_id IN ($in)");
+        $status_stmt = $conn->prepare("SELECT lesson_id, COUNT(*) FROM tbl_task_sheet_submissions WHERE trainee_id = ? AND lesson_id IN ($in) AND status IN ('submitted', 'approved') GROUP BY lesson_id");
         $status_stmt->execute(array_merge([$traineeId], $lesson_ids));
-        $submission_statuses = $status_stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+        $submission_counts = $status_stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+
+        $submitted_stmt = $conn->prepare("SELECT task_sheet_id FROM tbl_task_sheet_submissions WHERE trainee_id = ? AND lesson_id IN ($in) AND status IN ('submitted', 'approved')");
+        $submitted_stmt->execute(array_merge([$traineeId], $lesson_ids));
+        $submitted_task_sheet_ids = $submitted_stmt->fetchAll(PDO::FETCH_COLUMN);
     }
 
     foreach ($results as $row) {
@@ -137,17 +146,25 @@ function getLessonsForTrainee($conn) {
             $score = 0;
         }
 
+        $totalTaskSheets = isset($task_sheets[$row['lesson_id']]) ? count($task_sheets[$row['lesson_id']]) : 0;
+        $submittedCount = $submission_counts[$row['lesson_id']] ?? 0;
+
+        $lesson_task_sheets = $task_sheets[$row['lesson_id']] ?? [];
+        foreach ($lesson_task_sheets as &$ts) {
+            $ts['is_submitted'] = in_array($ts['task_sheet_id'], $submitted_task_sheet_ids);
+        }
+
         $modules[$row['module_id']]['lessons'][] = [
             'lesson_id' => $row['lesson_id'],
             'lesson_title' => $row['lesson_title'],
             'lesson_contents' => $contents[$row['lesson_id']] ?? [],
             'lesson_file_path' => $row['lesson_file_path'],
-            'task_sheets' => $task_sheets[$row['lesson_id']] ?? [],
+            'task_sheets' => $lesson_task_sheets,
             'has_quiz' => !is_null($row['test_id']),
             'score' => $score, // Will be NULL if not taken, or 0 if deadline passed
             'total_questions' => $totalQuestions, // Will be NULL if not taken, or actual count if deadline passed
             'deadline' => $row['quiz_deadline'],
-            'task_sheet_status' => $submission_statuses[$row['lesson_id']] ?? null
+            'task_sheet_status' => ($totalTaskSheets > 0 && $submittedCount >= $totalTaskSheets) ? 'submitted' : null
         ];
     }
 
@@ -205,8 +222,8 @@ function getProfile($conn) {
                   LEFT JOIN tbl_enrollment e ON th.trainee_id = e.trainee_id
                   LEFT JOIN tbl_scholarship_type st ON e.scholarship_type_id = st.scholarship_type_id
                   LEFT JOIN tbl_batch b ON e.batch_id = b.batch_id
-                  LEFT JOIN tbl_offered_courses oc ON e.offered_id = oc.offered_id
-                  LEFT JOIN tbl_course c ON oc.course_id = c.course_id
+                  LEFT JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
+                  LEFT JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id
                   WHERE th.trainee_id = ?";
         
         $stmt = $conn->prepare($query);
@@ -301,10 +318,9 @@ function submitQuiz($conn) {
 
     // Server-side guard against re-submission
     $checkStmt = $conn->prepare("
-        SELECT gd.score FROM tbl_grades_dtl gd
-        JOIN tbl_test tt ON gd.test_id = tt.test_id
-        JOIN tbl_grades_hdr gh ON gd.grades_hdr_id = gh.grades_hdr_id
-        WHERE gh.trainee_id = ? AND tt.lesson_id = ? AND tt.activity_type_id = 1
+        SELECT g.score FROM tbl_grades g
+        JOIN tbl_test tt ON g.test_id = tt.test_id
+        WHERE g.trainee_id = ? AND tt.lesson_id = ? AND tt.activity_type_id = 1
     ");
     $checkStmt->execute([$traineeId, $lessonId]);
     if ($checkStmt->fetchColumn() !== false) {
@@ -332,30 +348,20 @@ function submitQuiz($conn) {
         $conn->beginTransaction();
 
         // 1. Find course_id for trainee.
-        $stmtCourse = $conn->prepare("SELECT oc.course_id FROM tbl_enrollment e JOIN tbl_offered_courses oc ON e.offered_id = oc.offered_id WHERE e.trainee_id = ? LIMIT 1");
+        $stmtCourse = $conn->prepare("SELECT oc.qualification_id FROM tbl_enrollment e JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id WHERE e.trainee_id = ? LIMIT 1");
         $stmtCourse->execute([$traineeId]);
-        $courseId = $stmtCourse->fetchColumn();
-        if (!$courseId) throw new Exception('Could not find course for trainee.');
+        $qualificationId = $stmtCourse->fetchColumn();
+        if (!$qualificationId) throw new Exception('Could not find course for trainee.');
 
-        // 2. Find/Create grades_hdr_id for trainee and course.
-        $stmtHdr = $conn->prepare("SELECT grades_hdr_id FROM tbl_grades_hdr WHERE trainee_id = ? AND course_id = ?");
-        $stmtHdr->execute([$traineeId, $courseId]);
-        $gradesHdrId = $stmtHdr->fetchColumn();
-        if (!$gradesHdrId) {
-            $stmtInsertHdr = $conn->prepare("INSERT INTO tbl_grades_hdr (trainee_id, course_id, date_recorded) VALUES (?, ?, NOW())");
-            $stmtInsertHdr->execute([$traineeId, $courseId]);
-            $gradesHdrId = $conn->lastInsertId();
-        }
-
-        // 3. Find test_id for lesson.
+        // 2. Find test_id for lesson.
         $stmtTest = $conn->prepare("SELECT test_id FROM tbl_test WHERE lesson_id = ? AND activity_type_id = 1 LIMIT 1");
         $stmtTest->execute([$lessonId]);
         $testId = $stmtTest->fetchColumn();
         if (!$testId) throw new Exception('Could not find test for this lesson.');
 
-        // 4. Insert into tbl_grades_dtl. Assumes table has `total_items` and `date_taken` columns.
-        $stmtGrade = $conn->prepare("INSERT INTO tbl_grades_dtl (grades_hdr_id, test_id, score) VALUES (?, ?, ?)");
-        $stmtGrade->execute([$gradesHdrId, $testId, $score]);
+        // 3. Insert into tbl_grades.
+        $stmtGrade = $conn->prepare("INSERT INTO tbl_grades (trainee_id, qualification_id, test_id, score, date_recorded) VALUES (?, ?, ?, ?, NOW())");
+        $stmtGrade->execute([$traineeId, $qualificationId, $testId, $score]);
 
         $conn->commit();
 
@@ -368,37 +374,90 @@ function submitQuiz($conn) {
 }
 
 function submitTaskSheet($conn) {
-    $data = json_decode(file_get_contents('php://input'), true);
-    $traineeId = $data['trainee_id'] ?? 0;
-    $lessonId = $data['lesson_id'] ?? 0;
-    $submittedContent = $data['submitted_content'] ?? '';
-
-    if (!$traineeId || !$lessonId) {
-        echo json_encode(['success' => false, 'message' => 'Missing required information.']);
-        return;
-    }
-
     try {
-        // Use INSERT ... ON DUPLICATE KEY UPDATE to handle both new submissions and resubmissions.
-        // This resets the grade if a trainee resubmits.
-        $sql = "INSERT INTO tbl_task_sheet_submissions (lesson_id, trainee_id, submitted_content, status)
-                VALUES (?, ?, ?, 'submitted')
-                ON DUPLICATE KEY UPDATE submitted_content = VALUES(submitted_content), submission_date = NOW(), status = 'submitted', grade = NULL, remarks = NULL, graded_by = NULL, grade_date = NULL";
-        
-        $stmt = $conn->prepare($sql);
-        $stmt->execute([$lessonId, $traineeId, $submittedContent]);
+        $data = json_decode(file_get_contents('php://input'), true);
+        $traineeId = $data['trainee_id'] ?? null;
+        $lessonId = $data['lesson_id'] ?? null;
+        $taskSheetId = $data['task_sheet_id'] ?? null;
+        $content = $data['submitted_content'] ?? '';
 
-        echo json_encode(['success' => true, 'message' => 'Task sheet submitted successfully.']);
+        if (!$traineeId || !$lessonId || !$taskSheetId) {
+            throw new Exception('Missing required fields');
+        }
 
+        // Insert into tbl_task_sheet_submissions
+        // Using ON DUPLICATE KEY UPDATE to handle re-submissions
+        $stmt = $conn->prepare("
+            INSERT INTO tbl_task_sheet_submissions (lesson_id, task_sheet_id, trainee_id, submitted_content, submission_date, status) 
+            VALUES (?, ?, ?, ?, NOW(), 'submitted')
+            ON DUPLICATE KEY UPDATE 
+                submitted_content = VALUES(submitted_content),
+                submission_date = NOW(),
+                status = 'submitted'
+        ");
+        $stmt->execute([$lessonId, $taskSheetId, $traineeId, $content]);
+
+        // --- Notification Logic ---
+        try {
+            // 1. Get Trainee Name
+            $stmtTrainee = $conn->prepare("SELECT CONCAT(first_name, ' ', last_name) as full_name FROM tbl_trainee_hdr WHERE trainee_id = ?");
+            $stmtTrainee->execute([$traineeId]);
+            $traineeName = $stmtTrainee->fetchColumn();
+
+            // 2. Get Task Sheet Title
+            $stmtTask = $conn->prepare("SELECT title FROM tbl_task_sheets WHERE task_sheet_id = ?");
+            $stmtTask->execute([$taskSheetId]);
+            $taskTitle = $stmtTask->fetchColumn();
+
+            // 3. Get Trainer User ID linked to the batch
+            // Assuming tbl_batch has trainer_id and tbl_trainer_hdr has user_id
+            $stmtTrainer = $conn->prepare("
+                SELECT th.user_id 
+                FROM tbl_enrollment e
+                JOIN tbl_batch b ON e.batch_id = b.batch_id
+                JOIN tbl_trainer th ON b.trainer_id = th.trainer_id
+                WHERE e.trainee_id = ? AND e.status = 'approved'
+                LIMIT 1
+            ");
+            $stmtTrainer->execute([$traineeId]);
+            $trainerUserId = $stmtTrainer->fetchColumn();
+
+            if ($trainerUserId) {
+                // Ensure notifications table exists
+                $conn->exec("CREATE TABLE IF NOT EXISTS tbl_notifications (
+                    notification_id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NOT NULL,
+                    title VARCHAR(255),
+                    message TEXT,
+                    link VARCHAR(255),
+                    is_read TINYINT(1) DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )");
+
+                $notifTitle = "Task Sheet Submitted";
+                $notifMessage = "$traineeName submitted task sheet: $taskTitle";
+                $notifLink = "/Hohoo-ville/frontend/html/trainer/pages/grading.html"; 
+
+                $stmtNotif = $conn->prepare("INSERT INTO tbl_notifications (user_id, title, message, link) VALUES (?, ?, ?, ?)");
+                $stmtNotif->execute([$trainerUserId, $notifTitle, $notifMessage, $notifLink]);
+            }
+        } catch (Exception $e) {
+            // Log error but do not disrupt submission
+            error_log("Notification Error: " . $e->getMessage());
+        }
+
+        echo json_encode(['success' => true, 'message' => 'Task sheet submitted successfully']);
     } catch (Exception $e) {
-        echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
 }
+
 
 function unsubmitTaskSheet($conn) {
     $data = json_decode(file_get_contents('php://input'), true);
     $traineeId = $data['trainee_id'] ?? 0;
     $lessonId = $data['lesson_id'] ?? 0;
+    $taskSheetId = $data['task_sheet_id'] ?? 0;
 
     if (!$traineeId || !$lessonId) {
         echo json_encode(['success' => false, 'message' => 'Missing required information.']);
@@ -407,9 +466,15 @@ function unsubmitTaskSheet($conn) {
     }
 
     try {
-        $sql = "DELETE FROM tbl_task_sheet_submissions WHERE lesson_id = ? AND trainee_id = ?";
-        $stmt = $conn->prepare($sql);
-        $stmt->execute([$lessonId, $traineeId]);
+        if ($taskSheetId) {
+            $sql = "DELETE FROM tbl_task_sheet_submissions WHERE lesson_id = ? AND trainee_id = ? AND task_sheet_id = ?";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([$lessonId, $traineeId, $taskSheetId]);
+        } else {
+            $sql = "DELETE FROM tbl_task_sheet_submissions WHERE lesson_id = ? AND trainee_id = ?";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([$lessonId, $traineeId]);
+        }
 
         echo json_encode(['success' => true, 'message' => 'Submission removed successfully.']);
     } catch (Exception $e) {

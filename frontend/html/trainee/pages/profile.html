@@ -6,14 +6,68 @@
     <title>My Profile - Hohoo-Ville</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #858796;
+            --bg-color: #f8f9fc;
+            --text-color: #5a5c69;
+        }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        #sidebar {
+            background: #fff;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            z-index: 1000;
+        }
+        #sidebar .sidebar-header {
+            padding: 1.5rem 1rem;
+            text-align: center;
+            color: var(--primary-color);
+            font-weight: 800;
+        }
+        #sidebar .nav-link {
+            color: var(--text-color);
+            padding: 0.5rem 1rem;
+            margin: 0.1rem 0.5rem;
+            border-radius: 0.35rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        #sidebar .nav-link:hover {
+            background-color: #eaecf4;
+            color: var(--primary-color);
+        }
+        #sidebar .nav-link.active {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+        .card {
+            border: none;
+            border-radius: 0.35rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        }
+        .card-header {
+            background-color: #f8f9fc;
+            border-bottom: 1px solid #e3e6f0;
+            padding: 1rem 1.25rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+    </style>
 </head>
 <body>
     <div class="d-flex">
         <!-- Sidebar -->
-        <nav id="sidebar" class="bg-light p-3" style="width: 250px; height: 100vh; position: fixed; overflow-y: auto;">
-            <div class="sidebar-header mb-4">
-                <h3>Hohoo-Ville</h3>
-                <p class="text-muted">Student Portal</p>
+        <nav id="sidebar" class="p-3" style="width: 250px; height: 100vh; position: fixed; overflow-y: auto;">
+            <div class="sidebar-header mb-3">
+                <h3><img src="../../../../img/logo.jpg" alt="Logo" class="me-2" style="height: 35px; width: auto;">Hohooville</h3>
+                <p class="text-muted">Trainee Portal</p>
             </div>
             <ul class="nav flex-column">
                 <li class="nav-item mb-2">
@@ -28,7 +82,7 @@
                 </li>
                 <li class="nav-item mb-2">
                     <a class="nav-link" href="/Hohoo-ville/frontend/html/trainee/pages/my_grades.html">
-                        <i class="fas fa-star me-2"></i> My Grades
+                        <i class="fas fa-star me-2"></i> My Progress
                     </a>
                 </li>
             </ul>
@@ -36,7 +90,7 @@
 
         <!-- Content -->
         <div class="flex-grow-1" style="margin-left: 250px;">
-            <nav class="navbar navbar-light bg-white border-bottom px-4 py-3">
+            <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm px-4 py-3">
                 <span class="navbar-brand mb-0 h1">My Profile</span>
                 <div class="dropdown">
                     <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
@@ -52,7 +106,7 @@
 
             <div class="container-fluid p-4">
                 <!-- Profile Header -->
-                <div class="card mb-4">
+                <div class="card shadow-sm mb-4">
                     <div class="card-body">
                         <div class="row align-items-center">
                             <div class="col-md-auto">
@@ -68,7 +122,7 @@
 
                 <div class="row">
                     <div class="col-lg-7">
-                        <div class="card mb-4">
+                        <div class="card shadow-sm mb-4">
                             <div class="card-header">
                                 <i class="fas fa-edit me-2"></i>Update Your Contact Information
                             </div>
@@ -113,7 +167,7 @@
                         </div>
                     </div>
                     <div class="col-lg-5">
-                        <div class="card mb-4">
+                        <div class="card shadow-sm mb-4">
                             <div class="card-header"><i class="fas fa-id-card me-2"></i>Personal Information</div>
                             <div class="card-body">
                                 <dl class="row mb-0">
@@ -127,7 +181,7 @@
                                 </dl>
                             </div>
                         </div>
-                        <div class="card mb-4">
+                        <div class="card shadow-sm mb-4">
                             <div class="card-header"><i class="fas fa-graduation-cap me-2"></i>Training Information</div>
                             <div class="card-body">
                                 <dl class="row mb-0">

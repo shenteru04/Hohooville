@@ -20,10 +20,10 @@ class MyTraining {
 
         try {
             // Get Active Course ID
-            $stmt = $this->conn->prepare("SELECT oc.course_id, c.course_name 
+            $stmt = $this->conn->prepare("SELECT oc.qualification_id, c.course_name 
                                           FROM tbl_enrollment e 
-                                          JOIN tbl_offered_courses oc ON e.offered_id = oc.offered_id 
-                                          JOIN tbl_course c ON oc.course_id = c.course_id
+                                          JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id 
+                                          JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id
                                           WHERE e.trainee_id = ? AND e.status = 'approved' LIMIT 1");
             $stmt->execute([$traineeId]);
             $course = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -33,8 +33,8 @@ class MyTraining {
                 $modStmt = $this->conn->prepare("SELECT m.module_id, m.module_title, l.lesson_id, l.lesson_title, l.file_path 
                                                  FROM tbl_module m 
                                                  LEFT JOIN tbl_lessons l ON m.module_id = l.module_id 
-                                                 WHERE m.course_id = ? ORDER BY m.module_id, l.lesson_id");
-                $modStmt->execute([$course['course_id']]);
+                                                 WHERE m.qualification_id = ? ORDER BY m.module_id, l.lesson_id");
+                $modStmt->execute([$course['qualification_id']]);
                 $data = $modStmt->fetchAll(PDO::FETCH_ASSOC);
                 echo json_encode(['success' => true, 'course' => $course, 'modules' => $data]);
             } else {

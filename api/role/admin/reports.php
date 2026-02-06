@@ -42,10 +42,10 @@ function getEnrollmentReport($conn, $start, $end) {
         $stmtChart = $conn->prepare("
             SELECT c.course_name as label, COUNT(e.enrollment_id) as value 
             FROM tbl_enrollment e
-            JOIN tbl_offered_courses oc ON e.offered_id = oc.offered_id
-            JOIN tbl_course c ON oc.course_id = c.course_id
+            JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
+            JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id
             WHERE e.enrollment_date BETWEEN ? AND ? AND e.status = 'approved'
-            GROUP BY c.course_id
+            GROUP BY c.qualification_id
         ");
         $stmtChart->execute([$start, $end]);
         $chartData = $stmtChart->fetchAll(PDO::FETCH_ASSOC);
@@ -55,8 +55,8 @@ function getEnrollmentReport($conn, $start, $end) {
             SELECT e.enrollment_date, CONCAT(t.first_name, ' ', t.last_name) as trainee, c.course_name, b.batch_name, e.status
             FROM tbl_enrollment e
             JOIN tbl_trainee_hdr t ON e.trainee_id = t.trainee_id
-            JOIN tbl_offered_courses oc ON e.offered_id = oc.offered_id
-            JOIN tbl_course c ON oc.course_id = c.course_id
+            JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
+            JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id
             LEFT JOIN tbl_batch b ON e.batch_id = b.batch_id
             WHERE e.enrollment_date BETWEEN ? AND ?
             ORDER BY e.enrollment_date DESC
@@ -157,24 +157,29 @@ function getPerformanceReport($conn, $start, $end) {
     try {
         // Chart Data: Average Grade by Course
         $stmtChart = $conn->prepare("
-            SELECT c.course_name as label, AVG(g.total_grade) as value
-            FROM tbl_grades_hdr g
-            JOIN tbl_course c ON g.course_id = c.course_id
+            SELECT c.course_name as label, AVG(g.score) as value
+            FROM tbl_grades g
+            JOIN tbl_qualifications c ON g.qualification_id = c.qualification_id
             WHERE g.date_recorded BETWEEN ? AND ?
-            GROUP BY c.course_id
+            GROUP BY c.qualification_id
         ");
         $stmtChart->execute([$start, $end]);
         $chartData = $stmtChart->fetchAll(PDO::FETCH_ASSOC);
 
         // Table Data: Trainee Performance
         $stmtTable = $conn->prepare("
-            SELECT CONCAT(t.first_name, ' ', t.last_name) as trainee, 
-                   c.course_name, g.total_grade, g.remarks, g.date_recorded
-            FROM tbl_grades_hdr g
+            SELECT 
+                CONCAT(t.first_name, ' ', t.last_name) as trainee, 
+                c.course_name, 
+                AVG(g.score) as total_grade, 
+                (CASE WHEN AVG(g.score) >= 80 THEN 'Competent' ELSE 'Not Yet Competent' END) as remarks,
+                MAX(g.date_recorded) as date_recorded
+            FROM tbl_grades g
             JOIN tbl_trainee_hdr t ON g.trainee_id = t.trainee_id
-            JOIN tbl_course c ON g.course_id = c.course_id
+            JOIN tbl_qualifications c ON g.qualification_id = c.qualification_id
             WHERE g.date_recorded BETWEEN ? AND ?
-            ORDER BY g.total_grade DESC
+            GROUP BY g.trainee_id, g.qualification_id
+            ORDER BY total_grade DESC
         ");
         $stmtTable->execute([$start, $end]);
         $tableData = $stmtTable->fetchAll(PDO::FETCH_ASSOC);

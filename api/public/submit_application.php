@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 function getOptions($conn) {
     try {
-        $courses = $conn->query("SELECT course_id, course_name FROM tbl_course WHERE status = 'active'")->fetchAll(PDO::FETCH_ASSOC);
+        $courses = $conn->query("SELECT qualification_id, course_name FROM tbl_qualifications WHERE status = 'active'")->fetchAll(PDO::FETCH_ASSOC);
         $batches = $conn->query("SELECT batch_id, batch_name FROM tbl_batch WHERE status = 'open'")->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(['success' => true, 'data' => ['courses' => $courses, 'batches' => $batches]]);
     } catch (Exception $e) {
@@ -42,6 +42,20 @@ function submitApplication($conn) {
         $validId = uploadFile($_FILES['valid_id'], $uploadDir, 'valid_id_');
         $birthCert = uploadFile($_FILES['birth_cert'], $uploadDir, 'birth_');
         $photo = uploadFile($_FILES['photo'], $uploadDir, 'photo_');
+
+        // Handle Digital Signature (Base64 to Image)
+        $signatureContent = $_POST['digital_signature'] ?? '';
+        $signatureFilename = null;
+        
+        if (preg_match('/^data:image\/(\w+);base64,/', $signatureContent, $type)) {
+            $data = substr($signatureContent, strpos($signatureContent, ',') + 1);
+            $type = strtolower($type[1]); // png
+            $data = base64_decode($data);
+            if ($data !== false) {
+                $signatureFilename = 'sig_' . time() . '.' . $type;
+                file_put_contents($uploadDir . $signatureFilename, $data);
+            }
+        }
 
         // Handle Checkboxes
         $learnerClass = isset($_POST['learner_classification']) ? implode(',', $_POST['learner_classification']) : '';
@@ -121,29 +135,29 @@ function submitApplication($conn) {
             $_POST['disability_type'] ?? null,
             $_POST['disability_cause'] ?? null,
             $privacyConsent,
-            $_POST['digital_signature']
+            $signatureFilename // Save the filename, not the base64 string
         ]);
 
         // 5. Handle Enrollment (Create Offered Course link if needed)
-        $courseId = $_POST['course_id'];
+        $qualificationId = $_POST['qualification_id'];
         $batchId = $_POST['batch_id'];
 
         // Check if offered course exists for this course, if not create one
-        $stmtOffered = $conn->prepare("SELECT offered_id FROM tbl_offered_courses WHERE course_id = ? LIMIT 1");
-        $stmtOffered->execute([$courseId]);
+        $stmtOffered = $conn->prepare("SELECT offered_qualification_id FROM tbl_offered_qualifications WHERE qualification_id = ? LIMIT 1");
+        $stmtOffered->execute([$qualificationId]);
         $offered = $stmtOffered->fetch(PDO::FETCH_ASSOC);
         
         if ($offered) {
-            $offeredId = $offered['offered_id'];
+            $offeredId = $offered['offered_qualification_id'];
         } else {
-            $stmtIns = $conn->prepare("INSERT INTO tbl_offered_courses (course_id) VALUES (?)");
-            $stmtIns->execute([$courseId]);
+            $stmtIns = $conn->prepare("INSERT INTO tbl_offered_qualifications (qualification_id) VALUES (?)");
+            $stmtIns->execute([$qualificationId]);
             $offeredId = $conn->lastInsertId();
         }
 
         // Insert Enrollment with 'pending' status
-        $stmtEnroll = $conn->prepare("INSERT INTO tbl_enrollment (trainee_id, offered_id, batch_id, scholarship_type, enrollment_date, status) VALUES (?, ?, ?, ?, CURDATE(), 'pending')");
-        $stmtEnroll->execute([$traineeId, $offeredId, $batchId, $_POST['scholarship_type']]);
+        $stmtEnroll = $conn->prepare("INSERT INTO tbl_enrollment (trainee_id, offered_qualification_id, batch_id, scholarship_type, enrollment_date, status) VALUES (?, ?, ?, ?, CURDATE(), 'pending')");
+        $stmtEnroll->execute([$traineeId, $offeredId, $batchId, $_POST['scholarship_type'] ?? null]);
 
         $conn->commit();
         echo json_encode(['success' => true, 'message' => 'Application submitted']);

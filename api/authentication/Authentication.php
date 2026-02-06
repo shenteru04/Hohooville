@@ -10,6 +10,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../database/db.php';
+// Load Composer's autoloader
+require_once '../../vendor/autoload.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
 class Authentication {
     private $conn;
@@ -33,6 +38,12 @@ class Authentication {
             case 'logout':
                 if ($method === 'POST') {
                     $this->logout();
+                }
+                break;
+
+            case 'verify-otp':
+                if ($method === 'POST') {
+                    $this->verifyOtp();
                 }
                 break;
             
@@ -106,6 +117,42 @@ class Authentication {
             return;
         }
 
+        // --- Role-Based Security Check ---
+        
+        // 1. Admin & Registrar: OTP Security
+        if (in_array($user['role'], ['admin', 'registrar'])) {
+            $otp = rand(100000, 999999);
+            
+            // Create a stateless OTP token containing the hash of the OTP
+            $otpHash = password_hash($otp, PASSWORD_BCRYPT);
+            $otpPayload = [
+                'user_id' => $user['user_id'],
+                'otp_hash' => $otpHash,
+                'exp' => time() + 300 // 5 minutes expiration
+            ];
+            $otpToken = $this->encodeJwt($otpPayload);
+
+            // Send OTP via Email using PHPMailer
+            if (!$this->sendOtpEmail($user['email'], $otp)) {
+                $this->sendResponse(500, false, 'Failed to send OTP email. Please contact support.');
+            }
+
+            $this->sendResponse(200, true, 'OTP sent to your registered email.', [
+                'require_otp' => true,
+                'user_id' => $user['user_id'],
+                'otp_token' => $otpToken
+            ]);
+            return;
+        }
+
+        // 2. Trainer & Trainee: CAPTCHA Security
+        if (in_array($user['role'], ['trainer', 'trainee'])) {
+            if (!isset($data->captcha_input) || !isset($data->captcha_challenge) || $data->captcha_input != $data->captcha_challenge) {
+                $this->sendResponse(400, false, 'Incorrect CAPTCHA answer.');
+                return;
+            }
+        }
+
         // Generate token
         $token = $this->generateToken($user['user_id']);
 
@@ -119,6 +166,58 @@ class Authentication {
         ];
 
         $this->sendResponse(200, true, 'Login successful', $response);
+    }
+
+    private function verifyOtp() {
+        $data = json_decode(file_get_contents("php://input"));
+
+        if (empty($data->user_id) || empty($data->otp) || empty($data->otp_token)) {
+            $this->sendResponse(400, false, 'User ID, OTP, and validation token are required');
+            return;
+        }
+
+        // 1. Verify the Token Signature and Expiry
+        $payload = $this->decodeJwt($data->otp_token);
+        
+        if (!$payload) {
+            $this->sendResponse(400, false, 'Invalid or expired OTP session. Please login again.');
+            return;
+        }
+
+        // 2. Verify User ID matches
+        if ($payload->user_id != $data->user_id) {
+            $this->sendResponse(400, false, 'User mismatch.');
+            return;
+        }
+
+        // 3. Verify OTP against the hash in the token
+        if (!password_verify($data->otp, $payload->otp_hash)) {
+            $this->sendResponse(400, false, 'Invalid OTP.');
+            return;
+        }
+
+        // Fetch user details for final login response
+        $stmt = $this->conn->prepare("SELECT * FROM " . $this->table . " WHERE user_id = :user_id");
+        $stmt->execute([':user_id' => $data->user_id]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // Login Success
+        $token = $this->generateToken($user['user_id']);
+        
+        // Fetch role name again for frontend redirection
+        $roleStmt = $this->conn->prepare("SELECT role_name FROM tbl_role WHERE role_id = ?");
+        $roleStmt->execute([$user['role_id']]);
+        $roleName = $roleStmt->fetchColumn();
+        $user['role'] = $roleName;
+
+        unset($user['password']);
+        unset($user['otp_code']);
+        unset($user['otp_expiry']);
+
+        $this->sendResponse(200, true, 'OTP Verified. Login successful.', [
+            'user' => $user,
+            'token' => $token
+        ]);
     }
 
     private function logout() {
@@ -336,6 +435,32 @@ class Authentication {
         return $payloadData->user_id;
     }
 
+    private function encodeJwt($payload) {
+        $header = json_encode(['typ' => 'JWT', 'alg' => 'HS256']);
+        $payloadJson = json_encode($payload);
+        $base64UrlHeader = $this->base64UrlEncode($header);
+        $base64UrlPayload = $this->base64UrlEncode($payloadJson);
+        $signature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, 'hohoo_ville_secret_key_2024', true);
+        $base64UrlSignature = $this->base64UrlEncode($signature);
+        return $base64UrlHeader . "." . $base64UrlPayload . "." . $base64UrlSignature;
+    }
+
+    private function decodeJwt($token) {
+        $tokenParts = explode('.', $token);
+        if (count($tokenParts) !== 3) return false;
+        $header = base64_decode($tokenParts[0]);
+        $payload = base64_decode($tokenParts[1]);
+        $signatureProvided = $tokenParts[2];
+        $base64UrlHeader = $this->base64UrlEncode($header);
+        $base64UrlPayload = $this->base64UrlEncode($payload);
+        $signature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, 'hohoo_ville_secret_key_2024', true);
+        $base64UrlSignature = $this->base64UrlEncode($signature);
+        if ($base64UrlSignature !== $signatureProvided) return false;
+        $payloadData = json_decode($payload);
+        if (isset($payloadData->exp) && $payloadData->exp < time()) return false;
+        return $payloadData;
+    }
+
     private function base64UrlEncode($text) {
         return str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($text));
     }
@@ -371,6 +496,63 @@ class Authentication {
         
         echo json_encode($response);
         exit();
+    }
+
+    private function sendOtpEmail($to, $otp) {
+        $mail = new PHPMailer(true);
+
+        try {
+            //Server settings
+            $mail->isSMTP();                                            // Send using SMTP
+            $mail->Host       = 'smtp.gmail.com';                       // Set the SMTP server to send through
+            $mail->SMTPAuth   = true;                                   // Enable SMTP authentication
+            $mail->Username   = 'christiandaveboncales@gmail.com';      // SMTP username
+            $mail->Password   = 'jdkr ijgy fsmc vffu';    // SMTP password (use App Password)
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;         // Enable TLS encryption
+            $mail->Port       = 587;                                    // TCP port to connect to
+
+            //Recipients
+            $mail->setFrom('christiandaveboncales@gmail.com', 'Hohoo-Ville Security');
+            $mail->addAddress($to);                                     // Add a recipient
+
+            //Content
+            $mail->isHTML(true);                                        // Set email format to HTML
+            $mail->Subject = 'Your Login OTP Code';
+            
+            // Professional Blue & White HTML Template
+            $mail->Body = "
+            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f4f6f9; padding: 20px;'>
+                <div style='background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
+                    <div style='background-color: #4e73df; padding: 20px; text-align: center;'>
+                        <h1 style='color: #ffffff; margin: 0; font-size: 24px; font-weight: bold;'>Hohoo-Ville Security</h1>
+                    </div>
+                    <div style='padding: 40px 30px; text-align: center; color: #5a5c69;'>
+                        <h2 style='color: #4e73df; margin-top: 0; font-size: 20px;'>Login Verification</h2>
+                        <p style='font-size: 16px; line-height: 1.5; margin-bottom: 25px;'>
+                            You requested a One-Time Password (OTP) to log in to your account. Please use the code below to complete your sign-in.
+                        </p>
+                        <div style='background-color: #f8f9fc; border: 2px dashed #4e73df; border-radius: 8px; padding: 15px; margin: 0 auto 25px auto; display: inline-block; min-width: 200px;'>
+                            <span style='font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #4e73df; display: block;'>$otp</span>
+                        </div>
+                        <p style='font-size: 14px; color: #858796; margin: 0;'>
+                            This code is valid for <strong>5 minutes</strong>.<br>
+                            If you did not request this code, please ignore this email.
+                        </p>
+                    </div>
+                    <div style='background-color: #f8f9fc; padding: 15px; text-align: center; font-size: 12px; color: #b7b9cc; border-top: 1px solid #e3e6f0;'>
+                        &copy; " . date('Y') . " Hohoo-Ville Technical School. All rights reserved.
+                    </div>
+                </div>
+            </div>";
+            
+            $mail->AltBody = "Your One-Time Password (OTP) is: $otp. This code is valid for 5 minutes.";
+
+            $mail->send();
+            return true;
+        } catch (Exception $e) {
+            error_log("Message could not be sent. Mailer Error: {$mail->ErrorInfo}");
+            return false;
+        }
     }
 }
 

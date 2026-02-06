@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const user = JSON.parse(localStorage.getItem('user'));
     
     if (!user) {
-        window.location.href = '../../../../login.html';
+        window.location.href = '/Hohoo-ville/frontend/login.html';
         return;
     }
 
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         logoutBtn.addEventListener('click', (e) => {
             e.preventDefault();
             localStorage.clear();
-            window.location.href = '../../../../login.html';
+            window.location.href = '/Hohoo-ville/frontend/login.html';
         });
     }
 

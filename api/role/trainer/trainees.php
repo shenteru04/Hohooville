@@ -48,8 +48,8 @@ function listTrainees($conn, $trainerId) {
               FROM tbl_trainee_hdr t
               JOIN tbl_enrollment e ON t.trainee_id = e.trainee_id
               JOIN tbl_batch b ON e.batch_id = b.batch_id
-              JOIN tbl_offered_courses oc ON e.offered_id = oc.offered_id
-              JOIN tbl_course c ON oc.course_id = c.course_id
+              JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
+              JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id
               WHERE b.trainer_id = ? AND e.status = 'approved'
               ORDER BY t.last_name, t.first_name";
     
@@ -79,8 +79,8 @@ function getTraineeDetails($conn, $traineeId) {
             LEFT JOIN tbl_trainee_ftr AS t_ftr ON t_hdr.trainee_id = t_ftr.trainee_id
             LEFT JOIN tbl_enrollment AS e ON t_hdr.trainee_id = e.trainee_id
             LEFT JOIN tbl_batch AS b ON e.batch_id = b.batch_id
-            LEFT JOIN tbl_offered_courses AS oc ON e.offered_id = oc.offered_id
-            LEFT JOIN tbl_course AS c ON oc.course_id = c.course_id
+            LEFT JOIN tbl_offered_qualifications AS oc ON e.offered_qualification_id = oc.offered_qualification_id
+            LEFT JOIN tbl_qualifications AS c ON oc.qualification_id = c.qualification_id
             WHERE
                 t_hdr.trainee_id = ?
             LIMIT 1";
