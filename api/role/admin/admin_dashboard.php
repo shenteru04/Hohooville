@@ -84,7 +84,7 @@ class AdminDashboard {
 
     private function getEnrollmentStats() {
         $stats = [];
-        $stats['by_qualification'] = $this->conn->query("SELECT c.course_name as title, COUNT(e.enrollment_id) as count FROM tbl_enrollment e JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id WHERE e.status = 'approved' GROUP BY c.qualification_id")->fetchAll(PDO::FETCH_ASSOC);
+        $stats['by_qualification'] = $this->conn->query("SELECT c.qualification_name as title, COUNT(e.enrollment_id) as count FROM tbl_enrollment e JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id WHERE e.status = 'approved' GROUP BY c.qualification_id")->fetchAll(PDO::FETCH_ASSOC);
         
         $stats['monthly_trend'] = $this->conn->query("SELECT DATE_FORMAT(enrollment_date, '%b %Y') as month, COUNT(*) as count FROM tbl_enrollment WHERE enrollment_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH) GROUP BY DATE_FORMAT(enrollment_date, '%Y-%m') ORDER BY DATE_FORMAT(enrollment_date, '%Y-%m') ASC")->fetchAll(PDO::FETCH_ASSOC);
         
@@ -120,7 +120,7 @@ class AdminDashboard {
     private function getCompetencyResults() {
         $results = [];
         // Using new tbl_grades structure
-        $results['overview']['labels'] = $this->conn->query("SELECT c.course_name FROM tbl_grades g JOIN tbl_qualifications c ON g.qualification_id = c.qualification_id GROUP BY g.qualification_id")->fetchAll(PDO::FETCH_COLUMN);
+        $results['overview']['labels'] = $this->conn->query("SELECT c.qualification_name FROM tbl_grades g JOIN tbl_qualifications c ON g.qualification_id = c.qualification_id GROUP BY g.qualification_id")->fetchAll(PDO::FETCH_COLUMN);
         $results['overview']['scores'] = $this->conn->query("SELECT AVG(g.score) FROM tbl_grades g JOIN tbl_qualifications c ON g.qualification_id = c.qualification_id GROUP BY g.qualification_id")->fetchAll(PDO::FETCH_COLUMN);
 
         $this->sendResponse(200, true, 'Competency results loaded', $results);

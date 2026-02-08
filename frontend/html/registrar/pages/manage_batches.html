@@ -67,7 +67,7 @@
 <body>
     <div class="d-flex">
         <!-- Sidebar -->
-        <nav id="sidebar" class="p-3" style="width: 250px; height: 100vh; position: fixed; overflow-y: auto; top: 0; left: 0;">
+        <nav id="sidebar" class="p-3">
             <div class="sidebar-header mb-3">
                 <h3><img src="../../../../img/logo.jpg" alt="Logo" class="me-2" style="height: 35px; width: auto;">Hohooville</h3>
                 <p class="text-muted">Registrar Portal</p>
@@ -111,7 +111,7 @@
         </nav>
 
         <!-- Page Content -->
-        <div class="flex-grow-1" style="margin-left: 250px;">
+        <div class="flex-grow-1" id="content">
             <!-- Top Navigation -->
             <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
                 <div class="container-fluid">
@@ -161,7 +161,7 @@
                                         <th>Start Date</th>
                                         <th>End Date</th>
                                         <th>Status</th>
-                                        <th>Actions</th>
+                                        <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="batchesTableBody">

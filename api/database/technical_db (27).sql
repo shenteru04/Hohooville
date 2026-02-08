@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 05, 2026 at 02:41 AM
+-- Generation Time: Feb 06, 2026 at 07:26 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -73,32 +73,35 @@ INSERT INTO `tbl_activity_logs` (`activity_log_id`, `user_id`, `action`, `table_
 (8, 1, 'login_success', 'tbl_users', 1, 'User logged in successfully', '::1', '2026-02-04 19:41:52'),
 (9, 1, 'login_success', 'tbl_users', 1, 'User logged in successfully', '::1', '2026-02-04 19:43:11'),
 (10, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '::1', '2026-02-05 08:35:44'),
-(11, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '::1', '2026-02-05 09:22:08');
+(11, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '::1', '2026-02-05 09:22:08'),
+(12, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '::1', '2026-02-05 11:31:55'),
+(13, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '::1', '2026-02-05 11:33:24'),
+(14, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '::1', '2026-02-05 11:42:13'),
+(15, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '::1', '2026-02-05 13:19:52'),
+(16, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '::1', '2026-02-05 15:35:06'),
+(17, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '::1', '2026-02-05 15:35:57'),
+(18, 16, 'login_success', 'tbl_users', 16, 'User logged in successfully', '::1', '2026-02-05 21:53:43'),
+(19, 14, 'login_success', 'tbl_users', 14, 'User logged in successfully', '::1', '2026-02-06 00:31:47'),
+(20, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '::1', '2026-02-06 00:32:32'),
+(21, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '::1', '2026-02-06 06:49:12'),
+(22, 14, 'login_success', 'tbl_users', 14, 'User logged in successfully', '::1', '2026-02-06 12:11:51'),
+(23, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '::1', '2026-02-06 12:47:58'),
+(24, 16, 'login_success', 'tbl_users', 16, 'User logged in successfully', '::1', '2026-02-06 13:01:25'),
+(25, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '::1', '2026-02-06 13:01:47');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `tbl_attendance_dtl`
+-- Table structure for table `tbl_attendance`
 --
 
-CREATE TABLE `tbl_attendance_dtl` (
-  `attendance_dtl_id` int(11) NOT NULL,
-  `attendance_hdr_id` int(11) DEFAULT NULL,
+CREATE TABLE `tbl_attendance` (
+  `attendance_id` int(11) NOT NULL,
+  `batch_id` int(11) DEFAULT NULL,
   `trainee_id` int(11) DEFAULT NULL,
+  `date_recorded` date DEFAULT curdate(),
   `status` enum('present','absent','late') DEFAULT 'present',
   `remarks` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `tbl_attendance_hdr`
---
-
-CREATE TABLE `tbl_attendance_hdr` (
-  `attendance_hdr_id` int(11) NOT NULL,
-  `batch_id` int(11) DEFAULT NULL,
-  `date_recorded` date DEFAULT curdate()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -110,7 +113,7 @@ CREATE TABLE `tbl_attendance_hdr` (
 CREATE TABLE `tbl_batch` (
   `batch_id` int(11) NOT NULL,
   `batch_name` varchar(100) DEFAULT NULL,
-  `course_id` int(11) DEFAULT NULL,
+  `qualification_id` int(11) DEFAULT NULL,
   `trainer_id` int(11) DEFAULT NULL,
   `scholarship_type` varchar(100) DEFAULT NULL,
   `scholarship_type_id` int(11) DEFAULT NULL,
@@ -123,7 +126,7 @@ CREATE TABLE `tbl_batch` (
 -- Dumping data for table `tbl_batch`
 --
 
-INSERT INTO `tbl_batch` (`batch_id`, `batch_name`, `course_id`, `trainer_id`, `scholarship_type`, `scholarship_type_id`, `start_date`, `end_date`, `status`) VALUES
+INSERT INTO `tbl_batch` (`batch_id`, `batch_name`, `qualification_id`, `trainer_id`, `scholarship_type`, `scholarship_type_id`, `start_date`, `end_date`, `status`) VALUES
 (2, 'Batch 2026', 1, 1, 'STEP', 3, '2026-01-27', '2026-01-28', 'open'),
 (3, 'Batch 2026.1', 3, 2, 'STEP', 3, '2026-01-29', '2026-02-01', 'open');
 
@@ -136,35 +139,11 @@ INSERT INTO `tbl_batch` (`batch_id`, `batch_name`, `course_id`, `trainer_id`, `s
 CREATE TABLE `tbl_certificate` (
   `certificate_id` int(11) NOT NULL,
   `trainee_id` int(11) DEFAULT NULL,
-  `course_id` int(11) DEFAULT NULL,
+  `qualification_id` int(11) DEFAULT NULL,
   `issue_date` date DEFAULT curdate(),
   `validity_date` date DEFAULT NULL,
   `certificate_status` enum('valid','expired') DEFAULT 'valid'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `tbl_course`
---
-
-CREATE TABLE `tbl_course` (
-  `course_id` int(11) NOT NULL,
-  `course_name` varchar(150) NOT NULL,
-  `ctpr_number` varchar(100) DEFAULT NULL,
-  `training_cost` decimal(10,2) DEFAULT 0.00,
-  `description` text DEFAULT NULL,
-  `duration` varchar(50) DEFAULT NULL,
-  `status` enum('active','inactive','pending','rejected') DEFAULT 'pending'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `tbl_course`
---
-
-INSERT INTO `tbl_course` (`course_id`, `course_name`, `ctpr_number`, `training_cost`, `description`, `duration`, `status`) VALUES
-(1, 'Electrical Installation and Maintenance NC II', 'CTPR-0001-2024', 18000.00, 'Electrical Installation and Maintenance NC II equips learners with skills to install, maintain, and repair electrical wiring and equipment in residential and commercial buildings, following safety standards and the Philippine Electrical Code.', '120 hours', 'active'),
-(3, 'Electronic Products Assembly and Servicing (EPAS) NC II', '523526253', 20000.00, 'This qualification covers the knowledge, skills, and attitudes required to assemble, install, service, and repair electronic products and systems such as consumer electronics, audio-video equipment, and related devices. It includes workplace safety, use of tools and test instruments, interpretation of technical diagrams, and compliance with industry standards.', '240 Hours', 'active');
 
 -- --------------------------------------------------------
 
@@ -184,7 +163,8 @@ CREATE TABLE `tbl_enrolled_trainee` (
 
 INSERT INTO `tbl_enrolled_trainee` (`enrolled_id`, `enrollment_id`, `trainee_id`) VALUES
 (4, 4, 5),
-(6, 6, 7);
+(6, 6, 7),
+(7, 7, 8);
 
 -- --------------------------------------------------------
 
@@ -195,7 +175,7 @@ INSERT INTO `tbl_enrolled_trainee` (`enrolled_id`, `enrollment_id`, `trainee_id`
 CREATE TABLE `tbl_enrollment` (
   `enrollment_id` int(11) NOT NULL,
   `trainee_id` int(11) DEFAULT NULL,
-  `offered_id` int(11) DEFAULT NULL,
+  `offered_qualification_id` int(11) DEFAULT NULL,
   `batch_id` int(11) DEFAULT NULL,
   `enrollment_date` date DEFAULT curdate(),
   `status` enum('pending','qualified','unqualified','approved','rejected') DEFAULT 'pending',
@@ -207,9 +187,10 @@ CREATE TABLE `tbl_enrollment` (
 -- Dumping data for table `tbl_enrollment`
 --
 
-INSERT INTO `tbl_enrollment` (`enrollment_id`, `trainee_id`, `offered_id`, `batch_id`, `enrollment_date`, `status`, `scholarship_type`, `scholarship_type_id`) VALUES
+INSERT INTO `tbl_enrollment` (`enrollment_id`, `trainee_id`, `offered_qualification_id`, `batch_id`, `enrollment_date`, `status`, `scholarship_type`, `scholarship_type_id`) VALUES
 (4, 5, 1, 2, '2026-01-27', 'approved', 'STEP', 3),
-(6, 7, 2, 3, '2026-01-29', 'approved', 'TWSP', 1);
+(6, 7, 2, 3, '2026-01-29', 'approved', 'TWSP', 1),
+(7, 8, 1, 2, '2026-02-05', 'approved', 'STEP', NULL);
 
 -- --------------------------------------------------------
 
@@ -229,66 +210,27 @@ CREATE TABLE `tbl_feedback` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `tbl_finance_record`
+-- Table structure for table `tbl_grades`
 --
 
-CREATE TABLE `tbl_finance_record` (
-  `finance_id` int(11) NOT NULL,
-  `trainee_id` int(11) DEFAULT NULL,
-  `amount` decimal(10,2) DEFAULT NULL,
-  `payment_date` date DEFAULT NULL,
-  `payment_method` enum('cash','gcash','card') DEFAULT 'cash',
-  `reference_no` varchar(100) DEFAULT NULL,
-  `remarks` text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `tbl_grades_dtl`
---
-
-CREATE TABLE `tbl_grades_dtl` (
-  `grades_dtl_id` int(11) NOT NULL,
-  `grades_hdr_id` int(11) DEFAULT NULL,
-  `test_id` int(11) DEFAULT NULL,
+CREATE TABLE `tbl_grades` (
+  `grade_id` int(11) NOT NULL,
+  `trainee_id` int(11) NOT NULL,
+  `qualification_id` int(11) NOT NULL,
+  `test_id` int(11) NOT NULL,
   `score` decimal(10,2) DEFAULT NULL,
-  `remarks` varchar(100) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `tbl_grades_dtl`
---
-
-INSERT INTO `tbl_grades_dtl` (`grades_dtl_id`, `grades_hdr_id`, `test_id`, `score`, `remarks`) VALUES
-(1, 9, 4, 10.00, NULL);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `tbl_grades_hdr`
---
-
-CREATE TABLE `tbl_grades_hdr` (
-  `grades_hdr_id` int(11) NOT NULL,
-  `trainee_id` int(11) DEFAULT NULL,
-  `course_id` int(11) DEFAULT NULL,
-  `total_grade` decimal(5,2) DEFAULT NULL,
   `remarks` varchar(100) DEFAULT NULL,
-  `date_recorded` date DEFAULT curdate(),
-  `pre_test` decimal(5,2) DEFAULT 0.00,
-  `post_test` decimal(5,2) DEFAULT 0.00,
-  `activities` decimal(5,2) DEFAULT 0.00,
-  `quizzes` decimal(5,2) DEFAULT 0.00,
-  `task_sheets` decimal(5,2) DEFAULT 0.00
+  `date_recorded` date DEFAULT curdate()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `tbl_grades_hdr`
+-- Dumping data for table `tbl_grades`
 --
 
-INSERT INTO `tbl_grades_hdr` (`grades_hdr_id`, `trainee_id`, `course_id`, `total_grade`, `remarks`, `date_recorded`, `pre_test`, `post_test`, `activities`, `quizzes`, `task_sheets`) VALUES
-(9, 5, 1, NULL, NULL, '2026-01-28', 0.00, 0.00, 0.00, 0.00, 0.00);
+INSERT INTO `tbl_grades` (`grade_id`, `trainee_id`, `qualification_id`, `test_id`, `score`, `remarks`, `date_recorded`) VALUES
+(1, 5, 1, 4, 10.00, NULL, '2026-01-28'),
+(2, 8, 1, 4, 1.00, NULL, '2026-02-06'),
+(3, 5, 1, 5, 1.00, NULL, '2026-02-06');
 
 -- --------------------------------------------------------
 
@@ -312,10 +254,11 @@ CREATE TABLE `tbl_lessons` (
 --
 
 INSERT INTO `tbl_lessons` (`lesson_id`, `module_id`, `day_number`, `lesson_title`, `lesson_description`, `posting_date`, `task_sheet_file`, `lesson_file_path`) VALUES
-(2, 3, NULL, 'LEARNING OUTCOME 1: PLAN AND PREPARE WORK', '', '2026-01-29 18:26:00', 'task_1769617613_598706627_3335430083274662_7994946475721277614_n (1).png', NULL),
+(2, 3, NULL, 'LEARNING OUTCOME 1: PLAN AND PREPARE WORK', '', '2026-02-06 05:22:00', 'task_1769617613_598706627_3335430083274662_7994946475721277614_n (1).png', NULL),
 (3, 3, NULL, 'LEARNING OUTCOME 2: INSTALL ELECTRICAL PROTECTIVE DEVICES', '', NULL, NULL, NULL),
 (4, 3, NULL, 'LEARNING OUTCOME 3: INSTALL LIGHTING FIXTURES AND AUXILIARY', '', NULL, NULL, NULL),
-(5, 3, NULL, 'LEARNING OUTCOME 4: NOTIFY COMPLETION OF WORK', '', NULL, NULL, NULL);
+(5, 3, NULL, 'LEARNING OUTCOME 4: NOTIFY COMPLETION OF WORK', '', NULL, NULL, NULL),
+(6, 5, NULL, '1.1 Install electrical metallic /nonmetallic (PVC conduit)', '', '2026-02-05 16:00:00', NULL, 'lesson_6_1770278388.docx');
 
 -- --------------------------------------------------------
 
@@ -347,7 +290,7 @@ INSERT INTO `tbl_lesson_contents` (`content_id`, `lesson_id`, `title`, `content`
 
 CREATE TABLE `tbl_module` (
   `module_id` int(11) NOT NULL,
-  `course_id` int(11) NOT NULL,
+  `qualification_id` int(11) NOT NULL,
   `competency_type` enum('core','basic','common') NOT NULL DEFAULT 'core',
   `module_title` varchar(150) DEFAULT NULL,
   `module_description` text DEFAULT NULL
@@ -357,18 +300,43 @@ CREATE TABLE `tbl_module` (
 -- Dumping data for table `tbl_module`
 --
 
-INSERT INTO `tbl_module` (`module_id`, `course_id`, `competency_type`, `module_title`, `module_description`) VALUES
-(3, 1, 'core', 'Installing Electrical Protective Devices for Distribution, Power, Lighting, Auxiliary, Lightning Protection and Grounding Systems', ' Perform roughing-in activities, wiring and cabling works for\nsingle-phase distribution, power, lighting and auxiliary systems');
+INSERT INTO `tbl_module` (`module_id`, `qualification_id`, `competency_type`, `module_title`, `module_description`) VALUES
+(3, 1, 'core', 'Installing Electrical Protective Devices for Distribution, Power, Lighting, Auxiliary, Lightning Protection and Grounding Systems', ' Perform roughing-in activities, wiring and cabling works for\nsingle-phase distribution, power, lighting and auxiliary systems'),
+(5, 1, 'common', 'ELC741301', '');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `tbl_offered_courses`
+-- Table structure for table `tbl_notifications`
 --
 
-CREATE TABLE `tbl_offered_courses` (
-  `offered_id` int(11) NOT NULL,
-  `course_id` int(11) NOT NULL,
+CREATE TABLE `tbl_notifications` (
+  `notification_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `title` varchar(255) DEFAULT NULL,
+  `message` text DEFAULT NULL,
+  `link` varchar(255) DEFAULT NULL,
+  `is_read` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_notifications`
+--
+
+INSERT INTO `tbl_notifications` (`notification_id`, `user_id`, `title`, `message`, `link`, `is_read`, `created_at`) VALUES
+(1, 10, 'Task Sheet Submitted', 'Christian Dave Boncales submitted task sheet: Task Sheet 2.1-3', '/Hohoo-ville/frontend/html/trainer/pages/grading.html', 1, '2026-02-06 00:35:26'),
+(2, 10, 'Task Sheet Submitted', 'Christian Dave Boncales submitted task sheet: Task Sheet 2.1-2', '/Hohoo-ville/frontend/html/trainer/pages/grading.html', 1, '2026-02-06 02:16:29');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_offered_qualifications`
+--
+
+CREATE TABLE `tbl_offered_qualifications` (
+  `offered_qualification_id` int(11) NOT NULL,
+  `qualification_id` int(11) NOT NULL,
   `trainer_id` int(11) DEFAULT NULL,
   `start_date` date DEFAULT NULL,
   `end_date` date DEFAULT NULL,
@@ -377,10 +345,10 @@ CREATE TABLE `tbl_offered_courses` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `tbl_offered_courses`
+-- Dumping data for table `tbl_offered_qualifications`
 --
 
-INSERT INTO `tbl_offered_courses` (`offered_id`, `course_id`, `trainer_id`, `start_date`, `end_date`, `schedule`, `room`) VALUES
+INSERT INTO `tbl_offered_qualifications` (`offered_qualification_id`, `qualification_id`, `trainer_id`, `start_date`, `end_date`, `schedule`, `room`) VALUES
 (1, 1, 1, NULL, NULL, 'Day Shift (8:00 AM - 5:00 PM)', 'Main Room'),
 (2, 3, 2, NULL, NULL, 'Night Shift (6:00 PM - 10:00 PM)', 'Main Room');
 
@@ -411,6 +379,30 @@ INSERT INTO `tbl_progress_charts` (`chart_id`, `trainer_id`, `title`, `chart_con
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `tbl_qualifications`
+--
+
+CREATE TABLE `tbl_qualifications` (
+  `qualification_id` int(11) NOT NULL,
+  `qualification_name` varchar(150) NOT NULL,
+  `ctpr_number` varchar(100) DEFAULT NULL,
+  `training_cost` decimal(10,2) DEFAULT 0.00,
+  `description` text DEFAULT NULL,
+  `duration` varchar(50) DEFAULT NULL,
+  `status` enum('active','inactive','pending','rejected') DEFAULT 'pending'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_qualifications`
+--
+
+INSERT INTO `tbl_qualifications` (`qualification_id`, `qualification_name`, `ctpr_number`, `training_cost`, `description`, `duration`, `status`) VALUES
+(1, 'Electrical Installation and Maintenance NC II', 'CTPR-0001-2024', 18000.00, 'Electrical Installation and Maintenance NC II equips learners with skills to install, maintain, and repair electrical wiring and equipment in residential and commercial buildings, following safety standards and the Philippine Electrical Code.', '120 hours', 'active'),
+(3, 'Electronic Products Assembly and Servicing (EPAS) NC II', '523526253', 20000.00, 'This qualification covers the knowledge, skills, and attitudes required to assemble, install, service, and repair electronic products and systems such as consumer electronics, audio-video equipment, and related devices. It includes workplace safety, use of tools and test instruments, interpretation of technical diagrams, and compliance with industry standards.', '240 Hours', 'active');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `tbl_quiz_options`
 --
 
@@ -420,6 +412,16 @@ CREATE TABLE `tbl_quiz_options` (
   `option_text` text NOT NULL,
   `is_correct` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_quiz_options`
+--
+
+INSERT INTO `tbl_quiz_options` (`option_id`, `question_id`, `option_text`, `is_correct`) VALUES
+(704, 237, 'True', 1),
+(705, 237, 'False', 0),
+(712, 241, 'True', 1),
+(713, 241, 'False', 0);
 
 -- --------------------------------------------------------
 
@@ -433,6 +435,14 @@ CREATE TABLE `tbl_quiz_questions` (
   `question_text` text NOT NULL,
   `question_type` enum('multiple_choice','true_false') DEFAULT 'multiple_choice'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_quiz_questions`
+--
+
+INSERT INTO `tbl_quiz_questions` (`question_id`, `test_id`, `question_text`, `question_type`) VALUES
+(237, 4, 'ARe you okay?', 'multiple_choice'),
+(241, 5, 'IM gwapo', 'multiple_choice');
 
 -- --------------------------------------------------------
 
@@ -500,7 +510,8 @@ CREATE TABLE `tbl_scholarship` (
 
 INSERT INTO `tbl_scholarship` (`scholarship_id`, `trainee_id`, `scholarship_name`, `scholarship_type_id`, `amount`, `sponsor`, `date_granted`) VALUES
 (6, 5, 'STEP', 3, NULL, NULL, '2026-01-27'),
-(8, 7, 'TWSP', 1, NULL, NULL, '2026-01-29');
+(8, 7, 'TWSP', 1, NULL, NULL, '2026-01-29'),
+(9, 8, 'STEP', NULL, NULL, NULL, '2026-02-05');
 
 -- --------------------------------------------------------
 
@@ -522,10 +533,10 @@ CREATE TABLE `tbl_scholarship_type` (
 --
 
 INSERT INTO `tbl_scholarship_type` (`scholarship_type_id`, `scholarship_name`, `scholarship_provider`, `description`, `status`, `created_at`) VALUES
-(1, 'TWSP', 'TESDA', 'Training for Work Scholarship Program', 'active', '2026-01-11 03:40:12'),
-(2, 'TTSP', 'TESDA', 'Tulong Trabaho Scholarship Program', 'active', '2026-01-11 03:40:12'),
+(1, 'TWSP', 'TESDA', 'Training for Work Scholarship Program', 'inactive', '2026-01-11 03:40:12'),
+(2, 'TTSP', 'TESDA', 'Tulong Trabaho Scholarship Program', 'inactive', '2026-01-11 03:40:12'),
 (3, 'STEP', 'TESDA', 'Special Training for Employment Program', 'active', '2026-01-11 03:40:12'),
-(4, 'PESFA', 'TESDA', 'Private Education Student Financial Assistance', 'active', '2026-01-11 03:40:12');
+(4, 'PESFA', 'TESDA', 'Private Education Student Financial Assistance', 'inactive', '2026-01-11 03:40:12');
 
 -- --------------------------------------------------------
 
@@ -580,8 +591,8 @@ CREATE TABLE `tbl_task_sheets` (
 --
 
 INSERT INTO `tbl_task_sheets` (`task_sheet_id`, `lesson_id`, `title`, `content`, `display_order`) VALUES
-(3, 2, 'Task Sheet 2.1-2', '', 0),
-(4, 2, 'Task Sheet 2.1-3', '', 0);
+(3, 2, 'Task Sheet 2.1-2', '<div class=\"custom-field-block mb-3 p-3 border rounded bg-white\">\n        <div class=\"d-flex justify-content-between align-items-center mb-2\">\n            <strong contenteditable=\"true\" class=\"field-label\" style=\"cursor: text; border: 1px dashed #dee2e6; padding: 0 5px;\">Table Title</strong>\n            <div>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableRow(\'table_1770327000323\')\" title=\"Add Row\"><i class=\"fas fa-plus\"></i> Row</button>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableCol(\'table_1770327000323\')\" title=\"Add Column\"><i class=\"fas fa-plus\"></i> Col</button>\n                <button class=\"btn btn-sm btn-outline-info\" onclick=\"addTableCheckboxCol(\'table_1770327000323\')\" title=\"Add Checkbox Column\"><i class=\"fas fa-check-square\"></i> Checkbox</button>\n                <button class=\"btn btn-sm btn-outline-danger\" onclick=\"this.closest(\'.custom-field-block\').remove()\" title=\"Delete Table\"><i class=\"fas fa-trash\"></i></button>\n            </div>\n        </div>\n        <div class=\"table-responsive\">\n            <table class=\"table table-bordered mb-0\" id=\"table_1770327000323\" style=\"background-color: white;\">\n                <thead>\n                    <tr>\n                        <th><span contenteditable=\"true\">Header 1</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th><span contenteditable=\"true\">Header 2</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th style=\"text-align: center; width: 50px;\"><span contenteditable=\"true\">Check</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th><th style=\"text-align: center; width: 50px;\"><span contenteditable=\"true\">Check</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th><th class=\"table-actions-header\" style=\"width: 1%;\" contenteditable=\"false\">Actions</th>\n                    </tr>\n                </thead>\n                <tbody>\n                    <tr>\n                        <td contenteditable=\"true\"></td>\n                        <td contenteditable=\"true\"></td>\n                        <td contenteditable=\"false\" style=\"text-align: center;\"><input type=\"checkbox\" class=\"form-check-input\" style=\"cursor: pointer;\"></td><td contenteditable=\"false\" style=\"text-align: center;\"><input type=\"checkbox\" class=\"form-check-input\" style=\"cursor: pointer;\"></td><td class=\"text-center\" contenteditable=\"false\"><button class=\"btn btn-sm btn-outline-danger\" onclick=\"deleteTableRow(this)\" title=\"Delete Row\"><i class=\"fas fa-trash-alt\"></i></button></td>\n                    </tr>\n                </tbody>\n            </table>\n        </div>\n    </div>', 0),
+(4, 2, 'Task Sheet 2.1-3', '<div class=\"custom-field-block mb-3 p-3 border rounded bg-white\">\n        <div class=\"d-flex justify-content-between align-items-center mb-2\">\n            <strong contenteditable=\"true\" class=\"field-label\" style=\"cursor: text; border: 1px dashed #dee2e6; padding: 0 5px;\">Table Title</strong>\n            <div>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableRow(\'table_1770327026190\')\" title=\"Add Row\"><i class=\"fas fa-plus\"></i> Row</button>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableCol(\'table_1770327026190\')\" title=\"Add Column\"><i class=\"fas fa-plus\"></i> Col</button>\n                <button class=\"btn btn-sm btn-outline-info\" onclick=\"addTableCheckboxCol(\'table_1770327026190\')\" title=\"Add Checkbox Column\"><i class=\"fas fa-check-square\"></i> Checkbox</button>\n                <button class=\"btn btn-sm btn-outline-danger\" onclick=\"this.closest(\'.custom-field-block\').remove()\" title=\"Delete Table\"><i class=\"fas fa-trash\"></i></button>\n            </div>\n        </div>\n        <div class=\"table-responsive\">\n            <table class=\"table table-bordered mb-0\" id=\"table_1770327026190\" style=\"background-color: white;\">\n                <thead>\n                    <tr>\n                        <th><span contenteditable=\"true\">Header 1</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th><span contenteditable=\"true\">Header 2</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th style=\"text-align: center; width: 50px;\"><span contenteditable=\"true\">Check</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th><th style=\"text-align: center; width: 50px;\"><span contenteditable=\"true\">Check</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th><th class=\"table-actions-header\" style=\"width: 1%;\" contenteditable=\"false\">Actions</th>\n                    </tr>\n                </thead>\n                <tbody>\n                    <tr>\n                        <td contenteditable=\"true\"></td>\n                        <td contenteditable=\"true\"></td>\n                        <td contenteditable=\"false\" style=\"text-align: center;\"><input type=\"checkbox\" class=\"form-check-input\" style=\"cursor: pointer;\"></td><td contenteditable=\"false\" style=\"text-align: center;\"><input type=\"checkbox\" class=\"form-check-input\" style=\"cursor: pointer;\"></td><td class=\"text-center\" contenteditable=\"false\"><button class=\"btn btn-sm btn-outline-danger\" onclick=\"deleteTableRow(this)\" title=\"Delete Row\"><i class=\"fas fa-trash-alt\"></i></button></td>\n                    </tr>\n                </tbody>\n            </table>\n        </div>\n    </div>', 0);
 
 -- --------------------------------------------------------
 
@@ -592,6 +603,7 @@ INSERT INTO `tbl_task_sheets` (`task_sheet_id`, `lesson_id`, `title`, `content`,
 CREATE TABLE `tbl_task_sheet_submissions` (
   `submission_id` int(11) NOT NULL,
   `lesson_id` int(11) NOT NULL,
+  `task_sheet_id` int(11) NOT NULL,
   `trainee_id` int(11) NOT NULL,
   `submitted_content` longtext DEFAULT NULL,
   `submission_date` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -601,6 +613,16 @@ CREATE TABLE `tbl_task_sheet_submissions` (
   `grade_date` timestamp NULL DEFAULT NULL,
   `status` enum('submitted','recorded') NOT NULL DEFAULT 'submitted'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_task_sheet_submissions`
+--
+
+INSERT INTO `tbl_task_sheet_submissions` (`submission_id`, `lesson_id`, `task_sheet_id`, `trainee_id`, `submitted_content`, `submission_date`, `grade`, `remarks`, `graded_by`, `grade_date`, `status`) VALUES
+(12, 2, 3, 8, '<div class=\"custom-field-block mb-3 p-3 border rounded bg-white\">\n        <div class=\"d-flex justify-content-between align-items-center mb-2\">\n            <strong contenteditable=\"true\" class=\"field-label\" style=\"cursor: text; border: 1px dashed #dee2e6; padding: 0 5px;\">Table Title</strong>\n            <div>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableRow(\'table_1770327000323\')\" title=\"Add Row\"><i class=\"fas fa-plus\"></i> Row</button>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableCol(\'table_1770327000323\')\" title=\"Add Column\"><i class=\"fas fa-plus\"></i> Col</button>\n                <button class=\"btn btn-sm btn-outline-info\" onclick=\"addTableCheckboxCol(\'table_1770327000323\')\" title=\"Add Checkbox Column\"><i class=\"fas fa-check-square\"></i> Checkbox</button>\n                <button class=\"btn btn-sm btn-outline-danger\" onclick=\"this.closest(\'.custom-field-block\').remove()\" title=\"Delete Table\"><i class=\"fas fa-trash\"></i></button>\n            </div>\n        </div>\n        <div class=\"table-responsive\">\n            <table class=\"table table-bordered mb-0\" id=\"table_1770327000323\" style=\"background-color: white;\">\n                <thead>\n                    <tr>\n                        <th><span contenteditable=\"true\">Header 1</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th><span contenteditable=\"true\">Header 2</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th style=\"text-align: center; width: 50px;\"><span contenteditable=\"true\">Check</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th><th style=\"text-align: center; width: 50px;\"><span contenteditable=\"true\">Check</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th><th class=\"table-actions-header\" style=\"width: 1%;\" contenteditable=\"false\">Actions</th>\n                    </tr>\n                </thead>\n                <tbody>\n                    <tr>\n                        <td contenteditable=\"true\"></td>\n                        <td contenteditable=\"true\"></td>\n                        <td contenteditable=\"false\" style=\"text-align: center;\"><input type=\"checkbox\" class=\"form-check-input\" style=\"cursor: pointer;\" checked=\"checked\"></td><td contenteditable=\"false\" style=\"text-align: center;\"><input type=\"checkbox\" class=\"form-check-input\" style=\"cursor: pointer;\"></td><td class=\"text-center\" contenteditable=\"false\"><button class=\"btn btn-sm btn-outline-danger\" onclick=\"deleteTableRow(this)\" title=\"Delete Row\"><i class=\"fas fa-trash-alt\"></i></button></td>\n                    </tr>\n                </tbody>\n            </table>\n        </div>\n    </div>', '2026-02-05 22:38:41', NULL, NULL, NULL, NULL, 'submitted'),
+(13, 2, 4, 8, '<div class=\"custom-field-block mb-3 p-3 border rounded bg-white\">\n        <div class=\"d-flex justify-content-between align-items-center mb-2\">\n            <strong contenteditable=\"true\" class=\"field-label\" style=\"cursor: text; border: 1px dashed #dee2e6; padding: 0 5px;\">Table Title</strong>\n            <div>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableRow(\'table_1770327026190\')\" title=\"Add Row\"><i class=\"fas fa-plus\"></i> Row</button>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableCol(\'table_1770327026190\')\" title=\"Add Column\"><i class=\"fas fa-plus\"></i> Col</button>\n                <button class=\"btn btn-sm btn-outline-info\" onclick=\"addTableCheckboxCol(\'table_1770327026190\')\" title=\"Add Checkbox Column\"><i class=\"fas fa-check-square\"></i> Checkbox</button>\n                <button class=\"btn btn-sm btn-outline-danger\" onclick=\"this.closest(\'.custom-field-block\').remove()\" title=\"Delete Table\"><i class=\"fas fa-trash\"></i></button>\n            </div>\n        </div>\n        <div class=\"table-responsive\">\n            <table class=\"table table-bordered mb-0\" id=\"table_1770327026190\" style=\"background-color: white;\">\n                <thead>\n                    <tr>\n                        <th><span contenteditable=\"true\">Header 1</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th><span contenteditable=\"true\">Header 2</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th style=\"text-align: center; width: 50px;\"><span contenteditable=\"true\">Check</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th><th style=\"text-align: center; width: 50px;\"><span contenteditable=\"true\">Check</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th><th class=\"table-actions-header\" style=\"width: 1%;\" contenteditable=\"false\">Actions</th>\n                    </tr>\n                </thead>\n                <tbody>\n                    <tr>\n                        <td contenteditable=\"true\"></td>\n                        <td contenteditable=\"true\"></td>\n                        <td contenteditable=\"false\" style=\"text-align: center;\"><input type=\"checkbox\" class=\"form-check-input\" style=\"cursor: pointer;\" checked=\"checked\"></td><td contenteditable=\"false\" style=\"text-align: center;\"><input type=\"checkbox\" class=\"form-check-input\" style=\"cursor: pointer;\"></td><td class=\"text-center\" contenteditable=\"false\"><button class=\"btn btn-sm btn-outline-danger\" onclick=\"deleteTableRow(this)\" title=\"Delete Row\"><i class=\"fas fa-trash-alt\"></i></button></td>\n                    </tr>\n                </tbody>\n            </table>\n        </div>\n    </div>', '2026-02-05 22:38:47', NULL, NULL, NULL, NULL, 'submitted'),
+(15, 2, 4, 5, '<div class=\"custom-field-block mb-3 p-3 border rounded bg-white\">\n        <div class=\"d-flex justify-content-between align-items-center mb-2\">\n            <strong contenteditable=\"true\" class=\"field-label\" style=\"cursor: text; border: 1px dashed #dee2e6; padding: 0 5px;\">Table Title</strong>\n            <div>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableRow(\'table_1770327026190\')\" title=\"Add Row\"><i class=\"fas fa-plus\"></i> Row</button>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableCol(\'table_1770327026190\')\" title=\"Add Column\"><i class=\"fas fa-plus\"></i> Col</button>\n                <button class=\"btn btn-sm btn-outline-info\" onclick=\"addTableCheckboxCol(\'table_1770327026190\')\" title=\"Add Checkbox Column\"><i class=\"fas fa-check-square\"></i> Checkbox</button>\n                <button class=\"btn btn-sm btn-outline-danger\" onclick=\"this.closest(\'.custom-field-block\').remove()\" title=\"Delete Table\"><i class=\"fas fa-trash\"></i></button>\n            </div>\n        </div>\n        <div class=\"table-responsive\">\n            <table class=\"table table-bordered mb-0\" id=\"table_1770327026190\" style=\"background-color: white;\">\n                <thead>\n                    <tr>\n                        <th><span contenteditable=\"true\">Header 1</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th><span contenteditable=\"true\">Header 2</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th style=\"text-align: center; width: 50px;\"><span contenteditable=\"true\">Check</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th><th style=\"text-align: center; width: 50px;\"><span contenteditable=\"true\">Check</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th><th class=\"table-actions-header\" style=\"width: 1%;\" contenteditable=\"false\">Actions</th>\n                    </tr>\n                </thead>\n                <tbody>\n                    <tr>\n                        <td contenteditable=\"true\"></td>\n                        <td contenteditable=\"true\"></td>\n                        <td contenteditable=\"false\" style=\"text-align: center;\"><input type=\"checkbox\" class=\"form-check-input\" style=\"cursor: pointer;\"></td><td contenteditable=\"false\" style=\"text-align: center;\"><input type=\"checkbox\" class=\"form-check-input\" style=\"cursor: pointer;\"></td><td class=\"text-center\" contenteditable=\"false\"><button class=\"btn btn-sm btn-outline-danger\" onclick=\"deleteTableRow(this)\" title=\"Delete Row\"><i class=\"fas fa-trash-alt\"></i></button></td>\n                    </tr>\n                </tbody>\n            </table>\n        </div>\n    </div>', '2026-02-06 00:35:26', NULL, NULL, NULL, NULL, 'submitted'),
+(22, 2, 3, 5, '<div class=\"custom-field-block mb-3 p-3 border rounded bg-white\">\n        <div class=\"d-flex justify-content-between align-items-center mb-2\">\n            <strong contenteditable=\"true\" class=\"field-label\" style=\"cursor: text; border: 1px dashed #dee2e6; padding: 0 5px;\">Table Title</strong>\n            <div>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableRow(\'table_1770327000323\')\" title=\"Add Row\"><i class=\"fas fa-plus\"></i> Row</button>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableCol(\'table_1770327000323\')\" title=\"Add Column\"><i class=\"fas fa-plus\"></i> Col</button>\n                <button class=\"btn btn-sm btn-outline-info\" onclick=\"addTableCheckboxCol(\'table_1770327000323\')\" title=\"Add Checkbox Column\"><i class=\"fas fa-check-square\"></i> Checkbox</button>\n                <button class=\"btn btn-sm btn-outline-danger\" onclick=\"this.closest(\'.custom-field-block\').remove()\" title=\"Delete Table\"><i class=\"fas fa-trash\"></i></button>\n            </div>\n        </div>\n        <div class=\"table-responsive\">\n            <table class=\"table table-bordered mb-0\" id=\"table_1770327000323\" style=\"background-color: white;\">\n                <thead>\n                    <tr>\n                        <th><span contenteditable=\"true\">Header 1</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th><span contenteditable=\"true\">Header 2</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th style=\"text-align: center; width: 50px;\"><span contenteditable=\"true\">Check</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th><th style=\"text-align: center; width: 50px;\"><span contenteditable=\"true\">Check</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th><th class=\"table-actions-header\" style=\"width: 1%;\" contenteditable=\"false\">Actions</th>\n                    </tr>\n                </thead>\n                <tbody>\n                    <tr>\n                        <td contenteditable=\"true\"></td>\n                        <td contenteditable=\"true\"></td>\n                        <td contenteditable=\"false\" style=\"text-align: center;\"><input type=\"checkbox\" class=\"form-check-input\" style=\"cursor: pointer;\" checked=\"checked\"></td><td contenteditable=\"false\" style=\"text-align: center;\"><input type=\"checkbox\" class=\"form-check-input\" style=\"cursor: pointer;\"></td><td class=\"text-center\" contenteditable=\"false\"><button class=\"btn btn-sm btn-outline-danger\" onclick=\"deleteTableRow(this)\" title=\"Delete Row\"><i class=\"fas fa-trash-alt\"></i></button></td>\n                    </tr>\n                </tbody>\n            </table>\n        </div>\n    </div>', '2026-02-06 02:16:29', NULL, NULL, NULL, NULL, 'submitted');
 
 -- --------------------------------------------------------
 
@@ -622,7 +644,8 @@ CREATE TABLE `tbl_test` (
 --
 
 INSERT INTO `tbl_test` (`test_id`, `lesson_id`, `activity_type_id`, `score_type_id`, `max_score`, `deadline`) VALUES
-(4, 2, 1, NULL, 100.00, '2026-01-30 00:18:00');
+(4, 2, 1, NULL, 100.00, '2026-02-07 00:00:00'),
+(5, 6, 1, NULL, NULL, '2026-02-06 14:26:00');
 
 -- --------------------------------------------------------
 
@@ -654,7 +677,8 @@ CREATE TABLE `tbl_trainee_dtl` (
 
 INSERT INTO `tbl_trainee_dtl` (`trainee_dtl_id`, `trainee_id`, `civil_status`, `birthdate`, `age`, `birthplace_city`, `birthplace_province`, `birthplace_region`, `nationality`, `house_no_street`, `barangay`, `district`, `city_municipality`, `province`, `region`) VALUES
 (1, 5, 'Single', '2004-12-20', 21, 'Cagayan De Oro City', 'Missamis Oriental', NULL, 'Filipino', 'Zone 6', 'Baikingon', NULL, 'Cagayan De Oro City', 'Misamis Oriental', '10'),
-(3, 7, 'Single', '2005-01-10', 21, 'Cagayan De Oro City', 'Missamis Oriental', '10', 'Filipino', 'Biasong-Tinib', 'Macasandig', '2nd District', 'Cagayan De Oro City', 'Misamis Oriental', '10');
+(3, 7, 'Single', '2005-01-10', 21, 'Cagayan De Oro City', 'Missamis Oriental', '10', 'Filipino', 'Biasong-Tinib', 'Macasandig', '2nd District', 'Cagayan De Oro City', 'Misamis Oriental', '10'),
+(4, 8, 'Single', '2003-09-22', 22, 'Cagayan De Oro City', 'Missamis Oriental', '10', 'Filipino', 'Zone 4', 'Canitoan', '2', 'Cagayan De Oro City', 'Misamis Oriental', '10');
 
 -- --------------------------------------------------------
 
@@ -682,7 +706,8 @@ CREATE TABLE `tbl_trainee_ftr` (
 
 INSERT INTO `tbl_trainee_ftr` (`trainee_ftr_id`, `trainee_id`, `educational_attainment`, `employment_status`, `employment_type`, `learner_classification`, `is_pwd`, `disability_type`, `disability_cause`, `privacy_consent`, `digital_signature`) VALUES
 (1, 5, 'Senior High (K-12)', 'Unemployed', NULL, 'Student', 0, '', '', 1, 'Christian Dave Boncales'),
-(3, 7, 'Senior High (K-12)', 'Unemployed', NULL, 'Student', 0, '', '', 1, 'Lore Lindell Tamayo');
+(3, 7, 'Senior High (K-12)', 'Unemployed', NULL, 'Student', 0, '', '', 1, 'Lore Lindell Tamayo'),
+(4, 8, 'Senior High (K-12)', 'Unemployed', NULL, 'Student', 0, '', '', 1, 'sig_1770298422.png');
 
 -- --------------------------------------------------------
 
@@ -717,7 +742,8 @@ CREATE TABLE `tbl_trainee_hdr` (
 
 INSERT INTO `tbl_trainee_hdr` (`trainee_id`, `user_id`, `first_name`, `middle_name`, `last_name`, `extension_name`, `sex`, `birth_certificate_no`, `email`, `facebook_account`, `phone_number`, `address`, `ctpr_no`, `nominal_duration`, `status`, `valid_id_file`, `birth_cert_file`, `photo_file`) VALUES
 (5, 12, 'Christian Dave', 'Balamad', 'Boncales', 'N/A', 'Male', NULL, 'christiandaveboncales@gmail.com', 'Christian Dave Boncales', '09678715483', 'Zone 6, Baikingon, Cagayan De Oro City, Misamis Oriental', NULL, NULL, 'active', 'valid_id_1769496636_Untitled design (1).png', 'birth_1769496636_228a2415-a38e-4f27-b762-37d2ae1aec3a.png', 'photo_1769496636_64563a22-b1b4-487a-b7a0-9627907c3c5e.png'),
-(7, 15, 'Lore Lindell', 'Becoy', 'Tamayo ', '', 'Male', NULL, 'vincelerky45@gmail.com', 'Lore Tamayo', '09627641720', 'Biasong-Tinib, Macasandig, Cagayan De Oro City, Misamis Oriental', NULL, NULL, 'active', 'valid_id_1769670785_dawdaw-attack.png', 'birth_1769670785_dead0c4a-6e19-4006-96fd-0ff604520395.jfif', 'photo_1769670785_download.jfif');
+(7, 15, 'Lore Lindell', 'Becoy', 'Tamayo ', '', 'Male', NULL, 'vincelerky45@gmail.com', 'Lore Tamayo', '09627641720', 'Biasong-Tinib, Macasandig, Cagayan De Oro City, Misamis Oriental', NULL, NULL, 'active', 'valid_id_1769670785_dawdaw-attack.png', 'birth_1769670785_dead0c4a-6e19-4006-96fd-0ff604520395.jfif', 'photo_1769670785_download.jfif'),
+(8, 16, 'Apple Jane', 'Memoracion', 'Edrolin', '', 'Female', NULL, 'apple@gmail.com', 'Apple Edrolin', '09987654321', 'Zone 4, Canitoan, Cagayan De Oro City, Misamis Oriental', NULL, NULL, 'active', 'valid_id_1770298422_450594508_122093386142417045_264060929535796894_n.jpg', 'birth_1770298422_Untitled diagram-2026-02-05-092208.png', 'photo_1770298422_450594508_122093386142417045_264060929535796894_n.jpg');
 
 -- --------------------------------------------------------
 
@@ -761,7 +787,7 @@ CREATE TABLE `tbl_training` (
   `training_id` int(11) NOT NULL,
   `trainee_id` int(11) DEFAULT NULL,
   `trainer_id` int(11) DEFAULT NULL,
-  `course_id` int(11) DEFAULT NULL,
+  `qualification_id` int(11) DEFAULT NULL,
   `start_date` date DEFAULT NULL,
   `end_date` date DEFAULT NULL,
   `status` enum('ongoing','completed','dropped') DEFAULT 'ongoing'
@@ -793,7 +819,8 @@ INSERT INTO `tbl_users` (`user_id`, `role_id`, `username`, `password`, `email`, 
 (12, 3, 'christian', '$2y$10$wOZkw1UgPw7CU01o3bhXveyEEsKOTQCk0goZ1264X.jXb2FXLV6Ue', 'christianboncales09@gmail.com', 'active', '2026-01-27 23:41:57'),
 (13, 4, 'John', '$2y$10$tPBRgYwLmD7yw5NPGEkHx.cCGF0kAGui0oO9gSaWQqnDTzf1a9TEy', 'gargamishss@gmail.com', 'active', '2026-01-27 23:50:16'),
 (14, 2, 'vince', '$2y$10$TBxHNXPJ2a1o4CMCmSgW9eROBNX5CD6unMX3gYZuiG5DIiSZDi5em', 'vins@gmail.com', 'active', '2026-01-29 15:04:42'),
-(15, 3, 'lore', '$2y$10$u24K498elTzakgLBb9ofJumOM29BmyTSknBxH7KZLZekcihdZGyuW', 'vincelerky45@gmail.com', 'active', '2026-01-29 15:15:10');
+(15, 3, 'lore', '$2y$10$u24K498elTzakgLBb9ofJumOM29BmyTSknBxH7KZLZekcihdZGyuW', 'vincelerky45@gmail.com', 'active', '2026-01-29 15:15:10'),
+(16, 3, 'apple', '$2y$10$C2nm/V6rAh8aR6ntsPaMeunhPDox9n34Fv0kTri4jWGMBeOUOAdfa', 'apple@gmail.com', 'active', '2026-02-05 21:51:46');
 
 --
 -- Indexes for dumped tables
@@ -814,19 +841,12 @@ ALTER TABLE `tbl_activity_logs`
   ADD KEY `idx_action` (`action`);
 
 --
--- Indexes for table `tbl_attendance_dtl`
+-- Indexes for table `tbl_attendance`
 --
-ALTER TABLE `tbl_attendance_dtl`
-  ADD PRIMARY KEY (`attendance_dtl_id`),
-  ADD KEY `attendance_hdr_id` (`attendance_hdr_id`),
+ALTER TABLE `tbl_attendance`
+  ADD PRIMARY KEY (`attendance_id`),
+  ADD KEY `batch_id` (`batch_id`),
   ADD KEY `trainee_id` (`trainee_id`);
-
---
--- Indexes for table `tbl_attendance_hdr`
---
-ALTER TABLE `tbl_attendance_hdr`
-  ADD PRIMARY KEY (`attendance_hdr_id`),
-  ADD KEY `batch_id` (`batch_id`);
 
 --
 -- Indexes for table `tbl_batch`
@@ -834,7 +854,8 @@ ALTER TABLE `tbl_attendance_hdr`
 ALTER TABLE `tbl_batch`
   ADD PRIMARY KEY (`batch_id`),
   ADD KEY `fk_batch_trainer` (`trainer_id`),
-  ADD KEY `fk_batch_scholarship` (`scholarship_type_id`);
+  ADD KEY `fk_batch_scholarship` (`scholarship_type_id`),
+  ADD KEY `fk_batch_qualification` (`qualification_id`);
 
 --
 -- Indexes for table `tbl_certificate`
@@ -842,13 +863,7 @@ ALTER TABLE `tbl_batch`
 ALTER TABLE `tbl_certificate`
   ADD PRIMARY KEY (`certificate_id`),
   ADD KEY `trainee_id` (`trainee_id`),
-  ADD KEY `course_id` (`course_id`);
-
---
--- Indexes for table `tbl_course`
---
-ALTER TABLE `tbl_course`
-  ADD PRIMARY KEY (`course_id`);
+  ADD KEY `course_id` (`qualification_id`);
 
 --
 -- Indexes for table `tbl_enrolled_trainee`
@@ -864,7 +879,7 @@ ALTER TABLE `tbl_enrolled_trainee`
 ALTER TABLE `tbl_enrollment`
   ADD PRIMARY KEY (`enrollment_id`),
   ADD KEY `trainee_id` (`trainee_id`),
-  ADD KEY `offered_id` (`offered_id`),
+  ADD KEY `offered_id` (`offered_qualification_id`),
   ADD KEY `batch_id` (`batch_id`),
   ADD KEY `fk_enrollment_scholarship` (`scholarship_type_id`);
 
@@ -877,27 +892,13 @@ ALTER TABLE `tbl_feedback`
   ADD KEY `trainer_id` (`trainer_id`);
 
 --
--- Indexes for table `tbl_finance_record`
+-- Indexes for table `tbl_grades`
 --
-ALTER TABLE `tbl_finance_record`
-  ADD PRIMARY KEY (`finance_id`),
-  ADD KEY `trainee_id` (`trainee_id`);
-
---
--- Indexes for table `tbl_grades_dtl`
---
-ALTER TABLE `tbl_grades_dtl`
-  ADD PRIMARY KEY (`grades_dtl_id`),
-  ADD KEY `grades_hdr_id` (`grades_hdr_id`),
-  ADD KEY `test_id` (`test_id`);
-
---
--- Indexes for table `tbl_grades_hdr`
---
-ALTER TABLE `tbl_grades_hdr`
-  ADD PRIMARY KEY (`grades_hdr_id`),
+ALTER TABLE `tbl_grades`
+  ADD PRIMARY KEY (`grade_id`),
   ADD KEY `trainee_id` (`trainee_id`),
-  ADD KEY `course_id` (`course_id`);
+  ADD KEY `course_id` (`qualification_id`),
+  ADD KEY `test_id` (`test_id`);
 
 --
 -- Indexes for table `tbl_lessons`
@@ -918,14 +919,20 @@ ALTER TABLE `tbl_lesson_contents`
 --
 ALTER TABLE `tbl_module`
   ADD PRIMARY KEY (`module_id`),
-  ADD KEY `course_id` (`course_id`);
+  ADD KEY `course_id` (`qualification_id`);
 
 --
--- Indexes for table `tbl_offered_courses`
+-- Indexes for table `tbl_notifications`
 --
-ALTER TABLE `tbl_offered_courses`
-  ADD PRIMARY KEY (`offered_id`),
-  ADD KEY `course_id` (`course_id`),
+ALTER TABLE `tbl_notifications`
+  ADD PRIMARY KEY (`notification_id`);
+
+--
+-- Indexes for table `tbl_offered_qualifications`
+--
+ALTER TABLE `tbl_offered_qualifications`
+  ADD PRIMARY KEY (`offered_qualification_id`),
+  ADD KEY `course_id` (`qualification_id`),
   ADD KEY `trainer_id` (`trainer_id`);
 
 --
@@ -934,6 +941,12 @@ ALTER TABLE `tbl_offered_courses`
 ALTER TABLE `tbl_progress_charts`
   ADD PRIMARY KEY (`chart_id`),
   ADD KEY `trainer_id` (`trainer_id`);
+
+--
+-- Indexes for table `tbl_qualifications`
+--
+ALTER TABLE `tbl_qualifications`
+  ADD PRIMARY KEY (`qualification_id`);
 
 --
 -- Indexes for table `tbl_quiz_options`
@@ -1001,7 +1014,7 @@ ALTER TABLE `tbl_task_sheets`
 --
 ALTER TABLE `tbl_task_sheet_submissions`
   ADD PRIMARY KEY (`submission_id`),
-  ADD UNIQUE KEY `unique_submission` (`lesson_id`,`trainee_id`),
+  ADD UNIQUE KEY `unique_submission` (`task_sheet_id`,`trainee_id`),
   ADD KEY `fk_submission_lesson` (`lesson_id`),
   ADD KEY `fk_submission_trainee` (`trainee_id`),
   ADD KEY `fk_submission_grader` (`graded_by`);
@@ -1050,7 +1063,7 @@ ALTER TABLE `tbl_training`
   ADD PRIMARY KEY (`training_id`),
   ADD KEY `trainee_id` (`trainee_id`),
   ADD KEY `trainer_id` (`trainer_id`),
-  ADD KEY `course_id` (`course_id`);
+  ADD KEY `course_id` (`qualification_id`);
 
 --
 -- Indexes for table `tbl_users`
@@ -1074,19 +1087,13 @@ ALTER TABLE `tbl_activities_type`
 -- AUTO_INCREMENT for table `tbl_activity_logs`
 --
 ALTER TABLE `tbl_activity_logs`
-  MODIFY `activity_log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `activity_log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
 
 --
--- AUTO_INCREMENT for table `tbl_attendance_dtl`
+-- AUTO_INCREMENT for table `tbl_attendance`
 --
-ALTER TABLE `tbl_attendance_dtl`
-  MODIFY `attendance_dtl_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
-
---
--- AUTO_INCREMENT for table `tbl_attendance_hdr`
---
-ALTER TABLE `tbl_attendance_hdr`
-  MODIFY `attendance_hdr_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+ALTER TABLE `tbl_attendance`
+  MODIFY `attendance_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tbl_batch`
@@ -1101,22 +1108,16 @@ ALTER TABLE `tbl_certificate`
   MODIFY `certificate_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
--- AUTO_INCREMENT for table `tbl_course`
---
-ALTER TABLE `tbl_course`
-  MODIFY `course_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
-
---
 -- AUTO_INCREMENT for table `tbl_enrolled_trainee`
 --
 ALTER TABLE `tbl_enrolled_trainee`
-  MODIFY `enrolled_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `enrolled_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `tbl_enrollment`
 --
 ALTER TABLE `tbl_enrollment`
-  MODIFY `enrollment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `enrollment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `tbl_feedback`
@@ -1125,28 +1126,16 @@ ALTER TABLE `tbl_feedback`
   MODIFY `feedback_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `tbl_finance_record`
+-- AUTO_INCREMENT for table `tbl_grades`
 --
-ALTER TABLE `tbl_finance_record`
-  MODIFY `finance_id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `tbl_grades_dtl`
---
-ALTER TABLE `tbl_grades_dtl`
-  MODIFY `grades_dtl_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
-
---
--- AUTO_INCREMENT for table `tbl_grades_hdr`
---
-ALTER TABLE `tbl_grades_hdr`
-  MODIFY `grades_hdr_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+ALTER TABLE `tbl_grades`
+  MODIFY `grade_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `tbl_lessons`
 --
 ALTER TABLE `tbl_lessons`
-  MODIFY `lesson_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `lesson_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `tbl_lesson_contents`
@@ -1158,13 +1147,19 @@ ALTER TABLE `tbl_lesson_contents`
 -- AUTO_INCREMENT for table `tbl_module`
 --
 ALTER TABLE `tbl_module`
-  MODIFY `module_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `module_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
--- AUTO_INCREMENT for table `tbl_offered_courses`
+-- AUTO_INCREMENT for table `tbl_notifications`
 --
-ALTER TABLE `tbl_offered_courses`
-  MODIFY `offered_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+ALTER TABLE `tbl_notifications`
+  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `tbl_offered_qualifications`
+--
+ALTER TABLE `tbl_offered_qualifications`
+  MODIFY `offered_qualification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `tbl_progress_charts`
@@ -1173,16 +1168,22 @@ ALTER TABLE `tbl_progress_charts`
   MODIFY `chart_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
+-- AUTO_INCREMENT for table `tbl_qualifications`
+--
+ALTER TABLE `tbl_qualifications`
+  MODIFY `qualification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
 -- AUTO_INCREMENT for table `tbl_quiz_options`
 --
 ALTER TABLE `tbl_quiz_options`
-  MODIFY `option_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=696;
+  MODIFY `option_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=714;
 
 --
 -- AUTO_INCREMENT for table `tbl_quiz_questions`
 --
 ALTER TABLE `tbl_quiz_questions`
-  MODIFY `question_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=233;
+  MODIFY `question_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=242;
 
 --
 -- AUTO_INCREMENT for table `tbl_role`
@@ -1200,7 +1201,7 @@ ALTER TABLE `tbl_schedule`
 -- AUTO_INCREMENT for table `tbl_scholarship`
 --
 ALTER TABLE `tbl_scholarship`
-  MODIFY `scholarship_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `scholarship_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `tbl_scholarship_type`
@@ -1230,31 +1231,31 @@ ALTER TABLE `tbl_task_sheets`
 -- AUTO_INCREMENT for table `tbl_task_sheet_submissions`
 --
 ALTER TABLE `tbl_task_sheet_submissions`
-  MODIFY `submission_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `submission_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT for table `tbl_test`
 --
 ALTER TABLE `tbl_test`
-  MODIFY `test_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `test_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `tbl_trainee_dtl`
 --
 ALTER TABLE `tbl_trainee_dtl`
-  MODIFY `trainee_dtl_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `trainee_dtl_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `tbl_trainee_ftr`
 --
 ALTER TABLE `tbl_trainee_ftr`
-  MODIFY `trainee_ftr_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `trainee_ftr_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `tbl_trainee_hdr`
 --
 ALTER TABLE `tbl_trainee_hdr`
-  MODIFY `trainee_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `trainee_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `tbl_trainer`
@@ -1272,7 +1273,7 @@ ALTER TABLE `tbl_training`
 -- AUTO_INCREMENT for table `tbl_users`
 --
 ALTER TABLE `tbl_users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- Constraints for dumped tables
@@ -1285,22 +1286,17 @@ ALTER TABLE `tbl_activity_logs`
   ADD CONSTRAINT `fk_activity_logs_user` FOREIGN KEY (`user_id`) REFERENCES `tbl_users` (`user_id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
--- Constraints for table `tbl_attendance_dtl`
+-- Constraints for table `tbl_attendance`
 --
-ALTER TABLE `tbl_attendance_dtl`
-  ADD CONSTRAINT `tbl_attendance_dtl_ibfk_1` FOREIGN KEY (`attendance_hdr_id`) REFERENCES `tbl_attendance_hdr` (`attendance_hdr_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `tbl_attendance_dtl_ibfk_2` FOREIGN KEY (`trainee_id`) REFERENCES `tbl_trainee_hdr` (`trainee_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `tbl_attendance_hdr`
---
-ALTER TABLE `tbl_attendance_hdr`
-  ADD CONSTRAINT `tbl_attendance_hdr_ibfk_1` FOREIGN KEY (`batch_id`) REFERENCES `tbl_batch` (`batch_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `tbl_attendance`
+  ADD CONSTRAINT `fk_attendance_batch` FOREIGN KEY (`batch_id`) REFERENCES `tbl_batch` (`batch_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_attendance_trainee` FOREIGN KEY (`trainee_id`) REFERENCES `tbl_trainee_hdr` (`trainee_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `tbl_batch`
 --
 ALTER TABLE `tbl_batch`
+  ADD CONSTRAINT `fk_batch_qualification` FOREIGN KEY (`qualification_id`) REFERENCES `tbl_qualifications` (`qualification_id`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_batch_scholarship` FOREIGN KEY (`scholarship_type_id`) REFERENCES `tbl_scholarship_type` (`scholarship_type_id`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_batch_trainer` FOREIGN KEY (`trainer_id`) REFERENCES `tbl_trainer` (`trainer_id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
@@ -1308,8 +1304,8 @@ ALTER TABLE `tbl_batch`
 -- Constraints for table `tbl_certificate`
 --
 ALTER TABLE `tbl_certificate`
-  ADD CONSTRAINT `tbl_certificate_ibfk_1` FOREIGN KEY (`trainee_id`) REFERENCES `tbl_trainee_hdr` (`trainee_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `tbl_certificate_ibfk_2` FOREIGN KEY (`course_id`) REFERENCES `tbl_course` (`course_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_certificate_qualification` FOREIGN KEY (`qualification_id`) REFERENCES `tbl_qualifications` (`qualification_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `tbl_certificate_ibfk_1` FOREIGN KEY (`trainee_id`) REFERENCES `tbl_trainee_hdr` (`trainee_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `tbl_enrolled_trainee`
@@ -1322,9 +1318,9 @@ ALTER TABLE `tbl_enrolled_trainee`
 -- Constraints for table `tbl_enrollment`
 --
 ALTER TABLE `tbl_enrollment`
+  ADD CONSTRAINT `fk_enrollment_offered_qualification` FOREIGN KEY (`offered_qualification_id`) REFERENCES `tbl_offered_qualifications` (`offered_qualification_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_enrollment_scholarship` FOREIGN KEY (`scholarship_type_id`) REFERENCES `tbl_scholarship_type` (`scholarship_type_id`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `tbl_enrollment_ibfk_1` FOREIGN KEY (`trainee_id`) REFERENCES `tbl_trainee_hdr` (`trainee_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `tbl_enrollment_ibfk_2` FOREIGN KEY (`offered_id`) REFERENCES `tbl_offered_courses` (`offered_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `tbl_enrollment_ibfk_3` FOREIGN KEY (`batch_id`) REFERENCES `tbl_batch` (`batch_id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
@@ -1335,24 +1331,12 @@ ALTER TABLE `tbl_feedback`
   ADD CONSTRAINT `tbl_feedback_ibfk_2` FOREIGN KEY (`trainer_id`) REFERENCES `tbl_trainer` (`trainer_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `tbl_finance_record`
+-- Constraints for table `tbl_grades`
 --
-ALTER TABLE `tbl_finance_record`
-  ADD CONSTRAINT `tbl_finance_record_ibfk_1` FOREIGN KEY (`trainee_id`) REFERENCES `tbl_trainee_hdr` (`trainee_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `tbl_grades_dtl`
---
-ALTER TABLE `tbl_grades_dtl`
-  ADD CONSTRAINT `tbl_grades_dtl_ibfk_1` FOREIGN KEY (`grades_hdr_id`) REFERENCES `tbl_grades_hdr` (`grades_hdr_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `tbl_grades_dtl_ibfk_2` FOREIGN KEY (`test_id`) REFERENCES `tbl_test` (`test_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `tbl_grades_hdr`
---
-ALTER TABLE `tbl_grades_hdr`
-  ADD CONSTRAINT `tbl_grades_hdr_ibfk_1` FOREIGN KEY (`trainee_id`) REFERENCES `tbl_trainee_hdr` (`trainee_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `tbl_grades_hdr_ibfk_2` FOREIGN KEY (`course_id`) REFERENCES `tbl_course` (`course_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `tbl_grades`
+  ADD CONSTRAINT `fk_grades_qualification` FOREIGN KEY (`qualification_id`) REFERENCES `tbl_qualifications` (`qualification_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_grades_test` FOREIGN KEY (`test_id`) REFERENCES `tbl_test` (`test_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_grades_trainee` FOREIGN KEY (`trainee_id`) REFERENCES `tbl_trainee_hdr` (`trainee_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `tbl_lessons`
@@ -1370,14 +1354,14 @@ ALTER TABLE `tbl_lesson_contents`
 -- Constraints for table `tbl_module`
 --
 ALTER TABLE `tbl_module`
-  ADD CONSTRAINT `tbl_module_ibfk_1` FOREIGN KEY (`course_id`) REFERENCES `tbl_course` (`course_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_module_qualification` FOREIGN KEY (`qualification_id`) REFERENCES `tbl_qualifications` (`qualification_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `tbl_offered_courses`
+-- Constraints for table `tbl_offered_qualifications`
 --
-ALTER TABLE `tbl_offered_courses`
-  ADD CONSTRAINT `tbl_offered_courses_ibfk_1` FOREIGN KEY (`course_id`) REFERENCES `tbl_course` (`course_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `tbl_offered_courses_ibfk_2` FOREIGN KEY (`trainer_id`) REFERENCES `tbl_trainer` (`trainer_id`) ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE `tbl_offered_qualifications`
+  ADD CONSTRAINT `fk_offered_qualification_qualification` FOREIGN KEY (`qualification_id`) REFERENCES `tbl_qualifications` (`qualification_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `tbl_offered_qualifications_ibfk_2` FOREIGN KEY (`trainer_id`) REFERENCES `tbl_trainer` (`trainer_id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Constraints for table `tbl_progress_charts`
@@ -1460,9 +1444,9 @@ ALTER TABLE `tbl_trainer`
 -- Constraints for table `tbl_training`
 --
 ALTER TABLE `tbl_training`
+  ADD CONSTRAINT `fk_training_qualification` FOREIGN KEY (`qualification_id`) REFERENCES `tbl_qualifications` (`qualification_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `tbl_training_ibfk_1` FOREIGN KEY (`trainee_id`) REFERENCES `tbl_trainee_hdr` (`trainee_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `tbl_training_ibfk_2` FOREIGN KEY (`trainer_id`) REFERENCES `tbl_trainer` (`trainer_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `tbl_training_ibfk_3` FOREIGN KEY (`course_id`) REFERENCES `tbl_course` (`course_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `tbl_training_ibfk_2` FOREIGN KEY (`trainer_id`) REFERENCES `tbl_trainer` (`trainer_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `tbl_users`

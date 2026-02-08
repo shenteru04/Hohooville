@@ -1,33 +1,12 @@
 const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
 
 document.addEventListener('DOMContentLoaded', function() {
-    loadQualifications();
-
-    document.getElementById('createQualificationForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const payload = {
-            qualification_name: document.getElementById('courseName').value,
-            ctpr_number: document.getElementById('ctprNumber').value,
-            duration: document.getElementById('duration').value,
-            training_cost: document.getElementById('trainingCost').value,
-            description: document.getElementById('description').value
-        };
-
-        try {
-            const response = await axios.post(`${API_BASE_URL}/role/registrar/qualifications.php?action=create`, payload);
-            if (response.data.success) {
-                alert('Qualification submitted for approval successfully!');
-                this.reset();
-                loadQualifications();
-            } else {
-                alert('Error: ' + response.data.message);
-            }
-        } catch (error) {
-            console.error('Error creating qualification:', error);
-            alert('An error occurred while creating the qualification.');
-        }
-    });
+    const user = JSON.parse(localStorage.getItem('user'));
+    
+    if (!user) {
+        window.location.href = '../../../login.html';
+        return;
+    }
 
     // Inject Sidebar CSS (W3.CSS Reference Style)
     const ms = document.createElement('style');
@@ -104,27 +83,57 @@ document.addEventListener('DOMContentLoaded', function() {
             if (sidebar) sidebar.style.display = 'block';
         });
     }
+
+    loadProfile(user.user_id);
+
+    document.getElementById('profileForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        updateProfile(user.user_id);
+    });
 });
 
-async function loadQualifications() {
+async function loadProfile(userId) {
     try {
-        const response = await axios.get(`${API_BASE_URL}/role/registrar/qualifications.php?action=list`);
-        const tbody = document.getElementById('qualificationsTableBody');
-        tbody.innerHTML = '';
+        const response = await axios.get(`${API_BASE_URL}/role/registrar/profile.php?action=get&user_id=${userId}`);
         if (response.data.success) {
-            response.data.data.forEach(q => {
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${q.course_name}</td>
-                        <td>${q.ctpr_number || 'N/A'}</td>
-                        <td>${q.duration || 'N/A'}</td>
-                        <td>${q.training_cost ? '₱' + parseFloat(q.training_cost).toFixed(2) : 'N/A'}</td>
-                        <td><span class="badge bg-success">${q.status}</span></td>
-                    </tr>
-                `;
-            });
+            const data = response.data.data;
+            document.getElementById('firstName').value = data.first_name;
+            document.getElementById('lastName').value = data.last_name;
+            document.getElementById('email').value = data.email;
+            document.getElementById('phone').value = data.phone_number || '';
+            
+            document.getElementById('headerName').textContent = `${data.first_name} ${data.last_name}`;
+            document.getElementById('displayEmail').textContent = data.email;
+            document.getElementById('displayPhone').textContent = data.phone_number || 'N/A';
+            
+            document.getElementById('profileAvatar').src = `https://ui-avatars.com/api/?name=${data.first_name}+${data.last_name}&background=random`;
+
+            const dropdownName = document.getElementById('userName');
+            if (dropdownName) {
+                dropdownName.textContent = `${data.first_name} ${data.last_name}`;
+            }
         }
     } catch (error) {
-        console.error('Error loading qualifications:', error);
+        console.error('Error loading profile:', error);
+    }
+}
+
+async function updateProfile(userId) {
+    const data = {
+        user_id: userId,
+        first_name: document.getElementById('firstName').value,
+        last_name: document.getElementById('lastName').value,
+        email: document.getElementById('email').value,
+        phone_number: document.getElementById('phone').value
+    };
+
+    try {
+        const response = await axios.post(`${API_BASE_URL}/role/registrar/profile.php?action=update`, data);
+        if (response.data.success) {
+            alert('Profile updated successfully');
+            loadProfile(userId); // Refresh display
+        } else alert('Error: ' + response.data.message);
+    } catch (error) {
+        console.error('Error updating profile:', error);
     }
 }

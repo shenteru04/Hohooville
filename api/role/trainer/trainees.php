@@ -43,7 +43,7 @@ function listTrainees($conn, $trainerId) {
     $query = "SELECT 
                 t.trainee_id, t.first_name, t.last_name, t.email,
                 b.batch_name,
-                c.course_name,
+                c.qualification_name as course_name,
                 e.status
               FROM tbl_trainee_hdr t
               JOIN tbl_enrollment e ON t.trainee_id = e.trainee_id
@@ -70,7 +70,7 @@ function getTraineeDetails($conn, $traineeId) {
                 t_dtl.*,
                 t_ftr.*,
                 b.batch_name,
-                c.course_name,
+                c.qualification_name as course_name,
                 e.status as enrollment_status,
                 e.scholarship_type
             FROM

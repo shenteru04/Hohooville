@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost/hohoo-ville/api';
+const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
 let selectedCell = null;
 let currentTrainerId = null;
 
@@ -6,15 +6,120 @@ document.addEventListener('DOMContentLoaded', async function() {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
         // Using absolute path for robustness
-        window.location.href = '/Hohoo-ville/frontend/login.html';
+        window.location.href = '../../../login.html';
         return;
+    }
+
+    // Inject Sidebar CSS (W3.CSS Reference Style)
+    const ms = document.createElement('style');
+    ms.innerHTML = `
+        #sidebar {
+            width: 200px;
+            position: fixed;
+            z-index: 1050;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            overflow-y: auto;
+            background-color: #fff;
+            box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16), 0 2px 10px 0 rgba(0,0,0,0.12);
+            display: block;
+        }
+        .main-content, #content, .content-wrapper {
+            margin-left: 200px !important;
+            transition: margin-left .4s;
+        }
+        #sidebarCloseBtn {
+            display: none;
+            width: 100%;
+            text-align: left;
+            padding: 8px 16px;
+            background: none;
+            border: none;
+            font-size: 18px;
+        }
+        #sidebarCloseBtn:hover { background-color: #ccc; }
+        
+        @media (max-width: 991.98px) {
+            #sidebar { display: none; }
+            .main-content, #content, .content-wrapper { margin-left: 0 !important; }
+            #sidebarCloseBtn { display: block; }
+        }
+        .table-responsive, table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    `;
+    document.head.appendChild(ms);
+
+    // Sidebar Logic
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+        if (!document.getElementById('sidebarCloseBtn')) {
+            const closeBtn = document.createElement('button');
+            closeBtn.id = 'sidebarCloseBtn';
+            closeBtn.innerHTML = 'Close &times;';
+            closeBtn.addEventListener('click', () => {
+                sidebar.style.display = 'none';
+            });
+            sidebar.insertBefore(closeBtn, sidebar.firstChild);
+        }
+    }
+
+    // Open Button Logic
+    let sc = document.getElementById('sidebarCollapse');
+    if (!sc) {
+        const nb = document.querySelector('.navbar');
+        if (nb) {
+            const c = nb.querySelector('.container-fluid') || nb;
+            const b = document.createElement('button');
+            b.id = 'sidebarCollapse';
+            b.className = 'btn btn-outline-primary me-2 d-lg-none';
+            b.type = 'button';
+            b.innerHTML = '&#9776;';
+            c.insertBefore(b, c.firstChild);
+            sc = b;
+        }
+    }
+    if (sc) {
+        const nb = sc.cloneNode(true);
+        if(sc.parentNode) sc.parentNode.replaceChild(nb, sc);
+        nb.addEventListener('click', () => {
+            if (sidebar) sidebar.style.display = 'block';
+        });
+    }
+
+    // Sidebar manipulation
+    if (sidebar) {
+        const ul = sidebar.querySelector('ul');
+        if (ul) {
+            ul.innerHTML = '';
+            const menuItems = [
+                { href: '/Hohoo-ville/frontend/html/trainer/trainer_dashboard.html', icon: 'fas fa-home', text: 'Dashboard' },
+                { href: 'my_batches.html', icon: 'fas fa-users', text: 'My Batches' },
+                { href: 'modules.html', icon: 'fas fa-book', text: 'Modules' },
+                { href: 'progress_chart.html', icon: 'fas fa-chart-line', text: 'Progress Chart' },
+                { href: 'achievement_chart.html', icon: 'fas fa-trophy', text: 'Achievement Chart' },
+                { href: 'reports.html', icon: 'fas fa-file-alt', text: 'Reports' }
+            ];
+            const currentPage = window.location.pathname.split('/').pop();
+            menuItems.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'nav-item mb-1';
+                const isActive = currentPage === item.href ? 'active' : '';
+                li.innerHTML = `<a class="nav-link ${isActive}" href="${item.href}"><i class="${item.icon} me-2"></i> ${item.text}</a>`;
+                ul.appendChild(li);
+            });
+        }
     }
 
     // Fetch trainer ID to be used in API calls
     try {
         const response = await axios.get(`${API_BASE_URL}/role/trainer/profile.php?action=get-trainer-id&user_id=${user.user_id}`);
         if (response.data.success) {
-            currentTrainerId = response.data.data.trainer_id;
+            const trainer = response.data.data;
+            if (trainer.first_name && trainer.last_name) {
+                const nameEl = document.getElementById('trainerName');
+                if (nameEl) nameEl.textContent = `${trainer.first_name} ${trainer.last_name}`;
+            }
+            currentTrainerId = trainer.trainer_id;
             // Once we have the trainer ID, load their saved charts
             loadSavedChartsList();
 
@@ -61,6 +166,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Highlight logic could go here
         }
     });
+
+    // Logout
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.clear();
+            window.location.href = '../../../login.html';
+        });
+    }
 });
 
 async function loadBatchesForChart(trainerId) {
@@ -142,9 +257,16 @@ async function loadSavedChartsList() {
                 option.textContent = `${chart.title} (Updated: ${updatedDate})`;
                 select.appendChild(option);
             });
+        } else {
+            console.error('Failed to load saved charts:', response.data.message);
+            alert('Failed to load saved charts: ' + response.data.message);
         }
     } catch (error) {
         console.error('Error loading saved charts list:', error);
+        if (error.response) {
+            console.error('Response data:', error.response.data);
+            console.error('Response status:', error.response.status);
+        }
     }
 }
 
@@ -202,8 +324,8 @@ function renderChart(htmlContent) {
     container.innerHTML = htmlContent;
 
     // Post-process the table to make it TESDA-compliant and editable
-    const table = container.querySelector('table');
-    if (table) {
+    const tables = container.querySelectorAll('table');
+    tables.forEach(table => {
         table.classList.add('tesda-table');
         
         // Make cells editable
@@ -226,7 +348,7 @@ function renderChart(htmlContent) {
                 row.style.textAlign = 'center';
             }
         });
-    }
+    });
 }
 
 function renderLiveChart(data) {
@@ -237,60 +359,77 @@ function renderLiveChart(data) {
         return;
     }
 
-    // Group outcomes by module
-    const modules = outcomes.reduce((acc, outcome) => {
-        const moduleTitle = outcome.module_title || 'Uncategorized';
-        acc[moduleTitle] = acc[moduleTitle] || [];
-        acc[moduleTitle].push(outcome);
-        return acc;
-    }, {});
-    const moduleNames = Object.keys(modules);
-
-    // --- Build Header ---
-    let headerRow1 = `<tr><th rowspan="3">NO.</th><th rowspan="3" style="width: 200px;">NAME OF TRAINEE</th><th colspan="${outcomes.length}">CORE COMPETENCIES</th></tr>`;
-    
-    let headerRow2 = `<tr>`;
-    moduleNames.forEach(moduleName => {
-        headerRow2 += `<th colspan="${modules[moduleName].length}">${moduleName}</th>`;
-    });
-    headerRow2 += `</tr>`;
-
-    let headerRow3 = `<tr>`;
-    outcomes.forEach(outcome => {
-        const isCompleted = all_outcomes_completed.includes(outcome.outcome_id);
-        const style = isCompleted ? 'style="background-color: #1cc88a; color: white;"' : '';
-        headerRow3 += `<th ${style} data-outcome-id="${outcome.outcome_id}">${outcome.outcome_title}</th>`;
-    });
-    headerRow3 += `</tr>`;
-
-    // --- Build Body ---
-    let bodyHtml = '';
-    trainees.forEach((trainee, index) => {
-        bodyHtml += `<tr data-trainee-id="${trainee.trainee_id}">`;
-        bodyHtml += `<td class="text-center">${index + 1}</td>`;
-        bodyHtml += `<td>${trainee.full_name}</td>`;
+    // Helper function to generate table HTML for a specific competency type
+    const generateTableHtml = (type) => {
+        const typeOutcomes = outcomes.filter(o => o.competency_type === type);
         
-        outcomes.forEach(outcome => {
-            const status = completion_status.find(s => s.trainee_id == trainee.trainee_id && s.outcome_id == outcome.outcome_id);
-            const mark = status ? status.mark : ''; // e.g., '✓' or 'IP'
-            let markClass = '';
-            if (mark === '✓') markClass = 'text-success fw-bold';
-            if (mark === 'IP') markClass = 'text-warning';
+        if (typeOutcomes.length === 0) {
+            return `<div class="alert alert-info m-3">No ${type} competencies found for this qualification.</div>`;
+        }
 
-            bodyHtml += `<td class="progress-mark ${markClass}">${mark}</td>`;
+        // Group outcomes by module
+        const modules = typeOutcomes.reduce((acc, outcome) => {
+            const moduleTitle = outcome.module_title || 'Uncategorized';
+            acc[moduleTitle] = acc[moduleTitle] || [];
+            acc[moduleTitle].push(outcome);
+            return acc;
+        }, {});
+        const moduleNames = Object.keys(modules);
+
+        // --- Build Header ---
+        let headerRow1 = `<tr><th rowspan="3">NO.</th><th rowspan="3" style="width: 200px;">NAME OF TRAINEE</th><th colspan="${typeOutcomes.length}">${type.toUpperCase()} COMPETENCIES</th></tr>`;
+        
+        let headerRow2 = `<tr>`;
+        moduleNames.forEach(moduleName => {
+            headerRow2 += `<th colspan="${modules[moduleName].length}">${moduleName}</th>`;
         });
-        bodyHtml += `</tr>`;
-    });
+        headerRow2 += `</tr>`;
 
-    const tableHtml = `
-        <table class="tesda-table" id="progressTable">
-            <thead>${headerRow1}${headerRow2}${headerRow3}</thead>
-            <tbody>${bodyHtml}</tbody>
-        </table>
+        let headerRow3 = `<tr>`;
+        typeOutcomes.forEach(outcome => {
+            const isCompleted = all_outcomes_completed.includes(outcome.outcome_id);
+            const style = isCompleted ? 'style="background-color: #1cc88a; color: white;"' : '';
+            headerRow3 += `<th ${style} data-outcome-id="${outcome.outcome_id}">${outcome.outcome_title}</th>`;
+        });
+        headerRow3 += `</tr>`;
+
+        // --- Build Body ---
+        let bodyHtml = '';
+        trainees.forEach((trainee, index) => {
+            bodyHtml += `<tr data-trainee-id="${trainee.trainee_id}">`;
+            bodyHtml += `<td class="text-center">${index + 1}</td>`;
+            bodyHtml += `<td>${trainee.full_name}</td>`;
+            
+            typeOutcomes.forEach(outcome => {
+                const status = completion_status.find(s => s.trainee_id == trainee.trainee_id && s.outcome_id == outcome.outcome_id);
+                const mark = status ? status.mark : ''; // e.g., '✓' or 'IP'
+                let markClass = '';
+                if (mark === '✓') markClass = 'text-success fw-bold';
+                if (mark === 'IP') markClass = 'text-warning';
+
+                bodyHtml += `<td class="progress-mark ${markClass}">${mark}</td>`;
+            });
+            bodyHtml += `</tr>`;
+        });
+
+        return `<table class="tesda-table" id="progressTable_${type}"><thead>${headerRow1}${headerRow2}${headerRow3}</thead><tbody>${bodyHtml}</tbody></table>`;
+    };
+
+    const tabsHtml = `
+        <ul class="nav nav-tabs mb-3" id="chartTabs" role="tablist">
+            <li class="nav-item"><button class="nav-link active" id="core-tab" data-bs-toggle="tab" data-bs-target="#core-pane" type="button">Core Competencies</button></li>
+            <li class="nav-item"><button class="nav-link" id="common-tab" data-bs-toggle="tab" data-bs-target="#common-pane" type="button">Common Competencies</button></li>
+            <li class="nav-item"><button class="nav-link" id="basic-tab" data-bs-toggle="tab" data-bs-target="#basic-pane" type="button">Basic Competencies</button></li>
+        </ul>
+        <div class="tab-content" id="chartTabsContent">
+            <div class="tab-pane fade show active" id="core-pane" role="tabpanel">${generateTableHtml('core')}</div>
+            <div class="tab-pane fade" id="common-pane" role="tabpanel">${generateTableHtml('common')}</div>
+            <div class="tab-pane fade" id="basic-pane" role="tabpanel">${generateTableHtml('basic')}</div>
+        </div>
     `;
 
     // Use the existing renderChart function to inject the HTML and make it editable
-    renderChart(tableHtml);
+    renderChart(tabsHtml);
 }
 
 function generateEIMTemplate() {

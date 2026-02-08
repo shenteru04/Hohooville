@@ -1,13 +1,92 @@
-const API_BASE_URL = 'http://localhost/hohoo-ville/api';
+const API_BASE_URL = window.location.origin + '/Hohoo-ville/api';
 
 document.addEventListener('DOMContentLoaded', function() {
     const user = JSON.parse(localStorage.getItem('user'));
-    if (!user || !user.trainee_id) {
+    if (!user) {
         window.location.href = '/Hohoo-ville/frontend/login.html';
         return;
     }
     document.getElementById('traineeName').textContent = user.username;
-    loadGrades(user.trainee_id);
+
+    // Inject Sidebar CSS (W3.CSS Reference Style)
+    const ms = document.createElement('style');
+    ms.innerHTML = `
+        #sidebar {
+            width: 200px;
+            position: fixed;
+            z-index: 1050;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            overflow-y: auto;
+            background-color: #fff;
+            box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16), 0 2px 10px 0 rgba(0,0,0,0.12);
+            display: block;
+        }
+        .main-content, #content, .content-wrapper {
+            margin-left: 200px !important;
+            transition: margin-left .4s;
+        }
+        #sidebarCloseBtn {
+            display: none;
+            width: 100%;
+            text-align: left;
+            padding: 8px 16px;
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        #sidebarCloseBtn:hover { background-color: #ccc; }
+        
+        @media (max-width: 991.98px) {
+            #sidebar { display: none; }
+            .main-content, #content, .content-wrapper { margin-left: 0 !important; }
+            #sidebarCloseBtn { display: block; }
+        }
+        .table-responsive, table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    `;
+    document.head.appendChild(ms);
+
+    // Sidebar Logic
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+        if (!document.getElementById('sidebarCloseBtn')) {
+            const closeBtn = document.createElement('button');
+            closeBtn.id = 'sidebarCloseBtn';
+            closeBtn.innerHTML = 'Close &times;';
+            closeBtn.addEventListener('click', () => {
+                sidebar.style.display = 'none';
+            });
+            sidebar.insertBefore(closeBtn, sidebar.firstChild);
+        }
+    }
+
+    // Open Button Logic
+    if (!document.getElementById('sidebarCollapse')) {
+        const navbarContainer = document.querySelector('.navbar .container-fluid');
+        if (navbarContainer) {
+            const toggleBtn = document.createElement('button');
+            toggleBtn.id = 'sidebarCollapse';
+            toggleBtn.className = 'btn btn-primary me-2 d-lg-none';
+            toggleBtn.type = 'button';
+            toggleBtn.innerHTML = '<i class="fas fa-bars"></i>';
+            
+            // Insert as first child to ensure visibility
+            navbarContainer.insertBefore(toggleBtn, navbarContainer.firstChild);
+            
+            toggleBtn.addEventListener('click', () => {
+                if (sidebar) sidebar.style.display = 'block';
+            });
+        }
+    }
+
+    const idToLoad = user.trainee_id || user.user_id;
+    if (idToLoad) {
+        loadGrades(idToLoad);
+    } else {
+        document.getElementById('core').innerHTML = '<div class="alert alert-danger">User ID not found.</div>';
+    }
 });
 
 async function loadGrades(traineeId) {

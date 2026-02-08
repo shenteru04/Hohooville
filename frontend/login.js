@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', function() {
         submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Logging in...';
 
         try {
-            const response = await axios.post('http://localhost/hohoo-ville/api/authentication/Authentication.php?action=login', {
+            const response = await axios.post(window.location.origin + '/hohoo-ville/api/authentication/Authentication.php?action=login', {
                 username: username,
                 password: password,
                 captcha_input: parseInt(captchaInput),
@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.innerHTML = 'Verifying...';
 
         try {
-            const response = await axios.post('http://localhost/hohoo-ville/api/authentication/Authentication.php?action=verify-otp', {
+            const response = await axios.post(window.location.origin + '/hohoo-ville/api/authentication/Authentication.php?action=verify-otp', {
                 user_id: userId,
                 otp: otp,
                 otp_token: sessionStorage.getItem('temp_otp_token')

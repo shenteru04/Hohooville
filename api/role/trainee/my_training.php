@@ -20,7 +20,7 @@ class MyTraining {
 
         try {
             // Get Active Course ID
-            $stmt = $this->conn->prepare("SELECT oc.qualification_id, c.course_name 
+            $stmt = $this->conn->prepare("SELECT oc.qualification_id, c.qualification_name AS course_name
                                           FROM tbl_enrollment e 
                                           JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id 
                                           JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id

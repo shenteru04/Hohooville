@@ -37,7 +37,7 @@ class TrainerReports {
         // Join Enrollment to get trainees in batch, then Grades
         $query = "SELECT 
                     CONCAT(t.first_name, ' ', t.last_name) as trainee_name,
-                    c.course_name,
+                    c.qualification_name as course_name,
                     (SELECT AVG(score) FROM tbl_grades WHERE trainee_id = t.trainee_id AND qualification_id = c.qualification_id) as total_grade,
                     (CASE WHEN (SELECT AVG(score) FROM tbl_grades WHERE trainee_id = t.trainee_id AND qualification_id = c.qualification_id) >= 80 THEN 'Competent' ELSE 'Not Yet Competent' END) as remarks
                   FROM tbl_enrollment e

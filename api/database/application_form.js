@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    const API_BASE_URL = 'http://localhost/hohoo-ville/api';
+    const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
     let allBatches = [];
 
     // --- Page Navigation ---

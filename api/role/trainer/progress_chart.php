@@ -53,6 +53,19 @@ function getBatchData($conn) {
     $stmt->execute([$batchId]);
     $trainees = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // 1.5 Get Batch & Qualification Info for Header/Footer
+    $stmtBatch = $conn->prepare("
+        SELECT b.batch_name, b.start_date, b.end_date, 
+               q.qualification_name, q.duration,
+               CONCAT(t.first_name, ' ', t.last_name) as trainer_name
+        FROM tbl_batch b
+        LEFT JOIN tbl_qualifications q ON b.qualification_id = q.qualification_id
+        LEFT JOIN tbl_trainer t ON b.trainer_id = t.trainer_id
+        WHERE b.batch_id = ?
+    ");
+    $stmtBatch->execute([$batchId]);
+    $batchInfo = $stmtBatch->fetch(PDO::FETCH_ASSOC);
+
     // 2. Get Qualification ID
     // Try getting it from the batch table directly
     $stmtQ = $conn->prepare("SELECT qualification_id FROM tbl_batch WHERE batch_id = ?");
@@ -76,13 +89,13 @@ function getBatchData($conn) {
         return;
     }
 
-    // 3. Get Core Outcomes (Lessons)
+    // 3. Get Outcomes (Lessons) for all competency types
     $stmtOutcomes = $conn->prepare("
-        SELECT l.lesson_id as outcome_id, l.lesson_title as outcome_title, m.module_title
+        SELECT l.lesson_id as outcome_id, l.lesson_title as outcome_title, m.module_title, m.competency_type
         FROM tbl_lessons l
         JOIN tbl_module m ON l.module_id = m.module_id
-        WHERE m.qualification_id = ? AND m.competency_type = 'core'
-        ORDER BY m.module_id, l.lesson_id
+        WHERE m.qualification_id = ?
+        ORDER BY FIELD(m.competency_type, 'basic', 'common', 'core'), m.module_id, l.lesson_id
     ");
     $stmtOutcomes->execute([$qualificationId]);
     $outcomes = $stmtOutcomes->fetchAll(PDO::FETCH_ASSOC);
@@ -117,6 +130,7 @@ function getBatchData($conn) {
     echo json_encode([
         'success' => true, 
         'data' => [
+            'batch_info' => $batchInfo,
             'trainees' => $trainees,
             'outcomes' => $outcomes,
             'completion_status' => $completionStatus,
@@ -168,17 +182,25 @@ function isOutcomeCompleted($conn, $traineeId, $lessonId) {
 function listCharts($conn) {
     $trainerId = $_GET['trainer_id'] ?? null;
     if (!$trainerId) throw new Exception('Trainer ID required');
+    
+    // Check if table exists first to avoid 500 error on fresh install or missing table
     try {
-        $stmt = $conn->prepare("SELECT chart_id, title, updated_at FROM tbl_trainer_charts WHERE trainer_id = ? ORDER BY updated_at DESC");
-        $stmt->execute([$trainerId]);
-        echo json_encode(['success' => true, 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
-    } catch (Exception $e) { echo json_encode(['success' => true, 'data' => []]); }
+        $check = $conn->query("SELECT 1 FROM tbl_progress_charts LIMIT 1");
+    } catch (Exception $e) {
+        // Table doesn't exist, return empty list
+        echo json_encode(['success' => true, 'data' => []]);
+        return;
+    }
+
+    $stmt = $conn->prepare("SELECT chart_id, title, updated_at FROM tbl_progress_charts WHERE trainer_id = ? ORDER BY updated_at DESC");
+    $stmt->execute([$trainerId]);
+    echo json_encode(['success' => true, 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
 }
 
 function getChart($conn) {
     $id = $_GET['id'] ?? null;
     if (!$id) throw new Exception('Chart ID required');
-    $stmt = $conn->prepare("SELECT * FROM tbl_trainer_charts WHERE chart_id = ?");
+    $stmt = $conn->prepare("SELECT * FROM tbl_progress_charts WHERE chart_id = ?");
     $stmt->execute([$id]);
     $data = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($data) echo json_encode(['success' => true, 'data' => $data]);
@@ -193,19 +215,20 @@ function saveChart($conn) {
     $chartId = $data['chart_id'] ?? null;
     if (!$trainerId || !$title) throw new Exception('Trainer ID and Title required');
     
-    $conn->exec("CREATE TABLE IF NOT EXISTS tbl_trainer_charts (
+    $conn->exec("CREATE TABLE IF NOT EXISTS tbl_progress_charts (
         chart_id INT AUTO_INCREMENT PRIMARY KEY,
         trainer_id INT,
         title VARCHAR(255),
         chart_content LONGTEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )");
 
     if ($chartId) {
-        $stmt = $conn->prepare("UPDATE tbl_trainer_charts SET title = ?, chart_content = ? WHERE chart_id = ? AND trainer_id = ?");
+        $stmt = $conn->prepare("UPDATE tbl_progress_charts SET title = ?, chart_content = ? WHERE chart_id = ? AND trainer_id = ?");
         $stmt->execute([$title, $content, $chartId, $trainerId]);
     } else {
-        $stmt = $conn->prepare("INSERT INTO tbl_trainer_charts (trainer_id, title, chart_content) VALUES (?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO tbl_progress_charts (trainer_id, title, chart_content) VALUES (?, ?, ?)");
         $stmt->execute([$trainerId, $title, $content]);
     }
     echo json_encode(['success' => true, 'message' => 'Chart saved']);

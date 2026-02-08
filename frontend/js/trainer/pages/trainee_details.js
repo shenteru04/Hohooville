@@ -1,5 +1,5 @@
-const API_BASE_URL = 'http://localhost/hohoo-ville/api';
-const UPLOADS_URL = 'http://localhost/hohoo-ville/uploads/trainees/';
+const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
+const UPLOADS_URL = window.location.origin + '/hohoo-ville/uploads/trainees/';
 
 document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -11,30 +11,103 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('profile-content').innerHTML = '<div class="alert alert-danger">No trainee ID provided.</div>';
     }
 
-    // Remove Attendance and Grading pages from sidebar
+    // Inject Sidebar CSS (W3.CSS Reference Style)
+    const ms = document.createElement('style');
+    ms.innerHTML = `
+        #sidebar {
+            width: 200px;
+            position: fixed;
+            z-index: 1050;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            overflow-y: auto;
+            background-color: #fff;
+            box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16), 0 2px 10px 0 rgba(0,0,0,0.12);
+            display: block;
+        }
+        .main-content, #content, .content-wrapper {
+            margin-left: 200px !important;
+            transition: margin-left .4s;
+        }
+        #sidebarCloseBtn {
+            display: none;
+            width: 100%;
+            text-align: left;
+            padding: 8px 16px;
+            background: none;
+            border: none;
+            font-size: 18px;
+        }
+        #sidebarCloseBtn:hover { background-color: #ccc; }
+        
+        @media (max-width: 991.98px) {
+            #sidebar { display: none; }
+            .main-content, #content, .content-wrapper { margin-left: 0 !important; }
+            #sidebarCloseBtn { display: block; }
+        }
+        .table-responsive, table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    `;
+    document.head.appendChild(ms);
+
+    // Sidebar Logic
     const sidebar = document.getElementById('sidebar');
     if (sidebar) {
-        const links = sidebar.querySelectorAll('a');
-        links.forEach(link => {
-            const href = link.getAttribute('href') || '';
-            if (href.includes('attendance') || href.includes('grading') || href.includes('my_trainees.html')) {
-                const parent = link.closest('li') || link;
-                parent.remove();
-            }
-        });
+        if (!document.getElementById('sidebarCloseBtn')) {
+            const closeBtn = document.createElement('button');
+            closeBtn.id = 'sidebarCloseBtn';
+            closeBtn.innerHTML = 'Close &times;';
+            closeBtn.addEventListener('click', () => {
+                sidebar.style.display = 'none';
+            });
+            sidebar.insertBefore(closeBtn, sidebar.firstChild);
+        }
+    }
 
-        // Add Progress Chart link
+    // Open Button Logic
+    let sc = document.getElementById('sidebarCollapse');
+    if (!sc) {
+        const nb = document.querySelector('.navbar');
+        if (nb) {
+            const c = nb.querySelector('.container-fluid') || nb;
+            const b = document.createElement('button');
+            b.id = 'sidebarCollapse';
+            b.className = 'btn btn-outline-primary me-2 d-lg-none';
+            b.type = 'button';
+            b.innerHTML = '&#9776;';
+            c.insertBefore(b, c.firstChild);
+            sc = b;
+        }
+    }
+    if (sc) {
+        const nb = sc.cloneNode(true);
+        if(sc.parentNode) sc.parentNode.replaceChild(nb, sc);
+        nb.addEventListener('click', () => {
+            if (sidebar) sidebar.style.display = 'block';
+        });
+    }
+
+    // Remove Attendance and Grading pages from sidebar
+    if (sidebar) {
         const ul = sidebar.querySelector('ul');
-        if (ul && !ul.querySelector('a[href="progress_chart.html"]')) {
-            const newLi = document.createElement('li');
-            newLi.className = 'nav-item';
-            newLi.innerHTML = `
-                <a class="nav-link" href="progress_chart.html">
-                    <i class="fas fa-chart-bar me-2"></i>
-                    <span>Progress Chart</span>
-                </a>
-            `;
-            ul.appendChild(newLi);
+        if (ul) {
+            ul.innerHTML = '';
+            const menuItems = [
+                { href: '/Hohoo-ville/frontend/html/trainer/trainer_dashboard.html', icon: 'fas fa-home', text: 'Dashboard' },
+                { href: 'my_batches.html', icon: 'fas fa-users', text: 'My Batches' },
+                { href: 'modules.html', icon: 'fas fa-book', text: 'Modules' },
+                { href: 'progress_chart.html', icon: 'fas fa-chart-line', text: 'Progress Chart' },
+                { href: 'achievement_chart.html', icon: 'fas fa-trophy', text: 'Achievement Chart' },
+                { href: 'reports.html', icon: 'fas fa-file-alt', text: 'Reports' }
+            ];
+            const currentPage = window.location.pathname.split('/').pop();
+            menuItems.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'nav-item mb-1';
+                const isActive = currentPage === item.href ? 'active' : '';
+                li.innerHTML = `<a class="nav-link ${isActive}" href="${item.href}"><i class="${item.icon} me-2"></i> ${item.text}</a>`;
+                ul.appendChild(li);
+            });
         }
     }
 
@@ -44,7 +117,7 @@ document.addEventListener('DOMContentLoaded', function() {
         logoutBtn.addEventListener('click', (e) => {
             e.preventDefault();
             localStorage.clear();
-            window.location.href = '../../../../login.html';
+            window.location.href = '../../../login.html';
         });
     }
     const user = JSON.parse(localStorage.getItem('user'));

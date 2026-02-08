@@ -20,7 +20,7 @@ class MyGrades {
 
         try {
             // Fetch Grades Header and Details
-            $query = "SELECT c.course_name, g.score, g.date_recorded
+            $query = "SELECT c.qualification_name as course_name, g.score, g.date_recorded
                       FROM tbl_grades g
                       JOIN tbl_qualifications c ON g.qualification_id = c.qualification_id
                       WHERE g.trainee_id = ?

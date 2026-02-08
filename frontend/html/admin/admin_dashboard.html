@@ -67,7 +67,7 @@
 <body>
     <div class="d-flex">
          <!-- Sidebar -->
-        <nav id="sidebar" class="p-3" style="width: 250px; height: 100vh; position: fixed; overflow-y: auto; top: 0; left: 0;">
+        <nav id="sidebar" class="p-3">
             <div class="sidebar-header mb-3">
                 <h3><img src="../../../img/logo.jpg" alt="Logo" class="me-2" style="height: 35px; width: auto;">Hohooville</h3>
                 <p class="text-muted">Management System</p>
@@ -124,7 +124,7 @@
         </nav>
 
         <!-- Page Content -->
-        <div class="flex-grow-1" style="margin-left: 250px;">
+        <div class="flex-grow-1">
             <!-- Top Navigation -->
             <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
                 <div class="container-fluid">
@@ -384,13 +384,6 @@
     <script>
         // Navigation handling
        
-
-        // Sidebar toggle
-        document.getElementById('sidebarCollapse').addEventListener('click', function() {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('d-none');
-            sidebar.classList.toggle('d-lg-block');
-        });
 
         // Logout
         document.getElementById('logoutBtn').addEventListener('click', function() {

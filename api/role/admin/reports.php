@@ -40,7 +40,7 @@ function getEnrollmentReport($conn, $start, $end) {
     try {
         // Chart Data: Enrollments by Course
         $stmtChart = $conn->prepare("
-            SELECT c.course_name as label, COUNT(e.enrollment_id) as value 
+            SELECT c.qualification_name as label, COUNT(e.enrollment_id) as value 
             FROM tbl_enrollment e
             JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
             JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id
@@ -52,7 +52,7 @@ function getEnrollmentReport($conn, $start, $end) {
 
         // Table Data: Detailed List
         $stmtTable = $conn->prepare("
-            SELECT e.enrollment_date, CONCAT(t.first_name, ' ', t.last_name) as trainee, c.course_name, b.batch_name, e.status
+            SELECT e.enrollment_date, CONCAT(t.first_name, ' ', t.last_name) as trainee, c.qualification_name as course_name, b.batch_name, e.status
             FROM tbl_enrollment e
             JOIN tbl_trainee_hdr t ON e.trainee_id = t.trainee_id
             JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
@@ -157,7 +157,7 @@ function getPerformanceReport($conn, $start, $end) {
     try {
         // Chart Data: Average Grade by Course
         $stmtChart = $conn->prepare("
-            SELECT c.course_name as label, AVG(g.score) as value
+            SELECT c.qualification_name as label, AVG(g.score) as value
             FROM tbl_grades g
             JOIN tbl_qualifications c ON g.qualification_id = c.qualification_id
             WHERE g.date_recorded BETWEEN ? AND ?
@@ -170,7 +170,7 @@ function getPerformanceReport($conn, $start, $end) {
         $stmtTable = $conn->prepare("
             SELECT 
                 CONCAT(t.first_name, ' ', t.last_name) as trainee, 
-                c.course_name, 
+                c.qualification_name as course_name, 
                 AVG(g.score) as total_grade, 
                 (CASE WHEN AVG(g.score) >= 80 THEN 'Competent' ELSE 'Not Yet Competent' END) as remarks,
                 MAX(g.date_recorded) as date_recorded

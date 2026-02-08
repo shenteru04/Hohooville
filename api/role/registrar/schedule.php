@@ -41,7 +41,7 @@ function getData($conn) {
         $batches_query = "SELECT 
                             b.batch_id, 
                             b.batch_name, 
-                            c.course_name, 
+                            c.qualification_name as course_name, 
                             b.trainer_id, 
                             CONCAT_WS(' ', t.first_name, t.last_name) as trainer_name,
                             (SELECT oc.schedule FROM tbl_offered_qualifications oc JOIN tbl_enrollment e ON oc.offered_qualification_id = e.offered_qualification_id WHERE e.batch_id = b.batch_id LIMIT 1) as schedule,

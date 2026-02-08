@@ -35,7 +35,7 @@ function getPendingApplications($conn) {
                          d.house_no_street, d.barangay, d.district, d.city_municipality, d.province, d.region,
                          f.educational_attainment, f.employment_status, f.employment_type, f.learner_classification, 
                          f.is_pwd, f.disability_type, f.disability_cause, f.privacy_consent, f.digital_signature,
-                         c.course_name, b.batch_name
+                         c.qualification_name as course_name, b.batch_name
                   FROM tbl_enrollment e
                   JOIN tbl_trainee_hdr h ON e.trainee_id = h.trainee_id
                   LEFT JOIN tbl_trainee_dtl d ON h.trainee_id = d.trainee_id
@@ -62,7 +62,7 @@ function getUnqualifiedApplications($conn) {
                          d.house_no_street, d.barangay, d.district, d.city_municipality, d.province, d.region,
                          f.educational_attainment, f.employment_status, f.employment_type, f.learner_classification, 
                          f.is_pwd, f.disability_type, f.disability_cause, f.privacy_consent, f.digital_signature,
-                         c.course_name, b.batch_name
+                         c.qualification_name as course_name, b.batch_name
                   FROM tbl_enrollment e
                   JOIN tbl_trainee_hdr h ON e.trainee_id = h.trainee_id
                   LEFT JOIN tbl_trainee_dtl d ON h.trainee_id = d.trainee_id

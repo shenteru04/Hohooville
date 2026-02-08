@@ -53,20 +53,15 @@ function addQualification($conn) {
     try {
         $data = json_decode(file_get_contents('php://input'), true);
         
-        if (empty($data['qualification_name'])) { // Assuming frontend sends qualification_name now or still course_name? Let's check create_qualification.js. It sends qualification_name.
-             // Wait, manage_qualifications.php is for ADMIN. create_qualification.js is for REGISTRAR.
-             // If this is for admin adding directly, we should check what frontend sends. Assuming standard naming.
-             // Let's stick to what the table expects.
+        if (empty($data['qualification_name'])) {
             throw new Exception('Qualification name is required');
         }
         
         $conn->beginTransaction();
 
-        $stmt = $conn->prepare("INSERT INTO tbl_qualifications (course_name, ctpr_number, training_cost, description, duration, status) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO tbl_qualifications (qualification_name, ctpr_number, training_cost, description, duration, status) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute([
-            $data['course_name'], // The column name in DB is still course_name based on migration script? No, migration script didn't rename columns inside tbl_qualifications except PK.
-            // Wait, migration script: ALTER TABLE `tbl_qualifications` CHANGE `course_id` `qualification_id` INT(11) NOT NULL AUTO_INCREMENT;
-            // It did NOT rename `course_name` column. So column is `course_name`.
+            $data['qualification_name'],
             $data['ctpr_number'] ?? null,
             $data['training_cost'] ?? 0,
             $data['description'] ?? null, 
@@ -97,9 +92,9 @@ function updateQualification($conn) {
         
         if (!$id) throw new Exception('ID required');
         
-        $stmt = $conn->prepare("UPDATE tbl_qualifications SET course_name = ?, ctpr_number = ?, training_cost = ?, description = ?, duration = ?, status = ? WHERE qualification_id = ?");
+        $stmt = $conn->prepare("UPDATE tbl_qualifications SET qualification_name = ?, ctpr_number = ?, training_cost = ?, description = ?, duration = ?, status = ? WHERE qualification_id = ?");
         $stmt->execute([
-            $data['course_name'], 
+            $data['qualification_name'], 
             $data['ctpr_number'] ?? null,
             $data['training_cost'] ?? 0,
             $data['description'] ?? null, 

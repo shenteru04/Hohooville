@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = 'http://localhost/hohoo-ville/api';
+const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
 
 // Global variable to store data for editing
 let currentQualifications = [];
@@ -40,6 +40,82 @@ apiClient.interceptors.response.use(
 
 document.addEventListener('DOMContentLoaded', function() {
     initializePage();
+
+    // Inject Sidebar CSS (W3.CSS Reference Style)
+    const ms = document.createElement('style');
+    ms.innerHTML = `
+        #sidebar {
+            width: 200px;
+            position: fixed;
+            z-index: 1050;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            overflow-y: auto;
+            background-color: #fff;
+            box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16), 0 2px 10px 0 rgba(0,0,0,0.12);
+            display: block;
+        }
+        .main-content, #content, .content-wrapper {
+            margin-left: 200px !important;
+            transition: margin-left .4s;
+        }
+        #sidebarCloseBtn {
+            display: none;
+            width: 100%;
+            text-align: left;
+            padding: 8px 16px;
+            background: none;
+            border: none;
+            font-size: 18px;
+        }
+        #sidebarCloseBtn:hover { background-color: #ccc; }
+        
+        @media (max-width: 991.98px) {
+            #sidebar { display: none; }
+            .main-content, #content, .content-wrapper { margin-left: 0 !important; }
+            #sidebarCloseBtn { display: block; }
+        }
+        .table-responsive, table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    `;
+    document.head.appendChild(ms);
+
+    // Sidebar Logic
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+        if (!document.getElementById('sidebarCloseBtn')) {
+            const closeBtn = document.createElement('button');
+            closeBtn.id = 'sidebarCloseBtn';
+            closeBtn.innerHTML = 'Close &times;';
+            closeBtn.addEventListener('click', () => {
+                sidebar.style.display = 'none';
+            });
+            sidebar.insertBefore(closeBtn, sidebar.firstChild);
+        }
+    }
+
+    // Open Button Logic
+    let sc = document.getElementById('sidebarCollapse');
+    if (!sc) {
+        const nb = document.querySelector('.navbar');
+        if (nb) {
+            const c = nb.querySelector('.container-fluid') || nb;
+            const b = document.createElement('button');
+            b.id = 'sidebarCollapse';
+            b.className = 'btn btn-outline-primary me-2 d-lg-none';
+            b.type = 'button';
+            b.innerHTML = '&#9776;';
+            c.insertBefore(b, c.firstChild);
+            sc = b;
+        }
+    }
+    if (sc) {
+        const nb = sc.cloneNode(true);
+        if(sc.parentNode) sc.parentNode.replaceChild(nb, sc);
+        nb.addEventListener('click', () => {
+            if (sidebar) sidebar.style.display = 'block';
+        });
+    }
 });
 
 function initializePage() {
@@ -137,18 +213,18 @@ function renderTable(data) {
         let actionBtns = '';
         if (item.status === 'pending') {
             actionBtns = `
-                <button class="btn btn-success btn-sm me-1" data-action="approve" data-id="${item.course_id}" title="Approve"><i class="fas fa-check"></i></button>
-                <button class="btn btn-danger btn-sm me-1" data-action="reject" data-id="${item.course_id}" title="Reject"><i class="fas fa-times"></i></button>
+                <button class="btn btn-success btn-sm me-1" data-action="approve" data-id="${item.qualification_id}" title="Approve"><i class="fas fa-check"></i></button>
+                <button class="btn btn-danger btn-sm me-1" data-action="reject" data-id="${item.qualification_id}" title="Reject"><i class="fas fa-times"></i></button>
             `;
         }
         actionBtns += `
-            <button class="btn btn-warning btn-sm me-1" data-action="edit" data-id="${item.course_id}" title="Edit"><i class="fas fa-edit"></i></button>
-            <button class="btn btn-outline-danger btn-sm" data-action="delete" data-id="${item.course_id}" title="Delete"><i class="fas fa-trash"></i></button>
+            <button class="btn btn-warning btn-sm me-1" data-action="edit" data-id="${item.qualification_id}" title="Edit"><i class="fas fa-edit"></i></button>
+            <button class="btn btn-outline-danger btn-sm" data-action="delete" data-id="${item.qualification_id}" title="Delete"><i class="fas fa-trash"></i></button>
         `;
             
         row.innerHTML = `
-            <td>${item.course_id}</td>
-            <td>${item.course_name}</td>
+            <td>${item.qualification_id}</td>
+            <td>${item.qualification_name}</td>
             <td>${item.ctpr_number || '-'}</td>
             <td>${item.training_cost ? '₱' + item.training_cost : 'Free'}</td>
             <td>${item.duration || 'N/A'}</td>
@@ -172,7 +248,7 @@ async function rejectQualification(id) {
 async function updateStatus(id, status) {
     try {
         const response = await apiClient.post('/role/admin/manage_qualifications.php?action=update-status', {
-            course_id: id,
+            qualification_id: id,
             status: status
         });
         if (response.data.success) {
@@ -189,7 +265,7 @@ async function updateStatus(id, status) {
 
 async function addQualification() {
     const data = {
-        course_name: document.getElementById('courseName').value,
+        qualification_name: document.getElementById('courseName').value,
         ctpr_number: document.getElementById('ctprNumber').value,
         training_cost: document.getElementById('trainingCost').value,
         duration: document.getElementById('duration').value,
@@ -214,8 +290,8 @@ async function addQualification() {
 
 async function updateQualification(id) {
     const data = {
-        course_id: id,
-        course_name: document.getElementById('courseName').value,
+        qualification_id: id,
+        qualification_name: document.getElementById('courseName').value,
         ctpr_number: document.getElementById('ctprNumber').value,
         training_cost: document.getElementById('trainingCost').value,
         duration: document.getElementById('duration').value,
@@ -256,11 +332,11 @@ async function deleteQualification(id) {
 }
 
 function editQualification(id) {
-    const item = currentQualifications.find(q => q.course_id == id);
+    const item = currentQualifications.find(q => q.qualification_id == id);
     if (!item) return;
 
-    document.getElementById('qualificationId').value = item.course_id;
-    document.getElementById('courseName').value = item.course_name;
+    document.getElementById('qualificationId').value = item.qualification_id;
+    document.getElementById('courseName').value = item.qualification_name;
     document.getElementById('ctprNumber').value = item.ctpr_number || '';
     document.getElementById('trainingCost').value = item.training_cost || '';
     document.getElementById('duration').value = item.duration;

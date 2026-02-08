@@ -44,7 +44,7 @@ function listTrainees($conn) {
                     th.photo_file,
                     b.batch_id,
                     b.batch_name,
-                    c.course_name,
+                    c.qualification_name as course_name,
                     e.status AS enrollment_status
                 FROM
                     tbl_batch AS b

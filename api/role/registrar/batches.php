@@ -56,7 +56,7 @@ function listBatches($conn) {
                     b.status,
                     b.scholarship_type,
                     b.trainer_id,
-                    c.course_name,
+                    c.qualification_name as course_name,
                     CONCAT(t.first_name, ' ', t.last_name) AS trainer_name
                 FROM
                     tbl_batch AS b
@@ -257,8 +257,8 @@ function getTraineeDetails($conn) {
                   LEFT JOIN tbl_trainee_dtl td ON th.trainee_id = td.trainee_id
                   LEFT JOIN tbl_trainee_ftr tf ON th.trainee_id = tf.trainee_id
                   LEFT JOIN tbl_enrollment e ON th.trainee_id = e.trainee_id
-                  LEFT JOIN tbl_offered_courses oc ON e.offered_id = oc.offered_id
-                  LEFT JOIN tbl_course c ON oc.course_id = c.course_id
+                  LEFT JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
+                  LEFT JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id
                   WHERE th.trainee_id = ?";
         
         $stmt = $conn->prepare($query);

@@ -1,23 +1,110 @@
-const API_BASE_URL = 'http://localhost/hohoo-ville/api';
-const LESSON_UPLOADS_URL = 'http://localhost/hohoo-ville/uploads/lessons/';
+const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
+const LESSON_UPLOADS_URL = window.location.origin + '/hohoo-ville/uploads/lessons/';
 let moduleModal, competencyModal, manageLessonModal, viewModuleModal, contentEditorModal;
 let currentModules = [];
 let currentCompetencyType = 'core'; // Default to core
 let currentViewedModuleId = null;
 let fieldCounter = 0; // Counter for unique field IDs
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Remove Attendance and Grading pages from sidebar
+document.addEventListener('DOMContentLoaded', async function() {
+    // Inject Sidebar CSS (W3.CSS Reference Style)
+    const ms = document.createElement('style');
+    ms.innerHTML = `
+        #sidebar {
+            width: 200px;
+            position: fixed;
+            z-index: 1050;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            overflow-y: auto;
+            background-color: #fff;
+            box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16), 0 2px 10px 0 rgba(0,0,0,0.12);
+            display: block;
+        }
+        .main-content, #content, .content-wrapper {
+            margin-left: 200px !important;
+            transition: margin-left .4s;
+        }
+        #sidebarCloseBtn {
+            display: none;
+            width: 100%;
+            text-align: left;
+            padding: 8px 16px;
+            background: none;
+            border: none;
+            font-size: 18px;
+        }
+        #sidebarCloseBtn:hover { background-color: #ccc; }
+        
+        @media (max-width: 991.98px) {
+            #sidebar { display: none; }
+            .main-content, #content, .content-wrapper { margin-left: 0 !important; }
+            #sidebarCloseBtn { display: block; }
+        }
+        .table-responsive, table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    `;
+    document.head.appendChild(ms);
+
+    // Sidebar Logic
     const sidebar = document.getElementById('sidebar');
     if (sidebar) {
-        const links = sidebar.querySelectorAll('a');
-        links.forEach(link => {
-            const href = link.getAttribute('href') || '';
-            if (href.includes('attendance') || href.includes('grading') || href.includes('my_trainees.html')) {
-                const parent = link.closest('li') || link;
-                parent.remove();
-            }
+        if (!document.getElementById('sidebarCloseBtn')) {
+            const closeBtn = document.createElement('button');
+            closeBtn.id = 'sidebarCloseBtn';
+            closeBtn.innerHTML = 'Close &times;';
+            closeBtn.addEventListener('click', () => {
+                sidebar.style.display = 'none';
+            });
+            sidebar.insertBefore(closeBtn, sidebar.firstChild);
+        }
+    }
+
+    // Open Button Logic
+    let sc = document.getElementById('sidebarCollapse');
+    if (!sc) {
+        const nb = document.querySelector('.navbar');
+        if (nb) {
+            const c = nb.querySelector('.container-fluid') || nb;
+            const b = document.createElement('button');
+            b.id = 'sidebarCollapse';
+            b.className = 'btn btn-outline-primary me-2 d-lg-none';
+            b.type = 'button';
+            b.innerHTML = '&#9776;';
+            c.insertBefore(b, c.firstChild);
+            sc = b;
+        }
+    }
+    if (sc) {
+        const nb = sc.cloneNode(true);
+        if(sc.parentNode) sc.parentNode.replaceChild(nb, sc);
+        nb.addEventListener('click', () => {
+            if (sidebar) sidebar.style.display = 'block';
         });
+    }
+
+    // Remove Attendance and Grading pages from sidebar
+    if (sidebar) {
+        const ul = sidebar.querySelector('ul');
+        if (ul) {
+            ul.innerHTML = '';
+            const menuItems = [
+                { href: '/Hohoo-ville/frontend/html/trainer/trainer_dashboard.html', icon: 'fas fa-home', text: 'Dashboard' },
+                { href: 'my_batches.html', icon: 'fas fa-users', text: 'My Batches' },
+                { href: 'modules.html', icon: 'fas fa-book', text: 'Modules' },
+                { href: 'progress_chart.html', icon: 'fas fa-chart-line', text: 'Progress Chart' },
+                { href: 'achievement_chart.html', icon: 'fas fa-trophy', text: 'Achievement Chart' },
+                { href: 'reports.html', icon: 'fas fa-file-alt', text: 'Reports' }
+            ];
+            const currentPage = window.location.pathname.split('/').pop();
+            menuItems.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'nav-item mb-1';
+                const isActive = currentPage === item.href ? 'active' : '';
+                li.innerHTML = `<a class="nav-link ${isActive}" href="${item.href}"><i class="${item.icon} me-2"></i> ${item.text}</a>`;
+                ul.appendChild(li);
+            });
+        }
     }
 
     const createModuleEl = document.getElementById('createModuleModal');
@@ -66,7 +153,24 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    loadQualifications();
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user) {
+        try {
+            const response = await axios.get(`${API_BASE_URL}/role/trainer/profile.php?action=get-trainer-id&user_id=${user.user_id}`);
+            if (response.data.success) {
+                const trainer = response.data.data;
+                if (trainer.first_name && trainer.last_name) {
+                    const nameEl = document.getElementById('trainerName');
+                    if (nameEl) nameEl.textContent = `${trainer.first_name} ${trainer.last_name}`;
+                }
+                loadTrainerQualifications(trainer.trainer_id);
+            }
+        } catch (error) {
+            console.error('Error fetching trainer ID:', error);
+        }
+    } else {
+        window.location.href = '../../../login.html';
+    }
 
     const qualificationSelect = document.getElementById('qualificationSelect');
     qualificationSelect.addEventListener('change', () => loadDataForTab(currentCompetencyType));
@@ -94,6 +198,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('saveModuleBtn').addEventListener('click', saveModule);
     document.getElementById('saveCompetencyBtn').addEventListener('click', saveCompetency);
+
+    // Logout
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.clear();
+            window.location.href = '../../../login.html';
+        });
+    }
 });
 
 window.insertTrainerInput = function(targetId = 'lessonContent') {
@@ -491,18 +605,50 @@ window.addChecklistItem = function(listId) {
     list.appendChild(div);
 };
 
-async function loadQualifications() {
+async function loadTrainerQualifications(trainerId) {
     try {
-        const response = await axios.get(`${API_BASE_URL}/role/registrar/qualifications.php?action=list`);
+        const response = await axios.get(`${API_BASE_URL}/role/trainer/my_batches.php?trainer_id=${trainerId}`);
         if (response.data.success) {
+            const batches = response.data.data;
+            const uniqueQuals = [];
+            const seen = new Set();
+
+            batches.forEach(b => {
+                if (!seen.has(b.qualification_id)) {
+                    seen.add(b.qualification_id);
+                    uniqueQuals.push({ id: b.qualification_id, name: b.course_name });
+                }
+            });
+
             const select = document.getElementById('qualificationSelect');
             select.innerHTML = '<option value="">Select Qualification</option>';
-            response.data.data.forEach(q => {
-                select.innerHTML += `<option value="${q.qualification_id}">${q.course_name}</option>`;
+            uniqueQuals.forEach(q => {
+                select.innerHTML += `<option value="${q.id}">${q.name}</option>`;
             });
+
+            if (uniqueQuals.length === 1) {
+                select.value = uniqueQuals[0].id;
+                select.style.display = 'none';
+                
+                let label = document.getElementById('autoQualLabel');
+                if (!label) {
+                    label = document.createElement('h4');
+                    label.id = 'autoQualLabel';
+                    label.className = 'mb-3 text-primary fw-bold';
+                    select.parentNode.insertBefore(label, select);
+                }
+                label.textContent = uniqueQuals[0].name;
+                label.style.display = 'block';
+                
+                select.dispatchEvent(new Event('change'));
+            } else {
+                select.style.display = 'block';
+                const label = document.getElementById('autoQualLabel');
+                if (label) label.style.display = 'none';
+            }
         }
     } catch (error) {
-        console.error('Error loading qualifications:', error);
+        console.error('Error loading trainer qualifications:', error);
     }
 }
 

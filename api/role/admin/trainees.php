@@ -45,7 +45,7 @@ switch ($action) {
 
 function getFormData($conn) {
     try {
-        $stmtCourses = $conn->query("SELECT course_id, course_name FROM tbl_course WHERE status = 'active' ORDER BY course_name ASC");
+        $stmtCourses = $conn->query("SELECT qualification_id as course_id, qualification_name as course_name FROM tbl_qualifications WHERE status = 'active' ORDER BY qualification_name ASC");
         $courses = $stmtCourses->fetchAll(PDO::FETCH_ASSOC);
 
         $stmtBatches = $conn->query("SELECT batch_id, batch_name FROM tbl_batch WHERE status = 'open' ORDER BY batch_id DESC");
@@ -61,10 +61,12 @@ function getFormData($conn) {
 function getTrainees($conn) {
     try {
         $stmt = $conn->query("
-            SELECT t.*, b.batch_name 
+            SELECT t.*, b.batch_name, c.qualification_name as course_name
             FROM tbl_trainee_hdr t 
             JOIN tbl_enrollment e ON t.trainee_id = e.trainee_id 
             LEFT JOIN tbl_batch b ON e.batch_id = b.batch_id 
+            LEFT JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
+            LEFT JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id
             WHERE e.status = 'approved'
             ORDER BY t.trainee_id DESC
         ");
@@ -112,7 +114,7 @@ function addTrainee($conn) {
         $ctprNo = null;
         $nominalDuration = null;
         if (!empty($data['course_id'])) {
-            $stmtCourse = $conn->prepare("SELECT ctpr_number, duration FROM tbl_course WHERE course_id = ?");
+            $stmtCourse = $conn->prepare("SELECT ctpr_number, duration FROM tbl_qualifications WHERE qualification_id = ?");
             $stmtCourse->execute([$data['course_id']]);
             $courseDetails = $stmtCourse->fetch(PDO::FETCH_ASSOC);
             if ($courseDetails) {
@@ -141,20 +143,20 @@ function addTrainee($conn) {
 
         // 3. Handle Enrollment
         // Check/Create Offered Course
-        $stmtOffered = $conn->prepare("SELECT offered_id FROM tbl_offered_courses WHERE course_id = ? LIMIT 1");
+        $stmtOffered = $conn->prepare("SELECT offered_qualification_id FROM tbl_offered_qualifications WHERE qualification_id = ? LIMIT 1");
         $stmtOffered->execute([$data['course_id']]);
         $offered = $stmtOffered->fetch(PDO::FETCH_ASSOC);
         
         if ($offered) {
-            $offeredId = $offered['offered_id'];
+            $offeredId = $offered['offered_qualification_id'];
         } else {
-            $stmtInsOffered = $conn->prepare("INSERT INTO tbl_offered_courses (course_id) VALUES (?)");
+            $stmtInsOffered = $conn->prepare("INSERT INTO tbl_offered_qualifications (qualification_id) VALUES (?)");
             $stmtInsOffered->execute([$data['course_id']]);
             $offeredId = $conn->lastInsertId();
         }
 
         // Insert Enrollment (Pending - Sent to Approval Queue for Document Verification)
-        $stmtEnroll = $conn->prepare("INSERT INTO tbl_enrollment (trainee_id, offered_id, batch_id, enrollment_date, status) VALUES (?, ?, ?, CURDATE(), 'pending')");
+        $stmtEnroll = $conn->prepare("INSERT INTO tbl_enrollment (trainee_id, offered_qualification_id, batch_id, enrollment_date, status) VALUES (?, ?, ?, CURDATE(), 'pending')");
         $stmtEnroll->execute([$traineeId, $offeredId, $data['batch_id']]);
         $enrollmentId = $conn->lastInsertId();
 

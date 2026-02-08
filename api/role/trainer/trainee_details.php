@@ -21,7 +21,7 @@ class TraineeDetails {
 
         try {
             // 1. Personal Info & Enrollment
-            $queryInfo = "SELECT t.*, c.course_name, b.batch_name, e.status as enrollment_status, s.scholarship_name
+            $queryInfo = "SELECT t.*, c.qualification_name as course_name, b.batch_name, e.status as enrollment_status, s.scholarship_name
                          FROM tbl_trainee_hdr t
                          LEFT JOIN tbl_enrollment e ON t.trainee_id = e.trainee_id
                          LEFT JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id

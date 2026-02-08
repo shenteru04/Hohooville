@@ -36,7 +36,7 @@ class TraineeProfile {
 
         try {
             $query = "SELECT t.*, u.username 
-                      FROM tbl_trainee t 
+                      FROM tbl_trainee_hdr t 
                       JOIN tbl_users u ON t.user_id = u.user_id 
                       WHERE t.trainee_id = ?";
             $stmt = $this->conn->prepare($query);
@@ -63,7 +63,7 @@ class TraineeProfile {
         }
 
         try {
-            $query = "UPDATE tbl_trainee SET first_name = ?, last_name = ?, email = ?, phone_number = ?, address = ? WHERE trainee_id = ?";
+            $query = "UPDATE tbl_trainee_hdr SET first_name = ?, last_name = ?, email = ?, phone_number = ?, address = ? WHERE trainee_id = ?";
             $stmt = $this->conn->prepare($query);
             $stmt->execute([
                 $data['first_name'],

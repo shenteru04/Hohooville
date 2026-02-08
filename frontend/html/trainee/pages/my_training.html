@@ -64,7 +64,7 @@
 <body>
     <div class="d-flex">
         <!-- Sidebar -->
-        <nav id="sidebar" class="p-3" style="width: 250px; height: 100vh; position: fixed;">
+        <nav id="sidebar" class="p-3">
             <div class="sidebar-header mb-3">
                 <h3><img src="../../../../img/logo.jpg" alt="Logo" class="me-2" style="height: 35px; width: auto;">Hohooville</h3>
                 <p class="text-muted">Trainee Portal</p>
@@ -76,18 +76,22 @@
             </ul>
         </nav>
 
-         <div class="flex-grow-1" style="margin-left: 250px;">
-            <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm px-4 py-3">
-                <span class="navbar-brand mb-0 h1">Dashboard</span>
-                <div class="dropdown">
-                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
-                        <i class="fas fa-user-circle me-2"></i> <span id="traineeName">Trainee</span>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="/Hohoo-ville/frontend/html/trainee/pages/profile.html"><i class="fas fa-user me-2"></i> Profile</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt me-2"></i> Logout</a></li>
-                    </ul>
+         <div class="flex-grow-1" id="content">
+            <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
+                <div class="container-fluid">
+                    <span class="navbar-brand mb-0 h1">My Training</span>
+                    <div class="ms-auto">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user-circle me-2"></i> <span id="traineeName">Trainee</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="/Hohoo-ville/frontend/html/trainee/pages/profile.html"><i class="fas fa-user me-2"></i> Profile</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt me-2"></i> Logout</a></li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </nav>
 

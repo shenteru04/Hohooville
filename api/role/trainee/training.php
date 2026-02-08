@@ -213,7 +213,7 @@ function getProfile($conn) {
                     tf.educational_attainment, tf.employment_status,
                     u.username,
                     b.batch_name,
-                    c.course_name,
+                    c.qualification_name as course_name,
                     st.scholarship_name as scholarship_type
                   FROM tbl_trainee_hdr AS th
                   JOIN tbl_trainee_dtl td ON th.trainee_id = td.trainee_id
