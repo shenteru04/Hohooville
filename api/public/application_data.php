@@ -18,7 +18,7 @@ if ($action === 'get-form-data') {
 function getFormData($conn) {
     try {
         // Get active courses that are offered
-        $courseStmt = $conn->query("SELECT qualification_id, course_name FROM tbl_qualifications WHERE status = 'active' ORDER BY course_name");
+        $courseStmt = $conn->query("SELECT qualification_id, qualification_name AS course_name FROM tbl_qualifications WHERE status = 'active' ORDER BY qualification_name");
         $courses = $courseStmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Get active scholarships
@@ -27,7 +27,7 @@ function getFormData($conn) {
         
         // Get active batches and their associated course
         $batchStmt = $conn->query("
-            SELECT b.batch_id, b.batch_name, b.qualification_id 
+            SELECT b.batch_id, b.batch_name, b.qualification_id
             FROM tbl_batch b 
             WHERE b.status = 'open'
         ");

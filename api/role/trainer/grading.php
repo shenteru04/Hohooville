@@ -75,7 +75,7 @@ class TrainerGrading {
             if ($day) {
                 // Daily View: Fetch Quiz and Practical scores for the specific day
                 // We assume activity_type_id 1 = Quiz, 2 = Practical/Task Sheet from tbl_test
-                $query = "SELECT t.trainee_id, t.first_name, t.last_name,
+                $query = "SELECT t.trainee_id, t.trainee_school_id, t.first_name, t.last_name,
                                  q.score as quiz_score,
                                  p.score as practical_score
                           FROM tbl_enrollment e
@@ -98,7 +98,7 @@ class TrainerGrading {
                 $stmt->execute([$day, $qualificationId, $day, $qualificationId, $batchId]);
             } else {
                 // Summary View - This now calculates totals from the new tbl_grades
-                $query = "SELECT t.trainee_id, t.first_name, t.last_name, 
+                $query = "SELECT t.trainee_id, t.trainee_school_id, t.first_name, t.last_name, 
                                  (SELECT AVG(g.score) FROM tbl_grades g JOIN tbl_test tt ON g.test_id = tt.test_id WHERE g.trainee_id = t.trainee_id AND g.qualification_id = ? AND tt.activity_type_id = 3) as pre_test,
                                  (SELECT AVG(g.score) FROM tbl_grades g JOIN tbl_test tt ON g.test_id = tt.test_id WHERE g.trainee_id = t.trainee_id AND g.qualification_id = ? AND tt.activity_type_id = 4) as post_test,
                                  (SELECT AVG(g.score) FROM tbl_grades g JOIN tbl_test tt ON g.test_id = tt.test_id WHERE g.trainee_id = t.trainee_id AND g.qualification_id = ? AND tt.activity_type_id = 5) as activities,

@@ -130,6 +130,7 @@ class AdminDashboard {
         try {
             $query = "SELECT 
                         al.action, 
+                        t.trainee_school_id,
                         al.timestamp as created_at,
                         COALESCE(t.first_name, tr.first_name, u.username) as first_name,
                         COALESCE(t.last_name, tr.last_name, '') as last_name

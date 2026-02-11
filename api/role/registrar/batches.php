@@ -223,6 +223,7 @@ function getTraineesForBatch($conn) {
                     th.last_name,
                     th.email,
                     th.phone_number,
+                    th.status,
                     e.status as enrollment_status
                   FROM tbl_enrollment e
                   JOIN tbl_trainee_hdr th ON e.trainee_id = th.trainee_id

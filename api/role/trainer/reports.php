@@ -36,6 +36,7 @@ class TrainerReports {
     private function getGradingReport($batchId) {
         // Join Enrollment to get trainees in batch, then Grades
         $query = "SELECT 
+                    t.trainee_school_id,
                     CONCAT(t.first_name, ' ', t.last_name) as trainee_name,
                     c.qualification_name as course_name,
                     (SELECT AVG(score) FROM tbl_grades WHERE trainee_id = t.trainee_id AND qualification_id = c.qualification_id) as total_grade,
@@ -56,6 +57,7 @@ class TrainerReports {
     private function getAttendanceReport($batchId) {
         // Get trainees and aggregate their attendance details
         $query = "SELECT 
+                    t.trainee_school_id,
                     CONCAT(t.first_name, ' ', t.last_name) as trainee_name,
                     SUM(CASE WHEN a.status = 'present' THEN 1 ELSE 0 END) as present,
                     SUM(CASE WHEN a.status = 'absent' THEN 1 ELSE 0 END) as absent,

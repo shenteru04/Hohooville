@@ -44,7 +44,7 @@ function getBatchData($conn) {
 
     // 1. Get Trainees
     $stmt = $conn->prepare("
-        SELECT t.trainee_id, CONCAT(t.first_name, ' ', t.last_name) as full_name
+        SELECT t.trainee_id, t.trainee_school_id, CONCAT(t.first_name, ' ', t.last_name) as full_name
         FROM tbl_enrollment e
         JOIN tbl_trainee_hdr t ON e.trainee_id = t.trainee_id
         WHERE e.batch_id = ? AND e.status = 'approved'

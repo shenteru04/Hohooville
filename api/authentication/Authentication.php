@@ -65,6 +65,18 @@ class Authentication {
                 }
                 break;
             
+            case 'forgot-password':
+                if ($method === 'POST') {
+                    $this->forgotPassword();
+                }
+                break;
+            
+            case 'confirm-reset-password':
+                if ($method === 'POST') {
+                    $this->confirmResetPassword();
+                }
+                break;
+            
             default:
                 $this->sendResponse(400, false, 'Invalid action');
         }
@@ -133,7 +145,7 @@ class Authentication {
             $otpToken = $this->encodeJwt($otpPayload);
 
             // Send OTP via Email using PHPMailer
-            if (!$this->sendOtpEmail($user['email'], $otp)) {
+            if (!$this->sendOtpEmail($user['email'], $otp, 'login')) {
                 $this->sendResponse(500, false, 'Failed to send OTP email. Please contact support.');
             }
 
@@ -328,10 +340,7 @@ class Authentication {
         $hashedPassword = password_hash($data->new_password, PASSWORD_BCRYPT);
         $updateQuery = "UPDATE " . $this->table . " SET password = :password WHERE user_id = :user_id";
         $updateStmt = $this->conn->prepare($updateQuery);
-        $updateStmt->bindParam(':password', $hashedPassword);
-        $updateStmt->bindParam(':user_id', $userId);
-
-        if ($updateStmt->execute()) {
+        if ($updateStmt->execute([':password' => $hashedPassword, ':user_id' => $userId])) {
             $this->logActivity($userId, 'password_changed', 'tbl_users', $userId, 'Password changed successfully');
             $this->sendResponse(200, true, 'Password changed successfully');
         } else {
@@ -378,14 +387,82 @@ class Authentication {
         $hashedPassword = password_hash($data->new_password, PASSWORD_BCRYPT);
         $updateQuery = "UPDATE " . $this->table . " SET password = :password WHERE user_id = :user_id";
         $updateStmt = $this->conn->prepare($updateQuery);
-        $updateStmt->bindParam(':password', $hashedPassword);
-        $updateStmt->bindParam(':user_id', $data->user_id);
-
-        if ($updateStmt->execute()) {
+        if ($updateStmt->execute([':password' => $hashedPassword, ':user_id' => $data->user_id])) {
             $this->logActivity($adminId, 'password_reset', 'tbl_users', $data->user_id, 'Password reset by admin');
             $this->sendResponse(200, true, 'Password reset successfully');
         } else {
             $this->sendResponse(500, false, 'Failed to reset password');
+        }
+    }
+
+    private function forgotPassword() {
+        $data = json_decode(file_get_contents("php://input"));
+
+        if (empty($data->email)) {
+            $this->sendResponse(400, false, 'Email is required');
+            return;
+        }
+
+        $query = "SELECT user_id, email FROM " . $this->table . " WHERE email = :email AND status = 'active'";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':email', $data->email);
+        $stmt->execute();
+
+        if ($stmt->rowCount() === 0) {
+            $this->sendResponse(404, false, 'Email not found');
+            return;
+        }
+
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        $otp = rand(100000, 999999);
+        $otpHash = password_hash($otp, PASSWORD_BCRYPT);
+
+        $otpPayload = [
+            'user_id' => $user['user_id'],
+            'otp_hash' => $otpHash,
+            'type' => 'reset_password',
+            'exp' => time() + 300 // 5 minutes
+        ];
+        $otpToken = $this->encodeJwt($otpPayload);
+
+        if ($this->sendOtpEmail($user['email'], $otp, 'reset')) {
+            $this->sendResponse(200, true, 'OTP sent to your email.', [
+                'user_id' => $user['user_id'],
+                'otp_token' => $otpToken
+            ]);
+        } else {
+            $this->sendResponse(500, false, 'Failed to send OTP email.');
+        }
+    }
+
+    private function confirmResetPassword() {
+        $data = json_decode(file_get_contents("php://input"));
+
+        if (empty($data->user_id) || empty($data->otp) || empty($data->otp_token) || empty($data->new_password)) {
+            $this->sendResponse(400, false, 'All fields are required');
+            return;
+        }
+
+        $payload = $this->decodeJwt($data->otp_token);
+
+        if (!$payload || (isset($payload->type) && $payload->type !== 'reset_password')) {
+            $this->sendResponse(400, false, 'Invalid or expired session.');
+            return;
+        }
+
+        if ($payload->user_id != $data->user_id || !password_verify($data->otp, $payload->otp_hash)) {
+            $this->sendResponse(400, false, 'Invalid OTP or User.');
+            return;
+        }
+
+        $hashedPassword = password_hash($data->new_password, PASSWORD_BCRYPT);
+        $updateQuery = "UPDATE " . $this->table . " SET password = :password WHERE user_id = :user_id";
+        $stmt = $this->conn->prepare($updateQuery);
+        if ($stmt->execute([':password' => $hashedPassword, ':user_id' => $data->user_id])) {
+            $this->logActivity($data->user_id, 'password_reset', 'tbl_users', $data->user_id, 'Password reset via OTP');
+            $this->sendResponse(200, true, 'Password reset successfully. You can now login.');
+        } else {
+            $this->sendResponse(500, false, 'Failed to reset password.');
         }
     }
 
@@ -498,7 +575,11 @@ class Authentication {
         exit();
     }
 
-    private function sendOtpEmail($to, $otp) {
+    private function sendOtpEmail($to, $otp, $type = 'login') {
+        $subject = $type === 'reset' ? 'Reset Password OTP Code' : 'Your Login OTP Code';
+        $title = $type === 'reset' ? 'Password Reset' : 'Login Verification';
+        $bodyText = $type === 'reset' ? 'You requested to reset your password. Please use the code below to set a new password.' : 'You requested a One-Time Password (OTP) to log in to your account. Please use the code below to complete your sign-in.';
+
         $mail = new PHPMailer(true);
 
         try {
@@ -517,7 +598,7 @@ class Authentication {
 
             //Content
             $mail->isHTML(true);                                        // Set email format to HTML
-            $mail->Subject = 'Your Login OTP Code';
+            $mail->Subject = $subject;
             
             // Professional Blue & White HTML Template
             $mail->Body = "
@@ -527,9 +608,9 @@ class Authentication {
                         <h1 style='color: #ffffff; margin: 0; font-size: 24px; font-weight: bold;'>Hohoo-Ville Security</h1>
                     </div>
                     <div style='padding: 40px 30px; text-align: center; color: #5a5c69;'>
-                        <h2 style='color: #4e73df; margin-top: 0; font-size: 20px;'>Login Verification</h2>
+                        <h2 style='color: #4e73df; margin-top: 0; font-size: 20px;'>$title</h2>
                         <p style='font-size: 16px; line-height: 1.5; margin-bottom: 25px;'>
-                            You requested a One-Time Password (OTP) to log in to your account. Please use the code below to complete your sign-in.
+                            $bodyText
                         </p>
                         <div style='background-color: #f8f9fc; border: 2px dashed #4e73df; border-radius: 8px; padding: 15px; margin: 0 auto 25px auto; display: inline-block; min-width: 200px;'>
                             <span style='font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #4e73df; display: block;'>$otp</span>

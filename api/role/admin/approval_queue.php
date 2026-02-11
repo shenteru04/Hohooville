@@ -47,7 +47,8 @@ function getPendingEnrollments($conn) {
                 f.educational_attainment, f.employment_status, f.employment_type, f.learner_classification, 
                 f.is_pwd, f.disability_type, f.disability_cause, f.privacy_consent, f.digital_signature,
                 c.qualification_name as course_name,
-                b.batch_name
+                b.batch_name,
+                (SELECT COUNT(*) FROM tbl_enrollment en WHERE en.batch_id = e.batch_id AND en.status = 'approved') as current_batch_count
             FROM tbl_enrollment e
             JOIN tbl_trainee_hdr h ON e.trainee_id = h.trainee_id
             LEFT JOIN tbl_trainee_dtl d ON h.trainee_id = d.trainee_id
@@ -72,40 +73,72 @@ function processEnrollment($conn, $status) {
     try {
         $data = json_decode(file_get_contents('php://input'), true);
         $enrollmentId = $data['enrollment_id'] ?? null;
-        
+
         if (!$enrollmentId) {
             throw new Exception('Enrollment ID is required');
         }
 
         $conn->beginTransaction();
 
-        // Update enrollment status
-        $stmt = $conn->prepare("UPDATE tbl_enrollment SET status = ? WHERE enrollment_id = ?");
-        $stmt->execute([$status, $enrollmentId]);
-
-        // If approved, add to tbl_enrolled_trainee if not exists
         if ($status === 'approved') {
-            // Get trainee_id
-            $stmtGet = $conn->prepare("SELECT trainee_id FROM tbl_enrollment WHERE enrollment_id = ?");
+            // Get trainee_id and batch_id
+            $stmtGet = $conn->prepare("SELECT trainee_id, batch_id FROM tbl_enrollment WHERE enrollment_id = ?");
             $stmtGet->execute([$enrollmentId]);
             $enrollment = $stmtGet->fetch(PDO::FETCH_ASSOC);
 
             if ($enrollment) {
+                $traineeId = $enrollment['trainee_id'];
+                $batchId = $enrollment['batch_id'];
+
+                // Update enrollment status
+                $stmtUpdateStatus = $conn->prepare("UPDATE tbl_enrollment SET status = ? WHERE enrollment_id = ?");
+                $stmtUpdateStatus->execute(['approved', $enrollmentId]);
+
+                // Generate unique trainee school ID if it doesn't exist
+                $stmtCheckId = $conn->prepare("SELECT trainee_school_id FROM tbl_trainee_hdr WHERE trainee_id = ?");
+                $stmtCheckId->execute([$traineeId]);
+                if (!$stmtCheckId->fetchColumn()) {
+                    $year = date('Y');
+
+                    // Count approved trainees in the batch to get the new trainee's number.
+                    // This count includes the current trainee since we just updated the status.
+                    $stmtCount = $conn->prepare("SELECT COUNT(*) FROM tbl_enrollment WHERE batch_id = ? AND status = 'approved'");
+                    $stmtCount->execute([$batchId]);
+                    $traineeCount = $stmtCount->fetchColumn();
+
+                    // Format: BATCH_ID-YEAR-000N
+                    $schoolId = sprintf('%s-%s-%04d', $batchId, $year, $traineeCount);
+
+                    // Update trainee header with the new school ID
+                    $stmtUpdateId = $conn->prepare("UPDATE tbl_trainee_hdr SET trainee_school_id = ? WHERE trainee_id = ?");
+                    $stmtUpdateId->execute([$schoolId, $traineeId]);
+                }
+
                 // Check if already in enrolled_trainee
                 $stmtCheck = $conn->prepare("SELECT enrolled_id FROM tbl_enrolled_trainee WHERE enrollment_id = ?");
                 $stmtCheck->execute([$enrollmentId]);
-                
+
                 if (!$stmtCheck->fetch()) {
                     $stmtIns = $conn->prepare("INSERT INTO tbl_enrolled_trainee (enrollment_id, trainee_id) VALUES (?, ?)");
-                    $stmtIns->execute([$enrollmentId, $enrollment['trainee_id']]);
+                    $stmtIns->execute([$enrollmentId, $traineeId]);
                 }
 
                 // Assign Financial Classification / Scholarship if provided
                 if (!empty($data['scholarship_type'])) {
-                    $stmtSch = $conn->prepare("INSERT INTO tbl_scholarship (trainee_id, scholarship_name, date_granted) VALUES (?, ?, NOW())");
-                    $stmtSch->execute([$enrollment['trainee_id'], $data['scholarship_type']]);
+                    $stmtSchCheck = $conn->prepare("SELECT scholarship_id FROM tbl_scholarship WHERE trainee_id = ? AND scholarship_name = ?");
+                    $stmtSchCheck->execute([$traineeId, $data['scholarship_type']]);
+                    if (!$stmtSchCheck->fetch()) {
+                        $stmtSch = $conn->prepare("INSERT INTO tbl_scholarship (trainee_id, scholarship_name, date_granted) VALUES (?, ?, NOW())");
+                        $stmtSch->execute([$traineeId, $data['scholarship_type']]);
+                    }
                 }
+            } else {
+                throw new Exception('Enrollment record not found.');
             }
+        } else { // 'rejected'
+            // Just update the status
+            $stmt = $conn->prepare("UPDATE tbl_enrollment SET status = ? WHERE enrollment_id = ?");
+            $stmt->execute([$status, $enrollmentId]);
         }
 
         $conn->commit();

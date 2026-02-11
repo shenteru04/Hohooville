@@ -1,12 +1,8 @@
-// Dynamically determine project root to handle casing issues (Hohoo-ville vs hohoo-ville)
-const pathSegments = window.location.pathname.split('/');
-const projectIndex = pathSegments.findIndex(segment => segment.toLowerCase() === 'hohoo-ville');
-const projectRoot = projectIndex !== -1 ? '/' + pathSegments[projectIndex] : '/Hohoo-ville';
-const API_BASE_URL = window.location.origin + projectRoot + '/api';
+const API_BASE_URL = window.location.origin + '/Hohoo-ville/api';
 
 document.addEventListener('DOMContentLoaded', function() {
     const user = JSON.parse(localStorage.getItem('user'));
-    if (!user) {
+    if (!user || !user.trainee_id) {
         window.location.href = '/Hohoo-ville/frontend/login.html';
         return;
     }
@@ -66,34 +62,28 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Open Button Logic
-    if (!document.getElementById('sidebarCollapse')) {
-        const navbarContainer = document.querySelector('.navbar .container-fluid');
-        if (navbarContainer) {
-            const toggleBtn = document.createElement('button');
-            toggleBtn.id = 'sidebarCollapse';
-            toggleBtn.className = 'btn btn-primary me-2 d-lg-none';
-            toggleBtn.type = 'button';
-            toggleBtn.style.zIndex = '1055'; // Ensure it's above other nav elements
-            toggleBtn.innerHTML = '<i class="fas fa-bars"></i>';
-            
-            // Insert as first child to ensure visibility
-            navbarContainer.insertBefore(toggleBtn, navbarContainer.firstChild);
-            
-            toggleBtn.addEventListener('click', () => {
-                if (sidebar) sidebar.style.display = 'block';
-            });
+    let sc = document.getElementById('sidebarCollapse');
+    if (!sc) {
+        const nb = document.querySelector('.navbar');
+        if (nb) {
+            const c = nb.querySelector('.container-fluid') || nb;
+            const b = document.createElement('button');
+            b.id = 'sidebarCollapse';
+            b.className = 'btn btn-outline-primary me-2 d-lg-none';
+            b.type = 'button';
+            b.innerHTML = '<i class="fas fa-bars"></i>';
+            c.insertBefore(b, c.firstChild);
+            sc = b;
         }
+    }
+    if (sc) {
+        sc.addEventListener('click', () => {
+            if (sidebar) sidebar.style.display = 'block';
+        });
     }
 
     document.getElementById('traineeName').textContent = user.username || user.full_name || 'Trainee';
-    
-    // Use trainee_id if available, otherwise fallback to user_id or handle error
-    const idToLoad = user.trainee_id || user.user_id;
-    if (idToLoad) {
-        loadDashboardData(idToLoad);
-    } else {
-        document.getElementById('activeCourseName').textContent = 'Error: User ID not found.';
-    }
+    loadDashboardData(user.trainee_id);
 
     document.getElementById('logoutBtn').addEventListener('click', function() {
         localStorage.removeItem('token');
@@ -104,7 +94,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadDashboardData(traineeId) {
     try {
-        const response = await axios.get(`${API_BASE_URL}/role/trainee/trainee_dashboard.php?trainee_id=${traineeId}`, { timeout: 10000 });
+        const response = await axios.get(`${API_BASE_URL}/role/trainee/trainee_dashboard.php?trainee_id=${traineeId}`);
         
         if (response.data.success) {
             const data = response.data.data;

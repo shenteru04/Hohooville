@@ -40,7 +40,8 @@ function getUserProfile($conn) {
             SELECT u.user_id, u.username, u.email, u.role_id, r.role_name,
                    COALESCE(t.first_name, tr.first_name, 'Admin') as first_name,
                    COALESCE(t.last_name, tr.last_name, 'User') as last_name,
-                   COALESCE(t.phone_number, tr.phone_number, '') as phone_number
+                   COALESCE(t.phone_number, tr.phone_number, '') as phone_number,
+                   t.trainee_school_id
             FROM tbl_users u
             LEFT JOIN tbl_role r ON u.role_id = r.role_id
             LEFT JOIN tbl_trainee_hdr t ON u.user_id = t.user_id

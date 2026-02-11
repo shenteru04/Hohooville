@@ -150,7 +150,7 @@
             <div class="container-fluid mt-4" id="profile-content">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2 class="text-gray-800">Trainee Profile</h2>
-                    <a href="trainees.html" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2"></i> Back to List</a>
+                    <a href="my_batches.html" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2"></i> Back to List</a>
                 </div>
 
                 <!-- Profile Header -->
@@ -181,8 +181,8 @@
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="pills-competency-tab" data-bs-toggle="pill" data-bs-target="#pills-competency" type="button" role="tab">
-                            <i class="fas fa-tasks me-1"></i> Competency Progress
+                        <button class="nav-link" id="pills-progress-tab" data-bs-toggle="pill" data-bs-target="#pills-progress" type="button" role="tab">
+                            <i class="fas fa-tasks me-1"></i> Progress
                         </button>
                     </li>
                 </ul>
@@ -224,6 +224,7 @@
                                     <div class="card-header"><i class="fas fa-graduation-cap me-2"></i>Training & Background</div>
                                     <div class="card-body">
                                         <dl class="row mb-0">
+                                            <dt class="col-sm-4">School ID</dt><dd class="col-sm-8" id="profileSchoolId"></dd>
                                             <dt class="col-sm-4">Batch</dt><dd class="col-sm-8" id="profileBatch"></dd>
                                             <dt class="col-sm-4">Scholarship</dt><dd class="col-sm-8" id="profileScholarship"></dd>
                                             <dt class="col-sm-4">Enrollment</dt><dd class="col-sm-8" id="profileEnrollStatus"></dd>
@@ -268,26 +269,28 @@
                         </div>
                     </div>
 
-                    <!-- Competency Tab -->
-                    <div class="tab-pane fade" id="pills-competency" role="tabpanel">
-                        <div class="card">
-                            <div class="card-header"><h5 class="mb-0">Competency Training Progress Report (CTPR)</h5></div>
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table table-hover">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Module</th>
-                                                <th>Lesson / Learning Outcome</th>
-                                                <th>Score</th>
-                                                <th>Remarks</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="competencyTable">
-                                            <!-- Populated by JS -->
-                                        </tbody>
-                                    </table>
-                                </div>
+                    <!-- Progress Tab -->
+                    <div class="tab-pane fade" id="pills-progress" role="tabpanel">
+                        <ul class="nav nav-pills nav-fill mb-3" id="competency-pills-tab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="pills-core-tab" data-bs-toggle="pill" data-bs-target="#pills-core" type="button" role="tab">Core Competencies</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="pills-common-tab" data-bs-toggle="pill" data-bs-target="#pills-common" type="button" role="tab">Common Competencies</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="pills-basic-tab" data-bs-toggle="pill" data-bs-target="#pills-basic" type="button" role="tab">Basic Competencies</button>
+                            </li>
+                        </ul>
+                        <div class="tab-content" id="competency-pills-tabContent">
+                            <div class="tab-pane fade show active" id="pills-core" role="tabpanel">
+                                <div class="accordion" id="progressAccordionCore"></div>
+                            </div>
+                            <div class="tab-pane fade" id="pills-common" role="tabpanel">
+                                <div class="accordion" id="progressAccordionCommon"></div>
+                            </div>
+                            <div class="tab-pane fade" id="pills-basic" role="tabpanel">
+                                <div class="accordion" id="progressAccordionBasic"></div>
                             </div>
                         </div>
                     </div>
@@ -297,6 +300,21 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Generic Modal for Content -->
+    <div class="modal fade" id="contentModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="contentModalTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="contentModalBody">
+                    <!-- Content will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
     <script src="../../../js/trainer/pages/trainee_details.js"></script>
     <script src="../../../js/notifications.js"></script>

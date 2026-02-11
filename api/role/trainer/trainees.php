@@ -41,7 +41,7 @@ switch ($action) {
 function listTrainees($conn, $trainerId) {
     // This query gets all trainees under a specific trainer
     $query = "SELECT 
-                t.trainee_id, t.first_name, t.last_name, t.email,
+                t.trainee_id, t.trainee_school_id, t.first_name, t.last_name, t.email,
                 b.batch_name,
                 c.qualification_name as course_name,
                 e.status

@@ -718,6 +718,7 @@ INSERT INTO `tbl_trainee_ftr` (`trainee_ftr_id`, `trainee_id`, `educational_atta
 CREATE TABLE `tbl_trainee_hdr` (
   `trainee_id` int(11) NOT NULL,
   `user_id` int(11) DEFAULT NULL,
+  `trainee_school_id` varchar(50) DEFAULT NULL,
   `first_name` varchar(100) DEFAULT NULL,
   `middle_name` varchar(100) DEFAULT NULL,
   `last_name` varchar(100) DEFAULT NULL,
@@ -1047,6 +1048,7 @@ ALTER TABLE `tbl_trainee_ftr`
 --
 ALTER TABLE `tbl_trainee_hdr`
   ADD PRIMARY KEY (`trainee_id`),
+  ADD UNIQUE KEY `trainee_school_id` (`trainee_school_id`),
   ADD KEY `user_id` (`user_id`);
 
 --

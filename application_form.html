@@ -13,13 +13,53 @@
     </style>
 </head>
 <body>
-    <div class="container application-container">
+    <!-- Step 1: Pre-Check Section -->
+    <div class="container application-container" id="preCheckSection">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white text-center py-4">
+                <h3><i class="fas fa-user-check me-2"></i>Returning Trainee Check</h3>
+                <p class="mb-0">Please enter your details to check for an existing profile.</p>
+            </div>
+            <div class="card-body p-4">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="check_last_name" class="form-label">Last Name <span class="text-danger">*</span></label>
+                        <input type="text" id="check_last_name" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="check_first_name" class="form-label">First Name <span class="text-danger">*</span></label>
+                        <input type="text" id="check_first_name" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="check_email" class="form-label">Email Address <span class="text-danger">*</span></label>
+                        <input type="email" id="check_email" class="form-control" required>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-end mt-4">
+                    <button type="button" class="btn btn-primary btn-lg" id="continueBtn">Continue <i class="fas fa-arrow-right ms-2"></i></button>
+                </div>
+                <div id="preCheckSpinner" class="text-center mt-3" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p>Checking your profile...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application Form (Initially Hidden) -->
+    <div class="container application-container" id="applicationContainer" style="display: none;">
         <div class="card shadow">
             <div class="card-header bg-primary text-white text-center py-4">
                 <h3><i class="fas fa-user-graduate me-2"></i>Trainee Application Form</h3>
                 <p class="mb-0">Please fill in your details accurately.</p>
             </div>
             <div class="card-body p-4">
+                <!-- Welcome back message -->
+                <div id="welcomeBackMessage" class="alert alert-info" style="display: none;">
+                    <strong>Welcome back!</strong> Your personal information is on file. Please select a new qualification to enroll in and submit.
+                </div>
                 <form id="applicationForm" enctype="multipart/form-data">
                     
                     <!-- Page 1 -->
@@ -294,52 +334,56 @@
                         </div>
 
                         <!-- 9. Requirements Upload -->
-                        <h5 class="mb-3 mt-4 text-primary border-bottom pb-2">9. Requirements Upload</h5>
-                        <div class="row mb-3">
-                            <div class="col-md-4">
-                                <label class="form-label">Valid ID (Scanned/Photo) <span class="text-danger">*</span></label>
-                                <input type="file" class="form-control" name="valid_id" accept="image/*,.pdf" required>
+                        <div id="requirementsUploadSection">
+                            <h5 class="mb-3 mt-4 text-primary border-bottom pb-2">9. Requirements Upload</h5>
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Valid ID (Scanned/Photo) <span class="text-danger">*</span></label>
+                                    <input type="file" class="form-control" name="valid_id" accept="image/*,.pdf" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Birth Certificate <span class="text-danger">*</span></label>
+                                    <input type="file" class="form-control" name="birth_cert" accept="image/*,.pdf" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">1x1 or 2x2 ID Picture <span class="text-danger">*</span></label>
+                                    <input type="file" class="form-control" name="photo" accept="image/*" required>
+                                </div>
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Birth Certificate <span class="text-danger">*</span></label>
-                                <input type="file" class="form-control" name="birth_cert" accept="image/*,.pdf" required>
+                            <div class="mb-3">
+                                <label class="form-label">Additional Documents (Optional)</label>
+                                <input type="file" class="form-control" name="additional_docs" accept="image/*,.pdf">
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label">1x1 or 2x2 ID Picture <span class="text-danger">*</span></label>
-                                <input type="file" class="form-control" name="photo" accept="image/*" required>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Additional Documents (Optional)</label>
-                            <input type="file" class="form-control" name="additional_docs" accept="image/*,.pdf">
                         </div>
 
                         <!-- 10. Privacy Consent -->
                         <h5 class="mb-3 mt-4 text-primary border-bottom pb-2">10. Privacy Consent & Declaration</h5>
                         <div class="form-check mb-3">
                             <input class="form-check-input" type="checkbox" id="privacyConsent" name="privacy_consent" required>
-                            <label class="form-check-label" for="privacyConsent">
+                            <label class="form-check-label" for="privacyConsent" required>
                                 I hereby certify that I have read and understood the TESDA Privacy Notice and agree to the processing of my personal information. I declare that all information provided is true and correct.
                             </label>
                         </div>
 
                         <!-- 11. Signature -->
-                        <h5 class="mb-3 mt-4 text-primary border-bottom pb-2">11. Signature</h5>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <div class="form-label">Digital Signature (Sign below) <span class="text-danger">*</span></div>
-                                <div id="signaturePreviewArea" class="border rounded p-2 bg-light text-center" style="cursor: pointer; min-height: 150px;">
-                                    <img id="signaturePreview" src="" alt="Signature Preview" style="max-width: 100%; max-height: 140px; display: none;">
-                                    <span id="signaturePlaceholder" class="text-muted">Click here to sign</span>
+                        <div id="signatureSection">
+                            <h5 class="mb-3 mt-4 text-primary border-bottom pb-2">11. Signature</h5>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="form-label">Digital Signature (Sign below) <span class="text-danger">*</span></div>
+                                    <div id="signaturePreviewArea" class="border rounded p-2 bg-light text-center" style="cursor: pointer; min-height: 150px;">
+                                        <img id="signaturePreview" src="" alt="Signature Preview" style="max-width: 100%; max-height: 140px; display: none;">
+                                        <span id="signaturePlaceholder" class="text-muted">Click here to sign</span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="clearSignatureBtn" style="display: none;">
+                                        <i class="fas fa-eraser me-1"></i> Clear Signature
+                                    </button>
+                                    <input type="hidden" name="digital_signature" id="digitalSignatureInput" required value="">
                                 </div>
-                                <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="clearSignatureBtn" style="display: none;">
-                                    <i class="fas fa-eraser me-1"></i> Clear Signature
-                                </button>
-                                <input type="hidden" name="digital_signature" id="digitalSignatureInput" required value="">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Date Submitted</label>
-                                <input type="text" class="form-control" readonly id="dateSubmitted">
+                                <div class="col-md-6">
+                                    <label class="form-label">Date Submitted</label>
+                                    <input type="text" class="form-control" readonly id="dateSubmitted">
+                                </div>
                             </div>
                         </div>
 
@@ -377,7 +421,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
-    <script src="frontend/js/application_form.js"></script>
+    <script src="api/database/application_form.js"></script>
     <script>
         // Set current date
         document.getElementById('dateSubmitted').value = new Date().toISOString().split('T')[0];

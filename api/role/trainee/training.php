@@ -204,7 +204,7 @@ function getProfile($conn) {
 
     try {
         $query = "SELECT 
-                    th.first_name, th.last_name, th.middle_name, th.extension_name,
+                    th.trainee_school_id, th.first_name, th.last_name, th.middle_name, th.extension_name,
                     th.sex, 
                     th.email, th.phone_number, th.facebook_account, th.photo_file,
                     td.civil_status, td.birthdate, td.age, 

@@ -52,7 +52,7 @@ function getEnrollmentReport($conn, $start, $end) {
 
         // Table Data: Detailed List
         $stmtTable = $conn->prepare("
-            SELECT e.enrollment_date, CONCAT(t.first_name, ' ', t.last_name) as trainee, c.qualification_name as course_name, b.batch_name, e.status
+            SELECT e.enrollment_date, t.trainee_school_id, CONCAT(t.first_name, ' ', t.last_name) as trainee, c.qualification_name as course_name, b.batch_name, e.status
             FROM tbl_enrollment e
             JOIN tbl_trainee_hdr t ON e.trainee_id = t.trainee_id
             JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
@@ -132,7 +132,7 @@ function getFinancialReport($conn, $start, $end) {
 
         // Table Data: Transaction History
         $stmtTable = $conn->prepare("
-            SELECT f.payment_date, CONCAT(t.first_name, ' ', t.last_name) as trainee, 
+            SELECT f.payment_date, t.trainee_school_id, CONCAT(t.first_name, ' ', t.last_name) as trainee, 
                    f.amount, f.payment_method, f.reference_no
             FROM tbl_finance_record f
             JOIN tbl_trainee_hdr t ON f.trainee_id = t.trainee_id
@@ -169,6 +169,7 @@ function getPerformanceReport($conn, $start, $end) {
         // Table Data: Trainee Performance
         $stmtTable = $conn->prepare("
             SELECT 
+                t.trainee_school_id,
                 CONCAT(t.first_name, ' ', t.last_name) as trainee, 
                 c.qualification_name as course_name, 
                 AVG(g.score) as total_grade, 

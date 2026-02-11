@@ -140,6 +140,7 @@ async function loadProfileData(traineeId) {
             document.getElementById('profileSex').textContent = profile.sex || 'N/A';
             document.getElementById('profileEducation').textContent = profile.educational_attainment || 'N/A';
 
+            document.getElementById('profileSchoolId').textContent = profile.trainee_school_id || 'N/A';
             document.getElementById('profileUsername').textContent = profile.username || 'N/A';
             document.getElementById('profileBatch').textContent = profile.batch_name || 'N/A';
             document.getElementById('profileScholarship').textContent = profile.scholarship_type || 'N/A';

@@ -39,6 +39,7 @@ function listTrainees($conn) {
     try {
         $baseQuery = "SELECT
                     th.trainee_id,
+                    th.trainee_school_id,
                     CONCAT_WS(' ', th.first_name, th.middle_name, th.last_name) AS full_name,
                     th.email,
                     th.photo_file,

@@ -35,7 +35,9 @@ class TraineeProfile {
         }
 
         try {
-            $query = "SELECT t.*, u.username 
+            $query = "SELECT 
+                        t.trainee_id, t.user_id, t.trainee_school_id, t.first_name, t.middle_name, t.last_name, t.email, t.phone_number, t.address, t.status, t.photo_file,
+                        u.username 
                       FROM tbl_trainee_hdr t 
                       JOIN tbl_users u ON t.user_id = u.user_id 
                       WHERE t.trainee_id = ?";

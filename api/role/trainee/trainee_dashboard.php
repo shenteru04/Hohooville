@@ -20,9 +20,10 @@ class TraineeDashboard {
 
         try {
             // 1. Get Active Course/Batch
-            $courseQuery = "SELECT c.qualification_id AS course_id, c.qualification_name AS course_name, b.batch_name, b.start_date, b.end_date, oc.schedule, oc.room
+            $courseQuery = "SELECT th.trainee_school_id, c.qualification_id AS course_id, c.qualification_name AS course_name, b.batch_name, b.start_date, b.end_date, oc.schedule, oc.room
                             FROM tbl_enrollment e
                             JOIN tbl_batch b ON e.batch_id = b.batch_id
+                            JOIN tbl_trainee_hdr th ON e.trainee_id = th.trainee_id
                             JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
                             JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id
                             WHERE e.trainee_id = ? AND e.status = 'approved' AND b.status = 'open'

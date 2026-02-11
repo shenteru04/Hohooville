@@ -41,9 +41,10 @@ switch ($action) {
 function getUsers($conn) {
     try {
         $stmt = $conn->query("
-            SELECT u.user_id, u.role_id, u.username, u.email, u.status, u.date_created, r.role_name 
+            SELECT u.user_id, u.role_id, u.username, u.email, u.status, u.date_created, r.role_name, t.trainee_school_id
             FROM tbl_users u 
             LEFT JOIN tbl_role r ON u.role_id = r.role_id 
+            LEFT JOIN tbl_trainee_hdr t ON u.user_id = t.user_id
             ORDER BY u.user_id DESC
         ");
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -62,9 +63,10 @@ function getUser($conn) {
         }
         
         $stmt = $conn->prepare("
-            SELECT u.user_id, u.role_id, u.username, u.email, u.status, u.date_created, r.role_name 
+            SELECT u.user_id, u.role_id, u.username, u.email, u.status, u.date_created, r.role_name, t.trainee_school_id
             FROM tbl_users u 
             LEFT JOIN tbl_role r ON u.role_id = r.role_id 
+            LEFT JOIN tbl_trainee_hdr t ON u.user_id = t.user_id
             WHERE u.user_id = ?
         ");
         $stmt->execute([$id]);

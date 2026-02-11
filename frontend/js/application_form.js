@@ -89,8 +89,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const select = document.getElementById('courseSelect');
         select.innerHTML = '<option value="">Select a Qualification</option>';
         if(courses.length > 0) {
-            courses.forEach(course => {
-                select.innerHTML += `<option value="${course.qualification_id}">${course.course_name}</option>`;
+            courses.forEach(qualification => {
+                select.innerHTML += `<option value="${qualification.qualification_id}">${qualification.qualification_name}</option>`;
             });
         } else {
             select.innerHTML = '<option value="">No courses are currently offered</option>';
@@ -190,9 +190,9 @@ document.addEventListener('DOMContentLoaded', function() {
         canvas.addEventListener('mousemove', draw);
         canvas.addEventListener('mouseout', stopDrawing);
 
-        canvas.addEventListener('touchstart', startDrawing);
+        canvas.addEventListener('touchstart', startDrawing, { passive: false });
         canvas.addEventListener('touchend', stopDrawing);
-        canvas.addEventListener('touchmove', draw);
+        canvas.addEventListener('touchmove', draw, { passive: false });
 
         document.getElementById('clearCanvasBtn').addEventListener('click', clearCanvas);
 
@@ -245,17 +245,30 @@ document.addEventListener('DOMContentLoaded', function() {
     function validateStep1() {
         const form = document.getElementById('applicationForm');
         const inputs = form.querySelectorAll('#step1 [required]');
+        const validatedRadioGroups = new Set(); // To avoid re-validating radio groups
+
         for (const input of inputs) {
-            if (input.type === 'radio' || input.type === 'checkbox') {
+            if (input.type === 'radio') {
                 const groupName = input.name;
+                // If we've already checked this group, skip to the next input
+                if (validatedRadioGroups.has(groupName)) {
+                    continue;
+                }
+
+                // Check if any radio in the group is selected
                 if (!form.querySelector(`input[name="${groupName}"]:checked`)) {
-                    alert(`Please make a selection for "${input.closest('.mb-3').querySelector('label').innerText.replace('*','').trim()}".`);
+                    const label = input.closest('.mb-3').querySelector('label');
+                    alert(`Please make a selection for "${label.innerText.replace('*','').trim()}".`);
                     input.focus();
                     return false;
                 }
-            } else if (!input.value) {
+                
+                // Mark this group as validated so we don't check it again
+                validatedRadioGroups.add(groupName);
+            } else if (!input.value) { // For text, select, date, etc.
+                const label = input.closest('.mb-3, .col-md-3, .col-md-4, .col-md-6').querySelector('label');
+                alert(`Please fill out the "${label.innerText.replace('*','').trim()}" field.`);
                 input.focus();
-                alert(`Please fill out the "${input.closest('.mb-3, .col-md-3, .col-md-4').querySelector('label').innerText.replace('*','').trim()}" field.`);
                 return false;
             }
         }

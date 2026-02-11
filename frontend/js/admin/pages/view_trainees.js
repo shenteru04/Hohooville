@@ -13,7 +13,10 @@ document.addEventListener('DOMContentLoaded', function() {
     loadTrainees();
 
     // Search & Filter
-    document.getElementById('searchBtn').addEventListener('click', loadTrainees);
+    document.getElementById('searchBtn').addEventListener('click', () => renderTraineesTable(traineesData));
+    document.getElementById('searchInput').addEventListener('input', () => renderTraineesTable(traineesData));
+    document.getElementById('statusFilter').addEventListener('change', () => renderTraineesTable(traineesData));
+    document.getElementById('batchFilter').addEventListener('change', () => renderTraineesTable(traineesData));
 
     // Create Account Form Submission
     document.getElementById('createAccountForm').addEventListener('submit', handleCreateAccount);
@@ -100,6 +103,7 @@ async function loadTrainees() {
         const response = await axios.get(`${API_BASE_URL}/role/admin/trainees.php?action=list`);
         if (response.data.success) {
             traineesData = response.data.data;
+            populateBatchFilter(traineesData);
             renderTraineesTable(traineesData);
         } else {
             alert('Error loading trainees: ' + response.data.message);
@@ -109,22 +113,40 @@ async function loadTrainees() {
     }
 }
 
+function populateBatchFilter(data) {
+    const batchFilter = document.getElementById('batchFilter');
+    // Clear existing options except the first one
+    while (batchFilter.options.length > 1) {
+        batchFilter.remove(1);
+    }
+    const batches = [...new Set(data.map(t => t.batch_name).filter(Boolean))];
+    batches.sort();
+    batches.forEach(batch => {
+        const option = document.createElement('option');
+        option.value = batch;
+        option.textContent = batch;
+        batchFilter.appendChild(option);
+    });
+}
+
 function renderTraineesTable(data) {
     const tbody = document.getElementById('traineesTableBody');
     tbody.innerHTML = '';
 
     const search = document.getElementById('searchInput').value.toLowerCase();
     const statusFilter = document.getElementById('statusFilter').value;
+    const batchFilter = document.getElementById('batchFilter').value;
 
     const filtered = data.filter(t => {
         const name = (t.first_name + ' ' + t.last_name).toLowerCase();
-        const matchesSearch = name.includes(search) || t.email.toLowerCase().includes(search);
+        const matchesSearch = name.includes(search) || (t.email && t.email.toLowerCase().includes(search));
         const matchesStatus = statusFilter ? t.status === statusFilter : true;
-        return matchesSearch && matchesStatus;
+        const matchesBatch = batchFilter ? t.batch_name === batchFilter : true;
+        return matchesSearch && matchesStatus && matchesBatch;
     });
 
     if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No trainees found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">No trainees found</td></tr>';
         return;
     }
     
@@ -142,6 +164,7 @@ function renderTraineesTable(data) {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${trainee.trainee_id}</td>
+            <td>${trainee.trainee_school_id || 'N/A'}</td>
             <td>${trainee.last_name}, ${trainee.first_name}</td>
             <td>${trainee.email}</td>
             <td>${trainee.phone_number || '-'}</td>
@@ -199,6 +222,7 @@ window.viewProfile = function(id) {
     if (!t) return;
 
     document.getElementById('viewName').textContent = `${t.first_name} ${t.last_name}`;
+    document.getElementById('viewSchoolId').textContent = t.trainee_school_id || 'N/A';
     document.getElementById('viewEmail').textContent = t.email;
     document.getElementById('viewPhone').textContent = t.phone_number || 'N/A';
     document.getElementById('viewAddress').textContent = t.address || 'N/A';
@@ -215,6 +239,10 @@ window.viewProfile = function(id) {
         photoImg.src = UPLOADS_URL + encodeURIComponent(t.photo_file);
         photoImg.style.display = 'block';
         noPhoto.style.display = 'none';
+        photoImg.onerror = function() {
+            this.style.display = 'none';
+            noPhoto.style.display = 'block';
+        };
     } else {
         photoImg.style.display = 'none';
         noPhoto.style.display = 'block';

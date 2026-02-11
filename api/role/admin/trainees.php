@@ -35,8 +35,17 @@ switch ($action) {
     case 'create-account':
         createTraineeAccount($conn);
         break;
+    case 'approve-enrollment':
+        approveEnrollment($conn);
+        break;
     case 'delete':
         deleteTrainee($conn);
+        break;
+    case 'get-batches':
+        getBatches($conn);
+        break;
+    case 'get-batch-trainees':
+        getBatchTrainees($conn);
         break;
     default:
         echo json_encode(['success' => false, 'message' => 'Invalid action']);
@@ -48,7 +57,13 @@ function getFormData($conn) {
         $stmtCourses = $conn->query("SELECT qualification_id as course_id, qualification_name as course_name FROM tbl_qualifications WHERE status = 'active' ORDER BY qualification_name ASC");
         $courses = $stmtCourses->fetchAll(PDO::FETCH_ASSOC);
 
-        $stmtBatches = $conn->query("SELECT batch_id, batch_name FROM tbl_batch WHERE status = 'open' ORDER BY batch_id DESC");
+        $stmtBatches = $conn->query("
+            SELECT b.batch_id, b.batch_name, 
+                   (SELECT COUNT(*) FROM tbl_enrollment e WHERE e.batch_id = b.batch_id AND e.status = 'approved') as enrolled_count
+            FROM tbl_batch b 
+            WHERE b.status = 'open' 
+            ORDER BY b.batch_id DESC
+        ");
         $batches = $stmtBatches->fetchAll(PDO::FETCH_ASSOC);
 
         echo json_encode(['success' => true, 'data' => ['courses' => $courses, 'batches' => $batches]]);
@@ -61,7 +76,10 @@ function getFormData($conn) {
 function getTrainees($conn) {
     try {
         $stmt = $conn->query("
-            SELECT t.*, b.batch_name, c.qualification_name as course_name
+            SELECT 
+                t.trainee_id, t.user_id, t.trainee_school_id, t.first_name, t.last_name, t.email, t.phone_number, t.status,
+                t.photo_file, t.valid_id_file, t.birth_cert_file, t.address,
+                b.batch_name, c.qualification_name as course_name
             FROM tbl_trainee_hdr t 
             JOIN tbl_enrollment e ON t.trainee_id = e.trainee_id 
             LEFT JOIN tbl_batch b ON e.batch_id = b.batch_id 
@@ -85,6 +103,14 @@ function addTrainee($conn) {
         
         if (empty($data['first_name']) || empty($data['last_name']) || empty($data['course_id']) || empty($data['batch_id'])) {
             throw new Exception('Please fill in all required fields (Name, Course, Batch)');
+        }
+
+        // Check if batch is closed
+        $stmtBatch = $conn->prepare("SELECT status FROM tbl_batch WHERE batch_id = ?");
+        $stmtBatch->execute([$data['batch_id']]);
+        $batchStatus = $stmtBatch->fetchColumn();
+        if ($batchStatus === 'closed') {
+            throw new Exception('This batch is full and cannot accept new trainees.');
         }
         
         $conn->beginTransaction();
@@ -236,6 +262,54 @@ function createTraineeAccount($conn) {
     }
 }
 
+function approveEnrollment($conn) {
+    try {
+        $data = json_decode(file_get_contents('php://input'), true);
+        $enrollmentId = $data['enrollment_id'] ?? null;
+
+        if (!$enrollmentId) {
+            throw new Exception('Enrollment ID is required.');
+        }
+
+        $conn->beginTransaction();
+
+        // 1. Get batch_id from enrollment
+        $stmtEnroll = $conn->prepare("SELECT batch_id FROM tbl_enrollment WHERE enrollment_id = ?");
+        $stmtEnroll->execute([$enrollmentId]);
+        $batchId = $stmtEnroll->fetchColumn();
+
+        if (!$batchId) {
+            throw new Exception('Enrollment not found or not linked to a batch.');
+        }
+
+        // 2. Update enrollment status to 'approved'
+        $stmtApprove = $conn->prepare("UPDATE tbl_enrollment SET status = 'approved' WHERE enrollment_id = ?");
+        $stmtApprove->execute([$enrollmentId]);
+
+        // 3. Check batch capacity and close if full
+        checkAndCloseBatch($conn, $batchId);
+
+        $conn->commit();
+        echo json_encode(['success' => true, 'message' => 'Trainee approved successfully.']);
+
+    } catch (Exception $e) {
+        if ($conn->inTransaction()) $conn->rollBack();
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    }
+}
+
+function checkAndCloseBatch($conn, $batchId) {
+    if (!$batchId) return;
+    $stmtCount = $conn->prepare("SELECT COUNT(*) FROM tbl_enrollment WHERE batch_id = ? AND status = 'approved'");
+    $stmtCount->execute([$batchId]);
+    $traineeCount = $stmtCount->fetchColumn();
+    if ($traineeCount >= 25) {
+        $stmtClose = $conn->prepare("UPDATE tbl_batch SET status = 'closed' WHERE batch_id = ?");
+        $stmtClose->execute([$batchId]);
+    }
+}
+
 function updateTrainee($conn) {
     try {
         $data = json_decode(file_get_contents('php://input'), true);
@@ -314,6 +388,43 @@ function deleteTrainee($conn) {
         }
         
         echo json_encode(['success' => true]);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    }
+}
+
+function getBatches($conn) {
+    try {
+        $stmt = $conn->query("
+            SELECT b.batch_id, b.batch_name, b.status,
+                   (SELECT COUNT(*) FROM tbl_enrollment e WHERE e.batch_id = b.batch_id AND e.status = 'approved') as enrolled_count
+            FROM tbl_batch b
+            ORDER BY b.batch_id DESC
+        ");
+        $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(['success' => true, 'data' => $data]);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    }
+}
+
+function getBatchTrainees($conn) {
+    try {
+        $batchId = $_GET['batch_id'] ?? null;
+        if (!$batchId) throw new Exception('Batch ID required');
+
+        $stmt = $conn->prepare("
+            SELECT t.trainee_id, t.trainee_school_id, t.first_name, t.last_name, t.email, t.phone_number, t.status
+            FROM tbl_trainee_hdr t
+            JOIN tbl_enrollment e ON t.trainee_id = e.trainee_id
+            WHERE e.batch_id = ? AND e.status = 'approved'
+            ORDER BY t.last_name ASC
+        ");
+        $stmt->execute([$batchId]);
+        $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(['success' => true, 'data' => $data]);
     } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);

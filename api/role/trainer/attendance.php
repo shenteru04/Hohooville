@@ -44,7 +44,7 @@ class TrainerAttendance {
         $hdrId = $hdr ? $hdr['attendance_hdr_id'] : null;
 
         // Fetch trainees and their status if exists
-        $query = "SELECT t.trainee_id, t.first_name, t.last_name, 
+        $query = "SELECT t.trainee_id, t.trainee_school_id, t.first_name, t.last_name, 
                          COALESCE(ad.status, 'present') as status
                   FROM tbl_enrollment e
                   JOIN tbl_trainee_hdr t ON e.trainee_id = t.trainee_id

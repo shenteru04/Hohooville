@@ -268,6 +268,7 @@ class AdminDashboard {
 
             // Detailed results for the table
             $query3 = "SELECT 
+                        t.trainee_school_id,
                         CONCAT(t.first_name, ' ', t.last_name) as trainee_name,
                         c.course_name as qualification_title,
                         b.batch_name as batch_code,

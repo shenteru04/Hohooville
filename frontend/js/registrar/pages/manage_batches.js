@@ -1,4 +1,5 @@
 const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
+const UPLOADS_URL = window.location.origin + '/hohoo-ville/uploads/trainees/';
 let batchModal;
 let viewBatchModal;
 let viewTraineeModal;
@@ -153,7 +154,7 @@ async function loadBatches() {
                         <td><span class="badge ${statusClass}">${batch.status}</span></td>
                         <td class="text-center">
                             <div class="d-flex justify-content-center gap-1">
-                                <button class="btn btn-sm btn-outline-info" onclick="viewBatch(${batch.batch_id})" title="View"><i class="fas fa-eye"></i></button>
+                                <button class="btn btn-sm btn-outline-info" onclick="viewBatch(${batch.batch_id}, '${batch.batch_name}')" title="View"><i class="fas fa-eye"></i></button>
                                 <button class="btn btn-sm btn-outline-primary" onclick="editBatch(${batch.batch_id})" title="Edit"><i class="fas fa-edit"></i></button>
                                 <button class="btn btn-sm btn-outline-danger" onclick="deleteBatch(${batch.batch_id})" title="Delete"><i class="fas fa-trash"></i></button>
                             </div>
@@ -241,6 +242,121 @@ window.deleteBatch = async function(id) {
     }
 }
 
-window.viewBatch = function(id) {
-    alert('Viewing trainees for batch ' + id);
+window.viewBatch = async function(id, name) {
+    document.getElementById('viewBatchTitle').textContent = name;
+    const tbody = document.getElementById('batchTraineesBody');
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Loading...</td></tr>';
+    viewBatchModal.show();
+
+    try {
+        const response = await axios.get(`${API_BASE_URL}/role/registrar/batches.php?action=get-trainees&batch_id=${id}`);
+        tbody.innerHTML = '';
+        
+        if (response.data.success) {
+            const trainees = response.data.data;
+            if (trainees.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">No trainees enrolled in this batch.</td></tr>';
+            } else {
+                trainees.forEach(t => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${t.last_name}, ${t.first_name}</td>
+                            <td>${t.email}</td>
+                            <td>${t.phone_number || 'N/A'}</td>
+                            <td><span class="badge bg-${t.status === 'active' ? 'success' : 'secondary'}">${t.status}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-info text-white" onclick="viewTraineeDetails(${t.trainee_id})">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+        } else {
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">${response.data.message}</td></tr>`;
+        }
+    } catch (error) {
+        console.error('Error fetching batch trainees:', error);
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Failed to load trainees.</td></tr>';
+    }
+}
+
+window.viewTraineeDetails = async function(id) {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/role/registrar/batches.php?action=get-trainee-details&trainee_id=${id}`);
+        if (response.data.success) {
+            const t = response.data.data;
+            
+            // Helper to set text
+            const setText = (eid, val) => {
+                const el = document.getElementById(eid);
+                if(el) el.textContent = val || 'N/A';
+            };
+
+            // Personal
+            setText('detailName', `${t.first_name} ${t.last_name}`);
+            setText('detailSex', t.sex);
+            setText('detailCivilStatus', t.civil_status);
+            setText('detailBirthdate', t.birthdate);
+            setText('detailAge', t.age);
+            setText('detailNationality', t.nationality);
+            setText('detailBirthplace', [t.birthplace_city, t.birthplace_province].filter(Boolean).join(', '));
+
+            // Contact
+            setText('detailEmail', t.email);
+            setText('detailPhone', t.phone_number);
+            setText('detailFacebook', t.facebook_account);
+            setText('detailAddress', [t.house_no_street, t.barangay, t.city_municipality, t.province].filter(Boolean).join(', '));
+
+            // Background
+            setText('detailEducation', t.educational_attainment);
+            setText('detailEmploymentStatus', t.employment_status);
+            setText('detailEmploymentType', t.employment_type);
+            setText('detailClassification', t.learner_classification);
+            setText('detailIsPwd', t.is_pwd == 1 ? 'Yes' : 'No');
+            setText('detailDisabilityType', t.disability_type);
+            setText('detailDisabilityCause', t.disability_cause);
+
+            // Training
+            setText('detailDuration', t.nominal_duration);
+            setText('detailScholarship', t.scholarship_type);
+
+            // Photo
+            const photoImg = document.getElementById('detailPhoto');
+            const noPhoto = document.getElementById('detailNoPhoto');
+            if (t.photo_file) {
+                photoImg.src = UPLOADS_URL + t.photo_file;
+                photoImg.style.display = 'block';
+                noPhoto.style.display = 'none';
+            } else {
+                photoImg.style.display = 'none';
+                noPhoto.style.display = 'block';
+            }
+
+            // Docs
+            const linkId = document.getElementById('detailLinkValidId');
+            if(t.valid_id_file) {
+                linkId.href = UPLOADS_URL + t.valid_id_file;
+                linkId.classList.remove('disabled');
+            } else {
+                linkId.classList.add('disabled');
+            }
+
+            const linkBirth = document.getElementById('detailLinkBirthCert');
+            if(t.birth_cert_file) {
+                linkBirth.href = UPLOADS_URL + t.birth_cert_file;
+                linkBirth.classList.remove('disabled');
+            } else {
+                linkBirth.classList.add('disabled');
+            }
+
+            viewTraineeModal.show();
+        } else {
+            alert('Error: ' + response.data.message);
+        }
+    } catch (error) {
+        console.error('Error fetching trainee details:', error);
+        alert('Failed to load trainee details.');
+    }
 }

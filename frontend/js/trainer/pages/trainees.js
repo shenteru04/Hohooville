@@ -143,6 +143,7 @@ async function loadTrainees(trainerId) {
             response.data.data.forEach(trainee => {
                 const row = `
                     <tr>
+                        <td>${trainee.trainee_school_id || 'N/A'}</td>
                         <td>
                             <div class="d-flex align-items-center">
                                 <div class="ms-2">
@@ -162,7 +163,7 @@ async function loadTrainees(trainerId) {
                 tbody.innerHTML += row;
             });
         } else {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center">No trainees found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No trainees found.</td></tr>';
         }
     } catch (error) {
         console.error('Error loading trainees:', error);
