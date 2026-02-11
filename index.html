@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Hohoo-ville Technical School Inc.</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="frontend/css/landing.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-primary" href="#">
+                <img src="img/logo.jpg" alt="Logo" class="me-2" style="height: 35px; width: auto; border-radius: 50%;">
+                Hohoo-ville
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#about">About Us</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#courses">Courses</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#contact">Contact</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-outline-primary ms-lg-3" href="frontend/login.html">
+                            <i class="fas fa-sign-in-alt me-1"></i> Login
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-success ms-lg-2" href="application_form.html">
+                            <i class="fas fa-user-plus me-1"></i> Apply Now
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="hero-section text-white text-center">
+        <div class="container">
+            <h1 class="display-4 fw-bold">Build Your Future with Hohoo-ville</h1>
+            <p class="lead my-4">Your journey to a successful technical career starts here. Quality training for in-demand skills.</p>
+            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                <a href="application_form.html" class="btn btn-primary btn-lg px-4 gap-3">Apply Now</a>
+                <a href="#courses" class="btn btn-outline-light btn-lg px-4">Explore Courses</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- About Us Section -->
+    <section id="about" class="py-5">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <h2 class="fw-bold">About Hohoo-ville Technical School</h2>
+                    <div class="line"></div>
+                    <p class="text-muted">We are a premier technical-vocational institution dedicated to providing high-quality, hands-on training to empower our students for a competitive global market. Our state-of-the-art facilities and expert trainers ensure you get the best education possible.</p>
+                    <p class="text-muted">Located in Purok 6A, Poblacion, Lagonglong, Misamis Oriental, we are committed to fostering a learning environment that promotes innovation, skill, and professionalism.</p>
+                </div>
+                <div class="col-lg-6 text-center">
+                    <img src="https://scontent.fdvo1-2.fna.fbcdn.net/v/t39.30808-6/452919599_122103296666417045_243396111767815120_n.png?_nc_cat=106&ccb=1-7&_nc_sid=cc71e4&_nc_eui2=AeGupix9K1bz52LKWPoSC9D3272pyR6oXvzbvanJHqhe_JV3KFo1YSx5rRB944tHAFWyPnGYMan5_0Y7kq4Rwqhn&_nc_ohc=MTF2aUThJd8Q7kNvwGeICRj&_nc_oc=AdnN-PAKFBObeCw9LNCG8RGC0Fu9gd3jwz82E2dCjJ4gyKVux17oQC3nwQNuMrlQrfA&_nc_zt=23&_nc_ht=scontent.fdvo1-2.fna&_nc_gid=nFK1QRoripEppf5LGLlCZA&oh=00_AftTV0CLql_dDfK11Lm7ZmkSvKMQOsDCnm9B5IdnJKCtmQ&oe=699228E2" class="img-fluid rounded shadow-lg" alt="School Campus">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Courses Section -->
+    <section id="courses" class="py-5 bg-light">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold">Our Featured Courses</h2>
+                <p class="text-muted">We offer a range of TESDA-accredited programs.</p>
+            </div>
+            <div class="row">
+                <!-- Course Card 1 -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm border-0 course-card" role="button" 
+                         data-bs-toggle="modal" 
+                         data-bs-target="#courseModal"
+                         data-course-title="Electrical Installation & Maintenance (EIM) NC II"
+                         data-course-description="Learn to install and maintain electrical wiring, lighting, and related equipment for residential and commercial buildings. This course covers topics such as AC/DC circuits, blueprint reading, wiring installation, and safety procedures. Graduates are prepared for entry-level electrician roles."
+                         data-course-gallery='["https://images.unsplash.com/photo-1621905251189-08b45d6a269e?q=80&w=800", "https://images.unsplash.com/photo-1581092921462-697de7033443?q=80&w=800", "https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?q=80&w=800"]'>
+                        
+                        <div class="card-body text-center d-flex flex-column justify-content-center" style="background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://rtcviionlinecourse.gnomio.com/pluginfile.php/94/course/overviewfiles/electric.jpg'); background-size: cover; background-position: center; border-radius: 0.375rem; min-height: 280px;">
+                            <div class="icon-circle bg-primary text-white mb-3">
+                                <i class="fas fa-bolt fa-2x"></i>
+                            </div>
+                            <h5 class="card-title fw-bold text-white">Electrical Installation & Maintenance (EIM) NC II</h5>
+                            <p class="card-text text-white">Learn to install and maintain electrical wiring, lighting, and related equipment for residential and commercial buildings.</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Course Card 2 -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm border-0 course-card" role="button"
+                         data-bs-toggle="modal" 
+                         data-bs-target="#courseModal"
+                         data-course-title="Automotive Servicing NC II"
+                         data-course-description="Gain expertise in inspecting, maintaining, and repairing light and heavy-duty automotive vehicles. This program covers engine systems, brakes, suspension, and electrical components, preparing you for a career as an automotive technician."
+                         data-course-gallery='["https://images.unsplash.com/photo-1553913861-c0fddf2619ee?q=80&w=800", "https://images.unsplash.com/photo-1623194193404-42a427998a03?q=80&w=800", "https://images.unsplash.com/photo-1599283752134-5393b62ef787?q=80&w=800"]'>
+
+                        <div class="card-body text-center d-flex flex-column justify-content-center" style="background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSzgri299DTiVN6ryInU6-uBGTqQgrKrl9Bug&s'); background-size: cover; background-position: center; border-radius: 0.375rem; min-height: 280px;">
+                            <div class="icon-circle bg-success text-white mb-3">
+                                <i class="fas fa-cogs fa-2x"></i>
+                            </div>
+                            <h5 class="card-title fw-bold text-white">Automotive Servicing NC II</h5>
+                            <p class="card-text text-white">Gain expertise in inspecting, maintaining, and repairing light and heavy-duty automotive vehicles.</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Course Card 3 -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm border-0 course-card" role="button"
+                         data-bs-toggle="modal" 
+                         data-bs-target="#courseModal"
+                         data-course-title="Cookery NC II"
+                         data-course-description="Master the art of preparing hot and cold meals in commercial kitchens, from appetizers to desserts. Students learn food safety, knife skills, various cooking methods, and kitchen management to work in restaurants, hotels, and other food service establishments."
+                         data-course-gallery='["https://images.unsplash.com/photo-1556911220-bff31c812dba?q=80&w=800", "https://images.unsplash.com/photo-1466637574441-749b8f19452f?q=80&w=800", "https://images.unsplash.com/photo-1600565193348-f74d3c2723a9?q=80&w=800"]'>
+
+                        <div class="card-body text-center d-flex flex-column justify-content-center" style="background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://static.wixstatic.com/media/a6f2f1_b670f6e22a8a468a8308860a7974b987~mv2.jpg/v1/fill/w_640,h_686,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/a6f2f1_b670f6e22a8a468a8308860a7974b987~mv2.jpg'); background-size: cover; background-position: center; border-radius: 0.375rem; min-height: 280px;">
+                            <div class="icon-circle bg-warning text-white mb-3">
+                                <i class="fas fa-utensils fa-2x"></i>
+                            </div>
+                            <h5 class="card-title fw-bold text-white">Cookery NC II</h5>
+                            <p class="card-text text-white">Master the art of preparing hot and cold meals in commercial kitchens, from appetizers to desserts.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    
+
+    <!-- Contact Section -->
+    <section id="contact" class="py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold">Get In Touch</h2>
+                <p class="text-muted">We'd love to hear from you. Visit us or send us a message.</p>
+            </div>
+            <div class="row">
+                <div class="col-lg-6 mb-4">
+                    <h5 class="fw-bold">Our Location</h5>
+                    <p><i class="fas fa-map-marker-alt me-2 text-primary"></i>Purok 6A, Poblacion, Lagonglong, Misamis Oriental</p>
+                    <h5 class="fw-bold mt-4">Contact Info</h5> 
+                    <p><i class="fas fa-phone me-2 text-primary"></i> (+63) 921-696-8538</p>
+                    <p><i class="fas fa-envelope me-2 text-primary"></i> hohooville@gmail.com</p>
+                    <p><i class="fas fa-clock me-2 text-primary"></i> Monday - Saturday: 8:00 AM - 5:00 PM</p>
+                    <p><i class="fas fa-clock me-2 text-primary"></i> Sunday: Closed</p>
+                    <h5 class="fw-bold mt-4">Hohoo Ville Technical School Inc. is an educational institution under the TESDA.</h5>
+                </div>
+                <div class="col-lg-6">
+                    <!-- Embedded Map from OpenStreetMap -->
+                    <div class="map-container shadow-sm rounded">
+                        <iframe
+                            width="100%"
+                            height="350"
+                            style="border:0;" allowfullscreen="" loading="lazy"
+                            src="https://www.openstreetmap.org/export/embed.html?bbox=124.7843%2C8.7685%2C124.7957%2C8.7755&amp;layer=mapnik&amp;marker=8.772,124.79">
+                        </iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Enrollment Section -->
+    <section id="enrollment" class="py-5 bg-light">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold">Enrollment is Now Open!</h2>
+                <p class="text-muted">Check out our available programs and upcoming batches.</p>
+            </div>
+            <div class="row g-5">
+                <div class="col-lg-6">
+                    <h4 class="fw-bold mb-4"><i class="fas fa-award me-2 text-primary"></i>Available Qualifications</h4>
+                    <div id="qualificationsList">
+                        <!-- Loading spinner -->
+                        <div class="d-flex justify-content-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <h4 class="fw-bold mb-4"><i class="fas fa-calendar-alt me-2 text-success"></i>Upcoming Batches</h4>
+                    <div id="batchesList">
+                        <!-- Loading spinner -->
+                        <div class="d-flex justify-content-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+<footer class="bg-dark text-white text-center py-4">
+    <div class="container">
+        <div class="social-icons mb-3">
+            <a href="https://web.facebook.com/profile.php?id=61562511351031" class="social-icon" title="Facebook" style="display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: white;">
+                <i class="fab fa-facebook-f"></i>
+                <span>Hohoo Ville Technical School Inc.</span>
+            </a>
+        </div>
+        <p class="mb-0">&copy; 2024 Hohoo-ville Technical School Inc. All Rights Reserved.</p>
+    </div>
+</footer>
+
+    <!-- Course Details Modal -->
+    <div class="modal fade" id="courseModal" tabindex="-1" aria-labelledby="courseModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="courseModalLabel">Course Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="courseModalDescription"></p>
+                    <hr>
+                    <h6 class="mb-3">Gallery</h6>
+                    <div id="courseModalGallery" class="row g-3">
+                        <!-- Gallery images will be injected by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Axios for API calls -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- Custom JS for this page -->
+    <script src="frontend/js/landing.js"></script>
+</body>
+</html>

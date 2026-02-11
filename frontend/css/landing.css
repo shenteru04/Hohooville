@@ -1,0 +1,102 @@
+body {
+    font-family: 'Poppins', sans-serif;
+    padding-top: 56px; /* Adjust for fixed navbar */
+}
+
+.hero-section {
+    background: linear-gradient(rgba(29, 38, 113, 0.8), rgba(195, 55, 100, 0.6)), url('/Hohoo-ville/img/logo.jpg') no-repeat center center;
+    background-size: cover;
+    padding: 10rem 0;
+}
+
+#about .line {
+    width: 60px;
+    height: 4px;
+    background-color: #0d6efd; /* Bootstrap primary color */
+    margin: 1rem 0;
+}
+
+.course-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.course-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 1rem 3rem rgba(0,0,0,.175) !important;
+}
+
+.icon-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.map-container {
+    height: 350px;
+    overflow: hidden; /* Ensures the iframe respects the parent's border-radius */
+}
+
+.batch-card {
+    border-left: 4px solid #0d6efd; /* Bootstrap primary */
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.batch-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+}
+.social-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 25px;
+    color: #fff;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.social-icon i {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
+    width: 40px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+}
+
+.social-icon:hover {
+    color: #fff;
+    background-color: #1877f2; /* Facebook blue */
+    transform: translateY(-3px);
+}
+
+.social-icon:hover i {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Back to Top Button */
+.back-to-top {
+    position: fixed;
+    visibility: hidden;
+    opacity: 0;
+    right: 15px;
+    bottom: 15px;
+    z-index: 996;
+    background: #0d6efd;
+    width: 40px;
+    height: 40px;
+    border-radius: 50px;
+    transition: all 0.4s;
+    color: #fff;
+}
+
+.back-to-top.active {
+    visibility: visible;
+    opacity: 1;
+}
