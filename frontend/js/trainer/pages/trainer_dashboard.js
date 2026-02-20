@@ -27,6 +27,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                 document.getElementById('trainerName').textContent = `${trainer.first_name} ${trainer.last_name}`;
             }
             loadDashboardData(trainer.trainer_id);
+        } else {
+            // Security Check: If API fails due to archive/inactive status, logout immediately
+            if (response.data.message && (
+                response.data.message.toLowerCase().includes('archived') || 
+                response.data.message.toLowerCase().includes('inactive')
+            )) {
+                localStorage.clear();
+                window.location.href = '../../login.html';
+            }
         }
     } catch (error) {
         console.error('Error fetching trainer ID:', error);

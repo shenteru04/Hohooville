@@ -43,8 +43,8 @@ class TrainerReports {
                     (CASE WHEN (SELECT AVG(score) FROM tbl_grades WHERE trainee_id = t.trainee_id AND qualification_id = c.qualification_id) >= 80 THEN 'Competent' ELSE 'Not Yet Competent' END) as remarks
                   FROM tbl_enrollment e
                   JOIN tbl_trainee_hdr t ON e.trainee_id = t.trainee_id
-                  JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
-                  JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id
+                  JOIN tbl_batch b ON e.batch_id = b.batch_id
+                  JOIN tbl_qualifications c ON b.qualification_id = c.qualification_id
                   WHERE e.batch_id = ? AND e.status = 'approved'";
         
         $stmt = $this->conn->prepare($query);

@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const API_BASE_URL = 'http://localhost/hohoo-ville/api';
     let allBatches = [];
+    let allCourses = []; // Store course data including CTPR and duration
 
     // --- Page Navigation ---
     window.nextPage = function() {
@@ -51,6 +52,48 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('disabilityDetails').style.display = this.value === 'yes' ? 'block' : 'none';
         });
     });
+
+    // Phone number validation - numbers only
+    const phoneInput = document.getElementById('phoneInput');
+    if (phoneInput) {
+        // Create error message element
+        const errorMessage = document.createElement('div');
+        errorMessage.id = 'phoneError';
+        errorMessage.style.display = 'none';
+        errorMessage.style.color = '#dc3545';
+        errorMessage.style.fontSize = '0.875rem';
+        errorMessage.style.marginTop = '0.25rem';
+        errorMessage.textContent = 'Numbers only';
+        phoneInput.parentElement.appendChild(errorMessage);
+
+        let errorTimeout;
+        
+        phoneInput.addEventListener('keypress', function(e) {
+            // Prevent non-numeric key press
+            const char = String.fromCharCode(e.which);
+            if (!/[0-9]/.test(char)) {
+                e.preventDefault();
+                
+                // Show error message
+                this.classList.add('is-invalid');
+                errorMessage.style.display = 'block';
+                
+                // Clear previous timeout
+                clearTimeout(errorTimeout);
+                
+                // Hide error after 2 seconds
+                errorTimeout = setTimeout(() => {
+                    this.classList.remove('is-invalid');
+                    errorMessage.style.display = 'none';
+                }, 2000);
+            }
+        });
+        
+        phoneInput.addEventListener('input', function() {
+            // Remove non-numeric characters in real-time
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    }
     
     // Enable submit button on consent
     const privacyConsent = document.getElementById('privacyConsent');
@@ -66,6 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await axios.get(`${API_BASE_URL}/public/application_data.php?action=get-form-data`);
             if (response.data.success) {
                 const { courses, scholarships, batches } = response.data.data;
+                allCourses = courses; // Store all course data
                 populateCourses(courses);
                 populateScholarships(scholarships);
                 allBatches = batches;
@@ -123,6 +167,8 @@ document.addEventListener('DOMContentLoaded', function() {
             batchSelect.innerHTML = '<option value="">No open batches for this course</option>';
         }
     }
+
+
 
     document.getElementById('courseSelect').addEventListener('change', function() {
         populateBatches(this.value);

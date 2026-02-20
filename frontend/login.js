@@ -1,4 +1,10 @@
 document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Swal === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        document.head.appendChild(script);
+    }
+
     const loginForm = document.getElementById('loginForm');
     const otpForm = document.getElementById('otpForm');
     const messageDiv = document.getElementById('message');
@@ -164,9 +170,26 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showMessage(msg, type) {
-        messageDiv.textContent = msg;
-        messageDiv.className = `alert alert-${type}`;
-        messageDiv.style.display = 'block';
+        if (typeof Swal !== 'undefined') {
+            let icon = 'info';
+            let title = 'Info';
+            
+            if (type === 'danger') {
+                icon = 'error';
+                title = 'Error';
+            } else if (type === 'success') {
+                icon = 'success';
+                title = 'Success';
+            } else if (type === 'warning') {
+                icon = 'warning';
+                title = 'Warning';
+            }
+            Swal.fire({ title: title, text: msg, icon: icon });
+        } else {
+            messageDiv.textContent = msg;
+            messageDiv.className = `alert alert-${type}`;
+            messageDiv.style.display = 'block';
+        }
     }
 
     function redirectToDashboard(role) {

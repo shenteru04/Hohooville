@@ -37,12 +37,28 @@ apiClient.interceptors.response.use(
 
 // State Management
 let allUsers = [];
-let filteredUsers = [];
-let currentPage = 1;
+let usersByRole = {
+    admin: { all: [], filtered: [], currentPage: 1 },
+    trainer: { all: [], filtered: [], currentPage: 1 },
+    trainee: { all: [], filtered: [], currentPage: 1 },
+    registrar: { all: [], filtered: [], currentPage: 1 }
+};
 const itemsPerPage = 10;
+const roleMap = {
+    1: 'admin',
+    2: 'trainer',
+    3: 'trainee',
+    4: 'registrar'
+};
 
 // Initialize when script loads
 document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Swal === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        document.head.appendChild(script);
+    }
+
     initUserManagement();
 
     // Inject Sidebar CSS (W3.CSS Reference Style)
@@ -189,10 +205,22 @@ function setupEventListeners() {
         });
     }
 
-    // Filter Event Listeners
-    document.getElementById('searchInput')?.addEventListener('keyup', applyFilters);
-    document.getElementById('roleFilter')?.addEventListener('change', applyFilters);
-    document.getElementById('statusFilter')?.addEventListener('change', applyFilters);
+    // Setup search and filter inputs for each tab
+    document.querySelectorAll('.search-input').forEach(input => {
+        input.addEventListener('keyup', function() {
+            const tabPane = this.closest('.tab-pane');
+            const role = getRoleFromTabPane(tabPane);
+            applyRoleFilters(role);
+        });
+    });
+
+    document.querySelectorAll('.status-filter').forEach(select => {
+        select.addEventListener('change', function() {
+            const tabPane = this.closest('.tab-pane');
+            const role = getRoleFromTabPane(tabPane);
+            applyRoleFilters(role);
+        });
+    });
 
     // Password Toggle
     const togglePasswordBtn = document.getElementById('togglePassword');
@@ -214,6 +242,14 @@ function setupEventListeners() {
     }
 }
 
+function getRoleFromTabPane(tabPane) {
+    if (tabPane.id === 'adminPane') return 'admin';
+    if (tabPane.id === 'trainerPane') return 'trainer';
+    if (tabPane.id === 'traineePane') return 'trainee';
+    if (tabPane.id === 'registrarPane') return 'registrar';
+    return 'admin';
+}
+
 async function loadUsers() {
     console.log('Loading users...');
     try {
@@ -222,7 +258,18 @@ async function loadUsers() {
         
         if (response.data.success) {
             allUsers = response.data.data;
-            applyFilters();
+            
+            // Organize users by role
+            usersByRole.admin.all = allUsers.filter(u => u.role_id === 1 || u.role_name === 'admin');
+            usersByRole.trainer.all = allUsers.filter(u => u.role_id === 2 || u.role_name === 'trainer');
+            usersByRole.trainee.all = allUsers.filter(u => u.role_id === 3 || u.role_name === 'trainee');
+            usersByRole.registrar.all = allUsers.filter(u => u.role_id === 4 || u.role_name === 'registrar');
+            
+            // Apply filters for each role
+            applyRoleFilters('admin');
+            applyRoleFilters('trainer');
+            applyRoleFilters('trainee');
+            applyRoleFilters('registrar');
         } else {
             showAlert('Error loading users: ' + response.data.message, 'danger');
         }
@@ -232,39 +279,43 @@ async function loadUsers() {
     }
 }
 
-function applyFilters() {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    const roleFilter = document.getElementById('roleFilter').value.toLowerCase();
-    const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
-
-    filteredUsers = allUsers.filter(user => {
-        const matchesSearch = (user.username && user.username.toLowerCase().includes(searchTerm)) || 
-                              (user.email && user.email.toLowerCase().includes(searchTerm));
-        const matchesRole = roleFilter === '' || (user.role_name && user.role_name.toLowerCase() === roleFilter);
+function applyRoleFilters(role) {
+    const tabPane = document.getElementById(role + 'Pane');
+    if (!tabPane) return;
+    
+    const searchInput = tabPane.querySelector('.search-input').value.toLowerCase();
+    const statusFilter = tabPane.querySelector('.status-filter').value.toLowerCase();
+    
+    usersByRole[role].filtered = usersByRole[role].all.filter(user => {
+        const matchesSearch = (user.username && user.username.toLowerCase().includes(searchInput)) || 
+                              (user.email && user.email.toLowerCase().includes(searchInput));
         const matchesStatus = statusFilter === '' || (user.status && user.status.toLowerCase() === statusFilter);
-        return matchesSearch && matchesRole && matchesStatus;
+        return matchesSearch && matchesStatus;
     });
-
-    currentPage = 1;
-    renderPagination();
-    renderUsersTable();
+    
+    usersByRole[role].currentPage = 1;
+    renderRolePagination(role);
+    renderRoleUsersTable(role);
 }
 
-function renderUsersTable() {
-    const start = (currentPage - 1) * itemsPerPage;
+function renderRoleUsersTable(role) {
+    const tabPane = document.getElementById(role + 'Pane');
+    if (!tabPane) return;
+    
+    const start = (usersByRole[role].currentPage - 1) * itemsPerPage;
     const end = start + itemsPerPage;
-    const paginatedData = filteredUsers.slice(start, end);
-
-    const tbody = document.getElementById('usersTableBody');
+    const paginatedData = usersByRole[role].filtered.slice(start, end);
+    
+    const tbody = tabPane.querySelector('.users-table-body');
     if (!tbody) {
-        console.error('Table body not found');
+        console.error('Table body not found for role:', role);
         return;
     }
     
     tbody.innerHTML = '';
     
     if (paginatedData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No users found matching your criteria</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-muted">No ${role}s found matching your criteria</td></tr>`;
         return;
     }
     
@@ -286,58 +337,60 @@ function renderUsersTable() {
                     </div>
                 </div>
             </td>
-            <td><span class="badge bg-light text-dark border">${user.role_name}</span></td>
             <td>${statusBadge}</td>
             <td>${formatDate(user.date_created)}</td>
             <td class="text-end pe-4">
                 <button class="btn btn-warning btn-sm" onclick="editUser(${user.user_id})">
                     <i class="fas fa-edit"></i> Edit
                 </button>
-                <button class="btn btn-danger btn-sm" onclick="deleteUser(${user.user_id})">
-                    <i class="fas fa-trash"></i> Delete
-                </button>
+                ${user.status === 'active' ? `<button class="btn btn-danger btn-sm" onclick="archiveUser(${user.user_id})" title="Archive this user">
+                    <i class="fas fa-archive"></i> Archive
+                </button>` : `<span class="badge bg-secondary">Archived</span>`}
             </td>
         `;
         tbody.appendChild(row);
     });
 }
 
-function renderPagination() {
-    const pagination = document.getElementById('pagination');
+function renderRolePagination(role) {
+    const tabPane = document.getElementById(role + 'Pane');
+    if (!tabPane) return;
+    
+    const pagination = tabPane.querySelector('.role-pagination');
     if (!pagination) return;
 
-    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+    const totalPages = Math.ceil(usersByRole[role].filtered.length / itemsPerPage);
     pagination.innerHTML = '';
 
     if (totalPages <= 1) return;
 
     // Previous Button
     const prevLi = document.createElement('li');
-    prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
-    prevLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage - 1}); return false;">Previous</a>`;
+    prevLi.className = `page-item ${usersByRole[role].currentPage === 1 ? 'disabled' : ''}`;
+    prevLi.innerHTML = `<a class="page-link" href="#" onclick="changeRolePage('${role}', ${usersByRole[role].currentPage - 1}); return false;">Previous</a>`;
     pagination.appendChild(prevLi);
 
     // Page Numbers
     for (let i = 1; i <= totalPages; i++) {
         const li = document.createElement('li');
-        li.className = `page-item ${currentPage === i ? 'active' : ''}`;
-        li.innerHTML = `<a class="page-link" href="#" onclick="changePage(${i}); return false;">${i}</a>`;
+        li.className = `page-item ${usersByRole[role].currentPage === i ? 'active' : ''}`;
+        li.innerHTML = `<a class="page-link" href="#" onclick="changeRolePage('${role}', ${i}); return false;">${i}</a>`;
         pagination.appendChild(li);
     }
 
     // Next Button
     const nextLi = document.createElement('li');
-    nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
-    nextLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage + 1}); return false;">Next</a>`;
+    nextLi.className = `page-item ${usersByRole[role].currentPage === totalPages ? 'disabled' : ''}`;
+    nextLi.innerHTML = `<a class="page-link" href="#" onclick="changeRolePage('${role}', ${usersByRole[role].currentPage + 1}); return false;">Next</a>`;
     pagination.appendChild(nextLi);
 }
 
-window.changePage = function(page) {
-    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+window.changeRolePage = function(role, page) {
+    const totalPages = Math.ceil(usersByRole[role].filtered.length / itemsPerPage);
     if (page < 1 || page > totalPages) return;
-    currentPage = page;
-    renderPagination();
-    renderUsersTable();
+    usersByRole[role].currentPage = page;
+    renderRolePagination(role);
+    renderRoleUsersTable(role);
 }
 
 async function addUser() {
@@ -372,7 +425,7 @@ async function addUser() {
         username: username,
         password: password,
         email: document.getElementById('email').value.trim(),
-        status: document.getElementById('status').value
+        status: 'active'
     };
 
     console.log('Sending data:', data);
@@ -414,6 +467,9 @@ async function addUser() {
 }
 
 async function editUser(id) {
+                // Show status dropdown for edit
+                const statusContainer = document.getElementById('editStatusContainer');
+                if (statusContainer) statusContainer.style.display = 'block';
     console.log('Editing user:', id);
     try {
         const response = await apiClient.get(`/role/admin/user_management.php?action=get&id=${id}`);
@@ -427,7 +483,9 @@ async function editUser(id) {
             document.getElementById('username').value = user.username;
             document.getElementById('email').value = user.email || '';
             document.getElementById('roleId').value = user.role_id;
-            document.getElementById('status').value = user.status;
+            // Only set status if field exists (for edit, not add)
+            const statusField = document.getElementById('status');
+            if (statusField) statusField.value = user.status;
             
             // Password not required for edit
             const passwordField = document.getElementById('password');
@@ -509,30 +567,36 @@ async function updateUser(id) {
     }
 }
 
-async function deleteUser(id) {
-    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-        return;
-    }
+async function archiveUser(id) {
+    const result = await Swal.fire({
+        title: 'Archive User?',
+        text: "The user data will be retained and can be restored later.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Archive'
+    });
+
+    if (!result.isConfirmed) return;
     
-    console.log('Deleting user:', id);
+    console.log('Archiving user:', id);
     
     try {
-        const response = await apiClient.delete(`/role/admin/user_management.php?action=delete&id=${id}`);
-        console.log('Delete user response:', response.data);
+        const response = await apiClient.get(`/role/admin/user_management.php?action=archive&id=${id}`);
+        console.log('Archive user response:', response.data);
         
         if (response.data.success) {
-            showAlert('User deleted successfully!', 'success');
+            showAlert('User archived successfully! Data has been retained.', 'success');
             loadUsers();
         } else {
             showAlert('Error: ' + response.data.message, 'danger');
         }
     } catch (error) {
-        console.error('Error deleting user:', error);
+        console.error('Error archiving user:', error);
         if (error.response) {
             console.error('Error response:', error.response.data);
             showAlert('Error: ' + (error.response.data.message || 'Server error'), 'danger');
         } else {
-            showAlert('Error deleting user. Please check console for details.', 'danger');
+            showAlert('Error archiving user. Please check console for details.', 'danger');
         }
     }
 }
@@ -549,6 +613,9 @@ function resetForm() {
         passwordField.placeholder = 'Minimum 6 characters recommended';
     }
     document.getElementById('userModalTitle').textContent = 'Add New User';
+    // Hide status dropdown when adding
+    const statusContainer = document.getElementById('editStatusContainer');
+    if (statusContainer) statusContainer.style.display = 'none';
 }
 
 function formatDate(dateString) {

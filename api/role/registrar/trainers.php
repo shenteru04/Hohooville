@@ -40,7 +40,10 @@ switch ($action) {
 
 function listTrainers($conn) {
     try {
-        $stmt = $conn->prepare("SELECT trainer_id, first_name, last_name, email, specialization, status FROM tbl_trainer ORDER BY trainer_id DESC");
+        $stmt = $conn->prepare("SELECT t.trainer_id, t.first_name, t.last_name, t.email, t.qualification_id, q.qualification_name, t.status 
+                                FROM tbl_trainer t 
+                                LEFT JOIN tbl_qualifications q ON t.qualification_id = q.qualification_id 
+                                ORDER BY t.trainer_id DESC");
         $stmt->execute();
         $trainers = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(['success' => true, 'data' => $trainers]);
@@ -58,7 +61,10 @@ function getTrainer($conn) {
         return;
     }
     try {
-        $stmt = $conn->prepare("SELECT * FROM tbl_trainer WHERE trainer_id = ?");
+        $stmt = $conn->prepare("SELECT t.*, q.qualification_name 
+                                FROM tbl_trainer t 
+                                LEFT JOIN tbl_qualifications q ON t.qualification_id = q.qualification_id 
+                                WHERE t.trainer_id = ?");
         $stmt->execute([$id]);
         $trainer = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($trainer) {
@@ -93,12 +99,12 @@ function addTrainer($conn) {
 
         $file_paths = handleFileUploads($files, $userId);
 
-        $query = "INSERT INTO tbl_trainer (user_id, first_name, last_name, email, phone_number, specialization, address, nttc_no, nc_level, nttc_file, tm_file, nc_file, experience_file, status) 
+        $query = "INSERT INTO tbl_trainer (user_id, first_name, last_name, email, phone_number, qualification_id, address, nttc_no, nc_level, nttc_file, tm_file, nc_file, experience_file, status) 
                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')";
         $stmt = $conn->prepare($query);
         $stmt->execute([
             $userId, $data['first_name'], $data['last_name'], $data['email'],
-            $data['phone'] ?? null, $data['specialization'] ?? null, $data['address'] ?? null,
+            $data['phone'] ?? null, $data['qualification_id'] ?? null, $data['address'] ?? null,
             $data['nttc_no'] ?? null, $data['nc_level'] ?? null,
             $file_paths['nttc_file'] ?? null, $file_paths['tm_file'] ?? null,
             $file_paths['nc_file'] ?? null, $file_paths['experience_file'] ?? null
@@ -138,13 +144,13 @@ function updateTrainer($conn) {
         $file_paths = handleFileUploads($files, $existing_files['user_id'], $existing_files);
 
         $query = "UPDATE tbl_trainer SET 
-                    first_name = ?, last_name = ?, email = ?, phone_number = ?, specialization = ?, address = ?, nttc_no = ?, nc_level = ?, 
+                    first_name = ?, last_name = ?, email = ?, phone_number = ?, qualification_id = ?, address = ?, nttc_no = ?, nc_level = ?, 
                     nttc_file = ?, tm_file = ?, nc_file = ?, experience_file = ?
                   WHERE trainer_id = ?";
         $stmt = $conn->prepare($query);
         $stmt->execute([
             $data['first_name'], $data['last_name'], $data['email'], $data['phone'] ?? null,
-            $data['specialization'] ?? null, $data['address'] ?? null, $data['nttc_no'] ?? null, $data['nc_level'] ?? null,
+            $data['qualification_id'] ?? null, $data['address'] ?? null, $data['nttc_no'] ?? null, $data['nc_level'] ?? null,
             $file_paths['nttc_file'] ?? $existing_files['nttc_file'],
             $file_paths['tm_file'] ?? $existing_files['tm_file'],
             $file_paths['nc_file'] ?? $existing_files['nc_file'],

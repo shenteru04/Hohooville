@@ -271,6 +271,9 @@ function saveLessonSettingsAndQuiz($conn) {
                     $o_stmt->execute([$questionId, $opt['text'], $opt['is_correct'] ? 1 : 0]);
                 }
             }
+            
+            // Notify trainees if posting date has passed
+            notifyTraineesAboutLesson($conn, $lessonId, 'Quiz', 'Quiz Posted');
         }
 
         $conn->commit();
@@ -303,6 +306,8 @@ function saveContentItem($conn, $table, $id_column) {
     $content = $data['content'];
 
     try {
+        $conn->beginTransaction();
+        
         if ($id) {
             $stmt = $conn->prepare("UPDATE $table SET title = ?, content = ? WHERE $id_column = ?");
             $stmt->execute([$title, $content, $id]);
@@ -310,8 +315,17 @@ function saveContentItem($conn, $table, $id_column) {
             $stmt = $conn->prepare("INSERT INTO $table (lesson_id, title, content) VALUES (?, ?, ?)");
             $stmt->execute([$lessonId, $title, $content]);
         }
+        
+        // Determine content type for notification
+        $contentType = ($table === 'tbl_lesson_contents') ? 'Information Sheet' : 'Task Sheet';
+        
+        // Notify trainees if posting date has passed
+        notifyTraineesAboutLesson($conn, $lessonId, $contentType, $title);
+        
+        $conn->commit();
         echo json_encode(['success' => true]);
     } catch (Exception $e) {
+        $conn->rollBack();
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
     }
@@ -328,4 +342,81 @@ function deleteContentItem($conn, $table, $id_column) {
         echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
     }
 }
+
+/**
+ * Send notifications to all trainees enrolled in the batch for a lesson
+ * Only notifies if the posting date/time has already passed
+ * 
+ * @param PDO $conn Database connection
+ * @param int $lessonId The lesson being posted
+ * @param string $contentType Type of content (Information Sheet, Task Sheet, Quiz)
+ * @param string $contentTitle Title of the content being posted
+ */
+function notifyTraineesAboutLesson($conn, $lessonId, $contentType, $contentTitle) {
+    try {
+        // Get lesson posting date and batch info
+        $stmt = $conn->prepare("
+            SELECT l.posting_date, m.module_id, m.qualification_id
+            FROM tbl_lessons l
+            JOIN tbl_module m ON l.module_id = m.module_id
+            WHERE l.lesson_id = ?
+        ");
+        $stmt->execute([$lessonId]);
+        $lesson = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$lesson || !$lesson['posting_date']) {
+            return; // No posting date set, don't notify yet
+        }
+        
+        // Check if posting date has passed (current time >= posting date)
+        $postingDateTime = new DateTime($lesson['posting_date']);
+        $currentDateTime = new DateTime();
+        
+        if ($currentDateTime < $postingDateTime) {
+            return; // Posting date hasn't arrived yet, don't notify
+        }
+        
+        // Get all trainees enrolled in batches with this qualification
+        $stmt = $conn->prepare("
+            SELECT DISTINCT u.user_id, t.trainee_id, CONCAT(t.first_name, ' ', t.last_name) as trainee_name
+            FROM tbl_enrollment e
+            JOIN tbl_trainee t ON e.trainee_id = t.trainee_id
+            JOIN tbl_users u ON t.trainee_id = u.trainee_id
+            JOIN tbl_batch b ON e.batch_id = b.batch_id
+            WHERE b.qualification_id = ? AND e.status = 'approved'
+        ");
+        $stmt->execute([$lesson['qualification_id']]);
+        $trainees = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        if (empty($trainees)) {
+            return; // No approved trainees
+        }
+        
+        // Create notification table if it doesn't exist
+        $conn->exec("CREATE TABLE IF NOT EXISTS tbl_notifications (
+            notification_id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT,
+            title VARCHAR(255),
+            message TEXT,
+            link VARCHAR(255),
+            is_read TINYINT(1) DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )");
+        
+        // Send notification to each trainee
+        $notifStmt = $conn->prepare("INSERT INTO tbl_notifications (user_id, title, message, link) VALUES (?, ?, ?, ?)");
+        $notifLink = "/Hohoo-ville/frontend/html/trainee/pages/my_training.html";
+        
+        foreach ($trainees as $trainee) {
+            $notifTitle = "$contentType Posted";
+            $notifMessage = "$contentType '$contentTitle' has been posted for your lesson.";
+            $notifStmt->execute([$trainee['user_id'], $notifTitle, $notifMessage, $notifLink]);
+        }
+        
+    } catch (Exception $e) {
+        // Log error but don't disrupt the main operation
+        error_log("Trainee Notification Error: " . $e->getMessage());
+    }
+}
 ?>
+

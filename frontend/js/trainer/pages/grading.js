@@ -4,7 +4,7 @@ let currentCourseId = null;
 document.addEventListener('DOMContentLoaded', function() {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user || !user.trainer_id) {
-        alert('Could not identify the trainer. Please log in again.');
+        Swal.fire({title: 'Error', text: 'Could not identify the trainer. Please log in again.', icon: 'error'});
         window.location.href = '../../../login.html';
         return;
     }
@@ -185,7 +185,7 @@ async function loadGrades() {
     const lessonDay = document.getElementById('lessonSelect') ? document.getElementById('lessonSelect').value : '';
 
     if (!batchId) {
-        alert('Please select a batch');
+        Swal.fire({title: 'Warning', text: 'Please select a batch', icon: 'warning'});
         return;
     }
 
@@ -280,11 +280,11 @@ async function loadGrades() {
             tbody.innerHTML = rowsHtml;
             setupGradeInputs();
         } else {
-            alert('Failed to load grades: ' + (response.data.message || 'Unknown error'));
+            Swal.fire({title: 'Error', text: 'Failed to load grades: ' + (response.data.message || 'Unknown error'), icon: 'error'});
         }
     } catch (error) {
         console.error('Error loading grades:', error);
-        alert('An error occurred while loading grades. Please check the console for details.');
+        Swal.fire({title: 'Error', text: 'An error occurred while loading grades. Please check the console for details.', icon: 'error'});
     }
 }
 
@@ -362,8 +362,8 @@ async function saveGrades() {
             grades: grades
         });
         
-        if (response.data.success) alert('Grades saved successfully');
-        else alert('Error: ' + (response.data.message || 'Unknown error occurred'));
+        if (response.data.success) Swal.fire({title: 'Success', text: 'Grades saved successfully', icon: 'success'});
+        else Swal.fire({title: 'Error', text: 'Error: ' + (response.data.message || 'Unknown error occurred'), icon: 'error'});
     } catch (error) {
         console.error('Error saving grades:', error);
     }

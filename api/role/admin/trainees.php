@@ -47,6 +47,9 @@ switch ($action) {
     case 'get-batch-trainees':
         getBatchTrainees($conn);
         break;
+    case 'check-and-close-batches':
+        checkAndCloseBatches($conn);
+        break;
     default:
         echo json_encode(['success' => false, 'message' => 'Invalid action']);
         break;
@@ -150,7 +153,7 @@ function addTrainee($conn) {
         }
 
         // 2. Insert into tbl_trainee (User ID is NULL initially)
-        $stmt = $conn->prepare("INSERT INTO tbl_trainee_hdr (first_name, last_name, email, phone_number, birth_certificate_no, address, ctpr_no, nominal_duration, valid_id_file, birth_cert_file, photo_file, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')");
+        $stmt = $conn->prepare("INSERT INTO tbl_trainee_hdr (first_name, last_name, email, phone_number, birth_certificate_no, address, valid_id_file, birth_cert_file, photo_file, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')");
         
         $stmt->execute([
             $data['first_name'],
@@ -159,8 +162,6 @@ function addTrainee($conn) {
             $data['phone'],
             $data['birth_certificate_no'] ?? null,
             $data['address'],
-            $ctprNo,
-            $nominalDuration,
             $validIdPath,
             $birthCertPath,
             $photoPath
@@ -252,6 +253,19 @@ function createTraineeAccount($conn) {
         // 4. Link User to Trainee
         $stmtUpdate = $conn->prepare("UPDATE tbl_trainee_hdr SET user_id = ? WHERE trainee_id = ?");
         $stmtUpdate->execute([$userId, $data['trainee_id']]);
+        // 5. Send credentials email (best-effort)
+        try {
+            require_once __DIR__ . '/../../utils/EmailService.php';
+            $emailSvc = new EmailService();
+            $traineeName = ($trainee['first_name'] ?? '') . ' ' . ($trainee['last_name'] ?? '');
+            $sendResult = $emailSvc->sendTraineeAccountCredentials($trainee['email'], trim($traineeName), $data['username'], $data['password']);
+            // log result for debugging
+            if (!$sendResult['success']) {
+                error_log('Trainee account email failed: ' . $sendResult['message']);
+            }
+        } catch (Exception $e) {
+            error_log('Email service error: ' . $e->getMessage());
+        }
 
         $conn->commit();
         echo json_encode(['success' => true, 'message' => 'Account created successfully']);
@@ -301,12 +315,75 @@ function approveEnrollment($conn) {
 
 function checkAndCloseBatch($conn, $batchId) {
     if (!$batchId) return;
+    
+    // Get batch info including max_trainees
+    $stmtBatch = $conn->prepare("SELECT batch_id, qualification_id, max_trainees, batch_name, trainer_id, scholarship_type, scholarship_type_id, status FROM tbl_batch WHERE batch_id = ?");
+    $stmtBatch->execute([$batchId]);
+    $batch = $stmtBatch->fetch(PDO::FETCH_ASSOC);
+    
+    if (!$batch) return;
+    
+    // Count approved trainees in this batch
     $stmtCount = $conn->prepare("SELECT COUNT(*) FROM tbl_enrollment WHERE batch_id = ? AND status = 'approved'");
     $stmtCount->execute([$batchId]);
     $traineeCount = $stmtCount->fetchColumn();
-    if ($traineeCount >= 25) {
+    
+    // Check if batch is full
+    if ($traineeCount >= $batch['max_trainees'] && $batch['status'] !== 'closed') {
+        // Close the current batch
         $stmtClose = $conn->prepare("UPDATE tbl_batch SET status = 'closed' WHERE batch_id = ?");
         $stmtClose->execute([$batchId]);
+        
+        // Check if there's an open batch for this qualification already
+        $stmtCheckOpen = $conn->prepare("SELECT batch_id FROM tbl_batch WHERE qualification_id = ? AND status = 'open' LIMIT 1");
+        $stmtCheckOpen->execute([$batch['qualification_id']]);
+        $openBatch = $stmtCheckOpen->fetch(PDO::FETCH_ASSOC);
+        
+        // If no open batch exists for this qualification, create one
+        if (!$openBatch) {
+            createNextBatch($conn, $batch);
+        }
+    }
+}
+
+function createNextBatch($conn, $previousBatch) {
+    try {
+        // Generate new batch name
+        $qualId = $previousBatch['qualification_id'];
+        $stmtGetQual = $conn->prepare("SELECT qualification_name FROM tbl_qualifications WHERE qualification_id = ?");
+        $stmtGetQual->execute([$qualId]);
+        $qual = $stmtGetQual->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$qual) return;
+        
+        // Count existing batches for this qualification to determine sequence
+        $stmtCount = $conn->prepare("SELECT COUNT(*) FROM tbl_batch WHERE qualification_id = ? AND batch_name LIKE ?");
+        $stmtCount->execute([$qualId, $qual['qualification_name'] . '%']);
+        $batchSequence = $stmtCount->fetchColumn() + 1;
+        
+        $newBatchName = $qual['qualification_name'] . ' - Batch ' . $batchSequence;
+        
+        // Calculate new start and end dates (assume 1 month training)
+        $startDate = date('Y-m-d'); // Today
+        $endDate = date('Y-m-d', strtotime('+1 month'));
+        
+        // Create new batch with same properties as previous
+        $stmtInsert = $conn->prepare("INSERT INTO tbl_batch (qualification_id, trainer_id, batch_name, scholarship_type, scholarship_type_id, start_date, end_date, status, max_trainees) VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?)");
+        $stmtInsert->execute([
+            $qualId,
+            $previousBatch['trainer_id'],
+            $newBatchName,
+            $previousBatch['scholarship_type'],
+            $previousBatch['scholarship_type_id'],
+            $startDate,
+            $endDate,
+            $previousBatch['max_trainees']
+        ]);
+        
+        return $conn->lastInsertId();
+    } catch (Exception $e) {
+        // Log error but don't throw - batch creation failure shouldn't block enrollment approval
+        error_log("Batch auto-creation failed: " . $e->getMessage());
     }
 }
 
@@ -426,6 +503,107 @@ function getBatchTrainees($conn) {
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(['success' => true, 'data' => $data]);
     } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    }
+}
+
+function checkAndCloseBatches($conn) {
+    try {
+        $conn->beginTransaction();
+        $closedCount = 0;
+        $createdCount = 0;
+        $details = [];
+
+        // Find all open batches that have reached or exceeded max_trainees
+        $stmtBatches = $conn->prepare("
+            SELECT 
+                b.batch_id, 
+                b.qualification_id, 
+                b.batch_name, 
+                b.max_trainees, 
+                b.trainer_id,
+                b.scholarship_type,
+                b.scholarship_type_id,
+                COUNT(e.enrollment_id) as enrolled_count
+            FROM tbl_batch b
+            LEFT JOIN tbl_enrollment e ON b.batch_id = e.batch_id AND e.status = 'approved'
+            WHERE b.status = 'open'
+            GROUP BY b.batch_id, b.qualification_id, b.batch_name, b.max_trainees, b.trainer_id, b.scholarship_type, b.scholarship_type_id
+            HAVING enrolled_count >= b.max_trainees
+        ");
+        $stmtBatches->execute();
+        $batchesToClose = $stmtBatches->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($batchesToClose as $batch) {
+            // Close the batch
+            $stmtClose = $conn->prepare("UPDATE tbl_batch SET status = 'closed' WHERE batch_id = ?");
+            $stmtClose->execute([$batch['batch_id']]);
+            $closedCount++;
+
+            $details[] = "Closed batch: {$batch['batch_name']} (ID: {$batch['batch_id']}) with {$batch['enrolled_count']} trainees";
+
+            // Check if an open batch already exists for this qualification
+            $stmtCheckOpen = $conn->prepare("
+                SELECT batch_id FROM tbl_batch 
+                WHERE qualification_id = ? AND status = 'open' 
+                LIMIT 1
+            ");
+            $stmtCheckOpen->execute([$batch['qualification_id']]);
+            $openBatch = $stmtCheckOpen->fetch(PDO::FETCH_ASSOC);
+
+            // If no open batch, create one
+            if (!$openBatch) {
+                $stmtQual = $conn->prepare("SELECT qualification_name FROM tbl_qualifications WHERE qualification_id = ?");
+                $stmtQual->execute([$batch['qualification_id']]);
+                $qual = $stmtQual->fetch(PDO::FETCH_ASSOC);
+
+                if ($qual) {
+                    // Count existing batches for this qualification
+                    $stmtCount = $conn->prepare("
+                        SELECT COUNT(*) FROM tbl_batch 
+                        WHERE qualification_id = ? AND batch_name LIKE ?
+                    ");
+                    $stmtCount->execute([$batch['qualification_id'], $qual['qualification_name'] . '%']);
+                    $batchSequence = $stmtCount->fetchColumn() + 1;
+
+                    $newBatchName = $qual['qualification_name'] . ' - Batch ' . $batchSequence;
+                    $startDate = date('Y-m-d');
+                    $endDate = date('Y-m-d', strtotime('+1 month'));
+
+                    $stmtInsert = $conn->prepare("
+                        INSERT INTO tbl_batch 
+                        (qualification_id, trainer_id, batch_name, scholarship_type, scholarship_type_id, start_date, end_date, status, max_trainees) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?)
+                    ");
+                    $stmtInsert->execute([
+                        $batch['qualification_id'],
+                        $batch['trainer_id'],
+                        $newBatchName,
+                        $batch['scholarship_type'],
+                        $batch['scholarship_type_id'],
+                        $startDate,
+                        $endDate,
+                        $batch['max_trainees']
+                    ]);
+                    $createdCount++;
+                    $details[] = "Created new batch: $newBatchName";
+                }
+            } else {
+                $details[] = "Open batch already exists for qualification ID: {$batch['qualification_id']}";
+            }
+        }
+
+        $conn->commit();
+        echo json_encode([
+            'success' => true,
+            'batches_closed' => $closedCount,
+            'batches_created' => $createdCount,
+            'details' => $details,
+            'message' => "Closed $closedCount batches and created $createdCount new batches"
+        ]);
+    } catch (Exception $e) {
+        if ($conn->inTransaction()) $conn->rollBack();
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }

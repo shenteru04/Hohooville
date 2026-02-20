@@ -1,4 +1,4 @@
-const NOTIF_API_URL = 'http://localhost/Hohoo-ville/api/role/trainer/notifications.php';
+const NOTIF_API_URL = '/Hohoo-ville/api/notifications.php';
 
 let notificationPollInterval;
 
@@ -16,9 +16,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function checkNotifications(userId) {
     try {
-        const response = await axios.get(`${NOTIF_API_URL}?action=get-unread&user_id=${userId}`);
-        if (response.data.success) {
-            updateNotificationUI(response.data.data);
+        const response = await axios.get(`${NOTIF_API_URL}?action=get&user_id=${userId}`);
+        if (response.data && response.data.length > 0) {
+            updateNotificationUI(response.data);
+        } else {
+            updateNotificationUI([]);
         }
     } catch (error) {
         // console.error('Error checking notifications:', error);
@@ -33,10 +35,13 @@ function updateNotificationUI(notifications) {
     const badge = document.getElementById('notificationBadge');
     const list = document.getElementById('notificationList');
     
+    // Count unread notifications
+    const unreadCount = notifications.filter(n => !n.is_read).length;
+    
     // Update Badge Count
     if (badge) {
-        if (notifications.length > 0) {
-            badge.textContent = notifications.length;
+        if (unreadCount > 0) {
+            badge.textContent = unreadCount;
             badge.style.display = 'inline-block';
         } else {
             badge.style.display = 'none';
@@ -48,28 +53,26 @@ function updateNotificationUI(notifications) {
         list.innerHTML = '';
         
         if (notifications.length === 0) {
-            list.innerHTML = '<li><span class="dropdown-item text-center small text-muted">No new notifications</span></li>';
+            list.innerHTML = '<div class="list-group-item text-center small text-muted">No notifications</div>';
         } else {
-            // Header
-            list.innerHTML += '<li><h6 class="dropdown-header">Alerts Center</h6></li>';
-            
             notifications.forEach(notif => {
-                const date = new Date(notif.created_at).toLocaleDateString() + ' ' + new Date(notif.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                const item = document.createElement('li');
+                const dateObj = new Date(notif.time);
+                const date = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const readClass = notif.is_read ? '' : 'fw-bold';
+                const item = document.createElement('div');
+                item.className = `list-group-item list-group-item-action ${readClass}`;
+                item.style.cursor = 'pointer';
                 item.innerHTML = `
-                    <a class="dropdown-item d-flex align-items-center" href="#" onclick="handleNotificationClick(event, ${notif.notification_id}, '${notif.link}')">
-                        <div class="me-3">
-                            <div class="icon-circle bg-primary text-white rounded-circle p-2">
-                                <i class="fas fa-file-alt"></i>
-                            </div>
-                        </div>
+                    <div class="d-flex w-100 justify-content-between align-items-start">
                         <div>
-                            <div class="small text-muted">${date}</div>
-                            <span class="fw-bold d-block">${notif.title || 'Notification'}</span>
-                            <span class="small">${notif.message}</span>
+                            <h6 class="mb-1">${notif.title || 'Notification'}</h6>
+                            <p class="mb-1 small">${notif.message}</p>
+                            <small class="text-muted">${date}</small>
                         </div>
-                    </a>
+                        <span class="badge ${notif.is_read ? 'bg-light text-muted' : 'bg-primary'} flex-shrink-0"></span>
+                    </div>
                 `;
+                item.onclick = (e) => handleNotificationClick(e, notif.id, notif.link);
                 list.appendChild(item);
             });
         }
@@ -78,8 +81,9 @@ function updateNotificationUI(notifications) {
 
 window.handleNotificationClick = async function(event, id, link) {
     event.preventDefault();
+    event.stopPropagation();
     try {
-        await axios.post(`${NOTIF_API_URL}?action=mark-read`, { notification_id: id });
+        await axios.get(`${NOTIF_API_URL}?action=markRead&id=${id}`);
         // Redirect if a link is provided
         if (link) window.location.href = link;
     } catch (error) {

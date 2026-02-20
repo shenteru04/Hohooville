@@ -172,7 +172,7 @@ async function loadTrainees() {
     const date = document.getElementById('attendanceDate').value;
 
     if (!batchId || !date) {
-        alert('Please select a batch and date');
+        Swal.fire({title: 'Warning', text: 'Please select a batch and date', icon: 'warning'});
         return;
     }
 
@@ -227,9 +227,9 @@ async function saveAttendance() {
         });
         
         if (response.data.success) {
-            alert('Attendance saved successfully');
+            Swal.fire({title: 'Success', text: 'Attendance saved successfully', icon: 'success'});
             loadAttendanceSummary(batchId);
-        } else alert('Error: ' + response.data.message);
+        } else Swal.fire({title: 'Error', text: 'Error: ' + response.data.message, icon: 'error'});
     } catch (error) {
         console.error('Error saving attendance:', error);
     }
@@ -276,7 +276,7 @@ async function loadAttendanceSummary(batchId) {
 
 function downloadSpreadsheet() {
     if (!lastSummaryData || lastSummaryData.length === 0) {
-        alert('No data to download');
+        Swal.fire({title: 'Info', text: 'No data to download', icon: 'info'});
         return;
     }
     

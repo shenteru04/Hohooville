@@ -1,80 +1,60 @@
 <?php
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
-header('Access-Control-Allow-Methods: GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
 
 require_once '../../database/db.php';
 
-$database = new Database();
-$conn = $database->getConnection();
+class MyTrainees {
+    private $conn;
 
-$action = $_GET['action'] ?? '';
-
-switch ($action) {
-    case 'list':
-        listTrainees($conn);
-        break;
-    default:
-        echo json_encode(['success' => false, 'message' => 'Invalid action specified.']);
-        http_response_code(400);
-        break;
-}
-
-function listTrainees($conn) {
-    $trainerId = $_GET['trainer_id'] ?? 0;
-    $batchId = $_GET['batch_id'] ?? 0;
-
-    if (!$trainerId) {
-        echo json_encode(['success' => false, 'message' => 'Trainer ID is required.']);
-        http_response_code(400);
-        return;
+    public function __construct($db) {
+        $this->conn = $db;
     }
 
-    try {
-        $baseQuery = "SELECT
-                    th.trainee_id,
-                    th.trainee_school_id,
-                    CONCAT_WS(' ', th.first_name, th.middle_name, th.last_name) AS full_name,
-                    th.email,
-                    th.photo_file,
-                    b.batch_id,
-                    b.batch_name,
-                    c.qualification_name as course_name,
-                    e.status AS enrollment_status
-                FROM
-                    tbl_batch AS b
-                JOIN
-                    tbl_enrollment AS e ON b.batch_id = e.batch_id
-                JOIN
-                    tbl_trainee_hdr AS th ON e.trainee_id = th.trainee_id
-                LEFT JOIN
-                    tbl_qualifications AS c ON b.qualification_id = c.qualification_id
-                ";
-        
-        $params = [$trainerId];
-        $whereClauses = ["b.trainer_id = ?", "e.status = 'approved'"];
+    public function handleRequest() {
+        $action = $_GET['action'] ?? '';
+        $trainerId = $_GET['trainer_id'] ?? null;
+        $batchId = $_GET['batch_id'] ?? null;
 
-        if ($batchId > 0) {
-            $whereClauses[] = "b.batch_id = ?";
-            $params[] = $batchId;
+        if ($action === 'list' && $trainerId && $batchId) {
+            $this->getTrainees($trainerId, $batchId);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Invalid request']);
         }
+    }
 
-        $query = $baseQuery . " WHERE " . implode(" AND ", $whereClauses) . " ORDER BY b.batch_name, th.last_name, th.first_name";
-        
-        $stmt = $conn->prepare($query);
-        $stmt->execute($params);
-        $trainees = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    private function getTrainees($trainerId, $batchId) {
+        try {
+            // JOIN tbl_trainees (Enrollment) with tbl_trainee_hdr (Profile) to get phone_number
+            $query = "SELECT 
+                        t.trainee_id, 
+                        t.status as enrollment_status,
+                        h.first_name, 
+                        h.last_name, 
+                        h.email, 
+                        h.phone_number,
+                        CONCAT(h.first_name, ' ', h.last_name) as full_name,
+                        b.batch_name,
+                        q.qualification_name as course_name
+                      FROM tbl_enrollment t
+                      JOIN tbl_trainee_hdr h ON t.trainee_id = h.trainee_id
+                      JOIN tbl_batch b ON t.batch_id = b.batch_id
+                      LEFT JOIN tbl_qualifications q ON b.qualification_id = q.qualification_id
+                      WHERE t.batch_id = ? AND b.trainer_id = ?";
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute([$batchId, $trainerId]);
+            $trainees = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        echo json_encode(['success' => true, 'data' => $trainees]);
-    } catch (Exception $e) {
-        echo json_encode(['success' => false, 'message' => 'Error fetching trainees: ' . $e->getMessage()]);
-        http_response_code(500);
+            echo json_encode(['success' => true, 'data' => $trainees]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
     }
 }
+
+$database = new Database();
+$db = $database->getConnection();
+$api = new MyTrainees($db);
+$api->handleRequest();
 ?>

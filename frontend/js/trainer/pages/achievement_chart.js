@@ -155,7 +155,7 @@ async function loadBatchesForChart(trainerId) {
 async function generateLiveChart() {
     const batchId = document.getElementById('batchSelectForChart').value;
     if (!batchId) {
-        alert('Please select a batch.');
+        Swal.fire({title: 'Warning', text: 'Please select a batch.', icon: 'warning'});
         return;
     }
 
@@ -170,11 +170,11 @@ async function generateLiveChart() {
         if (response.data.success) {
             renderLiveChart(response.data.data);
         } else {
-            alert('Error generating chart: ' + response.data.message);
+            Swal.fire({title: 'Error', text: 'Error generating chart: ' + response.data.message, icon: 'error'});
         }
     } catch (error) {
         console.error('Error generating chart:', error);
-        alert('An error occurred while generating the chart.');
+        Swal.fire({title: 'Error', text: 'An error occurred while generating the chart.', icon: 'error'});
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-sync-alt me-2"></i>Generate';

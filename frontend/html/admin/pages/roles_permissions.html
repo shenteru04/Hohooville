@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roles & Permissions - Admin Panel</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Sidebar CSS -->
+    <link rel="stylesheet" href="../../../css/admin/sidebar.css">
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #858796;
+            --bg-color: #f8f9fc;
+            --text-color: #5a5c69;
+        }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        #sidebar {
+            background: #fff;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            z-index: 1000;
+        }
+        #sidebar .sidebar-header {
+            padding: 1.5rem 1rem;
+            text-align: center;
+            color: var(--primary-color);
+            font-weight: 800;
+        }
+        #sidebar .nav-link {
+            color: var(--text-color);
+            padding: 0.5rem 1rem;
+            margin: 0.1rem 0.5rem;
+            border-radius: 0.35rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        #sidebar .nav-link:hover {
+            background-color: #eaecf4;
+            color: var(--primary-color);
+        }
+        #sidebar .nav-link.active {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+        .card {
+            border: none;
+            border-radius: 0.35rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        }
+        .card-header {
+            background-color: #f8f9fc;
+            border-bottom: 1px solid #e3e6f0;
+            padding: 1rem 1.25rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        .permission-item { padding: 8px 12px; background: #f5f5f5; border-radius: 4px; margin: 4px 0; }
+        .badge-system { background-color: #6c757d; }
+        .badge-custom { background-color: #007bff; }
+    </style>
+</head>
+<body>
+    <div id="sidebar-container"></div>
+    <div class="main-content" id="content">
+            <!-- Top Navigation -->
+            <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
+                <div class="container-fluid">
+                    <button type="button" id="sidebarCollapse" class="btn btn-outline-primary me-2 d-lg-none">
+                        <i class="fas fa-bars"></i>
+                    </button>
+
+                    <div class="ms-auto d-flex align-items-center">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle"></i> <span id="userName">Admin</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                                <li><a class="dropdown-item" href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="container-fluid mt-4">
+                <div class="alert alert-info" role="alert">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>About Roles & Permissions:</strong> Assign roles to manage user permissions across the system. 
+                    <strong>Note:</strong> Archived users cannot be assigned roles. Use User Management to archive/unarchive users.
+                </div>
+                <h2 class="mb-4"><i class="fas fa-shield-alt me-2"></i> Roles & Permissions Management</h2>
+
+            <!-- Navigation Tabs -->
+            <ul class="nav nav-tabs mb-4" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active" id="roles-tab" data-bs-toggle="tab" data-bs-target="#roles">
+                        <i class="fas fa-list me-2"></i> Roles
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="permissions-tab" data-bs-toggle="tab" data-bs-target="#permissions">
+                        <i class="fas fa-key me-2"></i> Permissions
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="assignments-tab" data-bs-toggle="tab" data-bs-target="#assignments">
+                        <i class="fas fa-user-tie me-2"></i> User Assignments
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content">
+                <!-- ROLES TAB -->
+                <div class="tab-pane fade show active" id="roles">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">System Roles</h6>
+                            <button class="btn btn-sm btn-primary" onclick="openCreateRoleModal()">
+                                <i class="fas fa-plus me-1"></i> Create Custom Role
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Role Name</th>
+                                        <th>Type</th>
+                                        <th>Permissions</th>
+                                        <th>Description</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rolesTable">
+                                    <tr><td colspan="5" class="text-center text-muted">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PERMISSIONS TAB -->
+                <div class="tab-pane fade" id="permissions">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">Available Permissions</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row" id="permissionsList">
+                                <div class="col-12 text-center text-muted">Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ASSIGNMENTS TAB -->
+                <div class="tab-pane fade" id="assignments">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between">
+                            <h6 class="mb-0">User Role Assignments</h6>
+                            <button class="btn btn-sm btn-success" onclick="openAssignRoleModal()">
+                                <i class="fas fa-user-plus me-1"></i> Assign Role to User
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted"><small><i class="fas fa-info-circle"></i> Archived users are not shown in the user list. Only active and inactive users can be assigned roles.</small></p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">Select User</label>
+                                    <select class="form-select" id="userSelect" onchange="loadUserRoles()">
+                                        <option value="">Choose a user...</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="userRolesCard" style="display:none; margin-top: 20px;">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0" id="selectedUserName">User Roles</h6>
+                                    </div>
+                                    <div class="card-body" id="userRolesList"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+    <!-- Create Role Modal -->
+    <div class="modal fade" id="createRoleModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create Custom Role</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+    <div class="mb-3">
+                        <label class="form-label">Role Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="roleName" placeholder="e.g., Content Manager" maxlength="50" required>
+                        <small class="text-muted">Max 50 characters</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" id="roleDescription" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Assign Permissions</label>
+                        <div id="permissionsCheckboxes" style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
+                            Loading permissions...
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveRole()">Create Role</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign Role Modal -->
+    <div class="modal fade" id="assignRoleModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Assign Role to User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Select User <span class="text-danger">*</span></label>
+                        <select class="form-select" id="assignUserSelect" required>
+                            <option value="">Choose a user...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Select Role <span class="text-danger">*</span></label>
+                        <select class="form-select" id="assignRoleSelect" required>
+                            <option value="">Choose a role...</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="assignRole()">Assign Role</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script src="../../../js/sidebar.js"></script>
+    <script src="../../../js/admin/pages/roles_permissions.js"></script>
+</body>
+</html>

@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Settings - Admin Panel</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Sidebar CSS -->
+    <link rel="stylesheet" href="../../../css/admin/sidebar.css">
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #858796;
+            --bg-color: #f8f9fc;
+            --text-color: #5a5c69;
+        }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        #sidebar {
+            background: #fff;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            z-index: 1000;
+        }
+        #sidebar .sidebar-header {
+            padding: 1.5rem 1rem;
+            text-align: center;
+            color: var(--primary-color);
+            font-weight: 800;
+        }
+        #sidebar .nav-link {
+            color: var(--text-color);
+            padding: 0.5rem 1rem;
+            margin: 0.1rem 0.5rem;
+            border-radius: 0.35rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        #sidebar .nav-link:hover {
+            background-color: #eaecf4;
+            color: var(--primary-color);
+        }
+        #sidebar .nav-link.active {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+        .card {
+            border: none;
+            border-radius: 0.35rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        }
+        .card-header {
+            background-color: #f8f9fc;
+            border-bottom: 1px solid #e3e6f0;
+            padding: 1rem 1.25rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        .nav-tabs .nav-link { color: #666; }
+        .nav-tabs .nav-link.active { color: #007bff; }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Container -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main Content -->
+    <div class="main-content" id="content">
+        <!-- Top Navigation -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
+                <div class="container-fluid">
+                    <button type="button" id="sidebarCollapse" class="btn btn-outline-primary me-2 d-lg-none">
+                        <i class="fas fa-bars"></i>
+                    </button>
+
+                    <div class="ms-auto d-flex align-items-center">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle"></i> <span id="userName">Admin</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                                <li><a class="dropdown-item" href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="container-fluid mt-4">
+                <h2 class="mb-4"><i class="fas fa-cog me-2"></i> System Settings</h2>
+
+            <!-- Navigation Tabs -->
+            <ul class="nav nav-tabs mb-4" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="holidays-tab" data-bs-toggle="tab" data-bs-target="#holidays">
+                        <i class="fas fa-calendar me-2"></i> Holidays & Calendar
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="templates-tab" data-bs-toggle="tab" data-bs-target="#templates">
+                        <i class="fas fa-envelope me-2"></i> Email Templates
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="certificates-tab" data-bs-toggle="tab" data-bs-target="#certificates">
+                        <i class="fas fa-certificate me-2"></i> Certificates
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="archival-tab" data-bs-toggle="tab" data-bs-target="#archival">
+                        <i class="fas fa-archive me-2"></i> User Archival
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content">
+                <!-- HOLIDAYS & CALENDAR -->
+                <div class="tab-pane show active" id="holidays" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between">
+                            <h6 class="mb-0">Academic Calendar & Holidays</h6>
+                            <button class="btn btn-sm btn-primary" onclick="openHolidayModal()">
+                                <i class="fas fa-plus me-1"></i> Add Holiday
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-hover" id="holidaysTable">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Holiday Name</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="holidaysBody">
+                                    <tr><td colspan="5" class="text-center text-muted">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- EMAIL TEMPLATES -->
+                <div class="tab-pane" id="templates" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">Email Templates</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group" id="templatesList">
+                                <a href="#" class="list-group-item list-group-item-action">Loading...</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BULK CERTIFICATE GENERATION -->
+                <div class="tab-pane" id="certificates" role="tabpanel">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Generate Certificates</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p>Generate certificates for eligible trainees who have completed their courses with a passing score.</p>
+                                    <button class="btn btn-success w-100" onclick="loadEligibleTrainees()">
+                                        <i class="fas fa-paperclip me-2"></i> View Eligible Trainees
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Issued Certificates</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="certificateStats">
+                                        <p class="text-muted">Loading...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Eligible Trainees -->
+                    <div class="card mt-4" id="eligibleCard" style="display:none;">
+                        <div class="card-header">
+                            <h6 class="mb-0">Select Trainees to Generate Certificates</h6>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm" id="eligibleTable">
+                                <thead>
+                                    <tr>
+                                        <th><input type="checkbox" onclick="toggleAllCheckboxes(this)"></th>
+                                        <th>Trainee</th>
+                                        <th>Course</th>
+                                        <th>Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="eligibleBody"></tbody>
+                            </table>
+                            <button class="btn btn-success" onclick="generateCertificates()">
+                                <i class="fas fa-award me-2"></i> Generate Selected Certificates
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- USER ARCHIVAL -->
+                <div class="tab-pane" id="archival" role="tabpanel">
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h3 id="archivedTraineesCount" class="mb-0">-</h3>
+                                    <small class="text-muted">Archived Trainees</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h3 id="archivedTrainersCount" class="mb-0">-</h3>
+                                    <small class="text-muted">Archived Trainers</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h3 id="inactiveUsersCount" class="mb-0">-</h3>
+                                    <small class="text-muted">Inactive Users</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <ul class="nav nav-tabs mb-3" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active" id="inactive-users-tab" data-bs-toggle="tab" data-bs-target="#inactive-users">
+                                <i class="fas fa-user-slash me-2"></i>Inactive Users
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" id="archived-trainees-tab" data-bs-toggle="tab" data-bs-target="#archived-trainees">
+                                Archived Trainees
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" id="archived-trainers-tab" data-bs-toggle="tab" data-bs-target="#archived-trainers">
+                                Archived Trainers
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <div class="tab-pane show active" id="inactive-users" role="tabpanel">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Inactive Users (Still Manageable in User Management)</h6>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-hover" id="inactiveUsersTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Username</th>
+                                                <th>Email</th>
+                                                <th>Role</th>
+                                                <th>Status</th>
+                                                <th style="width: 120px;">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="inactiveUsersBody">
+                                            <tr><td colspan="5" class="text-center text-muted">Loading...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane" id="archived-trainees" role="tabpanel">
+                            <div class="card">
+                                <div class="card-body">
+                                    <table class="table table-hover" id="archivedTraineesTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Username</th>
+                                                <th>Email</th>
+                                                <th>Role</th>
+                                                <th>Archived Date</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="archivedTraineesBody">
+                                            <tr><td colspan="5" class="text-center text-muted">Loading...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane" id="archived-trainers" role="tabpanel">
+                            <div class="card">
+                                <div class="card-body">
+                                    <table class="table table-hover" id="archivedTrainersTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Username</th>
+                                                <th>Email</th>
+                                                <th>Role</th>
+                                                <th>Archived Date</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="archivedTrainersBody">
+                                            <tr><td colspan="5" class="text-center text-muted">Loading...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Holiday Modal -->
+    <div class="modal fade" id="holidayModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Holiday</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Holiday Name</label>
+                        <input type="text" class="form-control" id="holidayName">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Date</label>
+                        <input type="date" class="form-control" id="holidayDate">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Type</label>
+                        <select class="form-select" id="holidayType">
+                            <option value="national">National Holiday</option>
+                            <option value="local">Local Holiday</option>
+                            <option value="special">Special Event</option>
+                            <option value="maintenance">System Maintenance</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description (Optional)</label>
+                        <textarea class="form-control" id="holidayDesc" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveHoliday()">Save Holiday</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Template Modal -->
+    <div class="modal fade" id="emailTemplateModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Email Template</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="templateId">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Template Name</label>
+                        <input type="text" class="form-control-plaintext" id="templateName" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Subject</label>
+                        <input type="text" class="form-control" id="templateSubject">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Body (HTML)</label>
+                        <textarea class="form-control" id="templateBody" rows="10" style="font-family: monospace;"></textarea>
+                        <div class="form-text mt-2">
+                            <strong>Available Variables:</strong> <span id="templateVariables" class="text-primary"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="saveTemplate()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <!-- Sidebar Loader -->
+    <script src="../../../js/sidebar.js"></script>
+    <script src="../../../js/admin/pages/system_settings.js"></script>
+</body>
+</html>

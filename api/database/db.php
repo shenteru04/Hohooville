@@ -259,6 +259,23 @@ class DatabaseSetup {
                 FOREIGN KEY (posted_by) REFERENCES users(user_id) ON DELETE SET NULL
             )",
 
+            // Notifications table
+            "CREATE TABLE IF NOT EXISTS tbl_notifications (
+                notification_id INT AUTO_INCREMENT PRIMARY KEY,
+                target_role VARCHAR(50) DEFAULT NULL,
+                target_user_id INT DEFAULT NULL,
+                actor_id INT NULL,
+                message TEXT NOT NULL,
+                link VARCHAR(255) DEFAULT NULL,
+                is_read TINYINT(1) DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (actor_id) REFERENCES users(user_id) ON DELETE SET NULL,
+                FOREIGN KEY (target_user_id) REFERENCES users(user_id) ON DELETE SET NULL,
+                INDEX idx_target_role (target_role),
+                INDEX idx_target_user (target_user_id),
+                INDEX idx_is_read (is_read)
+            )",
+
             // Activity Logs table
             "CREATE TABLE IF NOT EXISTS activity_logs (
                 log_id INT AUTO_INCREMENT PRIMARY KEY,

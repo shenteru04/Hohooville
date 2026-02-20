@@ -39,6 +39,12 @@ apiClient.interceptors.response.use(
 );
 
 document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Swal === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        document.head.appendChild(script);
+    }
+
     initializePage();
 
     // Inject Sidebar CSS (W3.CSS Reference Style)
@@ -223,7 +229,6 @@ function renderTable(data) {
         `;
             
         row.innerHTML = `
-            <td>${item.qualification_id}</td>
             <td>${item.qualification_name}</td>
             <td>${item.ctpr_number || '-'}</td>
             <td>${item.training_cost ? '₱' + item.training_cost : 'Free'}</td>
@@ -236,12 +241,28 @@ function renderTable(data) {
 }
 
 async function approveQualification(id) {
-    if (!confirm('Approve this qualification? It will become available for trainers.')) return;
+    const result = await Swal.fire({
+        title: 'Approve Qualification?',
+        text: "It will become available for trainers.",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Approve'
+    });
+
+    if (!result.isConfirmed) return;
     updateStatus(id, 'active');
 }
 
 async function rejectQualification(id) {
-    if (!confirm('Reject this qualification?')) return;
+    const result = await Swal.fire({
+        title: 'Reject Qualification?',
+        text: "Are you sure you want to reject this?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Reject'
+    });
+
+    if (!result.isConfirmed) return;
     updateStatus(id, 'rejected');
 }
 
@@ -270,7 +291,7 @@ async function addQualification() {
         training_cost: document.getElementById('trainingCost').value,
         duration: document.getElementById('duration').value,
         description: document.getElementById('description').value,
-        status: document.getElementById('status').value
+        status: 'active'
     };
 
     try {
@@ -315,7 +336,16 @@ async function updateQualification(id) {
 }
 
 async function deleteQualification(id) {
-    if (!confirm('Are you sure you want to delete this qualification?')) return;
+    const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: "You won't be able to revert this!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (!result.isConfirmed) return;
     
     try {
         const response = await apiClient.delete(`/role/admin/manage_qualifications.php?action=delete&id=${id}`);
@@ -341,11 +371,14 @@ function editQualification(id) {
     document.getElementById('trainingCost').value = item.training_cost || '';
     document.getElementById('duration').value = item.duration;
     document.getElementById('description').value = item.description;
-    document.getElementById('status').value = item.status;
-    
     document.getElementById('submitBtn').textContent = 'Update Qualification';
-    document.getElementById('formTitle').textContent = 'Edit Qualification';
+    // Change modal title
+    const modalTitle = document.getElementById('addQualificationModalLabel');
+    if (modalTitle) modalTitle.textContent = 'Edit Qualification';
     document.getElementById('cancelBtn').style.display = 'inline-block';
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('addQualificationModal'));
+    modal.show();
 }
 
 function resetForm() {

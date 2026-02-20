@@ -2,6 +2,12 @@ const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
 let reportChart = null;
 
 document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Swal === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        document.head.appendChild(script);
+    }
+
     // Set default dates (This Year)
     const today = new Date();
     const firstDay = new Date(today.getFullYear(), 0, 1);
@@ -112,11 +118,11 @@ async function generateReport() {
             updateChart(type, response.data.chart);
             updateTable(type, response.data.table);
         } else {
-            alert('Error generating report: ' + response.data.message);
+            Swal.fire('Error', 'Error generating report: ' + response.data.message, 'error');
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Failed to generate report');
+        Swal.fire('Error', 'Failed to generate report', 'error');
     }
 }
 

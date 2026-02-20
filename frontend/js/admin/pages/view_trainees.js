@@ -6,6 +6,12 @@ let profileModal;
 let traineesData = [];
 
 document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Swal === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        document.head.appendChild(script);
+    }
+
     // Initialize Modals
     accountModal = new bootstrap.Modal(document.getElementById('createAccountModal'));
     profileModal = new bootstrap.Modal(document.getElementById('viewProfileModal'));
@@ -106,7 +112,7 @@ async function loadTrainees() {
             populateBatchFilter(traineesData);
             renderTraineesTable(traineesData);
         } else {
-            alert('Error loading trainees: ' + response.data.message);
+            Swal.fire('Error', 'Error loading trainees: ' + response.data.message, 'error');
         }
     } catch (error) {
         console.error('Error loading trainees:', error);
@@ -146,7 +152,7 @@ function renderTraineesTable(data) {
     });
 
     if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center">No trainees found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No trainees found</td></tr>';
         return;
     }
     
@@ -163,7 +169,6 @@ function renderTraineesTable(data) {
 
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${trainee.trainee_id}</td>
             <td>${trainee.trainee_school_id || 'N/A'}</td>
             <td>${trainee.last_name}, ${trainee.first_name}</td>
             <td>${trainee.email}</td>
@@ -201,11 +206,11 @@ async function handleCreateAccount(e) {
     try {
         const response = await axios.post(`${API_BASE_URL}/role/admin/trainees.php?action=create-account`, data);
         if (response.data.success) {
-            alert('Account created successfully!');
+            Swal.fire('Success', 'Account created successfully!', 'success');
             accountModal.hide();
             loadTrainees();
         } else {
-            alert('Error: ' + response.data.message);
+            Swal.fire('Error', 'Error: ' + response.data.message, 'error');
         }
     } catch (error) {
         console.error('Error creating account:', error);
@@ -213,7 +218,7 @@ async function handleCreateAccount(e) {
         if (error.response && error.response.data && error.response.data.message) {
             errorMsg += ': ' + error.response.data.message;
         }
-        alert(errorMsg);
+        Swal.fire('Error', errorMsg, 'error');
     }
 }
 
@@ -275,18 +280,27 @@ window.viewProfile = function(id) {
 };
 
 window.deleteTrainee = async function(id) {
-    if (!confirm('Are you sure you want to delete this trainee? This action cannot be undone.')) return;
+    const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: "You won't be able to revert this!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (!result.isConfirmed) return;
     
     try {
         const response = await axios.delete(`${API_BASE_URL}/role/admin/trainees.php?action=delete&id=${id}`);
         if (response.data.success) {
-            alert('Trainee deleted successfully');
+            Swal.fire('Deleted!', 'Trainee deleted successfully.', 'success');
             loadTrainees();
         } else {
-            alert('Error deleting trainee');
+            Swal.fire('Error', 'Error deleting trainee', 'error');
         }
     } catch (error) {
         console.error('Error deleting trainee:', error);
-        alert('Error deleting trainee');
+        Swal.fire('Error', 'Error deleting trainee', 'error');
     }
 };

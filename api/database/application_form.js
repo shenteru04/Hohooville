@@ -1,4 +1,10 @@
 document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Swal === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        document.head.appendChild(script);
+    }
+
     const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
 
     // --- Global State ---
@@ -69,6 +75,46 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // Phone number validation - numbers only
+    const phoneInput = document.getElementById('phoneInput');
+    if (phoneInput) {
+        // Create error message element
+        const errorMessage = document.createElement('div');
+        errorMessage.id = 'phoneError';
+        errorMessage.style.display = 'none';
+        errorMessage.style.color = '#dc3545';
+        errorMessage.style.fontSize = '0.875rem';
+        errorMessage.style.marginTop = '0.25rem';
+        errorMessage.textContent = 'Numbers only';
+        phoneInput.parentElement.appendChild(errorMessage);
+
+        let errorTimeout;
+        
+        phoneInput.addEventListener('keypress', function(e) {
+            // Prevent non-numeric key press
+            const char = String.fromCharCode(e.which);
+            if (!/[0-9]/.test(char)) {
+                e.preventDefault();
+                
+                // Show error message
+                this.classList.add('is-invalid');
+                errorMessage.style.display = 'block';
+                
+                // Clear previous timeout and hide error after 2 seconds
+                clearTimeout(errorTimeout);
+                errorTimeout = setTimeout(() => {
+                    this.classList.remove('is-invalid');
+                    errorMessage.style.display = 'none';
+                }, 2000);
+            }
+        });
+        
+        phoneInput.addEventListener('input', function() {
+            // Remove non-numeric characters in real-time (for paste)
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    }
+
     // Enable submit button on consent
     const privacyConsent = document.getElementById('privacyConsent');
     if(privacyConsent){
@@ -82,12 +128,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- NEW: Pre-Check Logic ---
     if (continueBtn) {
         continueBtn.addEventListener('click', async () => {
-            const lastName = document.getElementById('check_last_name').value.trim();
-            const firstName = document.getElementById('check_first_name').value.trim();
-            const email = document.getElementById('check_email').value.trim();
+            const schoolId = document.getElementById('check_school_id').value.trim();
 
-            if (!lastName || !firstName || !email) {
-                alert('Please fill in your Last Name, First Name, and Email Address.');
+            if (!schoolId) {
+                Swal.fire('Required', 'Please fill in your Unique School ID.', 'warning');
                 return;
             }
 
@@ -98,9 +142,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const response = await axios.get(`${API_BASE_URL}/public/submit_application.php`, {
                     params: {
                         action: 'check-trainee',
-                        last_name: lastName,
-                        first_name: firstName,
-                        email: email
+                        school_id: schoolId
                     }
                 });
 
@@ -113,14 +155,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         handleReturningTrainee(response.data.data);
                     } else {
                         isReturningTrainee = false;
-                        handleNewTrainee({ lastName, firstName, email });
+                        Swal.fire('Not Found', 'ID not found. Please check your ID or proceed as a new applicant.', 'error');
+                        preCheckSection.style.display = 'block';
+                        applicationContainer.style.display = 'none';
                     }
                 } else {
-                    alert('Error: ' + response.data.message);
+                    Swal.fire('Error', 'Error: ' + response.data.message, 'error');
                 }
             } catch (error) {
                 console.error('Failed to check trainee status:', error);
-                alert('An error occurred while checking your profile. Please try again.');
+                Swal.fire('Error', 'An error occurred while checking your profile. Please try again.', 'error');
             } finally {
                 continueBtn.disabled = false;
                 preCheckSpinner.style.display = 'none';
@@ -128,10 +172,20 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    const skipCheckBtn = document.getElementById('skipCheckBtn');
+    if (skipCheckBtn) {
+        skipCheckBtn.addEventListener('click', () => {
+            preCheckSection.style.display = 'none';
+            applicationContainer.style.display = 'block';
+            isReturningTrainee = false;
+            handleNewTrainee({});
+        });
+    }
+
     function handleNewTrainee(data) {
-        document.querySelector('[name="last_name"]').value = data.lastName;
-        document.querySelector('[name="first_name"]').value = data.firstName;
-        document.querySelector('[name="email"]').value = data.email;
+        if (data.lastName) document.querySelector('[name="last_name"]').value = data.lastName;
+        if (data.firstName) document.querySelector('[name="first_name"]').value = data.firstName;
+        if (data.email) document.querySelector('[name="email"]').value = data.email;
         
         requirementsUploadSection.style.display = 'block';
         signatureSection.style.display = 'block';
@@ -223,11 +277,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('batchSelect').innerHTML = '<option value="">Select a qualification first</option>';
             } else {
                 console.error("Failed to load form data:", response.data.message);
-                alert("Could not load application settings. Please try again later.");
+                Swal.fire('Error', "Could not load application settings. Please try again later.", 'error');
             }
         } catch (error) {
             console.error("Error fetching form data:", error);
-            alert("A network error occurred. Please check your connection and try again.");
+            Swal.fire('Network Error', "A network error occurred. Please check your connection and try again.", 'error');
         }
     }
 
@@ -304,16 +358,15 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             if (response.data.success) {
-                alert('Application submitted successfully! You will be redirected.');
-                window.location.href = 'application_form.html'; // Or a thank you page
+                window.location.href = 'index.html?status=submitted';
             } else {
-                alert('Submission Failed: ' + response.data.message);
+                Swal.fire('Submission Failed', response.data.message, 'error');
             }
 
         } catch (error) {
             console.error('Submission error:', error);
             let errorMessage = (error.response?.data?.message) || 'An unexpected error occurred.';
-            alert('Submission Error: ' + errorMessage);
+            Swal.fire('Submission Error', errorMessage, 'error');
         } finally {
             submitBtn.disabled = !privacyConsent.checked;
             submitBtn.innerHTML = 'Submit Application';
@@ -344,7 +397,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Check if any radio in the group is selected
                 if (!form.querySelector(`input[name="${groupName}"]:checked`)) {
                     const label = input.closest('.mb-3').querySelector('label');
-                    alert(`Please make a selection for "${label.innerText.replace('*','').trim()}".`);
+                    Swal.fire('Missing Input', `Please make a selection for "${label.innerText.replace('*','').trim()}".`, 'warning');
                     input.focus();
                     return false;
                 }
@@ -353,7 +406,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 validatedRadioGroups.add(groupName);
             } else if (!input.value) { // For text, select, date, etc.
                 const label = input.closest('.mb-3, .col-md-3, .col-md-4, .col-md-6').querySelector('label');
-                alert(`Please fill out the "${label.innerText.replace('*','').trim()}" field.`);
+                Swal.fire('Missing Input', `Please fill out the "${label.innerText.replace('*','').trim()}" field.`, 'warning');
                 input.focus();
                 return false;
             }

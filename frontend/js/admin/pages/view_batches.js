@@ -1,7 +1,14 @@
 const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
 let traineesModal;
+let currentBatchTrainees = [];
 
 document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Swal === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        document.head.appendChild(script);
+    }
+
     traineesModal = new bootstrap.Modal(document.getElementById('viewTraineesModal'));
     loadBatches();
 
@@ -45,6 +52,12 @@ document.addEventListener('DOMContentLoaded', function() {
         localStorage.removeItem('user');
         window.location.href = '../../../login.html';
     });
+
+    // Modal Search Listener
+    const searchInput = document.getElementById('modalSearchInput');
+    if(searchInput) {
+        searchInput.addEventListener('keyup', filterModalTrainees);
+    }
 });
 
 async function loadBatches() {
@@ -53,7 +66,7 @@ async function loadBatches() {
         if (response.data.success) {
             renderBatchesTable(response.data.data);
         } else {
-            alert('Error loading batches: ' + response.data.message);
+            Swal.fire('Error', 'Error loading batches: ' + response.data.message, 'error');
         }
     } catch (error) {
         console.error('Error loading batches:', error);
@@ -76,7 +89,6 @@ function renderBatchesTable(data) {
         const badgeClass = batch.status === 'open' ? 'success' : 'secondary';
         
         row.innerHTML = `
-            <td>${batch.batch_id}</td>
             <td>${batch.batch_name}</td>
             <td><span class="badge bg-${badgeClass}">${batch.status.toUpperCase()}</span></td>
             <td>
@@ -95,6 +107,9 @@ function renderBatchesTable(data) {
 
 window.viewBatchTrainees = async function(batchId, batchName) {
     document.getElementById('modalBatchName').textContent = batchName;
+    document.getElementById('modalTraineeCount').textContent = '0';
+    document.getElementById('modalSearchInput').value = ''; // Reset search
+
     const tbody = document.getElementById('modalTraineesBody');
     tbody.innerHTML = '<tr><td colspan="4" class="text-center">Loading...</td></tr>';
     traineesModal.show();
@@ -102,22 +117,9 @@ window.viewBatchTrainees = async function(batchId, batchName) {
     try {
         const response = await axios.get(`${API_BASE_URL}/role/admin/trainees.php?action=get-batch-trainees&batch_id=${batchId}`);
         if (response.data.success) {
-            const trainees = response.data.data;
-            tbody.innerHTML = '';
-            if (trainees.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center">No trainees enrolled in this batch.</td></tr>';
-                return;
-            }
-            trainees.forEach(t => {
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${t.trainee_school_id || 'N/A'}</td>
-                        <td>${t.last_name}, ${t.first_name}</td>
-                        <td>${t.email}</td>
-                        <td><span class="badge bg-${t.status === 'active' ? 'success' : 'secondary'}">${t.status}</span></td>
-                    </tr>
-                `;
-            });
+            currentBatchTrainees = response.data.data;
+            document.getElementById('modalTraineeCount').textContent = currentBatchTrainees.length;
+            renderModalTrainees(currentBatchTrainees);
         } else {
             tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">${response.data.message}</td></tr>`;
         }
@@ -126,3 +128,47 @@ window.viewBatchTrainees = async function(batchId, batchName) {
         tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error loading data.</td></tr>';
     }
 };
+
+function renderModalTrainees(data) {
+    const tbody = document.getElementById('modalTraineesBody');
+    tbody.innerHTML = '';
+
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No trainees found.</td></tr>';
+        return;
+    }
+
+    data.forEach(t => {
+        const avatarUrl = `https://ui-avatars.com/api/?name=${t.first_name}+${t.last_name}&background=random&size=32`;
+        const statusBadge = t.status === 'active' 
+            ? '<span class="badge bg-success">Active</span>' 
+            : `<span class="badge bg-secondary">${t.status}</span>`;
+
+        tbody.innerHTML += `
+            <tr>
+                <td class="align-middle">${t.trainee_school_id || '<span class="text-muted">N/A</span>'}</td>
+                <td class="align-middle">
+                    <div class="d-flex align-items-center">
+                        <img src="${avatarUrl}" class="rounded-circle me-2" width="32" height="32" alt="Avatar">
+                        <div>
+                            <div class="fw-bold">${t.last_name}, ${t.first_name}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="align-middle">${t.email}</td>
+                <td class="align-middle text-center">${statusBadge}</td>
+            </tr>
+        `;
+    });
+}
+
+function filterModalTrainees() {
+    const term = document.getElementById('modalSearchInput').value.toLowerCase();
+    const filtered = currentBatchTrainees.filter(t => 
+        (t.first_name && t.first_name.toLowerCase().includes(term)) ||
+        (t.last_name && t.last_name.toLowerCase().includes(term)) ||
+        (t.email && t.email.toLowerCase().includes(term)) ||
+        (t.trainee_school_id && t.trainee_school_id.toLowerCase().includes(term))
+    );
+    renderModalTrainees(filtered);
+}

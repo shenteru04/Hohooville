@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Print Trainee Registration</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; color: #222; }
+        .application-container { max-width: 900px; margin: 50px auto; }
+        .step-indicator { font-weight: bold; color: #0d6efd; }
+        @media print {
+            .no-print { display: none !important; }
+            body { margin: 0; }
+        }
+        .section-title { font-weight: 700; color: #0d6efd; margin-bottom: 8px; }
+        .field-label { font-weight: 600; }
+        .form-control-plaintext { padding-top: .375rem; padding-bottom: .375rem; margin-bottom: 0; }
+        /* Make printed fields look like input lines */
+        .form-control-plaintext {
+            display: block;
+            border-bottom: 1px solid #000;
+            background: #fff;
+            min-height: 1.6em;
+        }
+        .form-control-plaintext:empty {
+            /* ensure underline still visible when no value */
+            min-height: 1.6em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container application-container" id="printContainer">
+        <div class="d-flex justify-content-between mb-3 no-print">
+            <div>
+                <button class="btn btn-secondary" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
+            </div>
+            <div>
+                <button class="btn btn-primary" id="printBtn"><i class="fas fa-print"></i> Print</button>
+            </div>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white text-center py-3">
+                <h4 class="mb-0"><i class="fas fa-user-graduate me-2"></i>Trainee Registration Form</h4>
+                <small class="d-block">(Approved - Printable Copy)</small>
+            </div>
+            <div class="card-body p-4" id="formBody">
+                <div id="errorMessage" class="alert alert-danger" style="display:none;"></div>
+
+                <!-- Content will be injected here -->
+                <div id="formContent">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script>
+        function getQueryParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        const traineeId = getQueryParam('trainee_id') || getQueryParam('id');
+        if (!traineeId) {
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('errorMessage').innerText = 'Trainee ID is required in the URL (e.g., ?trainee_id=123)';
+            document.getElementById('formContent').style.display = 'none';
+        } else {
+            loadTrainee(traineeId);
+        }
+
+        document.getElementById('printBtn').addEventListener('click', () => {
+            window.print();
+        });
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            return d.toLocaleDateString();
+        }
+
+        async function loadTrainee(id) {
+            try {
+                const res = await axios.get(`/Hohoo-ville/api/role/trainer/trainee_details.php?trainee_id=${id}`);
+                if (!res.data.success) {
+                    showError(res.data.message || 'Failed to load trainee');
+                    return;
+                }
+                const profile = res.data.data.profile;
+                const enrollmentStatus = profile.enrollment_status || profile.status || '';
+                if (enrollmentStatus !== 'approved') {
+                    showError('This trainee is not approved. Only approved registrations can be printed. Current status: ' + enrollmentStatus);
+                    return;
+                }
+
+                renderForm(profile, res.data.data);
+            } catch (err) {
+                console.error(err);
+                showError('An error occurred while loading data.');
+            }
+        }
+
+        function showError(msg) {
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('errorMessage').innerText = msg;
+            document.getElementById('formContent').style.display = 'none';
+        }
+
+        function renderForm(profile, data) {
+            const d = profile;
+            const ftr = data.profile;
+            const course = ftr.course_name || '';
+            const batch = ftr.batch_name || '';
+            const digitalSig = data.profile.digital_signature || '';
+            const photoFile = d.photo_file || '';
+
+            // Normalize signature source: allow data URLs or full URLs, otherwise treat as uploaded filename
+            let digitalSigSrc = '';
+            if (digitalSig) {
+                if (digitalSig.startsWith('data:') || digitalSig.startsWith('http')) {
+                    digitalSigSrc = digitalSig;
+                } else {
+                    const uploadsBase = window.location.origin + '/hohoo-ville/uploads/trainees/';
+                    digitalSigSrc = uploadsBase + encodeURIComponent(digitalSig);
+                }
+            }
+
+            const html = `
+                <div class="mb-3">
+                    <div class="row align-items-center">
+                        <div class="col-9 text-center">
+                            <h5 class="mb-0">Hohoo-Ville Technical School</h5>
+                            <small>Application / Registration Form</small>
+                        </div>
+                        <div class="col-3 text-end">
+                            ${photoFile ? `<img src="${(photoFile.startsWith('data:') || photoFile.startsWith('http')) ? photoFile : (window.location.origin + '/hohoo-ville/uploads/trainees/' + encodeURIComponent(photoFile))}" alt="Photo" style="max-width:120px; border:1px solid #e9ecef; padding:4px; background:#fff;" />` : ''}
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <h5 class="mb-3 text-primary border-bottom pb-2">1. Personal Information</h5>
+                <div class="row mb-1">
+                    <div class="col-md-3"><label class="form-label">Last Name</label></div>
+                    <div class="col-md-3"><label class="form-label">First Name</label></div>
+                    <div class="col-md-3"><label class="form-label">Middle Name</label></div>
+                    <div class="col-md-3"><label class="form-label">Extension</label></div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-3"><p class="form-control-plaintext">${d.last_name || d.name || ''}</p></div>
+                    <div class="col-md-3"><p class="form-control-plaintext">${d.first_name || ''}</p></div>
+                    <div class="col-md-3"><p class="form-control-plaintext">${d.middle_name || ''}</p></div>
+                    <div class="col-md-3"><p class="form-control-plaintext">${d.extension_name || ''}</p></div>
+                </div>
+
+                <div class="row mb-1">
+                    <div class="col-md-3"><label class="form-label">Sex</label></div>
+                    <div class="col-md-3"><label class="form-label">Civil Status</label></div>
+                    <div class="col-md-3"><label class="form-label">Birthdate</label></div>
+                    <div class="col-md-3"><label class="form-label">Age</label></div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-3"><p class="form-control-plaintext">${d.sex || ''}</p></div>
+                    <div class="col-md-3"><p class="form-control-plaintext">${d.civil_status || ''}</p></div>
+                    <div class="col-md-3"><p class="form-control-plaintext">${d.birthdate ? formatDate(d.birthdate) : ''}</p></div>
+                    <div class="col-md-3"><p class="form-control-plaintext">${d.age || ''}</p></div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Email Address</label>
+                        <p class="form-control-plaintext">${d.email || ''}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Facebook Account</label>
+                        <p class="form-control-plaintext">${d.facebook_account || ''}</p>
+                    </div>
+                </div>
+
+                <h5 class="mb-3 mt-4 text-primary border-bottom pb-2">2. Contact & Address</h5>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">House No. / Street</label>
+                        <p class="form-control-plaintext">${d.house_no_street || ''}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Barangay</label>
+                        <p class="form-control-plaintext">${d.barangay || ''}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">City / Municipality</label>
+                        <p class="form-control-plaintext">${d.city_municipality || ''}</p>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Province</label>
+                        <p class="form-control-plaintext">${d.province || ''}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Region</label>
+                        <p class="form-control-plaintext">${d.region || ''}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Contact Number</label>
+                        <p class="form-control-plaintext">${d.phone_number || ''}</p>
+                    </div>
+                </div>
+
+                <h5 class="mb-3 mt-4 text-primary border-bottom pb-2">3. Course / Training Details</h5>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Qualification / Course</label>
+                        <p class="form-control-plaintext">${course}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Batch</label>
+                        <p class="form-control-plaintext">${batch}</p>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Scholarship Type</label>
+                        <p class="form-control-plaintext">${d.scholarship_type || ''}</p>
+                    </div>
+                </div>
+
+                <h5 class="mb-3 mt-4 text-primary border-bottom pb-2">4. Education & Employment</h5>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Educational Attainment</label>
+                        <p class="form-control-plaintext">${d.educational_attainment || ''}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Employment Status</label>
+                        <p class="form-control-plaintext">${d.employment_status || ''}</p>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Employment Type</label>
+                        <p class="form-control-plaintext">${d.employment_type || ''}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Learner Classification</label>
+                        <p class="form-control-plaintext">${d.learner_classification || ''}</p>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Person with Disability (PWD)</label>
+                        <p class="form-control-plaintext">${d.is_pwd ? (d.is_pwd == 'yes' || d.is_pwd == 1 ? 'Yes' : d.is_pwd) : 'No'}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Disability Type</label>
+                        <p class="form-control-plaintext">${d.disability_type || ''}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Disability Cause</label>
+                        <p class="form-control-plaintext">${d.disability_cause || ''}</p>
+                    </div>
+                </div>
+
+                <h5 class="mb-3 mt-4 text-primary border-bottom pb-2">5. Requirements</h5>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Valid ID</label>
+                        <p class="form-control-plaintext">${d.valid_id_file ? 'Attached' : 'N/A'}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Birth Certificate</label>
+                        <p class="form-control-plaintext">${d.birth_cert_file ? 'Attached' : 'N/A'}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Photo</label>
+                        <p class="form-control-plaintext">${d.photo_file ? 'Attached' : 'N/A'}</p>
+                    </div>
+                </div>
+
+                <h5 class="mb-3 mt-4 text-primary border-bottom pb-2">6. Privacy Consent & Declaration</h5>
+                <div class="mb-3"><p class="form-control-plaintext">Privacy consent: ${d.privacy_consent ? 'Yes' : 'No'}</p></div>
+
+                <h5 class="mb-3 mt-4 text-primary border-bottom pb-2">7. Signature</h5>
+                <div class="row mb-3 align-items-center">
+                    <div class="col-md-6">
+                        ${digitalSigSrc ? `<img src="${digitalSigSrc}" style="max-width:240px; border:1px solid #e9ecef; padding:8px; background:#fff;" />` : '<p class="form-control-plaintext">No signature</p>'}
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <div class="d-inline-block text-start" style="min-width:200px;">
+                            <label class="form-label">Date Submitted</label>
+                            <p class="form-control-plaintext mb-0">${d.enrollment_date ? formatDate(d.enrollment_date) : ''}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+                <div class="text-muted small">This is a system-generated printable copy of the approved registration. For edits, please use the User Management / Enrollment modules.</div>
+            `;
+
+            document.getElementById('formContent').innerHTML = html;
+        }
+    </script>
+</body>
+</html>

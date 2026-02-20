@@ -4,7 +4,8 @@ let contentModal;
 
 document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
-    const traineeId = urlParams.get('id');
+    const traineeId = urlParams.get('id') || urlParams.get('trainee_id'); // Support both 'id' and 'trainee_id'
+    const tabParam = urlParams.get('tab'); // Get tab parameter (e.g., 'profile', 'attendance', 'progress')
 
     const contentModalEl = document.getElementById('contentModal');
     if (contentModalEl) {
@@ -15,6 +16,18 @@ document.addEventListener('DOMContentLoaded', function() {
         loadTraineeDetails(traineeId);
     } else {
         document.getElementById('profile-content').innerHTML = '<div class="alert alert-danger">No trainee ID provided.</div>';
+    }
+
+    // Switch to specified tab after page loads
+    if (tabParam) {
+        // Wait a bit to ensure DOM is ready, then activate tab
+        setTimeout(() => {
+            const tabButton = document.getElementById(`pills-${tabParam}-tab`);
+            if (tabButton) {
+                const tab = new bootstrap.Tab(tabButton);
+                tab.show();
+            }
+        }, 100);
     }
 
     // Inject Sidebar CSS (W3.CSS Reference Style)

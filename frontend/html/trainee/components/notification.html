@@ -1,0 +1,19 @@
+<!-- Notification Dropdown Component (trainee) -->
+<div class="nav-item dropdown me-2" id="notification-container">
+    <a class="nav-link dropdown-toggle" href="#" id="alertsDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <i class="fas fa-bell fa-fw"></i>
+        <span class="badge bg-danger badge-counter" id="notificationBadge" style="display: none;">0</span>
+    </a>
+    <div class="dropdown-menu dropdown-menu-end p-0 shadow" aria-labelledby="alertsDropdown" style="min-width: 320px;">
+        <div class="p-2 d-flex justify-content-between align-items-center border-bottom">
+            <strong class="small mb-0">Notifications</strong>
+            <div>
+                <button class="btn btn-sm btn-link p-0 me-2" id="markAllRead">Mark all as read</button>
+                <a href="#" class="small" id="viewAllNotifications">View all</a>
+            </div>
+        </div>
+        <div class="list-group list-group-flush" id="notificationList" style="max-height: 400px; overflow-y: auto;">
+            <div class="list-group-item text-center small text-muted">No new notifications</div>
+        </div>
+    </div>
+</div>

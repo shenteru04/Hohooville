@@ -1,6 +1,12 @@
 const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
 
 document.addEventListener('DOMContentLoaded', async function() {
+    if (typeof Swal === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        document.head.appendChild(script);
+    }
+
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
         window.location.href = '../../../login.html';
@@ -144,7 +150,7 @@ async function loadBatches(trainerId) {
         if (response.data.success) {
             const select = document.getElementById('batchSelect');
             response.data.data.forEach(batch => {
-                select.innerHTML += `<option value="${batch.batch_id || 1}">${batch.batch_name} - ${batch.course_name}</option>`;
+                select.innerHTML += `<option value="${batch.batch_id}">${batch.batch_name} - ${batch.course_name}</option>`;
             });
         }
     } catch (error) {
@@ -157,7 +163,7 @@ async function generateReport() {
     const batchId = document.getElementById('batchSelect').value;
 
     if (!batchId) {
-        alert('Please select a batch');
+        Swal.fire('Missing Input', 'Please select a batch', 'warning');
         return;
     }
 
@@ -167,11 +173,11 @@ async function generateReport() {
         if (response.data.success) {
             renderReport(type, response.data.data);
         } else {
-            alert('No data found for this report.');
+            Swal.fire('No Data', 'No data found for this report.', 'info');
         }
     } catch (error) {
         console.error('Report Error:', error);
-        alert('Failed to generate report');
+        Swal.fire('Error', 'Failed to generate report', 'error');
     }
 }
 

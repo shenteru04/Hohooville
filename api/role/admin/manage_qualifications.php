@@ -120,7 +120,34 @@ function updateQualificationStatus($conn) {
         
         $stmt = $conn->prepare("UPDATE tbl_qualifications SET status = ? WHERE qualification_id = ?");
         $stmt->execute([$status, $id]);
-        
+        // Notify registrars if qualification approved or rejected (per-registrar user notification)
+        try {
+            if ($status === 'active' || $status === 'rejected') {
+                // get qualification name
+                $qstmt = $conn->prepare("SELECT qualification_name FROM tbl_qualifications WHERE qualification_id = ?");
+                $qstmt->execute([$id]);
+                $qual = $qstmt->fetch(PDO::FETCH_ASSOC);
+                $qname = $qual['qualification_name'] ?? 'Qualification';
+                $actionText = ($status === 'active') ? 'approved' : 'rejected';
+                $message = 'Qualification ' . $actionText . ': ' . $qname;
+                $link = '/Hohoo-ville/frontend/html/registrar/pages/create_qualification.html';
+                $title = 'Qualification ' . ucfirst($actionText);
+
+                // find registrar users
+                $uStmt = $conn->prepare("SELECT u.user_id FROM tbl_users u JOIN tbl_role r ON u.role_id = r.role_id WHERE r.role_name = 'registrar'");
+                $uStmt->execute();
+                $regIds = $uStmt->fetchAll(PDO::FETCH_COLUMN);
+                if (!empty($regIds)) {
+                    $nstmt = $conn->prepare("INSERT INTO tbl_notifications (user_id, title, message, link) VALUES (?, ?, ?, ?)");
+                    foreach ($regIds as $rid) {
+                        $nstmt->execute([$rid, $title, $message, $link]);
+                    }
+                }
+            }
+        } catch (Exception $ne) {
+            // ignore notification errors
+        }
+
         echo json_encode(['success' => true, 'message' => 'Status updated']);
     } catch (Exception $e) {
         http_response_code(500);

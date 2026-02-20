@@ -32,6 +32,9 @@ switch ($action) {
     case 'create-account':
         createTrainerAccount($conn);
         break;
+    case 'get-qualifications':
+        getQualifications($conn);
+        break;
     default:
         echo json_encode(['success' => false, 'message' => 'Invalid action']);
         break;
@@ -39,7 +42,7 @@ switch ($action) {
 
 function getTrainers($conn) {
     try {
-        $stmt = $conn->query("SELECT * FROM tbl_trainer ORDER BY trainer_id DESC");
+        $stmt = $conn->query("SELECT t.*, q.qualification_name FROM tbl_trainer t LEFT JOIN tbl_qualifications q ON t.qualification_id = q.qualification_id ORDER BY t.trainer_id DESC");
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(['success' => true, 'data' => $data]);
     } catch (Exception $e) {
@@ -82,13 +85,13 @@ function addTrainer($conn) {
             move_uploaded_file($_FILES['experience_file']['tmp_name'], $uploadDir . $expPath);
         }
         
-        $stmt = $conn->prepare("INSERT INTO tbl_trainer (first_name, last_name, email, phone_number, specialization, address, nttc_no, nttc_file, tm_file, nc_level, nc_file, experience_file, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')");
+        $stmt = $conn->prepare("INSERT INTO tbl_trainer (first_name, last_name, email, phone_number, qualification_id, address, nttc_no, nttc_file, tm_file, nc_level, nc_file, experience_file, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')");
         $stmt->execute([
             $data['first_name'],
             $data['last_name'],
             $data['email'] ?? null,
             $data['phone'] ?? null,
-            $data['specialization'] ?? null,
+            $data['qualification_id'] ?? null,
             $data['address'] ?? null,
             $data['nttc_no'] ?? null,
             $nttcPath,
@@ -115,13 +118,13 @@ function updateTrainer($conn) {
         
         $conn->beginTransaction();
 
-        $stmt = $conn->prepare("UPDATE tbl_trainer SET first_name = ?, last_name = ?, email = ?, phone_number = ?, specialization = ? WHERE trainer_id = ?");
+        $stmt = $conn->prepare("UPDATE tbl_trainer SET first_name = ?, last_name = ?, email = ?, phone_number = ?, qualification_id = ? WHERE trainer_id = ?");
         $stmt->execute([
             $data['first_name'],
             $data['last_name'],
             $data['email'],
             $data['phone'],
-            $data['specialization'],
+            $data['qualification_id'],
             $data['trainer_id']
         ]);
 
@@ -212,10 +215,34 @@ function createTrainerAccount($conn) {
         $stmtUpdate = $conn->prepare("UPDATE tbl_trainer SET user_id = ? WHERE trainer_id = ?");
         $stmtUpdate->execute([$userId, $data['trainer_id']]);
 
+        // 5. Send credentials email (best-effort)
+        try {
+            require_once __DIR__ . '/../../utils/EmailService.php';
+            $emailSvc = new EmailService();
+            $trainerName = ($trainer['first_name'] ?? '') . ' ' . ($trainer['last_name'] ?? '');
+            $sendResult = $emailSvc->sendTrainerAccountCredentials($trainer['email'], trim($trainerName), $data['username'], $data['password']);
+            if (!$sendResult['success']) {
+                error_log('Trainer account email failed: ' . $sendResult['message']);
+            }
+        } catch (Exception $e) {
+            error_log('Email service error: ' . $e->getMessage());
+        }
+
         $conn->commit();
         echo json_encode(['success' => true, 'message' => 'Account created successfully']);
     } catch (Exception $e) {
         if ($conn->inTransaction()) $conn->rollBack();
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    }
+}
+
+function getQualifications($conn) {
+    try {
+        $stmt = $conn->query("SELECT qualification_id, qualification_name FROM tbl_qualifications WHERE status = 'active' ORDER BY qualification_name ASC");
+        $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(['success' => true, 'data' => $data]);
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }

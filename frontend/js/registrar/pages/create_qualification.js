@@ -1,6 +1,12 @@
 const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
 
 document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Swal === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        document.head.appendChild(script);
+    }
+
     loadQualifications();
 
     document.getElementById('createQualificationForm').addEventListener('submit', async function(e) {
@@ -17,15 +23,15 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const response = await axios.post(`${API_BASE_URL}/role/registrar/qualifications.php?action=create`, payload);
             if (response.data.success) {
-                alert('Qualification submitted for approval successfully!');
+                Swal.fire('Success', 'Qualification submitted for approval successfully!', 'success');
                 this.reset();
                 loadQualifications();
             } else {
-                alert('Error: ' + response.data.message);
+                Swal.fire('Error', 'Error: ' + response.data.message, 'error');
             }
         } catch (error) {
             console.error('Error creating qualification:', error);
-            alert('An error occurred while creating the qualification.');
+            Swal.fire('Error', 'An error occurred while creating the qualification.', 'error');
         }
     });
 

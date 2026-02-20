@@ -16,6 +16,12 @@ const apiClient = axios.create({
 });
 
 document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Swal === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        document.head.appendChild(script);
+    }
+
     const modalEl = document.getElementById('viewApplicationModal');
     if (modalEl) viewModal = new bootstrap.Modal(modalEl);
     
@@ -24,6 +30,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Refresh unqualified list when tab is clicked
     document.getElementById('unqualified-tab').addEventListener('click', loadUnqualifiedQueue);
+
+    document.getElementById('searchInput').addEventListener('keyup', filterQueue);
+    document.getElementById('qualificationFilter').addEventListener('change', filterQueue);
 
     // Inject Sidebar CSS (W3.CSS Reference Style)
     const ms = document.createElement('style');
@@ -107,7 +116,8 @@ async function loadApprovalQueue() {
         const response = await apiClient.get('/role/registrar/trainee_application.php?action=list');
         if (response.data.success) {
             currentQueueData = response.data.data;
-            renderQueueTable(response.data.data, 'approvalQueueBody', true);
+            populateQualificationFilter(currentQueueData);
+            filterQueue();
         }
     } catch (error) {
         console.error('Error loading approval queue:', error);
@@ -121,11 +131,39 @@ async function loadUnqualifiedQueue() {
             unqualifiedData = response.data.data;
             renderQueueTable(response.data.data, 'unqualifiedQueueBody', false);
         } else {
-            alert('Error loading queue: ' + response.data.message);
+            Swal.fire({title: 'Error', text: 'Error loading queue: ' + response.data.message, icon: 'error'});
         }
     } catch (error) {
         console.error('Error loading approval queue:', error);
     }
+}
+
+function populateQualificationFilter(data) {
+    const select = document.getElementById('qualificationFilter');
+    const uniqueQuals = [...new Set(data.map(item => item.course_name).filter(Boolean))];
+    
+    // Keep the first option (All Qualifications)
+    select.innerHTML = '<option value="">All Qualifications</option>';
+    
+    uniqueQuals.sort().forEach(qual => {
+        const option = document.createElement('option');
+        option.value = qual;
+        option.textContent = qual;
+        select.appendChild(option);
+    });
+}
+
+function filterQueue() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const qualFilter = document.getElementById('qualificationFilter').value;
+
+    const filteredData = currentQueueData.filter(item => {
+        const nameMatch = (item.first_name + ' ' + item.last_name).toLowerCase().includes(searchTerm);
+        const qualMatch = qualFilter === '' || item.course_name === qualFilter;
+        return nameMatch && qualMatch;
+    });
+
+    renderQueueTable(filteredData, 'approvalQueueBody', true);
 }
 
 function renderQueueTable(data, elementId, showActions) {
@@ -147,7 +185,6 @@ function renderQueueTable(data, elementId, showActions) {
             : `<div class="rounded-circle bg-light text-secondary border d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;"><i class="fas fa-user"></i></div>`;
         
         row.innerHTML = `
-            <td>${item.enrollment_id}</td>
             <td>${photoHtml}</td>
             <td>${item.first_name} ${item.last_name}</td>
             <td>${courseOrBatch}</td>
@@ -227,7 +264,15 @@ window.viewApplication = function(id) {
 }
 
 window.qualifyApplication = async function(id) {
-    if (!confirm('Mark this application as Qualified? It will be sent to the Admin for final approval.')) return;
+    const result = await Swal.fire({
+        title: 'Qualify Application?',
+        text: "It will be sent to the Admin for final approval.",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, qualify it'
+    });
+
+    if (!result.isConfirmed) return;
     
     try {
         const response = await apiClient.post('/role/registrar/trainee_application.php?action=qualify', { 
@@ -235,30 +280,38 @@ window.qualifyApplication = async function(id) {
         });
         
         if (response.data.success) {
-            alert('Application marked as Qualified.');
-            loadApprovalQueue();
+            Swal.fire({title: 'Success', text: 'Application marked as Qualified.', icon: 'success'});
+            loadApprovalQueue(); // Reload to refresh list and filters
         } else {
-            alert('Error: ' + response.data.message);
+            Swal.fire({title: 'Error', text: 'Error: ' + response.data.message, icon: 'error'});
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Action failed');
+        Swal.fire({title: 'Error', text: 'Action failed', icon: 'error'});
     }
 }
 
 window.unqualifyApplication = async function(id) {
-    if (!confirm('Mark this application as Unqualified?')) return;
+    const result = await Swal.fire({
+        title: 'Unqualify Application?',
+        text: "Are you sure you want to mark this as unqualified?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, unqualify'
+    });
+
+    if (!result.isConfirmed) return;
     
     try {
         const response = await apiClient.post('/role/registrar/trainee_application.php?action=unqualify', { enrollment_id: id });
         if (response.data.success) {
-            alert('Application marked as Unqualified.');
-            loadApprovalQueue();
+            Swal.fire({title: 'Info', text: 'Application marked as Unqualified.', icon: 'info'});
+            loadApprovalQueue(); // Reload to refresh list and filters
         } else {
-            alert('Error: ' + response.data.message);
+            Swal.fire({title: 'Error', text: 'Error: ' + response.data.message, icon: 'error'});
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Action failed');
+        Swal.fire({title: 'Error', text: 'Action failed', icon: 'error'});
     }
 }

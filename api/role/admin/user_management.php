@@ -29,8 +29,11 @@ switch ($action) {
     case 'update':
         updateUser($conn);
         break;
-    case 'delete':
-        deleteUser($conn);
+    case 'archive':
+        archiveUser($conn);
+        break;
+    case 'reactivate':
+        reactivateUser($conn);
         break;
     default:
         http_response_code(400);
@@ -41,10 +44,11 @@ switch ($action) {
 function getUsers($conn) {
     try {
         $stmt = $conn->query("
-            SELECT u.user_id, u.role_id, u.username, u.email, u.status, u.date_created, r.role_name, t.trainee_school_id
+            SELECT u.user_id, u.role_id, u.username, u.email, u.status, u.is_archived, u.archived_at, u.date_created, r.role_name, t.trainee_school_id
             FROM tbl_users u 
             LEFT JOIN tbl_role r ON u.role_id = r.role_id 
             LEFT JOIN tbl_trainee_hdr t ON u.user_id = t.user_id
+            WHERE u.is_archived = 0
             ORDER BY u.user_id DESC
         ");
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -63,7 +67,7 @@ function getUser($conn) {
         }
         
         $stmt = $conn->prepare("
-            SELECT u.user_id, u.role_id, u.username, u.email, u.status, u.date_created, r.role_name, t.trainee_school_id
+            SELECT u.user_id, u.role_id, u.username, u.email, u.status, u.is_archived, u.date_created, r.role_name, t.trainee_school_id
             FROM tbl_users u 
             LEFT JOIN tbl_role r ON u.role_id = r.role_id 
             LEFT JOIN tbl_trainee_hdr t ON u.user_id = t.user_id
@@ -102,6 +106,7 @@ function addUser($conn) {
             throw new Exception('Role is required');
         }
         
+
         // Check if username already exists
         $stmt = $conn->prepare("SELECT user_id FROM tbl_users WHERE username = ?");
         $stmt->execute([$data['username']]);
@@ -115,6 +120,20 @@ function addUser($conn) {
             $stmt->execute([$data['email']]);
             if ($stmt->fetch()) {
                 throw new Exception('Email already exists');
+            }
+        }
+
+        // Validation: Only 1 admin and 1 registrar allowed
+        // Get role name for the given role_id
+        $roleStmt = $conn->prepare("SELECT role_name FROM tbl_role WHERE role_id = ?");
+        $roleStmt->execute([$data['role_id']]);
+        $role = $roleStmt->fetchColumn();
+        if ($role === 'admin' || $role === 'registrar') {
+            $countStmt = $conn->prepare("SELECT COUNT(*) FROM tbl_users WHERE role_id = ? AND is_archived = 0");
+            $countStmt->execute([$data['role_id']]);
+            $count = $countStmt->fetchColumn();
+            if ($count > 0) {
+                throw new Exception('Only one ' . $role . ' is allowed in the system.');
             }
         }
 
@@ -215,7 +234,7 @@ function updateUser($conn) {
     }
 }
 
-function deleteUser($conn) {
+function archiveUser($conn) {
     try {
         $id = $_GET['id'] ?? null;
         if (!$id) {
@@ -223,21 +242,73 @@ function deleteUser($conn) {
         }
         
         // Check if user exists
-        $stmt = $conn->prepare("SELECT user_id FROM tbl_users WHERE user_id = ?");
+        $stmt = $conn->prepare("SELECT user_id, is_archived FROM tbl_users WHERE user_id = ?");
         $stmt->execute([$id]);
-        if (!$stmt->fetch()) {
+        $user = $stmt->fetch();
+        if (!$user) {
             throw new Exception('User not found');
         }
         
-        // Don't allow deleting yourself (optional security measure)
-        // You can add session check here if needed
+        // Check if already archived
+        if ($user['is_archived'] == 1) {
+            throw new Exception('User is already archived');
+        }
         
-        // Delete user
-        $stmt = $conn->prepare("DELETE FROM tbl_users WHERE user_id = ?");
-        if ($stmt->execute([$id])) {
-            echo json_encode(['success' => true, 'message' => 'User deleted successfully']);
+        // Archive user by setting is_archived flag
+        $stmt = $conn->prepare("
+            UPDATE tbl_users 
+            SET is_archived = 1,
+                archived_at = NOW(),
+                archived_by = ?
+            WHERE user_id = ?
+        ");
+        
+        // Get current user ID from session if available (defaults to NULL)
+        $current_user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : NULL;
+        
+        if ($stmt->execute([$current_user_id, $id])) {
+            echo json_encode([
+                'success' => true, 
+                'message' => 'User archived successfully. Move to Archived section in System Settings. Data retained for recovery.'
+            ]);
         } else {
-            throw new Exception('Failed to delete user');
+            throw new Exception('Failed to archive user');
+        }
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    }
+}
+
+function reactivateUser($conn) {
+    try {
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            throw new Exception('User ID is required');
+        }
+        
+        // Check if user exists and is archived
+        $stmt = $conn->prepare("SELECT user_id, is_archived FROM tbl_users WHERE user_id = ?");
+        $stmt->execute([$id]);
+        $user = $stmt->fetch();
+        if (!$user) {
+            throw new Exception('User not found');
+        }
+        
+        // Check if already active (not archived)
+        if ($user['is_archived'] == 0) {
+            throw new Exception('User is not archived');
+        }
+        
+        // Unarchive user by setting is_archived back to 0
+        $stmt = $conn->prepare("UPDATE tbl_users SET is_archived = 0, archived_at = NULL, archived_by = NULL WHERE user_id = ?");
+        if ($stmt->execute([$id])) {
+            echo json_encode([
+                'success' => true, 
+                'message' => 'User unarchived successfully. Can now manage in User Management.'
+            ]);
+        } else {
+            throw new Exception('Failed to unarchive user');
         }
     } catch (Exception $e) {
         http_response_code(500);

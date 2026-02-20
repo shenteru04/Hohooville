@@ -8,6 +8,8 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Sidebar CSS -->
+    <link rel="stylesheet" href="../../../css/admin/sidebar.css">
     <style>
         :root {
             --primary-color: #4e73df;
@@ -62,65 +64,8 @@
     </style>
 </head>
 <body>
-    <div class="d-flex">
-         <!-- Sidebar -->
-        <nav id="sidebar" class="p-3">
-            <div class="sidebar-header mb-3">
-                <h3><img src="../../../../img/logo.jpg" alt="Logo" class="me-2" style="height: 35px; width: auto;">Hohooville</h3>
-                <p class="text-muted">Management System</p>
-            </div>
-
-            <ul class="nav flex-column">
-    <li class="nav-item mb-1">
-        <a class="nav-link" href="../admin_dashboard.html">
-            <i class="fas fa-tachometer-alt me-2"></i> Dashboard
-        </a>
-    </li>
-    <li class="nav-item mb-1">
-        <a class="nav-link" data-bs-toggle="collapse" href="#enrollmentSubmenu" role="button" aria-expanded="true">
-            <i class="fas fa-user-plus me-2"></i> Enrollment Management
-        </a>
-        <div class="collapse show" id="enrollmentSubmenu">
-            <ul class="nav flex-column ms-3">
-                <li class="nav-item"><a class="nav-link" href="view_trainees.html">View Trainees</a></li>
-                <li class="nav-item"><a class="nav-link" href="approval_queue.html">Approval Queue</a></li>
-            </ul>
-        </div>
-    </li>
-    <li class="nav-item mb-1">
-        <a class="nav-link" data-bs-toggle="collapse" href="#trainerSubmenu" role="button" aria-expanded="true">
-            <i class="fas fa-chalkboard-teacher me-2"></i> Trainer Management
-        </a>
-        <div class="collapse show" id="trainerSubmenu">
-            <ul class="nav flex-column ms-3">
-                <li class="nav-item"><a class="nav-link active" href="view_trainers.html">View Trainers</a></li>
-            </ul>
-        </div>
-    </li>
-     <li class="nav-item mb-1">
-                    <a class="nav-link" data-bs-toggle="collapse" href="#qualificationSubmenu" role="button" aria-expanded="true"><i class="fas fa-graduation-cap me-2"></i> Qualifications</a>
-                    <div class="collapse show" id="qualificationSubmenu">
-                        <ul class="nav flex-column ms-3">
-                            <li class="nav-item"><a class="nav-link" href="manage_qualifications.html">Qualification Approval</a></li>
-                            <li class="nav-item"><a class="nav-link" href="view_batches.html">Batches</a></li>
-                        </ul>
-                    </div>
-                </li>
-    <li class="nav-item mb-1">
-        <a class="nav-link" href="reports.html">
-            <i class="fas fa-chart-bar me-2"></i> Reports & Analytics
-        </a>
-    </li>
-    <li class="nav-item mb-1">
-        <a class="nav-link" href="user_management.html">
-            <i class="fas fa-users-cog me-2"></i> User Management
-        </a>
-    </li>
-</ul>
-        </nav>
-
-        <!-- Content -->
-        <div class="flex-grow-1" id="content">
+    <div id="sidebar-container"></div>
+    <div class="main-content" id="content">
             <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
                 <div class="container-fluid">
                     <div class="ms-auto d-flex align-items-center">
@@ -149,10 +94,9 @@
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
-                                        <th>ID</th>
                                         <th>Name</th>
                                         <th>Email</th>
-                                        <th>Specialization</th>
+                                        <th>Qualification</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
@@ -224,8 +168,10 @@
                             <input type="text" class="form-control" id="editPhone">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Specialization</label>
-                            <input type="text" class="form-control" id="editSpecialization">
+                            <label class="form-label">Specialization / Qualification</label>
+                            <select class="form-select" id="editQualificationId" required>
+                                <option value="">Select Qualification</option>
+                            </select>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">Update Trainer</button>
                     </form>
@@ -237,45 +183,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
     <script src="../../../js/admin/pages/view_trainers.js"></script>
-    <script>
-        document.getElementById('logoutBtn').addEventListener('click', () => { localStorage.clear(); window.location.href = '../../../login.html'; });
-
-        // Sidebar Persistence
-        document.addEventListener("DOMContentLoaded", function() {
-            const sidebar = document.getElementById('sidebar');
-            if (sidebar) {
-                const scrollPos = localStorage.getItem('sidebarScroll');
-                if (scrollPos) sidebar.scrollTop = parseInt(scrollPos);
-                
-                window.addEventListener('beforeunload', () => {
-                    localStorage.setItem('sidebarScroll', sidebar.scrollTop);
-                });
-            }
-
-            const sidebarState = JSON.parse(localStorage.getItem('sidebarState')) || [];
-            sidebarState.forEach(id => {
-                const submenu = document.getElementById(id);
-                const toggler = document.querySelector(`[href="#${id}"]`);
-                if (submenu && toggler) {
-                    submenu.classList.add('show');
-                    toggler.setAttribute('aria-expanded', 'true');
-                }
-            });
-            document.querySelectorAll('#sidebar .collapse').forEach(collapse => {
-                collapse.addEventListener('shown.bs.collapse', () => {
-                    const state = JSON.parse(localStorage.getItem('sidebarState')) || [];
-                    if (!state.includes(collapse.id)) {
-                        state.push(collapse.id);
-                        localStorage.setItem('sidebarState', JSON.stringify(state));
-                    }
-                });
-                collapse.addEventListener('hidden.bs.collapse', () => {
-                    let state = JSON.parse(localStorage.getItem('sidebarState')) || [];
-                    state = state.filter(id => id !== collapse.id);
-                    localStorage.setItem('sidebarState', JSON.stringify(state));
-                });
-            });
-        });
-    </script>
+    <script src="../../../js/sidebar.js"></script>
 </body>
 </html>

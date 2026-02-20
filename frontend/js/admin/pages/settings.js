@@ -1,6 +1,12 @@
 const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
 
 document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Swal === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        document.head.appendChild(script);
+    }
+
     loadSystemSettings();
     
     // Account Settings Form
@@ -209,27 +215,29 @@ async function loadSystemSettings() {
 }
 
 function showAlert(message, type) {
-    // Remove existing alerts
-    const existingAlerts = document.querySelectorAll('.alert-notification');
-    existingAlerts.forEach(alert => alert.remove());
+    let icon = 'info';
+    let title = 'Info';
+    
+    if (type === 'success') {
+        icon = 'success';
+        title = 'Success';
+    } else if (type === 'danger') {
+        icon = 'error';
+        title = 'Error';
+    } else if (type === 'warning') {
+        icon = 'warning';
+        title = 'Warning';
+    }
 
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show alert-notification`;
-    alertDiv.style.position = 'fixed';
-    alertDiv.style.top = '80px';
-    alertDiv.style.right = '20px';
-    alertDiv.style.zIndex = '9999';
-    alertDiv.style.minWidth = '300px';
-    alertDiv.style.maxWidth = '500px';
-    alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    document.body.appendChild(alertDiv);
-    
-    setTimeout(() => {
-        alertDiv.classList.remove('show');
-        setTimeout(() => alertDiv.remove(), 150);
-    }, 5000);
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: title,
+            text: message,
+            icon: icon,
+            timer: 3000,
+            showConfirmButton: false
+        });
+    } else {
+        alert(message);
+    }
 }

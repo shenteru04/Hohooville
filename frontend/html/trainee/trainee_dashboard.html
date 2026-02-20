@@ -63,6 +63,13 @@
         .border-left-success { border-left: 0.25rem solid #1cc88a !important; }
         .border-left-info { border-left: 0.25rem solid #36b9cc !important; }
         .border-left-warning { border-left: 0.25rem solid #f6c23e !important; }
+        #archiveButtonContainer {
+            text-align: center;
+            display: none;
+        }
+        .table-hover tbody tr:hover {
+            background-color: rgba(78, 115, 223, 0.1);
+        }
     </style>
 </head>
 <body>
@@ -97,7 +104,8 @@
             <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
                 <div class="container-fluid">
                     <span class="navbar-brand mb-0 h1">Dashboard</span>
-                    <div class="ms-auto">
+                    <div class="ms-auto d-flex align-items-center">
+                        <div id="notificationContainer"></div>
                         <div class="dropdown">
                             <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="fas fa-user-circle me-2"></i> <span id="traineeName">Trainee</span>
@@ -141,8 +149,8 @@
                     <div class="col-md-4">
                         <div class="card text-white bg-warning h-100">
                             <div class="card-body">
-                                <h5 class="card-title">Next Class</h5>
-                                <p class="card-text fs-5" id="nextClassTime">Loading...</p>
+                                <h5 class="card-title">Class Schedule</h5>
+                                <p class="card-text fw-bold text-wrap" id="nextClassTime" style="font-size: 1rem; line-height: 1.4;">Loading...</p>
                                 <p class="card-text"><i class="fas fa-map-marker-alt me-2"></i> <span id="nextClassRoom">...</span></p>
                             </div>
                         </div>
@@ -153,21 +161,22 @@
                 <div class="row">
                     <div class="col-md-8">
                         <div class="card">
-                            <div class="card-header">
-                                Course Details
-                            </div>
+                            <div class="card-header">Course Details</div>
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <p><strong>Batch:</strong> <span id="batchName">...</span></p>
-                                        <p><strong>Start Date:</strong> <span id="startDate">...</span></p>
+                                        <p><strong>Batch:</strong> <span id="batchName">-</span></p>
+                                        <p><strong>Start Date:</strong> <span id="startDate">-</span></p>
                                     </div>
                                     <div class="col-md-6">
-                                        <p><strong>Schedule:</strong> <span id="schedule">...</span></p>
-                                        <p><strong>End Date:</strong> <span id="endDate">...</span></p>
+                                        <p><strong>Schedule:</strong> <span id="schedule" class="text-break">-</span></p>
+                                        <p><strong>End Date:</strong> <span id="endDate">-</span></p>
                                     </div>
                                 </div>
                                 <a href="/Hohoo-ville/frontend/html/trainee/pages/my_training.html" class="btn btn-primary mt-3">Go to Modules</a>
+                                
+                                <!-- Archive Button appears HERE ↓ -->
+                                <div id="archiveButtonContainer"></div>
                             </div>
                         </div>
                     </div>
@@ -185,12 +194,21 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Archived Courses Section -->
+                <div id="archivedCoursesContainer" class="mt-4"></div>
             </div>
         </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script>
+        fetch('/Hohoo-ville/frontend/html/trainee/components/notification.html')
+            .then(r => r.text())
+            .then(html => document.getElementById('notificationContainer').innerHTML = html);
+    </script>
+    <script src="../../js/notifications.js"></script>
     <script src="../../js/trainee/trainee_dashboard.js"></script>
 </body>
 </html>

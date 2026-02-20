@@ -44,11 +44,12 @@ function getData($conn) {
                             c.qualification_name as course_name, 
                             b.trainer_id, 
                             CONCAT_WS(' ', t.first_name, t.last_name) as trainer_name,
-                            (SELECT oc.schedule FROM tbl_offered_qualifications oc JOIN tbl_enrollment e ON oc.offered_qualification_id = e.offered_qualification_id WHERE e.batch_id = b.batch_id LIMIT 1) as schedule,
-                            (SELECT oc.room FROM tbl_offered_qualifications oc JOIN tbl_enrollment e ON oc.offered_qualification_id = e.offered_qualification_id WHERE e.batch_id = b.batch_id LIMIT 1) as room
+                            s.schedule,
+                            s.room
                           FROM tbl_batch b
                           LEFT JOIN tbl_qualifications c ON b.qualification_id = c.qualification_id
                           LEFT JOIN tbl_trainer t ON b.trainer_id = t.trainer_id
+                          LEFT JOIN tbl_schedule s ON b.batch_id = s.batch_id
                           WHERE b.status = 'open'
                           ORDER BY b.batch_id DESC";
         
@@ -85,18 +86,17 @@ function assignSchedule($conn) {
             ':batch_id' => $batchId
         ]);
 
-        // Find all offered_id's associated with this batch through enrollments
-        $stmtFind = $conn->prepare("SELECT DISTINCT offered_qualification_id FROM tbl_enrollment WHERE batch_id = ?");
-        $stmtFind->execute([$batchId]);
-        $offeredIds = $stmtFind->fetchAll(PDO::FETCH_COLUMN);
+        // Update or Insert into tbl_schedule
+        $stmtCheck = $conn->prepare("SELECT schedule_id FROM tbl_schedule WHERE batch_id = ?");
+        $stmtCheck->execute([$batchId]);
+        $exists = $stmtCheck->fetchColumn();
 
-        if (!empty($offeredIds)) {
-            // Also update the trainer_id, schedule, and room in all associated offered_courses to maintain consistency
-            $placeholders = implode(',', array_fill(0, count($offeredIds), '?'));
-            $stmtOC = $conn->prepare("UPDATE tbl_offered_qualifications SET trainer_id = ?, schedule = ?, room = ? WHERE offered_qualification_id IN ($placeholders)");
-            
-            $params = array_merge([$trainerId, $data['schedule'] ?: null, $data['room'] ?: null], $offeredIds);
-            $stmtOC->execute($params);
+        if ($exists) {
+            $stmtSchedule = $conn->prepare("UPDATE tbl_schedule SET schedule = ?, room = ?, updated_at = NOW() WHERE batch_id = ?");
+            $stmtSchedule->execute([$data['schedule'] ?: null, $data['room'] ?: null, $batchId]);
+        } else {
+            $stmtSchedule = $conn->prepare("INSERT INTO tbl_schedule (batch_id, schedule, room, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())");
+            $stmtSchedule->execute([$batchId, $data['schedule'] ?: null, $data['room'] ?: null]);
         }
         
         $conn->commit();

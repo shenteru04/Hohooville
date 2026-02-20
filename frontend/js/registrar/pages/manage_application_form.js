@@ -2,6 +2,12 @@ const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
 let scholarshipModal;
 
 document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Swal === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        document.head.appendChild(script);
+    }
+
     scholarshipModal = new bootstrap.Modal(document.getElementById('scholarshipModal'));
     
     loadScholarships();
@@ -149,7 +155,7 @@ async function saveScholarship(e) {
             scholarshipModal.hide();
             loadScholarships();
         } else {
-            alert('Error: ' + response.data.message);
+            Swal.fire('Error', 'Error: ' + response.data.message, 'error');
         }
     } catch (error) {
         console.error('Error saving scholarship:', error);
@@ -157,11 +163,20 @@ async function saveScholarship(e) {
 }
 
 window.deleteScholarship = async function(id) {
-    if (!confirm('Are you sure you want to delete this scholarship type?')) return;
+    const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: "Delete this scholarship type?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (!result.isConfirmed) return;
     try {
         const response = await axios.delete(`${API_BASE_URL}/role/registrar/application_settings.php?action=delete-scholarship&id=${id}`);
         if (response.data.success) loadScholarships();
-        else alert('Error: ' + response.data.message);
+        else Swal.fire('Error', 'Error: ' + response.data.message, 'error');
     } catch (error) {
         console.error('Error deleting scholarship:', error);
     }

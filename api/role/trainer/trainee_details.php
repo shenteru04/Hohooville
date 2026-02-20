@@ -23,8 +23,9 @@ class TraineeDetails {
             // 1. Personal Info & Enrollment
             $queryInfo = "SELECT
                             t.trainee_id, t.user_id, t.trainee_school_id, t.first_name, t.middle_name, t.last_name, t.extension_name, t.sex, t.email, t.phone_number, t.facebook_account, t.status as trainee_status, t.photo_file, t.valid_id_file, t.birth_cert_file,
-                            dtl.civil_status, dtl.birthdate, dtl.age, dtl.birthplace_city, dtl.birthplace_province, dtl.nationality, dtl.house_no_street, dtl.barangay, dtl.city_municipality, dtl.province,
-                            ftr.educational_attainment, ftr.employment_status,
+                            dtl.civil_status, dtl.birthdate, dtl.age, dtl.birthplace_city, dtl.birthplace_province, dtl.nationality, dtl.house_no_street, dtl.barangay, dtl.city_municipality, dtl.province, dtl.region,
+                            ftr.educational_attainment, ftr.employment_status, ftr.employment_type, ftr.learner_classification, ftr.is_pwd, ftr.disability_type, ftr.disability_cause, ftr.privacy_consent, ftr.digital_signature,
+                            e.enrollment_date,
                             c.qualification_name as course_name,
                             c.qualification_id, 
                             b.batch_name, 

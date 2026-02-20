@@ -7,6 +7,12 @@ let currentViewedModuleId = null;
 let fieldCounter = 0; // Counter for unique field IDs
 
 document.addEventListener('DOMContentLoaded', async function() {
+    if (typeof Swal === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        document.head.appendChild(script);
+    }
+
     // Inject Sidebar CSS (W3.CSS Reference Style)
     const ms = document.createElement('style');
     ms.innerHTML = `
@@ -210,9 +216,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 });
 
-window.insertTrainerInput = function(targetId = 'lessonContent') {
-    const label = prompt("Enter a label for the new field:", "Custom Field");
-    if (label === null || label.trim() === "") {
+window.insertTrainerInput = async function(targetId = 'lessonContent') {
+    const { value: label } = await Swal.fire({
+        title: 'New Field',
+        input: 'text',
+        inputLabel: 'Enter a label for the new field:',
+        inputValue: 'Custom Field',
+        showCancelButton: true
+    });
+
+    if (!label || label.trim() === "") {
         return;
     }
 
@@ -329,8 +342,16 @@ window.editFieldContent = function(fieldId, fromButton = false) {
     }
 };
 
-window.deleteField = function(fieldId) {
-    if (!confirm('Are you sure you want to delete this field?')) {
+window.deleteField = async function(fieldId) {
+    const result = await Swal.fire({
+        title: 'Delete Field?',
+        text: "Are you sure you want to delete this field?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete it!'
+    });
+    if (!result.isConfirmed) {
         return;
     }
     
@@ -383,24 +404,40 @@ window.insertTable = function(targetId = 'lessonContent') {
     editor.appendChild(block);
 };
 
-window.deleteTableRow = function(btn) {
+window.deleteTableRow = async function(btn) {
     const row = btn.closest('tr');
     const tbody = row.closest('tbody');
 
     if (tbody.rows.length <= 1) {
-        alert("Cannot delete the last row.");
+        Swal.fire('Cannot Delete', "Cannot delete the last row.", 'warning');
         return;
     }
 
-    if (!confirm('Are you sure you want to delete this row?')) return;
+    const result = await Swal.fire({
+        title: 'Delete Row?',
+        text: "Are you sure you want to delete this row?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete it!'
+    });
+    if (!result.isConfirmed) return;
     
     if (row) {
         row.remove();
     }
 };
 
-window.deleteTableCol = function(btn) {
-    if (!confirm('Are you sure you want to delete this column?')) return;
+window.deleteTableCol = async function(btn) {
+    const result = await Swal.fire({
+        title: 'Delete Column?',
+        text: "Are you sure you want to delete this column?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete it!'
+    });
+    if (!result.isConfirmed) return;
 
     const th = btn.closest('th');
     if (!th) return;
@@ -412,7 +449,7 @@ window.deleteTableCol = function(btn) {
 
     // Prevent deleting the last content column if it's the only one left before actions
     if (table.tHead.rows[0].cells.length <= 2) {
-        alert("Cannot delete the last column.");
+        Swal.fire('Cannot Delete', "Cannot delete the last column.", 'warning');
         return;
     }
 
@@ -502,28 +539,37 @@ window.addTableCol = function(tableId) {
     }
 };
 
-window.insertInteractiveQuestion = function() {
-    const question = prompt("Enter the question for the quick check:");
+window.insertInteractiveQuestion = async function() {
+    const { value: question } = await Swal.fire({
+        title: 'Quick Check',
+        input: 'text',
+        inputLabel: 'Enter the question for the quick check:',
+        showCancelButton: true
+    });
+
     if (!question || question.trim() === "") {
         return;
     }
 
     const options = [];
-    let optionText;
     while (true) {
-        optionText = prompt(`Enter option ${options.length + 1} (or cancel to finish):`);
-        if (optionText === null) {
+        const { value: optionText, isDismissed } = await Swal.fire({
+            title: `Option ${options.length + 1}`,
+            input: 'text',
+            inputLabel: `Enter option ${options.length + 1} (or cancel to finish):`,
+            showCancelButton: true,
+            confirmButtonText: 'Add',
+            cancelButtonText: 'Finish'
+        });
+
+        if (isDismissed || !optionText || optionText.trim() === "") {
             break;
         }
-        if (optionText.trim() !== "") {
-            options.push(optionText.trim());
-        } else {
-            break;
-        }
+        options.push(optionText.trim());
     }
 
     if (options.length < 2) {
-        alert("Please add at least two options for the question.");
+        Swal.fire('Not Enough Options', "Please add at least two options for the question.", 'warning');
         return;
     }
 
@@ -612,7 +658,7 @@ async function loadTrainerQualifications(trainerId) {
             const batches = response.data.data;
             const uniqueQuals = [];
             const seen = new Set();
-
+            
             batches.forEach(b => {
                 if (!seen.has(b.qualification_id)) {
                     seen.add(b.qualification_id);
@@ -735,12 +781,12 @@ async function saveModule() {
     const description = document.getElementById('moduleDescription').value;
 
     if (!qualificationId) {
-        alert('Please select a qualification first.');
+        Swal.fire('Missing Input', 'Please select a qualification first.', 'warning');
         return;
     }
 
     if (!title) {
-        alert('Module title is required.');
+        Swal.fire('Missing Input', 'Module title is required.', 'warning');
         return;
     }
 
@@ -757,16 +803,16 @@ async function saveModule() {
     try {
         const response = await axios.post(`${API_BASE_URL}/role/trainer/modules.php?action=${action}`, payload);
         if (response.data.success) {
-            alert(`Module ${id ? 'updated' : 'created'} successfully`);
+            Swal.fire('Success', `Module ${id ? 'updated' : 'created'} successfully`, 'success');
             moduleModal.hide();
             document.getElementById('createModuleForm').reset();
             loadModules(qualificationId, currentCompetencyType);
         } else {
-            alert('Error: ' + response.data.message);
+            Swal.fire('Error', 'Error: ' + response.data.message, 'error');
         }
     } catch (error) {
         console.error('Error saving module:', error);
-        alert('Failed to save module');
+        Swal.fire('Error', 'Failed to save module', 'error');
     }
 }
 
@@ -777,7 +823,7 @@ async function saveCompetency() {
     const description = document.getElementById('competencyDescription').value;
 
     if (!title) {
-        alert('Learning Outcome title is required.');
+        Swal.fire('Missing Input', 'Learning Outcome title is required.', 'warning');
         return;
     }
 
@@ -793,48 +839,66 @@ async function saveCompetency() {
     try {
         const response = await axios.post(`${API_BASE_URL}/role/trainer/modules.php?action=${action}`, payload);
         if (response.data.success) {
-            alert(`Learning Outcome ${id ? 'updated' : 'added'} successfully`);
+            Swal.fire('Success', `Learning Outcome ${id ? 'updated' : 'added'} successfully`, 'success');
             competencyModal.hide();
             document.getElementById('createCompetencyForm').reset();
             loadModules(document.getElementById('qualificationSelect').value, currentCompetencyType);
         } else {
-            alert('Error: ' + response.data.message);
+            Swal.fire('Error', 'Error: ' + response.data.message, 'error');
         }
     } catch (error) {
         console.error('Error saving learning outcome:', error);
-        alert('Failed to save learning outcome');
+        Swal.fire('Error', 'Failed to save learning outcome', 'error');
     }
 }
 
 async function deleteModule(id) {
-    if (!confirm('Are you sure you want to delete this module? All competencies inside it will also be deleted.')) return;
+    const result = await Swal.fire({
+        title: 'Delete Module?',
+        text: "Are you sure you want to delete this module? All competencies inside it will also be deleted.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete it!'
+    });
+    if (!result.isConfirmed) return;
 
     try {
         const response = await axios.delete(`${API_BASE_URL}/role/trainer/modules.php?action=delete-module&id=${id}`);
         if (response.data.success) {
-            alert('Module deleted successfully');
+            Swal.fire('Deleted!', 'Module deleted successfully', 'success');
             loadModules(document.getElementById('qualificationSelect').value, currentCompetencyType);
         } else {
-            alert('Error: ' + response.data.message);
+            Swal.fire('Error', 'Error: ' + response.data.message, 'error');
         }
     } catch (error) {
         console.error('Error deleting module:', error);
+        Swal.fire('Error', 'Error deleting module', 'error');
     }
 }
 
 async function deleteCompetency(id) {
-    if (!confirm('Are you sure you want to delete this learning outcome?')) return;
+    const result = await Swal.fire({
+        title: 'Delete Learning Outcome?',
+        text: "Are you sure you want to delete this learning outcome?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete it!'
+    });
+    if (!result.isConfirmed) return;
 
     try {
         const response = await axios.delete(`${API_BASE_URL}/role/trainer/modules.php?action=delete-competency&id=${id}`);
         if (response.data.success) {
-            alert('Learning Outcome deleted successfully');
+            Swal.fire('Deleted!', 'Learning Outcome deleted successfully', 'success');
             loadModules(document.getElementById('qualificationSelect').value, currentCompetencyType);
         } else {
-            alert('Error: ' + response.data.message);
+            Swal.fire('Error', 'Error: ' + response.data.message, 'error');
         }
     } catch (error) {
         console.error('Error deleting learning outcome:', error);
+        Swal.fire('Error', 'Error deleting learning outcome', 'error');
     }
 }
 
@@ -937,11 +1001,11 @@ window.openManageLessonModal = async function(lessonId) {
             renderLessonContentsList([]);
             document.getElementById('fileContentManager').classList.add('d-none');
             renderTaskSheetsList([]);
-            alert('Could not load lesson details: ' + response.data.message);
+            Swal.fire('Error', 'Could not load lesson details: ' + response.data.message, 'error');
         }
     } catch (error) {
         console.error('Error loading lesson details:', error);
-        alert('Failed to load lesson details');
+        Swal.fire('Error', 'Failed to load lesson details', 'error');
     }
 
     manageLessonModal.show();
@@ -1010,7 +1074,7 @@ window.openContentEditor = async function(type, itemId = null) {
             document.getElementById('editorItemTitle').value = item.title;
             document.getElementById('editorContent').innerHTML = item.content || '';
         } else {
-            alert('Error fetching content: ' + response.data.message);
+            Swal.fire('Error', 'Error fetching content: ' + response.data.message, 'error');
             return;
         }
     }
@@ -1104,7 +1168,7 @@ window.saveContent = async function() {
     const title = document.getElementById('editorItemTitle').value;
 
     if (!title) {
-        alert('Title is required.');
+        Swal.fire('Missing Input', 'Title is required.', 'warning');
         return;
     }
 
@@ -1127,16 +1191,16 @@ window.saveContent = async function() {
     try {
         const response = await axios.post(`${API_BASE_URL}/role/trainer/modules.php?action=${action}`, payload);
         if (response.data.success) {
-            alert('Content saved successfully!');
+            Swal.fire('Success', 'Content saved successfully!', 'success');
             contentEditorModal.hide();
             // Refresh the list in the manage lesson modal
             openManageLessonModal(lessonId);
         } else {
-            alert('Error: ' + response.data.message);
+            Swal.fire('Error', 'Error: ' + response.data.message, 'error');
         }
     } catch (error) {
         console.error('Error saving content:', error);
-        alert('An error occurred while saving content.');
+        Swal.fire('Error', 'An error occurred while saving content.', 'error');
     }
 }
 
@@ -1184,30 +1248,38 @@ window.saveLessonSettingsAndQuiz = async function() {
 
         const response = await axios.post(`${API_BASE_URL}/role/trainer/modules.php?action=save-lesson-settings`, formData);
         if (response.data.success) {
-            alert('Lesson settings and quiz saved successfully!');
+            Swal.fire('Success', 'Lesson settings and quiz saved successfully!', 'success');
         }
     } catch (error) {
         console.error('Error saving:', error);
-        alert('Failed to save details');
+        Swal.fire('Error', 'Failed to save details', 'error');
     }
 }
 
 window.deleteContentItem = async function(type, id) {
-    if (!confirm(`Are you sure you want to delete this ${type === 'content' ? 'information sheet' : 'task sheet'}?`)) {
-        return;
-    }
+    const result = await Swal.fire({
+        title: 'Delete Item?',
+        text: `Are you sure you want to delete this ${type === 'content' ? 'information sheet' : 'task sheet'}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete it!'
+    });
+    if (!result.isConfirmed) return;
+
     const lessonId = document.getElementById('manageLessonId').value;
     const action = `delete-${type}`;
     try {
         const response = await axios.delete(`${API_BASE_URL}/role/trainer/modules.php?action=${action}&id=${id}`);
         if (response.data.success) {
-            alert('Item deleted successfully.');
+            Swal.fire('Deleted!', 'Item deleted successfully.', 'success');
             openManageLessonModal(lessonId); // Refresh the list
         } else {
-            alert('Error: ' + response.data.message);
+            Swal.fire('Error', 'Error: ' + response.data.message, 'error');
         }
     } catch (error) {
         console.error('Error deleting item:', error);
+        Swal.fire('Error', 'Error deleting item', 'error');
     }
 }
 

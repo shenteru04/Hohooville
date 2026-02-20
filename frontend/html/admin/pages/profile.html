@@ -11,6 +11,8 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Sidebar CSS -->
+    <link rel="stylesheet" href="../../../css/admin/sidebar.css">
     <style>
         :root {
             --primary-color: #4e73df;
@@ -101,8 +103,8 @@
         </div>
     </li>
      <li class="nav-item mb-1">
-                    <a class="nav-link" data-bs-toggle="collapse" href="#qualificationSubmenu" role="button" aria-expanded="true"><i class="fas fa-graduation-cap me-2"></i> Qualifications</a>
-                    <div class="collapse show" id="qualificationSubmenu">
+                    <a class="nav-link" data-bs-toggle="collapse" href="#qualificationSubmenu" role="button" aria-expanded="false"><i class="fas fa-graduation-cap me-2"></i> Qualifications</a>
+                    <div class="collapse" id="qualificationSubmenu">
                         <ul class="nav flex-column ms-3">
                             <li class="nav-item"><a class="nav-link" href="manage_qualifications.html">Qualification Approval</a></li>
                             <li class="nav-item"><a class="nav-link" href="view_batches.html">Batches</a></li>
@@ -110,20 +112,43 @@
                     </div>
                 </li>
     <li class="nav-item mb-1">
-        <a class="nav-link" href="reports.html">
+        <a class="nav-link" data-bs-toggle="collapse" href="#reportsSubmenu" role="button" aria-expanded="false">
             <i class="fas fa-chart-bar me-2"></i> Reports & Analytics
         </a>
+        <div class="collapse" id="reportsSubmenu">
+            <ul class="nav flex-column ms-3">
+                <li class="nav-item"><a class="nav-link" href="reports.html">Reports</a></li>
+                <li class="nav-item"><a class="nav-link" href="analytics.html">Analytics Dashboard</a></li>
+            </ul>
+        </div>
     </li>
     <li class="nav-item mb-1">
-        <a class="nav-link" href="user_management.html">
+        <a class="nav-link" data-bs-toggle="collapse" href="#userSubmenu" role="button" aria-expanded="false">
             <i class="fas fa-users-cog me-2"></i> User Management
         </a>
+        <div class="collapse" id="userSubmenu">
+            <ul class="nav flex-column ms-3">
+                <li class="nav-item"><a class="nav-link" href="user_management.html">Manage Users</a></li>
+                <!-- <li class="nav-item"><a class="nav-link" href="roles_permissions.html">Roles & Permissions</a></li>
+                <li class="nav-item"><a class="nav-link" href="bulk_import.html">Bulk Import</a></li>
+            </ul>
+        </div>
     </li>
+    <li class="nav-item mb-1">
+        <a class="nav-link" data-bs-toggle="collapse" href="#systemSubmenu" role="button" aria-expanded="false">
+            <i class="fas fa-cogs me-2"></i> System
+        </a>
+        <div class="collapse" id="systemSubmenu">
+            <ul class="nav flex-column ms-3">
+                <li class="nav-item"><a class="nav-link" href="system_settings.html">System Settings</a></li>
+                <li class="nav-item"><a class="nav-link" href="activity_logs.html">Activity Logs</a></li>
+            </ul>
+        </div>
+    </li> -->
 </ul>
         </nav>
-
-        <!-- Page Content -->
-        <div class="flex-grow-1" id="content">
+    <div id="sidebar-container"></div>
+    <div class="main-content" id="content">
             <!-- Top Navigation -->
             <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
                 <div class="container-fluid">

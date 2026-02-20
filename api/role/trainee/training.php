@@ -365,6 +365,54 @@ function submitQuiz($conn) {
 
         $conn->commit();
 
+        // --- Notification Logic for Quiz ---
+        try {
+            // 1. Get Trainee Name
+            $stmtTrainee = $conn->prepare("SELECT CONCAT(first_name, ' ', last_name) as full_name FROM tbl_trainee_hdr WHERE trainee_id = ?");
+            $stmtTrainee->execute([$traineeId]);
+            $traineeName = $stmtTrainee->fetchColumn();
+
+            // 2. Get Lesson Title
+            $stmtLesson = $conn->prepare("SELECT lesson_title FROM tbl_lessons WHERE lesson_id = ?");
+            $stmtLesson->execute([$lessonId]);
+            $lessonTitle = $stmtLesson->fetchColumn();
+
+            // 3. Get Trainer User ID linked to the batch
+            $stmtTrainer = $conn->prepare("
+                SELECT th.user_id 
+                FROM tbl_enrollment e
+                JOIN tbl_batch b ON e.batch_id = b.batch_id
+                JOIN tbl_trainer th ON b.trainer_id = th.trainer_id
+                WHERE e.trainee_id = ? AND e.status = 'approved'
+                LIMIT 1
+            ");
+            $stmtTrainer->execute([$traineeId]);
+            $trainerUserId = $stmtTrainer->fetchColumn();
+
+            if ($trainerUserId) {
+                // Ensure notifications table exists
+                $conn->exec("CREATE TABLE IF NOT EXISTS tbl_notifications (
+                    notification_id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NOT NULL,
+                    title VARCHAR(255),
+                    message TEXT,
+                    link VARCHAR(255),
+                    is_read TINYINT(1) DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )");
+
+                $notifTitle = "Quiz Submitted";
+                $notifMessage = "$traineeName submitted quiz for lesson: $lessonTitle";
+                $notifLink = "/Hohoo-ville/frontend/html/trainer/pages/trainee_details.html?trainee_id=$traineeId&tab=progress";
+
+                $stmtNotif = $conn->prepare("INSERT INTO tbl_notifications (user_id, title, message, link) VALUES (?, ?, ?, ?)");
+                $stmtNotif->execute([$trainerUserId, $notifTitle, $notifMessage, $notifLink]);
+            }
+        } catch (Exception $e) {
+            // Log error but do not disrupt submission
+            error_log("Notification Error: " . $e->getMessage());
+        }
+
         echo json_encode(['success' => true, 'message' => 'Quiz submitted!', 'data' => ['score' => $score, 'total_questions' => $totalQuestions, 'percentage' => round($finalScore)]]);
 
     } catch (Exception $e) {
@@ -436,7 +484,7 @@ function submitTaskSheet($conn) {
 
                 $notifTitle = "Task Sheet Submitted";
                 $notifMessage = "$traineeName submitted task sheet: $taskTitle";
-                $notifLink = "/Hohoo-ville/frontend/html/trainer/pages/grading.html"; 
+                $notifLink = "/Hohoo-ville/frontend/html/trainer/pages/trainee_details.html?trainee_id=$traineeId&tab=progress"; 
 
                 $stmtNotif = $conn->prepare("INSERT INTO tbl_notifications (user_id, title, message, link) VALUES (?, ?, ?, ?)");
                 $stmtNotif->execute([$trainerUserId, $notifTitle, $notifMessage, $notifLink]);
@@ -459,25 +507,41 @@ function unsubmitTaskSheet($conn) {
     $lessonId = $data['lesson_id'] ?? 0;
     $taskSheetId = $data['task_sheet_id'] ?? 0;
 
-    if (!$traineeId || !$lessonId) {
-        echo json_encode(['success' => false, 'message' => 'Missing required information.']);
+    error_log("Unsubmit request - Trainee: $traineeId, Lesson: $lessonId, Task: $taskSheetId");
+
+    if (!$traineeId || !$lessonId || !$taskSheetId) {
+        echo json_encode(['success' => false, 'message' => 'Missing required information. Trainee: ' . $traineeId . ', Lesson: ' . $lessonId . ', Task: ' . $taskSheetId]);
         http_response_code(400);
         return;
     }
 
     try {
-        if ($taskSheetId) {
-            $sql = "DELETE FROM tbl_task_sheet_submissions WHERE lesson_id = ? AND trainee_id = ? AND task_sheet_id = ?";
-            $stmt = $conn->prepare($sql);
-            $stmt->execute([$lessonId, $traineeId, $taskSheetId]);
-        } else {
-            $sql = "DELETE FROM tbl_task_sheet_submissions WHERE lesson_id = ? AND trainee_id = ?";
-            $stmt = $conn->prepare($sql);
-            $stmt->execute([$lessonId, $traineeId]);
+        // Check if submission exists first
+        $checkSql = "SELECT submission_id FROM tbl_task_sheet_submissions WHERE lesson_id = ? AND trainee_id = ? AND task_sheet_id = ?";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->execute([$lessonId, $traineeId, $taskSheetId]);
+        $submission = $checkStmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$submission) {
+            echo json_encode(['success' => false, 'message' => 'No submission found to delete.']);
+            http_response_code(404);
+            return;
         }
 
-        echo json_encode(['success' => true, 'message' => 'Submission removed successfully.']);
+        // Proceed with deletion
+        $sql = "DELETE FROM tbl_task_sheet_submissions WHERE lesson_id = ? AND trainee_id = ? AND task_sheet_id = ?";
+        $stmt = $conn->prepare($sql);
+        $deleted = $stmt->execute([$lessonId, $traineeId, $taskSheetId]);
+
+        if ($deleted && $stmt->rowCount() > 0) {
+            error_log("Successfully deleted submission for Trainee: $traineeId, Task: $taskSheetId");
+            echo json_encode(['success' => true, 'message' => 'Submission removed successfully.']);
+        } else {
+            error_log("Failed to delete - rowCount: " . $stmt->rowCount());
+            echo json_encode(['success' => false, 'message' => 'Failed to delete submission.']);
+        }
     } catch (Exception $e) {
+        error_log("Delete exception: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
         http_response_code(500);
     }

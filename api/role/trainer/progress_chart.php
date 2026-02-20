@@ -73,18 +73,6 @@ function getBatchData($conn) {
     $qualificationId = $stmtQ->fetchColumn();
 
     if (!$qualificationId) {
-        // Fallback: try getting from enrollment
-        $stmtQ = $conn->prepare("
-            SELECT oc.qualification_id 
-            FROM tbl_enrollment e 
-            JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id 
-            WHERE e.batch_id = ? LIMIT 1
-        ");
-        $stmtQ->execute([$batchId]);
-        $qualificationId = $stmtQ->fetchColumn();
-    }
-
-    if (!$qualificationId) {
         echo json_encode(['success' => true, 'data' => ['trainees' => [], 'outcomes' => [], 'completion_status' => [], 'all_outcomes_completed' => []]]);
         return;
     }

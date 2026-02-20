@@ -3,7 +3,10 @@ const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
 const UPLOADS_URL = window.location.origin + '/hohoo-ville/uploads/trainees/';
 
 let reviewModal;
+let reassignBatchModal;
 let currentQueueData = [];
+let currentReservedData = [];
+let allBatches = [];
 
 // Axios Instance Configuration
 const apiClient = axios.create({
@@ -34,18 +37,75 @@ apiClient.interceptors.response.use(response => response, error => {
     return Promise.reject(error);
 });
 
+// Helper function to clear focus from modals before opening Swal dialogs
+// This prevents aria-hidden accessibility warnings when Swal appears over a modal
+function clearModalFocus() {
+    const reviewModalEl = document.getElementById('reviewModal');
+    const reassignBatchModalEl = document.getElementById('reassignBatchModal');
+    
+    if (reviewModalEl && document.activeElement && reviewModalEl.contains(document.activeElement)) {
+        document.activeElement.blur();
+    }
+    if (reassignBatchModalEl && document.activeElement && reassignBatchModalEl.contains(document.activeElement)) {
+        document.activeElement.blur();
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-    reviewModal = new bootstrap.Modal(document.getElementById('reviewModal'));
+    if (typeof Swal === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        document.head.appendChild(script);
+    }
+
+    const reviewModalEl = document.getElementById('reviewModal');
+    reviewModal = new bootstrap.Modal(reviewModalEl);
+
+    // Add event listener to prevent focus trap accessibility warning.
+    // This fires when the modal is about to be hidden.
+    reviewModalEl.addEventListener('hide.bs.modal', () => {
+        // When hiding the review modal (e.g., after a Swal action), if an element 
+        // inside it still has focus, move focus to the body to prevent an accessibility 
+        // warning where aria-hidden is true on an ancestor of the focused element.
+        if (document.activeElement && reviewModalEl.contains(document.activeElement)) {
+            // Move focus away from the modal to prevent aria-hidden conflict
+            document.body.focus();
+        }
+    });
+
+    const reassignBatchModalEl = document.getElementById('reassignBatchModal');
+    reassignBatchModal = new bootstrap.Modal(reassignBatchModalEl);
+
+    // Add same focus management for reassign batch modal
+    reassignBatchModalEl.addEventListener('hide.bs.modal', () => {
+        if (document.activeElement && reassignBatchModalEl.contains(document.activeElement)) {
+            document.body.focus();
+        }
+    });
+
     loadApprovalQueue();
+    loadReservedQueue();
+    loadAllBatches();
 
     document.getElementById('btnApprove').addEventListener('click', function() {
         const id = document.getElementById('reviewEnrollmentId').value;
         approveEnrollment(id);
     });
 
+    document.getElementById('btnReserve').addEventListener('click', function() {
+        const id = document.getElementById('reviewEnrollmentId').value;
+        reserveEnrollment(id);
+    });
+
     document.getElementById('btnReject').addEventListener('click', function() {
         const id = document.getElementById('reviewEnrollmentId').value;
         rejectEnrollment(id);
+    });
+
+    document.getElementById('btnConfirmReassignment').addEventListener('click', function() {
+        const enrollmentId = document.getElementById('reassignEnrollmentId').value;
+        const newBatchId = document.getElementById('reassignBatchSelect').value;
+        submitReassignment(enrollmentId, newBatchId);
     });
 
     // Event delegation for review buttons
@@ -58,6 +118,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 openReviewModal(enrollmentId);
             }
         });
+    }
+
+    const reservedTab = document.getElementById('reserved-tab');
+    if (reservedTab) {
+        reservedTab.addEventListener('click', loadReservedQueue);
     }
 
     // Inject Sidebar CSS (W3.CSS Reference Style)
@@ -137,6 +202,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+async function loadAllBatches() {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/public/submit_application.php?action=get-options`);
+        if (response.data.success) {
+            allBatches = response.data.data.batches || [];
+        }
+    } catch (error) {
+        console.error('Error loading batches:', error);
+    }
+}
+
 async function loadApprovalQueue() {
     try {
         const response = await apiClient.get('/role/admin/approval_queue.php?action=list');
@@ -149,6 +225,21 @@ async function loadApprovalQueue() {
     } catch (error) {
         console.error('Error loading approval queue:', error);
         showAlert('Failed to load approval queue. Please check console.', 'danger');
+    }
+}
+
+async function loadReservedQueue() {
+    try {
+        const response = await apiClient.get('/role/admin/approval_queue.php?action=list_reserved');
+        if (response.data.success) {
+            currentReservedData = response.data.data;
+            renderReservedTable(currentReservedData);
+        } else {
+            showAlert('Error loading reserved queue: ' + response.data.message, 'danger');
+        }
+    } catch (error) {
+        console.error('Error loading reserved queue:', error);
+        showAlert('Failed to load reserved queue.', 'danger');
     }
 }
 
@@ -171,7 +262,6 @@ function renderQueueTable(data) {
             : `<div class="rounded-circle bg-light text-secondary border d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;"><i class="fas fa-user"></i></div>`;
         
         row.innerHTML = `
-            <td>${item.enrollment_id}</td>
             <td>${photoHtml}</td>
             <td>${item.first_name} ${item.last_name}</td>
             <td>${courseOrBatch}</td>
@@ -180,6 +270,39 @@ function renderQueueTable(data) {
             <td>
                 <button class="btn btn-primary btn-sm review-btn" data-id="${item.enrollment_id}">
                     <i class="fas fa-search"></i> Review
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function renderReservedTable(data) {
+    const tbody = document.getElementById('reservedQueueBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+    
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No reserved trainees</td></tr>';
+        return;
+    }
+
+    data.forEach(item => {
+        const row = document.createElement('tr');
+        const photoHtml = item.photo_file 
+            ? `<img src="${UPLOADS_URL}${encodeURIComponent(item.photo_file)}" class="rounded-circle border" width="40" height="40" style="object-fit: cover;">` 
+            : `<div class="rounded-circle bg-light text-secondary border d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;"><i class="fas fa-user"></i></div>`;
+        
+        row.innerHTML = `
+            <td>${photoHtml}</td>
+            <td>${item.first_name} ${item.last_name}</td>
+            <td>${item.course_name || 'N/A'}</td>
+            <td>${item.enrollment_date}</td>
+            <td><span class="badge bg-info text-dark">${item.status}</span></td>
+            <td>
+                <button class="btn btn-success btn-sm" onclick="openReassignModal(${item.enrollment_id}, ${item.qualification_id}, '${item.first_name} ${item.last_name}', '${item.course_name}')">
+                    <i class="fas fa-random"></i> Assign Batch
                 </button>
             </td>
         `;
@@ -253,9 +376,39 @@ function setupDocLink(elementId, filename) {
 }
 
 async function approveEnrollment(id) {
+    // Clear focus from modal before opening Swal to prevent aria-hidden conflicts
+    clearModalFocus();
+    
+    // Temporarily hide the modal to prevent aria-hidden from blocking Swal2
+    const reviewModalEl = document.getElementById('reviewModal');
+    const wasVisible = reviewModalEl.style.display !== 'none';
+    if (wasVisible) {
+        reviewModalEl.style.display = 'none';
+    }
+    
     const scholarship = document.getElementById('scholarshipSelect').value;
     
-    if (!confirm('Confirm approval for this trainee?')) return;
+    const result = await Swal.fire({
+        title: 'Approve Enrollment?',
+        text: "Confirm approval for this trainee?",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Approve',
+        allowOutsideClick: false,
+        allowEscapeKey: true,
+        willClose: () => {
+            if (wasVisible) {
+                reviewModalEl.style.display = 'block';
+            }
+        }
+    });
+
+    // Restore modal if user canceled
+    if (wasVisible && reviewModalEl.style.display === 'none') {
+        reviewModalEl.style.display = 'block';
+    }
+
+    if (!result.isConfirmed) return;
     
     try {
         const response = await apiClient.post('/role/admin/approval_queue.php?action=approve', { 
@@ -264,33 +417,227 @@ async function approveEnrollment(id) {
         });
         
         if (response.data.success) {
-            showAlert('Enrollment approved successfully', 'success');
+            Swal.fire('Approved!', 'Enrollment approved successfully', 'success');
             reviewModal.hide();
             loadApprovalQueue();
         } else {
-            showAlert('Error: ' + response.data.message, 'danger');
+            const errorMsg = response.data.message || 'An unknown error occurred';
+            showAlert('Error: ' + errorMsg, 'danger');
         }
     } catch (error) {
         console.error('Error approving enrollment:', error);
-        showAlert('Error approving enrollment', 'danger');
+        const errorMsg = error.response?.data?.message || error.message || 'Error approving enrollment';
+        showAlert('Error: ' + errorMsg, 'danger');
+    }
+}
+
+async function reserveEnrollment(id) {
+    // Clear focus from modal before opening Swal to prevent aria-hidden conflicts
+    clearModalFocus();
+    
+    // Temporarily hide the modal to prevent aria-hidden from blocking Swal2 input
+    const reviewModalEl = document.getElementById('reviewModal');
+    const wasVisible = reviewModalEl.style.display !== 'none';
+    if (wasVisible) {
+        reviewModalEl.style.display = 'none';
+    }
+    
+    const { value: reason } = await Swal.fire({
+        title: 'Reserve Application',
+        input: 'text',
+        inputLabel: 'Reason for reserving (e.g., current batch is full)',
+        inputPlaceholder: 'Enter reason...',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Reserve',
+        allowOutsideClick: false,
+        allowEscapeKey: true,
+        inputValidator: (value) => {
+            if (!value) {
+                return 'A reason is required to reserve an application!';
+            }
+        },
+        didOpen: (popup) => {
+            setTimeout(() => {
+                const input = popup.querySelector('.swal2-input');
+                if (input) {
+                    input.focus();
+                    input.select();
+                }
+            }, 100);
+        },
+        willClose: () => {
+            if (wasVisible) {
+                reviewModalEl.style.display = 'block';
+            }
+        }
+    });
+
+    // Restore modal if user canceled
+    if (wasVisible && reviewModalEl.style.display === 'none') {
+        reviewModalEl.style.display = 'block';
+    }
+
+    if (!reason) return;
+
+    try {
+        const response = await apiClient.post('/role/admin/approval_queue.php?action=reserve', { enrollment_id: id, rejection_reason: reason });
+        if (response.data.success) {
+            Swal.fire('Reserved', 'Application has been moved to the reserved list.', 'info');
+            reviewModal.hide();
+            loadApprovalQueue();
+            loadReservedQueue();
+        } else {
+            showAlert('Error: ' + (response.data.message || 'An unknown error occurred'), 'danger');
+        }
+    } catch (error) {
+        console.error('Error reserving enrollment:', error);
+        showAlert('Error: ' + (error.response?.data?.message || 'Action failed'), 'danger');
     }
 }
 
 async function rejectEnrollment(id) {
-    if (!confirm('Are you sure you want to reject this enrollment?')) return;
+    // Clear focus from modal before opening Swal to prevent aria-hidden conflicts
+    clearModalFocus();
+    
+    // Temporarily hide the modal to prevent aria-hidden from blocking Swal2 input
+    const reviewModalEl = document.getElementById('reviewModal');
+    const wasVisible = reviewModalEl.style.display !== 'none';
+    if (wasVisible) {
+        reviewModalEl.style.display = 'none';
+    }
+    
+    const { value: reason } = await Swal.fire({
+        title: 'Reject Enrollment',
+        input: 'text',
+        inputLabel: 'Please enter the reason for rejection:',
+        inputPlaceholder: 'Reason...',
+        showCancelButton: true,
+        allowOutsideClick: false,
+        allowEscapeKey: true,
+        inputValidator: (value) => {
+            if (!value || value.trim() === '') {
+                return 'A rejection reason is required!';
+            }
+        },
+        didOpen: (popup) => {
+            // Use a small timeout to ensure DOM is fully ready
+            setTimeout(() => {
+                const input = popup.querySelector('.swal2-input');
+                if (input) {
+                    input.focus();
+                    input.select();
+                }
+            }, 100);
+        },
+        willClose: () => {
+            // Restore modal visibility
+            if (wasVisible) {
+                reviewModalEl.style.display = 'block';
+            }
+        }
+    });
+
+    // Restore modal if user canceled
+    if (wasVisible && reviewModalEl.style.display === 'none') {
+        reviewModalEl.style.display = 'block';
+    }
+
+    if (!reason) return;
     
     try {
-        const response = await apiClient.post('/role/admin/approval_queue.php?action=reject', { enrollment_id: id });
+        const response = await apiClient.post('/role/admin/approval_queue.php?action=reject', { enrollment_id: id, rejection_reason: reason });
         if (response.data.success) {
-            showAlert('Enrollment rejected successfully', 'info');
+            Swal.fire('Rejected', 'Enrollment rejected successfully', 'info');
             reviewModal.hide();
             loadApprovalQueue();
         } else {
-            showAlert('Error: ' + response.data.message, 'danger');
+            const errorMsg = response.data.message || 'An unknown error occurred';
+            showAlert('Error: ' + errorMsg, 'danger');
         }
     } catch (error) {
         console.error('Error rejecting enrollment:', error);
-        showAlert('Error rejecting enrollment', 'danger');
+        const errorMsg = error.response?.data?.message || error.message || 'Error rejecting enrollment';
+        showAlert('Error: ' + errorMsg, 'danger');
+    }
+}
+
+window.openReassignModal = function(enrollmentId, qualificationId, traineeName, courseName) {
+    document.getElementById('reassignEnrollmentId').value = enrollmentId;
+    document.getElementById('reassignQualificationId').value = qualificationId;
+    document.getElementById('reassignTraineeName').textContent = traineeName;
+    document.getElementById('reassignCourseName').textContent = courseName;
+
+    const batchSelect = document.getElementById('reassignBatchSelect');
+    batchSelect.innerHTML = '<option value="">Select a batch</option>';
+
+    const relevantBatches = allBatches.filter(b => b.qualification_id == qualificationId);
+
+    if (relevantBatches.length > 0) {
+        relevantBatches.forEach(batch => {
+            batchSelect.innerHTML += `<option value="${batch.batch_id}">${batch.batch_name}</option>`;
+        });
+    } else {
+        batchSelect.innerHTML = '<option value="">No open batches for this course</option>';
+    }
+
+    reassignBatchModal.show();
+}
+
+async function submitReassignment(enrollmentId, newBatchId) {
+    if (!newBatchId) {
+        Swal.fire('Required', 'Please select a new batch.', 'warning');
+        return;
+    }
+
+    // Clear focus from modal before opening Swal to prevent aria-hidden conflicts
+    clearModalFocus();
+
+    // Temporarily hide the modal to prevent aria-hidden from blocking Swal2
+    const reassignBatchModalEl = document.getElementById('reassignBatchModal');
+    const wasVisible = reassignBatchModalEl.style.display !== 'none';
+    if (wasVisible) {
+        reassignBatchModalEl.style.display = 'none';
+    }
+
+    const result = await Swal.fire({
+        title: 'Confirm Reassignment',
+        text: "This will approve the trainee and assign them to the selected batch. Continue?",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Assign & Approve',
+        allowOutsideClick: false,
+        allowEscapeKey: true,
+        willClose: () => {
+            if (wasVisible) {
+                reassignBatchModalEl.style.display = 'block';
+            }
+        }
+    });
+
+    // Restore modal if user canceled
+    if (wasVisible && reassignBatchModalEl.style.display === 'none') {
+        reassignBatchModalEl.style.display = 'block';
+    }
+
+    if (!result.isConfirmed) return;
+
+    try {
+        const response = await apiClient.post('/role/admin/approval_queue.php?action=reassign', {
+            enrollment_id: enrollmentId,
+            new_batch_id: newBatchId
+        });
+
+        if (response.data.success) {
+            Swal.fire('Success!', 'Trainee has been assigned and approved.', 'success');
+            reassignBatchModal.hide();
+            loadReservedQueue();
+            loadApprovalQueue();
+        } else {
+            Swal.fire('Error', response.data.message || 'An unknown error occurred.', 'error');
+        }
+    } catch (error) {
+        console.error('Error reassigning batch:', error);
+        Swal.fire('Error', error.response?.data?.message || 'Failed to reassign batch.', 'error');
     }
 }
 

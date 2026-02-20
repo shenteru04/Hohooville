@@ -11,6 +11,8 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Sidebar CSS -->
+    <link rel="stylesheet" href="../../../css/admin/sidebar.css">
     <style>
         :root {
             --primary-color: #4e73df;
@@ -65,66 +67,13 @@
     </style>
 </head>
 <body>
-    <div class="d-flex">
-        <!-- Sidebar -->
-        <nav id="sidebar" class="p-3">
-            <div class="sidebar-header mb-3">
-                <h3><img src="../../../../img/logo.jpg" alt="Logo" class="me-2" style="height: 35px; width: auto;">Hohooville</h3>
-                <p class="text-muted">Management System</p>
-            </div>
+    <!-- Sidebar Container - Content will be loaded here via JavaScript -->
+    <div id="sidebar-container"></div>
 
-            <ul class="nav flex-column">
-    <li class="nav-item mb-1">
-        <a class="nav-link" href="../admin_dashboard.html">
-            <i class="fas fa-tachometer-alt me-2"></i> Dashboard
-        </a>
-    </li>
-    <li class="nav-item mb-1">
-        <a class="nav-link" data-bs-toggle="collapse" href="#enrollmentSubmenu" role="button" aria-expanded="true">
-            <i class="fas fa-user-plus me-2"></i> Enrollment Management
-        </a>
-        <div class="collapse" id="enrollmentSubmenu">
-            <ul class="nav flex-column ms-3">
-                <li class="nav-item"><a class="nav-link" href="view_trainees.html">View Trainees</a></li>
-                <li class="nav-item"><a class="nav-link" href="approval_queue.html">Approval Queue</a></li>
-            </ul>
-        </div>
-    </li>
-    <li class="nav-item mb-1">
-        <a class="nav-link" data-bs-toggle="collapse" href="#trainerSubmenu" role="button" aria-expanded="false">
-            <i class="fas fa-chalkboard-teacher me-2"></i> Trainer Management
-        </a>
-        <div class="collapse" id="trainerSubmenu">
-            <ul class="nav flex-column ms-3">
-                <li class="nav-item"><a class="nav-link" href="view_trainers.html">View Trainers</a></li>
-            </ul>
-        </div>
-    </li>
-    <li class="nav-item mb-1">
-                    <a class="nav-link" data-bs-toggle="collapse" href="#qualificationSubmenu" role="button" aria-expanded="true"><i class="fas fa-graduation-cap me-2"></i> Qualifications</a>
-                    <div class="collapse show" id="qualificationSubmenu">
-                        <ul class="nav flex-column ms-3">
-                            <li class="nav-item"><a class="nav-link" href="manage_qualifications.html">Qualification Approval</a></li>
-                            <li class="nav-item"><a class="nav-link" href="view_batches.html">Batches</a></li>
-                        </ul>
-                    </div>
-                </li>
-    <li class="nav-item mb-1">
-        <a class="nav-link" href="reports.html">
-            <i class="fas fa-chart-bar me-2"></i> Reports & Analytics
-        </a>
-    </li>
-    <li class="nav-item mb-1">
-        <a class="nav-link active" href="user_management.html">
-            <i class="fas fa-users-cog me-2"></i> User Management
-        </a>
-    </li>
-</ul>
-        </nav>
-        <!-- Page Content -->
-        <div class="flex-grow-1" id="content">
-            <!-- Top Navigation -->
-            <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
+    <!-- Main Content Area -->
+    <div class="main-content" id="content">
+        <!-- Top Navigation -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
                 <div class="container-fluid">
                     <button type="button" id="sidebarCollapse" class="btn btn-outline-primary me-2 d-lg-none">
                         <i class="fas fa-bars"></i>
@@ -155,60 +104,198 @@
                     </button>
                 </div>
 
-                <!-- Filters and Table -->
+                <!-- Role Tabs -->
                 <div class="card shadow-sm">
-                    <div class="card-header bg-white py-3">
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
-                                    <input type="text" class="form-control border-start-0 ps-0" id="searchInput" placeholder="Search by username or email...">
+                    <div class="card-header p-0">
+                        <ul class="nav nav-tabs" role="tablist" id="userRoleTabs">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="admin-tab" data-bs-toggle="tab" data-bs-target="#adminPane" type="button" role="tab">
+                                    <i class="fas fa-shield-alt me-2"></i>Admins
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="trainer-tab" data-bs-toggle="tab" data-bs-target="#trainerPane" type="button" role="tab">
+                                    <i class="fas fa-chalkboard-user me-2"></i>Trainers
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="trainee-tab" data-bs-toggle="tab" data-bs-target="#traineePane" type="button" role="tab">
+                                    <i class="fas fa-user-graduate me-2"></i>Trainees
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="registrar-tab" data-bs-toggle="tab" data-bs-target="#registrarPane" type="button" role="tab">
+                                    <i class="fas fa-clipboard-list me-2"></i>Registrars
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Tab Content -->
+                    <div class="tab-content" id="userRoleTabContent">
+                        <!-- Admin Tab -->
+                        <div class="tab-pane fade show active" id="adminPane" role="tabpanel">
+                            <div class="p-3 bg-light border-bottom">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                                            <input type="text" class="form-control border-start-0 ps-0 search-input" placeholder="Search by username or email...">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <select class="form-select status-filter">
+                                            <option value="">All Status</option>
+                                            <option value="active">Active</option>
+                                            <option value="inactive">Inactive</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
-                                <select class="form-select" id="roleFilter">
-                                    <option value="">All Roles</option>
-                                    <option value="admin">Admin</option>
-                                    <option value="trainer">Trainer</option>
-                                    <option value="trainee">Trainee</option>
-                                    <option value="registrar">Registrar</option>
-                                </select>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0 admin-table">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th class="ps-4">User</th>
+                                            <th>Status</th>
+                                            <th>Date Created</th>
+                                            <th class="text-end pe-4">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="users-table-body">
+                                        <tr><td colspan="4" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+                                    </tbody>
+                                </table>
                             </div>
-                            <div class="col-md-3">
-                                <select class="form-select" id="statusFilter">
-                                    <option value="">All Status</option>
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
-                                </select>
+                            <div class="card-footer bg-white py-3">
+                                <nav aria-label="Page navigation">
+                                    <ul class="pagination justify-content-end mb-0 role-pagination"></ul>
+                                </nav>
                             </div>
                         </div>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0" id="usersTable">
-                                <thead class="bg-light">
-                                    <tr>
-                                        <th class="ps-4">User</th>
-                                        <th>Role</th>
-                                        <th>Status</th>
-                                        <th>Date Created</th>
-                                        <th class="text-end pe-4">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="usersTableBody">
-                                    <tr>
-                                        <td colspan="7" class="text-center">
-                                            <i class="fas fa-spinner fa-spin"></i> Loading users...
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+
+                        <!-- Trainer Tab -->
+                        <div class="tab-pane fade" id="trainerPane" role="tabpanel">
+                            <div class="p-3 bg-light border-bottom">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                                            <input type="text" class="form-control border-start-0 ps-0 search-input" placeholder="Search by username or email...">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <select class="form-select status-filter">
+                                            <option value="">All Status</option>
+                                            <option value="active">Active</option>
+                                            <option value="inactive">Inactive</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0 trainer-table">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th class="ps-4">User</th>
+                                            <th>Status</th>
+                                            <th>Date Created</th>
+                                            <th class="text-end pe-4">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="users-table-body">
+                                        <tr><td colspan="4" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="card-footer bg-white py-3">
+                                <nav aria-label="Page navigation">
+                                    <ul class="pagination justify-content-end mb-0 role-pagination"></ul>
+                                </nav>
+                            </div>
                         </div>
-                    </div>
-                    <div class="card-footer bg-white py-3">
-                        <nav aria-label="Page navigation">
-                            <ul class="pagination justify-content-end mb-0" id="pagination"></ul>
-                        </nav>
+
+                        <!-- Trainee Tab -->
+                        <div class="tab-pane fade" id="traineePane" role="tabpanel">
+                            <div class="p-3 bg-light border-bottom">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                                            <input type="text" class="form-control border-start-0 ps-0 search-input" placeholder="Search by username or email...">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <select class="form-select status-filter">
+                                            <option value="">All Status</option>
+                                            <option value="active">Active</option>
+                                            <option value="inactive">Inactive</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0 trainee-table">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th class="ps-4">User</th>
+                                            <th>Status</th>
+                                            <th>Date Created</th>
+                                            <th class="text-end pe-4">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="users-table-body">
+                                        <tr><td colspan="4" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="card-footer bg-white py-3">
+                                <nav aria-label="Page navigation">
+                                    <ul class="pagination justify-content-end mb-0 role-pagination"></ul>
+                                </nav>
+                            </div>
+                        </div>
+
+                        <!-- Registrar Tab -->
+                        <div class="tab-pane fade" id="registrarPane" role="tabpanel">
+                            <div class="p-3 bg-light border-bottom">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                                            <input type="text" class="form-control border-start-0 ps-0 search-input" placeholder="Search by username or email...">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <select class="form-select status-filter">
+                                            <option value="">All Status</option>
+                                            <option value="active">Active</option>
+                                            <option value="inactive">Inactive</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0 registrar-table">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th class="ps-4">User</th>
+                                            <th>Status</th>
+                                            <th>Date Created</th>
+                                            <th class="text-end pe-4">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="users-table-body">
+                                        <tr><td colspan="4" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="card-footer bg-white py-3">
+                                <nav aria-label="Page navigation">
+                                    <ul class="pagination justify-content-end mb-0 role-pagination"></ul>
+                                </nav>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -225,6 +312,7 @@
                 </div>
                 <div class="modal-body">
                     <form id="addUserForm">
+                                                <!-- Status dropdown moved to bottom -->
                         <input type="hidden" id="userId">
                         
                         <div class="mb-3">
@@ -261,14 +349,15 @@
                             </select>
                         </div>
                         
-                        <div class="mb-3">
-                            <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
-                            <select class="form-select" id="status" name="status" required>
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
-                        </div>
+                        <!-- Status is always 'active' by default, no dropdown shown for add -->
                     </form>
+                </div>
+                <div id="editStatusContainer" style="display:none;" class="mb-3 px-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -284,56 +373,21 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <!-- Axios -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <!-- Sidebar Loader -->
+    <script src="../../../js/sidebar.js"></script>
     <!-- Custom JS -->
      <script src="../../../js/admin/pages/user_management.js"></script>
     
     <script>
-        // Logout functionality
-        document.getElementById('logoutBtn').addEventListener('click', function() {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = '../../../login.html';
-        });
-
-        // Sidebar Persistence
-        document.addEventListener("DOMContentLoaded", function() {
-            const sidebar = document.getElementById('sidebar');
-            
-            // 1. Restore Sidebar State (Expand menus) FIRST
-            const sidebarState = JSON.parse(localStorage.getItem('sidebarState')) || [];
-            sidebarState.forEach(id => {
-                const submenu = document.getElementById(id);
-                const toggler = document.querySelector(`[href="#${id}"]`);
-                if (submenu && toggler) {
-                    submenu.classList.add('show');
-                    toggler.setAttribute('aria-expanded', 'true');
-                }
-            });
-
-            // 2. Restore Scroll Position SECOND (after content height is established)
-            if (sidebar) {
-                const scrollPos = localStorage.getItem('sidebarScroll');
-                if (scrollPos) sidebar.scrollTop = parseInt(scrollPos);
-                
-                window.addEventListener('beforeunload', () => {
-                    localStorage.setItem('sidebarScroll', sidebar.scrollTop);
+        // Logout functionality (handled in sidebar.js)
+        document.addEventListener('DOMContentLoaded', function() {
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    logout();
                 });
             }
-
-            document.querySelectorAll('#sidebar .collapse').forEach(collapse => {
-                collapse.addEventListener('shown.bs.collapse', () => {
-                    const state = JSON.parse(localStorage.getItem('sidebarState')) || [];
-                    if (!state.includes(collapse.id)) {
-                        state.push(collapse.id);
-                        localStorage.setItem('sidebarState', JSON.stringify(state));
-                    }
-                });
-                collapse.addEventListener('hidden.bs.collapse', () => {
-                    let state = JSON.parse(localStorage.getItem('sidebarState')) || [];
-                    state = state.filter(id => id !== collapse.id);
-                    localStorage.setItem('sidebarState', JSON.stringify(state));
-                });
-            });
         });
     </script>
 </body>

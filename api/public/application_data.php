@@ -17,8 +17,8 @@ if ($action === 'get-form-data') {
 
 function getFormData($conn) {
     try {
-        // Get active courses that are offered
-        $courseStmt = $conn->query("SELECT qualification_id, qualification_name AS course_name FROM tbl_qualifications WHERE status = 'active' ORDER BY qualification_name");
+        // Get active courses that are offered with CTPR number and duration
+        $courseStmt = $conn->query("SELECT qualification_id, qualification_name AS course_name, ctpr_number, duration FROM tbl_qualifications WHERE status = 'active' ORDER BY qualification_name");
         $courses = $courseStmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Get active scholarships

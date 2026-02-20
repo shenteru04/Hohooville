@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk User Import - Admin Panel</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Sidebar CSS -->
+    <link rel="stylesheet" href="../../../css/admin/sidebar.css">
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #858796;
+            --bg-color: #f8f9fc;
+            --text-color: #5a5c69;
+        }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        #sidebar {
+            background: #fff;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            z-index: 1000;
+        }
+        #sidebar .sidebar-header {
+            padding: 1.5rem 1rem;
+            text-align: center;
+            color: var(--primary-color);
+            font-weight: 800;
+        }
+        #sidebar .nav-link {
+            color: var(--text-color);
+            padding: 0.5rem 1rem;
+            margin: 0.1rem 0.5rem;
+            border-radius: 0.35rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        #sidebar .nav-link:hover {
+            background-color: #eaecf4;
+            color: var(--primary-color);
+        }
+        #sidebar .nav-link.active {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+        .card {
+            border: none;
+            border-radius: 0.35rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        }
+        .card-header {
+            background-color: #f8f9fc;
+            border-bottom: 1px solid #e3e6f0;
+            padding: 1rem 1.25rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        .drop-zone { border: 2px dashed #007bff; border-radius: 8px; padding: 30px; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .drop-zone.dragover { background-color: #e7f1ff; border-color: #0056b3; }
+        .progress-container { margin-top: 20px; }
+    </style>
+</head>
+<body> 
+
+     <div id="sidebar-container"></div>
+     <div class="main-content">
+     
+            <!-- Top Navigation -->
+            <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
+                <div class="container-fluid">
+                    <button type="button" id="sidebarCollapse" class="btn btn-outline-primary me-2 d-lg-none">
+                        <i class="fas fa-bars"></i>
+                    </button>
+
+                    <div class="ms-auto d-flex align-items-center">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle"></i> <span id="userName">Admin</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                                <li><a class="dropdown-item" href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="container-fluid mt-4">
+                <h2 class="mb-4"><i class="fas fa-upload me-2"></i> Bulk User Import</h2>
+
+            <!-- Step 1: Select User Type -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Step 1: Select User Type</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="userType" id="traineeType" value="trainee" checked onchange="updateTemplate()">
+                                <label class="form-check-label" for="traineeType">
+                                    <strong>Trainee</strong> - Import trainee records in bulk
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="userType" id="trainerType" value="trainer" onchange="updateTemplate()">
+                                <label class="form-check-label" for="trainerType">
+                                    <strong>Trainer</strong> - Import trainer records in bulk
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-info btn-sm mt-3" onclick="downloadTemplate()">
+                        <i class="fas fa-download me-2"></i> Download CSV Template
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 2: Upload File -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Step 2: Upload CSV File</h6>
+                </div>
+                <div class="card-body">
+                    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                        <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                        <p class="mb-0"><strong>Drag & drop your CSV file here or click to browse</strong></p>
+                        <small class="text-muted">Max file size: 10MB</small>
+                    </div>
+                    <input type="file" id="fileInput" accept=".csv" style="display:none;" onchange="handleFileSelect(event)">
+                </div>
+            </div>
+
+            <!-- Step 3: Preview -->
+            <div class="card mb-4" id="previewCard" style="display:none;">
+                <div class="card-header">
+                    <h6 class="mb-0">Step 3: Preview Data</h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <span id="previewInfo"></span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm" id="previewTable">
+                            <thead></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <button class="btn btn-success" onclick="confirmImport()">
+                        <i class="fas fa-check me-2"></i> Confirm & Import
+                    </button>
+                    <button class="btn btn-secondary" onclick="resetImport()">
+                        <i class="fas fa-times me-2"></i> Cancel
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 4: Import Progress -->
+            <div class="card" id="progressCard" style="display:none;">
+                <div class="card-header">
+                    <h6 class="mb-0">Step 4: Import Progress</h6>
+                </div>
+                <div class="card-body">
+                    <div class="progress mb-3">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" id="progressBar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <div id="importResults"></div>
+                </div>
+            </div>
+    </div> <!-- End main-content -->
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+        <script src="../../../js/sidebar.js"></script>
+        <script src="../../../js/admin/pages/bulk_import.js"></script>
+    </body>
+    </html>

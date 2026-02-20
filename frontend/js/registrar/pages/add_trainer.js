@@ -4,10 +4,17 @@ let trainerModal;
 let viewModal;
 
 document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Swal === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        document.head.appendChild(script);
+    }
+
     trainerModal = new bootstrap.Modal(document.getElementById('trainerModal'));
     viewModal = new bootstrap.Modal(document.getElementById('viewTrainerModal'));
 
     loadTrainers();
+    loadSpecializations();
     
     const form = document.getElementById('trainerForm');
     if (form) {
@@ -94,6 +101,27 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+async function loadSpecializations() {
+    try {
+        // Use the registrar endpoint to ensure we get qualification_ids consistent with other pages
+        const response = await axios.get(`${API_BASE_URL}/role/registrar/qualifications.php?action=list`);
+        if (response.data.success) {
+            const select = document.getElementById('qualification_id');
+            select.innerHTML = '<option value="">Select Qualification</option>';
+            if (response.data.data) {
+                response.data.data.forEach(course => {
+                    const option = document.createElement('option');
+                    option.value = course.qualification_id;
+                    option.textContent = course.qualification_name || course.course_name;
+                    select.appendChild(option);
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error loading specializations:', error);
+    }
+}
+
 async function loadTrainers() {
     try {
         const response = await axios.get(`${API_BASE_URL}/role/registrar/trainers.php?action=list`);
@@ -111,17 +139,16 @@ function renderTrainersTable(trainers) {
     const tbody = document.getElementById('trainersTableBody');
     tbody.innerHTML = '';
     if (!trainers || trainers.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No trainers found.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center">No trainers found.</td></tr>';
         return;
     }
 
     trainers.forEach(trainer => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${trainer.trainer_id}</td>
             <td>${trainer.first_name} ${trainer.last_name}</td>
             <td>${trainer.email}</td>
-            <td>${trainer.specialization || 'N/A'}</td>
+            <td>${trainer.qualification_name || 'N/A'}</td>
             <td><span class="badge bg-${trainer.status === 'active' ? 'success' : 'secondary'}">${trainer.status}</span></td>
             <td>
                 <button class="btn btn-sm btn-info text-white" onclick="viewTrainerDetails(${trainer.trainer_id})"><i class="fas fa-eye"></i></button>
@@ -150,7 +177,7 @@ async function saveTrainer() {
     formData.append('last_name', document.getElementById('lastName').value);
     formData.append('email', document.getElementById('email').value);
     formData.append('phone', document.getElementById('phone').value);
-    formData.append('specialization', document.getElementById('specialization').value);
+    formData.append('qualification_id', document.getElementById('qualification_id').value);
     formData.append('address', document.getElementById('address').value);
     formData.append('nttc_no', document.getElementById('nttcNo').value);
     formData.append('nc_level', document.getElementById('ncLevel').value);
@@ -169,15 +196,15 @@ async function saveTrainer() {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
         if (response.data.success) {
-            alert(`Trainer ${trainerId ? 'updated' : 'added'} successfully!${!trainerId ? ' Default password is their last name.' : ''}`);
+            Swal.fire('Success', `Trainer ${trainerId ? 'updated' : 'added'} successfully!${!trainerId ? ' Default password is their last name.' : ''}`, 'success');
             trainerModal.hide();
             loadTrainers();
         } else {
-            alert('Error: ' + response.data.message);
+            Swal.fire('Error', 'Error: ' + response.data.message, 'error');
         }
     } catch (error) {
         console.error(`Error saving trainer:`, error);
-        alert('An error occurred while saving the trainer.');
+        Swal.fire('Error', 'An error occurred while saving the trainer.', 'error');
     }
 }
 
@@ -191,7 +218,7 @@ window.editTrainer = async function(id) {
             document.getElementById('lastName').value = trainer.last_name;
             document.getElementById('email').value = trainer.email;
             document.getElementById('phone').value = trainer.phone_number;
-            document.getElementById('specialization').value = trainer.specialization;
+            document.getElementById('qualification_id').value = trainer.qualification_id;
             document.getElementById('address').value = trainer.address;
             document.getElementById('nttcNo').value = trainer.nttc_no;
             document.getElementById('ncLevel').value = trainer.nc_level;
@@ -199,7 +226,7 @@ window.editTrainer = async function(id) {
             document.getElementById('trainerModalLabel').textContent = 'Edit Trainer';
             trainerModal.show();
         } else {
-            alert('Error: ' + response.data.message);
+            Swal.fire('Error', 'Error: ' + response.data.message, 'error');
         }
     } catch (error) {
         console.error('Error fetching trainer details:', error);
@@ -223,7 +250,7 @@ window.viewTrainerDetails = async function(id) {
                 <p><strong>Email:</strong> ${trainer.email}</p>
                 <p><strong>Phone:</strong> ${trainer.phone_number || 'N/A'}</p>
                 <p><strong>Address:</strong> ${trainer.address || 'N/A'}</p>
-                <p><strong>Specialization:</strong> ${trainer.specialization || 'N/A'}</p>
+                <p><strong>Qualification:</strong> ${trainer.qualification_name || 'N/A'}</p>
                 <p><strong>Status:</strong> <span class="badge bg-${trainer.status === 'active' ? 'success' : 'secondary'}">${trainer.status}</span></p>
                 <hr>
                 <h6>Certifications</h6>
@@ -236,7 +263,7 @@ window.viewTrainerDetails = async function(id) {
             `;
             viewModal.show();
         } else {
-            alert('Error: ' + response.data.message);
+            Swal.fire('Error', 'Error: ' + response.data.message, 'error');
         }
     } catch (error) {
         console.error('Error fetching trainer details:', error);
@@ -244,16 +271,24 @@ window.viewTrainerDetails = async function(id) {
 }
 
 window.deleteTrainer = async function(id) {
-    if (!confirm('Are you sure you want to delete this trainer? This action cannot be undone.')) {
-        return;
-    }
+    const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: "You won't be able to revert this!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (!result.isConfirmed) return;
+
     try {
         const response = await axios.delete(`${API_BASE_URL}/role/registrar/trainers.php?action=delete&id=${id}`);
         if (response.data.success) {
-            alert('Trainer deleted successfully!');
+            Swal.fire('Deleted!', 'Trainer deleted successfully!', 'success');
             loadTrainers();
         } else {
-            alert('Error: ' + response.data.message);
+            Swal.fire('Error', 'Error: ' + response.data.message, 'error');
         }
     } catch (error) {
         console.error('Error deleting trainer:', error);

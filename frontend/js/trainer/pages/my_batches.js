@@ -1,5 +1,7 @@
 const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
 let currentTrainerId = null; // To store trainer ID
+let currentBatches = []; // Store batches for reference
+let currentUserId = null;
 
 document.addEventListener('DOMContentLoaded', async function() {
     const user = JSON.parse(localStorage.getItem('user'));
@@ -8,6 +10,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         window.location.href = '../../../login.html';
         return;
     }
+    currentUserId = user.user_id;
 
     // Inject Sidebar CSS (W3.CSS Reference Style)
     const ms = document.createElement('style');
@@ -138,9 +141,10 @@ async function loadBatches(trainerId) {
     try {
         const response = await axios.get(`${API_BASE_URL}/role/trainer/my_batches.php?trainer_id=${trainerId}`);
         if (response.data.success) {
+            currentBatches = response.data.data;
             renderBatchesTable(response.data.data);
         } else {
-            document.getElementById('batchesTableBody').innerHTML = '<tr><td colspan="5" class="text-center">No batches assigned.</td></tr>';
+            document.getElementById('batchesTableBody').innerHTML = `<tr><td colspan="5" class="text-center text-danger">${response.data.message || 'No batches assigned.'}</td></tr>`;
         }
     } catch (error) {
         console.error('Error loading batches:', error);
@@ -160,8 +164,8 @@ function renderBatchesTable(data) {
             row.innerHTML = `
                 <td>${batch.batch_name}</td>
                 <td>${batch.course_name}</td>
-                <td>${batch.schedule || 'TBA'}</td>
-                <td>${batch.room || 'TBA'}</td>
+                <td>${batch.schedule || '<span class="text-muted">TBA</span>'}</td>
+                <td>${batch.room || '<span class="text-muted">TBA</span>'}</td>
                 <td><span class="badge bg-${batch.status === 'open' ? 'success' : 'secondary'}">${batch.status}</span></td>
             `;
             tbody.appendChild(row);
@@ -189,6 +193,12 @@ async function loadTraineesForBatch(batchId) {
     const traineesBody = document.getElementById('traineesTableBody');
     traineesContainer.classList.remove('d-none');
     traineesBody.innerHTML = '<tr><td colspan="5" class="text-center"><div class="spinner-border spinner-border-sm"></div> Loading trainees...</td></tr>';
+
+    // Setup Download Button
+    const downloadBtn = document.getElementById('downloadAttendanceBtn');
+    if (downloadBtn) {
+        downloadBtn.onclick = () => generateAttendancePDF(batchId);
+    }
 
     try {
         const response = await axios.get(`${API_BASE_URL}/role/trainer/my_trainees.php?action=list&trainer_id=${currentTrainerId}&batch_id=${batchId}`);
@@ -229,4 +239,88 @@ function renderTraineesTable(trainees) {
         `;
         tbody.appendChild(row);
     });
+}
+
+async function generateAttendancePDF(batchId) {
+    const btn = document.getElementById('downloadAttendanceBtn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Generating...';
+    btn.disabled = true;
+
+    try {
+        // 1. Get Batch Info
+        const batch = currentBatches.find(b => b.batch_id == batchId);
+        if (!batch) throw new Error("Batch details not found.");
+
+        // 2. Get Trainer Info (for NTTC)
+        const trainerRes = await axios.get(`${API_BASE_URL}/role/trainer/profile.php?action=get&user_id=${currentUserId}`);
+        const trainer = trainerRes.data.success ? trainerRes.data.data : {};
+        const trainerFullName = `${trainer.first_name || ''} ${trainer.last_name || ''}`.toUpperCase();
+
+        // 3. Get Trainees
+        const traineesRes = await axios.get(`${API_BASE_URL}/role/trainer/my_trainees.php?action=list&trainer_id=${currentTrainerId}&batch_id=${batchId}`);
+        const trainees = traineesRes.data.success ? traineesRes.data.data : [];
+
+        // 4. Populate Template
+        document.getElementById('pdfProgramName').textContent = batch.course_name || batch.qualification_name || 'N/A';
+        document.getElementById('pdfDateStart').textContent = batch.start_date || 'TBA';
+        document.getElementById('pdfDateEnd').textContent = batch.end_date || 'TBA';
+        document.getElementById('pdfDuration').textContent = batch.duration || '';
+        document.getElementById('pdfTrainerName').textContent = trainerFullName;
+        document.getElementById('pdfNttcNumber').textContent = trainer.nttc_no || 'N/A';
+        document.getElementById('pdfValidityDate').textContent = ''; 
+        document.getElementById('pdfDate').textContent = new Date().toLocaleDateString();
+        document.getElementById('pdfFooterTrainer').textContent = trainerFullName;
+        document.getElementById('pdfFooterRegistrar').textContent = '';
+
+        const tbody = document.getElementById('pdfTableBody');
+        tbody.innerHTML = '';
+        
+        // Ensure exactly 25 rows to fit one page
+        const totalRows = 25;
+        
+        for (let i = 0; i < totalRows; i++) {
+            const t = trainees[i];
+            const row = document.createElement('tr');
+            row.style.height = '21px';
+            const name = t ? t.full_name.toUpperCase() : '';
+            const phone = t ? (t.phone_number || '') : '';
+            const email = t ? (t.email || '') : '';
+            
+            row.innerHTML = `
+                <td style="border:1px solid #000;text-align:center;font-size:10px;">${i + 1}</td>
+                <td style="border:1px solid #000;padding:0 4px;font-size:10px;">${name}</td>
+                <td style="border:1px solid #000;text-align:center;font-size:10px;">${phone}</td>
+                <td style="border:1px solid #000;text-align:center;font-size:10px;">${email}</td>
+                <td style="border:1px solid #000;"></td>
+                <td style="border:1px solid #000;"></td>
+                <td style="border:1px solid #000;"></td>
+                <td style="border:1px solid #000;"></td>
+            `;
+            tbody.appendChild(row);
+        }
+
+        // 5. Generate PDF
+        const element = document.getElementById('attendanceSheetTemplate');
+        // Clone to make visible for html2pdf
+        const clone = element.cloneNode(true);
+        clone.style.display = 'block';
+        
+        const opt = {
+            margin: [10, 10, 10, 10],
+            filename: `Attendance_${batch.batch_name.replace(/\s+/g, '_')}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, logging: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        await html2pdf().set(opt).from(clone).save();
+
+    } catch (error) {
+        console.error('PDF Generation Error:', error);
+        Swal.fire({title: 'Error', text: 'Failed to generate PDF. Please try again.', icon: 'error'});
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
 }

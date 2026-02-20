@@ -2,6 +2,12 @@ const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
 const UPLOADS_URL = window.location.origin + '/hohoo-ville/uploads/trainees/';
 
 document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Swal === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        document.head.appendChild(script);
+    }
+
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user || user.role !== 'trainee') {
         // window.location.href = '../../../../login.html';
@@ -153,11 +159,11 @@ async function loadProfileData(traineeId) {
             document.getElementById('address').value = profile.address || '';
 
         } else {
-            alert('Could not load profile data: ' + response.data.message);
+            Swal.fire('Error', 'Could not load profile data: ' + response.data.message, 'error');
         }
     } catch (error) {
         console.error('Error loading profile:', error);
-        alert('An error occurred while fetching your profile.');
+        Swal.fire('Error', 'An error occurred while fetching your profile.', 'error');
     }
 }
 
@@ -179,7 +185,7 @@ async function saveProfileData(traineeId) {
         const response = await axios.post(`${API_BASE_URL}/role/trainee/training.php?action=update-profile`, payload);
 
         if (response.data.success) {
-            alert('Profile updated successfully!');
+            Swal.fire('Success', 'Profile updated successfully!', 'success');
             // Update header name if changed
             const user = JSON.parse(localStorage.getItem('user'));
             // This is a bit complex, let's simplify. We don't need to re-fetch username if it's not editable.
@@ -187,11 +193,11 @@ async function saveProfileData(traineeId) {
             // Let's just reload the profile data to be safe.
             loadProfileData(traineeId);
         } else {
-            alert('Error updating profile: ' + response.data.message);
+            Swal.fire('Error', 'Error updating profile: ' + response.data.message, 'error');
         }
     } catch (error) {
         console.error('Error updating profile:', error);
-        alert('An error occurred while saving your profile.');
+        Swal.fire('Error', 'An error occurred while saving your profile.', 'error');
     } finally {
         saveBtn.disabled = false;
         saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Save Changes';

@@ -3,6 +3,12 @@ let scheduleModal;
 let allTrainers = [];
 
 document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Swal === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        document.head.appendChild(script);
+    }
+
     scheduleModal = new bootstrap.Modal(document.getElementById('assignScheduleModal'));
     loadScheduleData();
 
@@ -101,6 +107,12 @@ async function loadScheduleData() {
             const tbody = document.getElementById('schedulesTableBody');
             tbody.innerHTML = '';
             batches.forEach(batch => {
+                // Escape strings to prevent JS errors in onclick
+                const safeName = (batch.batch_name || '').replace(/'/g, "\\'");
+                const safeTrainer = (batch.trainer_id || '');
+                const safeSchedule = (batch.schedule || '').replace(/'/g, "\\'");
+                const safeRoom = (batch.room || '').replace(/'/g, "\\'");
+
                 tbody.innerHTML += `
                     <tr>
                         <td>${batch.batch_name}</td>
@@ -109,7 +121,7 @@ async function loadScheduleData() {
                         <td>${batch.schedule || '<span class="text-muted">Not Set</span>'}</td>
                         <td>${batch.room || '<span class="text-muted">Not Set</span>'}</td>
                         <td>
-                            <button class="btn btn-sm btn-outline-primary" onclick="openAssignModal(${batch.batch_id}, '${batch.batch_name}', '${batch.trainer_id || ''}', '${batch.schedule || ''}', '${batch.room || ''}')">
+                            <button class="btn btn-sm btn-outline-primary" onclick="openAssignModal(${batch.batch_id}, '${safeName}', '${safeTrainer}', '${safeSchedule}', '${safeRoom}')">
                                 <i class="fas fa-edit"></i> Assign
                             </button>
                         </td>
@@ -143,13 +155,41 @@ async function saveSchedule(e) {
     try {
         const response = await axios.post(`${API_BASE_URL}/role/registrar/schedule.php?action=assign`, payload);
         if (response.data.success) {
-            alert('Schedule assigned successfully!');
+            Swal.fire({
+                title: 'Success',
+                text: 'Schedule assigned successfully!',
+                icon: 'success'
+            });
             scheduleModal.hide();
             loadScheduleData();
         } else {
-            alert('Error: ' + response.data.message);
+            Swal.fire({
+                title: 'Error',
+                text: response.data.message || 'An error occurred',
+                icon: 'error'
+            });
         }
     } catch (error) {
         console.error('Error saving schedule:', error);
+        Swal.fire({
+            title: 'Error',
+            text: 'An error occurred while saving the schedule.',
+            icon: 'error'
+        });
     }
+}
+
+function showAlert(message, type) {
+    const iconMap = {
+        'success': 'success',
+        'danger': 'error',
+        'warning': 'warning',
+        'info': 'info'
+    };
+    
+    Swal.fire({
+        title: type.charAt(0).toUpperCase() + type.slice(1),
+        text: message,
+        icon: iconMap[type] || 'info'
+    });
 }

@@ -3,10 +3,17 @@ let accountModal, editModal;
 let trainersData = [];
 
 document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Swal === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        document.head.appendChild(script);
+    }
+
     accountModal = new bootstrap.Modal(document.getElementById('accountModal'));
     editModal = new bootstrap.Modal(document.getElementById('editModal'));
     
     loadTrainers();
+    loadQualifications();
 
     document.getElementById('accountForm').addEventListener('submit', handleCreateAccount);
     document.getElementById('editForm').addEventListener('submit', handleUpdateTrainer);
@@ -88,6 +95,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+async function loadQualifications() {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/role/admin/trainers.php?action=get-qualifications`);
+        if (response.data.success) {
+            const select = document.getElementById('editQualificationId');
+            response.data.data.forEach(q => {
+                const option = document.createElement('option');
+                option.value = q.qualification_id;
+                option.textContent = q.qualification_name;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading qualifications:', error);
+    }
+}
+
 async function loadTrainers() {
     try {
         const response = await axios.get(`${API_BASE_URL}/role/admin/trainers.php?action=list`);
@@ -123,10 +147,9 @@ function renderTable(data) {
 
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${t.trainer_id}</td>
             <td>${t.last_name}, ${t.first_name}</td>
             <td>${t.email}</td>
-            <td>${t.specialization || '-'}</td>
+            <td>${t.qualification_name || '-'}</td>
             <td><span class="badge bg-${t.status === 'active' ? 'success' : 'secondary'}">${t.status}</span></td>
             <td>
                 ${accountBtn}
@@ -155,11 +178,11 @@ async function handleCreateAccount(e) {
     try {
         const response = await axios.post(`${API_BASE_URL}/role/admin/trainers.php?action=create-account`, data);
         if (response.data.success) {
-            alert('Account created successfully');
+            Swal.fire('Success', 'Account created successfully', 'success');
             accountModal.hide();
             loadTrainers();
         } else {
-            alert('Error: ' + response.data.message);
+            Swal.fire('Error', 'Error: ' + response.data.message, 'error');
         }
     } catch (error) {
         console.error('Error creating account:', error);
@@ -167,7 +190,15 @@ async function handleCreateAccount(e) {
 }
 
 window.toggleStatus = async function(id, status) {
-    if (!confirm(`Are you sure you want to set this trainer to ${status}?`)) return;
+    const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: `Do you want to set this trainer to ${status}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: `Yes, set to ${status}`
+    });
+
+    if (!result.isConfirmed) return;
     try {
         await axios.post(`${API_BASE_URL}/role/admin/trainers.php?action=toggle-status`, { trainer_id: id, status: status });
         loadTrainers();
@@ -185,7 +216,12 @@ window.openEditModal = function(id) {
     document.getElementById('editLastName').value = t.last_name;
     document.getElementById('editEmail').value = t.email;
     document.getElementById('editPhone').value = t.phone_number || '';
-    document.getElementById('editSpecialization').value = t.specialization || '';
+    document.getElementById('editQualificationId').value = t.qualification_id || '';
+    // Set status dropdown
+    const statusSelect = document.getElementById('editStatus');
+    if (statusSelect) {
+        statusSelect.value = t.status || 'active';
+    }
     editModal.show();
 };
 
@@ -197,17 +233,17 @@ async function handleUpdateTrainer(e) {
         last_name: document.getElementById('editLastName').value,
         email: document.getElementById('editEmail').value,
         phone: document.getElementById('editPhone').value,
-        specialization: document.getElementById('editSpecialization').value
+        qualification_id: document.getElementById('editQualificationId').value
     };
     // Implementation for update API call would go here (similar to add/create account)
     try {
         const response = await axios.post(`${API_BASE_URL}/role/admin/trainers.php?action=update`, data);
         if (response.data.success) {
-            alert('Trainer updated successfully');
+            Swal.fire('Success', 'Trainer updated successfully', 'success');
             editModal.hide();
             loadTrainers();
         } else {
-            alert('Error: ' + response.data.message);
+            Swal.fire('Error', 'Error: ' + response.data.message, 'error');
         }
     } catch (error) {
         console.error('Error updating trainer:', error);

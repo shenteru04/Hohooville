@@ -34,7 +34,8 @@ async function loadDashboardData(userId) {
             const data = response.data.data;
             document.getElementById('activeBatches').textContent = data.active_batches;
             document.getElementById('totalTrainees').textContent = data.total_trainees;
-            document.getElementById('pendingGrades').textContent = data.pending_grades;
+            document.getElementById('competentCount').textContent = data.competent;
+            document.getElementById('nycCount').textContent = data.nyc;
 
             const tbody = document.getElementById('scheduleTableBody');
             tbody.innerHTML = '';

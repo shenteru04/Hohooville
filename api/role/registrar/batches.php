@@ -54,8 +54,10 @@ function listBatches($conn) {
                     b.start_date,
                     b.end_date,
                     b.status,
-                    b.scholarship_type,
+                    b.scholarship_type_id,
+                    st.scholarship_name as scholarship_type,
                     b.trainer_id,
+                    b.max_trainees,
                     c.qualification_name as course_name,
                     CONCAT(t.first_name, ' ', t.last_name) AS trainer_name
                 FROM
@@ -64,6 +66,8 @@ function listBatches($conn) {
                     tbl_qualifications AS c ON b.qualification_id = c.qualification_id
                 LEFT JOIN
                     tbl_trainer AS t ON b.trainer_id = t.trainer_id
+                LEFT JOIN
+                    tbl_scholarship_type AS st ON b.scholarship_type_id = st.scholarship_type_id
                 ORDER BY
                     b.batch_id DESC";
         
@@ -81,16 +85,16 @@ function listBatches($conn) {
 function getFormData($conn) {
     try {
         // Get trainers
-        $trainer_query = "SELECT trainer_id, first_name, last_name FROM tbl_trainer WHERE status = 'active'";
+        $trainer_query = "SELECT trainer_id, first_name, last_name, qualification_id FROM tbl_trainer WHERE status = 'active'";
         $trainer_stmt = $conn->prepare($trainer_query);
         $trainer_stmt->execute();
         $trainers = $trainer_stmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Get scholarship types
-        $scholarship_query = "SELECT scholarship_name FROM tbl_scholarship_type WHERE status = 'active'";
+        $scholarship_query = "SELECT scholarship_type_id, scholarship_name FROM tbl_scholarship_type WHERE status = 'active'";
         $scholarship_stmt = $conn->prepare($scholarship_query);
         $scholarship_stmt->execute();
-        $scholarships = $scholarship_stmt->fetchAll(PDO::FETCH_COLUMN);
+        $scholarships = $scholarship_stmt->fetchAll(PDO::FETCH_ASSOC);
 
         echo json_encode([
             'success' => true,
@@ -115,17 +119,18 @@ function addBatch($conn) {
     }
 
     try {
-        $query = "INSERT INTO tbl_batch (qualification_id, batch_name, trainer_id, scholarship_type, start_date, end_date, status) 
-                  VALUES (:qualification_id, :batch_name, :trainer_id, :scholarship_type, :start_date, :end_date, :status)";
+        $query = "INSERT INTO tbl_batch (qualification_id, batch_name, trainer_id, scholarship_type_id, start_date, end_date, status, max_trainees) 
+                  VALUES (:qualification_id, :batch_name, :trainer_id, :scholarship_type_id, :start_date, :end_date, :status, :max_trainees)";
         $stmt = $conn->prepare($query);
 
         $stmt->bindParam(':qualification_id', $data->qualification_id, PDO::PARAM_INT);
         $stmt->bindParam(':batch_name', $data->batch_name);
         $stmt->bindParam(':trainer_id', $data->trainer_id, PDO::PARAM_INT);
-        $stmt->bindParam(':scholarship_type', $data->scholarship_type);
+        $stmt->bindParam(':scholarship_type_id', $data->scholarship_type_id);
         $stmt->bindParam(':start_date', $data->start_date);
         $stmt->bindParam(':end_date', $data->end_date);
         $stmt->bindParam(':status', $data->status);
+        $stmt->bindParam(':max_trainees', $data->max_trainees);
 
         if ($stmt->execute()) {
             echo json_encode(['success' => true, 'message' => 'Batch added successfully.']);
@@ -153,20 +158,22 @@ function updateBatch($conn) {
                     qualification_id = :qualification_id, 
                     batch_name = :batch_name, 
                     trainer_id = :trainer_id, 
-                    scholarship_type = :scholarship_type, 
+                    scholarship_type_id = :scholarship_type_id, 
                     start_date = :start_date, 
                     end_date = :end_date, 
-                    status = :status 
+                    status = :status,
+                    max_trainees = :max_trainees
                   WHERE batch_id = :batch_id";
         $stmt = $conn->prepare($query);
 
         $stmt->bindParam(':qualification_id', $data->qualification_id, PDO::PARAM_INT);
         $stmt->bindParam(':batch_name', $data->batch_name);
         $stmt->bindParam(':trainer_id', $data->trainer_id, PDO::PARAM_INT);
-        $stmt->bindParam(':scholarship_type', $data->scholarship_type);
+        $stmt->bindParam(':scholarship_type_id', $data->scholarship_type_id);
         $stmt->bindParam(':start_date', $data->start_date);
         $stmt->bindParam(':end_date', $data->end_date);
         $stmt->bindParam(':status', $data->status);
+        $stmt->bindParam(':max_trainees', $data->max_trainees);
         $stmt->bindParam(':batch_id', $data->batch_id, PDO::PARAM_INT);
 
         if ($stmt->execute()) {

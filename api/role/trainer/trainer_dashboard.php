@@ -29,6 +29,9 @@ class TrainerDashboard {
 
         try {
             switch ($action) {
+                case 'dashboard':
+                    $this->getDashboardData($trainerId);
+                    break;
                 case 'statistics':
                     $this->getStatistics($trainerId);
                     break;
@@ -45,6 +48,13 @@ class TrainerDashboard {
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
+    }
+
+    private function getDashboardData($trainerId) {
+        $stats = $this->getStatisticsData($trainerId);
+        $schedule = $this->getScheduleData($trainerId);
+        
+        echo json_encode(['success' => true, 'data' => array_merge($stats, ['schedule' => $schedule])]);
     }
 
     private function getStatistics($trainerId) {
@@ -76,12 +86,41 @@ class TrainerDashboard {
         $stmt->execute([$trainerId]);
         $competency = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        echo json_encode(['success' => true, 'data' => [
+        echo json_encode(['success' => true, 'data' => $this->getStatisticsData($trainerId)]);
+    }
+
+    private function getStatisticsData($trainerId) {
+        // Helper to get raw data for dashboard aggregation
+        $stmt = $this->conn->prepare("SELECT COUNT(*) FROM tbl_batch WHERE trainer_id = ? AND status = 'open'");
+        $stmt->execute([$trainerId]);
+        $activeBatches = $stmt->fetchColumn();
+
+        $stmt = $this->conn->prepare("SELECT COUNT(DISTINCT e.trainee_id) FROM tbl_enrollment e JOIN tbl_batch b ON e.batch_id = b.batch_id WHERE b.trainer_id = ? AND e.status = 'approved'");
+        $stmt->execute([$trainerId]);
+        $totalTrainees = $stmt->fetchColumn();
+
+        $stmt = $this->conn->prepare("
+            SELECT 
+                SUM(CASE WHEN avg_score >= 80 THEN 1 ELSE 0 END) as competent,
+                SUM(CASE WHEN avg_score < 80 THEN 1 ELSE 0 END) as nyc
+            FROM (
+                SELECT AVG(g.score) as avg_score
+                FROM tbl_grades g
+                JOIN tbl_enrollment e ON g.trainee_id = e.trainee_id
+                JOIN tbl_batch b ON e.batch_id = b.batch_id
+                WHERE b.trainer_id = ?
+                GROUP BY g.trainee_id
+            ) as scores
+        ");
+        $stmt->execute([$trainerId]);
+        $competency = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return [
             'active_batches' => $activeBatches,
             'total_trainees' => $totalTrainees,
             'competent' => $competency['competent'] ?? 0,
             'nyc' => $competency['nyc'] ?? 0
-        ]]);
+        ];
     }
 
     private function getModulePerformance($trainerId) {
@@ -105,19 +144,20 @@ class TrainerDashboard {
     }
 
     private function getSchedule($trainerId) {
-        // Get batches assigned to trainer
-        // We need course name. In new schema, it's tbl_qualifications.qualification_name
-        // We alias it to course_name for frontend compatibility
+        echo json_encode(['success' => true, 'data' => $this->getScheduleData($trainerId)]);
+    }
+
+    private function getScheduleData($trainerId) {
         $query = "
             SELECT 
+                b.batch_id,
                 b.batch_name, 
                 q.qualification_name as course_name, 
-                oc.schedule, 
-                oc.room
+                s.schedule, 
+                s.room
             FROM tbl_batch b
-            JOIN tbl_enrollment e ON b.batch_id = e.batch_id
-            JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
-            JOIN tbl_qualifications q ON oc.qualification_id = q.qualification_id
+            LEFT JOIN tbl_qualifications q ON b.qualification_id = q.qualification_id
+            LEFT JOIN tbl_schedule s ON b.batch_id = s.batch_id
             WHERE b.trainer_id = ? AND b.status = 'open'
             GROUP BY b.batch_id
         ";
@@ -125,7 +165,7 @@ class TrainerDashboard {
         $stmt->execute([$trainerId]);
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        echo json_encode(['success' => true, 'data' => $data]);
+        return $data;
     }
 }
 

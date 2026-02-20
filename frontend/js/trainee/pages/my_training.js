@@ -384,7 +384,7 @@ window.startQuiz = async function(lessonId) {
     }
 }
 
-async function submitQuiz() {
+function submitQuiz() {
     const user = JSON.parse(localStorage.getItem('user'));
     const lessonId = document.getElementById('quizForm').dataset.lessonId;
     const container = document.getElementById('quizQuestionsContainer');
@@ -393,17 +393,30 @@ async function submitQuiz() {
     const answers = {};
     const questions = container.querySelectorAll('input[type="radio"]:checked');
     
-    // Basic validation: check if all questions are answered? 
-    // Or just submit what is selected. Let's submit what is selected.
     questions.forEach(input => {
         const questionId = input.name.replace('q_', '');
         answers[questionId] = input.value;
     });
 
+    // If no answers, ask for confirmation
     if (Object.keys(answers).length === 0) {
-        if(!confirm("You haven't answered any questions. Are you sure you want to submit?")) return;
+        swal({
+            title: 'No answers selected',
+            text: "You haven't answered any questions. Are you sure you want to submit?",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, submit'
+        }, function(willSubmit) {
+            if (willSubmit) {
+                performQuizSubmission(user, lessonId, answers);
+            }
+        });
+    } else {
+        performQuizSubmission(user, lessonId, answers);
     }
+}
 
+async function performQuizSubmission(user, lessonId, answers) {
     const btn = document.getElementById('submitQuizBtn');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Submitting...';
@@ -438,11 +451,11 @@ async function submitQuiz() {
             // Refresh the main list to update status
             loadTrainingData(user.trainee_id);
         } else {
-            alert('Error: ' + response.data.message);
+            swal('Error', 'Error: ' + response.data.message, 'error');
         }
     } catch (error) {
         console.error('Error submitting quiz:', error);
-        alert('Failed to submit quiz.');
+        swal('Error', 'Failed to submit quiz.', 'error');
     } finally {
         btn.disabled = false;
         btn.textContent = 'Submit Quiz';
@@ -489,53 +502,78 @@ async function submitTaskSheet() {
         });
 
         if (response.data.success) {
-            alert('Task sheet submitted successfully!');
+            swal('Success', 'Task sheet submitted successfully!', 'success');
             lessonContentModal.hide();
             loadTrainingData(user.trainee_id); // Refresh data to update status
         } else {
-            alert('Error: ' + response.data.message);
+            swal('Error', 'Error: ' + response.data.message, 'error');
         }
     } catch (error) {
         console.error('Error submitting task sheet:', error);
-        alert('Failed to submit task sheet.');
+        swal('Error', 'Failed to submit task sheet.', 'error');
     } finally {
         btn.disabled = false;
         btn.textContent = 'Submit Task Sheet';
     }
 }
 
-async function unsubmitTaskSheet() {
+function unsubmitTaskSheet() {
     const btn = document.getElementById('unsubmitTaskSheetBtn');
     const lessonId = btn.dataset.lessonId;
     const taskSheetId = btn.dataset.taskSheetId;
     const user = JSON.parse(localStorage.getItem('user'));
 
-    if (!confirm('Are you sure you want to unsubmit this task sheet? Your previous submission will be removed.')) {
-        return;
-    }
+    console.log('Unsubmit params:', {lessonId, taskSheetId, trainee_id: user.trainee_id});
 
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Unsubmitting...';
-
-    try {
-        const response = await axios.post(`${API_BASE_URL}/role/trainee/training.php?action=unsubmit-task-sheet`, {
-            trainee_id: user.trainee_id,
-            lesson_id: lessonId,
-            task_sheet_id: taskSheetId
-        });
-
-        if (response.data.success) {
-            alert('Task sheet unsubmitted successfully.');
-            lessonContentModal.hide();
-            loadTrainingData(user.trainee_id); // Refresh data to update status
-        } else {
-            alert('Error: ' + response.data.message);
+    swal({
+        title: 'Unsubmit Task Sheet?',
+        text: "Your previous submission will be removed.",
+        type: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Yes, unsubmit'
+    }, function(willDelete) {
+        if (!willDelete) {
+            console.log('Unsubmit cancelled');
+            return;
         }
-    } catch (error) {
-        console.error('Error unsubmitting:', error);
-        alert('Failed to unsubmit.');
-    } finally {
-        btn.disabled = false;
-        btn.textContent = 'Unsubmit';
-    }
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Unsubmitting...';
+
+        try {
+            const payload = {
+                trainee_id: parseInt(user.trainee_id),
+                lesson_id: parseInt(lessonId),
+                task_sheet_id: parseInt(taskSheetId)
+            };
+            console.log('Sending payload:', payload);
+
+            axios.post(`${API_BASE_URL}/role/trainee/training.php?action=unsubmit-task-sheet`, payload)
+                .then(response => {
+                    console.log('Response:', response.data);
+
+                    if (response.data.success) {
+                        swal('Success', 'Task sheet unsubmitted successfully.', 'success');
+                        lessonContentModal.hide();
+                        loadTrainingData(user.trainee_id); // Refresh data to update status
+                    } else {
+                        swal('Error', 'Error: ' + response.data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error unsubmitting:', error.response?.data || error.message);
+                    swal('Error', 'Failed to unsubmit: ' + (error.response?.data?.message || error.message), 'error');
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.textContent = 'Unsubmit';
+                });
+        } catch (error) {
+            console.error('Error in unsubmit:', error);
+            swal('Error', 'An error occurred: ' + error.message, 'error');
+            btn.disabled = false;
+            btn.textContent = 'Unsubmit';
+        }
+    });
 }

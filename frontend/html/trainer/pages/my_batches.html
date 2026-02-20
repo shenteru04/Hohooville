@@ -8,6 +8,8 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- SweetAlert2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
     <style>
         :root {
             --primary-color: #4e73df;
@@ -169,8 +171,11 @@
 
                 <!-- Trainees in Selected Batch -->
                 <div class="card mt-4 d-none" id="traineesContainer">
-                    <div class="card-header">
-                        <h5 class="card-title">Trainees in Selected Batch</h5>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Trainees in Selected Batch</h5>
+                        <button id="downloadAttendanceBtn" class="btn btn-sm btn-primary">
+                            <i class="fas fa-download me-1"></i> Download Attendance Sheet
+                        </button>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -195,8 +200,143 @@
         </div>
     </div>
 
+     <!-- ═══════════════════════════════════════════════════════════
+         ATTENDANCE SHEET TEMPLATE — hidden, used only for PDF gen
+    ════════════════════════════════════════════════════════════════ -->
+    <div id="attendanceSheetTemplate" style="display: none;">
+        <div class="pdf-container" style="font-family: Arial, sans-serif; color: #000; padding: 12px 20px; background: #fff; width: 100%; box-sizing: border-box;">
+
+            <!-- ═══ HEADER ═══ -->
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 4px;">
+                <tr>
+                    <td style="width: 10%; vertical-align: middle; text-align: center;">
+                        <img src="../../../../img/logo.jpg" style="height: 60px; width: auto;">
+                    </td>
+                    <td style="width: 80%; text-align: center; vertical-align: middle; padding: 0 8px;">
+                        <div style="font-size: 17px; font-weight: bold; margin-bottom: 3px;">Hohoo Ville Technical School Inc.</div>
+                        <div style="font-size: 10.5px; margin-bottom: 2px;">Purok 6A, Poblacion, Lagonglong, Misamis Oriental, 9006</div>
+                        <div style="font-size: 10.5px;">hohooville@gmail.com | 0905-162-3921 | 0921-696-8538</div>
+                    </td>
+                    <td style="width: 10%; vertical-align: middle; text-align: center;">
+                        <img src="../../../../img/tesda_logo_transparent.png" style="height: 60px; width: auto;">
+                    </td>
+                </tr>
+            </table>
+
+            <hr style="border: none; border-top: 1.5px solid #000; margin: 3px 0 4px 0;">
+
+            <!-- ═══ SHEET TITLE ═══ -->
+            <div style="text-align: center; font-weight: bold; font-size: 13px; margin: 4px 0 6px 0; text-transform: uppercase; letter-spacing: 0.5px;">
+                TRAINEE'S/LEARNER'S DAILY ATTENDANCE SHEET
+            </div>
+
+            <!-- ═══ DETAILS SECTION ═══ -->
+            <table style="width: 100%; border-collapse: collapse; font-size: 10.5px; margin-bottom: 6px;">
+
+                <!-- Row 1: TVI Name | Qualification/Program -->
+                <tr>
+                    <td style="font-weight: bold; white-space: nowrap; padding: 3px 4px 3px 0; width: 105px;">Name of TVI:</td>
+                    <td style="border-bottom: 1px solid #000; padding: 3px 6px; width: 175px;">Hohoo Ville Technical School Inc.</td>
+                    <td style="font-weight: bold; white-space: nowrap; padding: 3px 4px 3px 12px; width: 155px;">Qualification/Program:</td>
+                    <td colspan="3" style="border-bottom: 1px solid #000; padding: 3px 6px;">
+                        <span id="pdfProgramName"></span>
+                    </td>
+                </tr>
+
+                <!-- Row 2: Date Start | Date End | Duration -->
+                <tr>
+                    <td style="font-weight: bold; white-space: nowrap; padding: 3px 4px 3px 0;">Date Start:</td>
+                    <td style="border-bottom: 1px solid #000; padding: 3px 6px;">
+                        <span id="pdfDateStart"></span>
+                    </td>
+                    <td style="font-weight: bold; white-space: nowrap; padding: 3px 4px 3px 12px;">Date End:</td>
+                    <td style="border-bottom: 1px solid #000; padding: 3px 6px; width: 130px;">
+                        <span id="pdfDateEnd"></span>
+                    </td>
+                    <td style="font-weight: bold; white-space: nowrap; padding: 3px 4px 3px 12px; width: 65px;">Duration:</td>
+                    <td style="border-bottom: 1px solid #000; padding: 3px 6px; width: 85px;">
+                        <span id="pdfDuration"></span>
+                    </td>
+                </tr>
+
+                <!-- Row 3: Trainer Name | NTTC No. | Validity Date -->
+                <tr>
+                    <td style="font-weight: bold; white-space: nowrap; padding: 3px 4px 3px 0;">Name of Trainer:</td>
+                    <td style="border-bottom: 1px solid #000; padding: 3px 6px;">
+                        <span id="pdfTrainerName"></span>
+                    </td>
+                    <td style="font-weight: bold; white-space: nowrap; padding: 3px 4px 3px 12px;">NTTC No.:</td>
+                    <td style="border-bottom: 1px solid #000; padding: 3px 6px;">
+                        <span id="pdfNttcNumber"></span>
+                    </td>
+                    <td style="font-weight: bold; white-space: nowrap; padding: 3px 4px 3px 12px;">Validity Date:</td>
+                    <td style="border-bottom: 1px solid #000; padding: 3px 6px;">
+                        <span id="pdfValidityDate"></span>
+                    </td>
+                </tr>
+
+                <!-- Row 4: Date | Delivery Mode | Location — FIXED to stay on one clean row -->
+                <tr>
+                    <td style="font-weight: bold; white-space: nowrap; padding: 3px 4px 3px 0;">Date:</td>
+                    <td style="border-bottom: 1px solid #000; padding: 3px 6px;">
+                        <span id="pdfDate"></span>
+                    </td>
+                    <td style="font-weight: bold; white-space: nowrap; padding: 3px 4px 3px 12px;">Delivery Mode:</td>
+                    <td style="border-bottom: 1px solid #000; padding: 3px 6px;">
+                        <span id="pdfDeliveryMode">Combination of Distance Learning and Face-to-Face</span>
+                    </td>
+                    <td style="font-weight: bold; white-space: nowrap; padding: 3px 4px 3px 12px;">Location:</td>
+                    <td style="border-bottom: 1px solid #000; padding: 3px 6px;">
+                        <span id="pdfLocation">Purok 6A, Poblacion, Lagonglong, Misamis Oriental</span>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- ═══ ATTENDANCE TABLE ═══ -->
+            <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 10px;">
+                <thead>
+                    <tr>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 5px 3px; text-align: center; background-color: #f0f0f0; width: 28px; vertical-align: middle; font-size: 9.5px;">NO</th>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 5px 3px; text-align: center; background-color: #f0f0f0; vertical-align: middle; font-size: 9.5px;">NAME</th>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 5px 3px; text-align: center; background-color: #f0f0f0; width: 82px; vertical-align: middle; font-size: 9.5px;">CONTACT<br>NUMBER</th>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 5px 3px; text-align: center; background-color: #f0f0f0; width: 120px; vertical-align: middle; font-size: 9.5px;">EMAIL ADDRESS</th>
+                        <th colspan="4" style="border: 1px solid #000; padding: 5px 3px; text-align: center; background-color: #f0f0f0; font-size: 9.5px;">Daily Logs</th>
+                    </tr>
+                    <tr>
+                        <th style="border: 1px solid #000; padding: 5px 3px; text-align: center; background-color: #f0f0f0; width: 55px; font-size: 9.5px;">Time In</th>
+                        <th style="border: 1px solid #000; padding: 5px 3px; text-align: center; background-color: #f0f0f0; width: 75px; font-size: 9.5px;">Signature</th>
+                        <th style="border: 1px solid #000; padding: 5px 3px; text-align: center; background-color: #f0f0f0; width: 55px; font-size: 9.5px;">Time Out</th>
+                        <th style="border: 1px solid #000; padding: 5px 3px; text-align: center; background-color: #f0f0f0; width: 75px; font-size: 9.5px;">Signature</th>
+                    </tr>
+                </thead>
+                <tbody id="pdfTableBody">
+                    <!-- 25 rows populated by JS -->
+                </tbody>
+            </table>
+
+            <!-- ═══ FOOTER ═══ -->
+            <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 8px;">
+                <tr>
+                    <td style="width: 50%; vertical-align: top; padding-left: 15px;">
+                        <div style="font-weight: bold; margin-bottom: 22px;">Certified By:</div>
+                        <div id="pdfFooterTrainer" style="font-weight: bold; text-transform: uppercase; border-bottom: 1.5px solid #000; display: inline-block; min-width: 230px; text-align: center; font-size: 11px;"></div>
+                        <div style="font-weight: bold; font-size: 10px; margin-top: 3px;">TRAINER</div>
+                    </td>
+                    <td style="width: 50%; vertical-align: top; padding-left: 15px;">
+                        <div style="font-weight: bold; margin-bottom: 22px;">Approved By:</div>
+                        <div id="pdfFooterRegistrar" style="font-weight: bold; text-transform: uppercase; border-bottom: 1.5px solid #000; display: inline-block; min-width: 230px; text-align: center; font-size: 11px;"></div>
+                        <div style="font-weight: bold; font-size: 10px; margin-top: 3px;">REGISTRAR</div>
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
     <script src="../../../js/trainer/pages/my_batches.js"></script>
     <script src="../../../js/notifications.js"></script>
     <script>

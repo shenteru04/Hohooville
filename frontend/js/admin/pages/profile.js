@@ -1,6 +1,12 @@
 const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
 
 document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Swal === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        document.head.appendChild(script);
+    }
+
     // Load profile data
     loadProfile();
 
@@ -24,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 const response = await axios.post(`${API_BASE_URL}/role/admin/profile.php?action=update`, data);
                 if (response.data.success) {
-                    alert('Profile updated successfully');
+                    Swal.fire('Success', 'Profile updated successfully', 'success');
                     // Update display name
                     const fullName = `${data.first_name} ${data.last_name}`;
                     document.getElementById('headerName').textContent = fullName;
@@ -32,11 +38,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('displayPhone').textContent = data.phone || 'N/A';
                     updateAvatar(fullName);
                 } else {
-                    alert('Error: ' + response.data.message);
+                    Swal.fire('Error', 'Error: ' + response.data.message, 'error');
                 }
             } catch (error) {
                 console.error('Error updating profile:', error);
-                alert('Failed to update profile');
+                Swal.fire('Error', 'Failed to update profile', 'error');
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="fas fa-save me-1"></i> Save Changes';

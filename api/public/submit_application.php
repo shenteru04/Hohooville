@@ -16,6 +16,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     getOptions($conn);
 } elseif ($action === 'check-trainee') {
     checkTrainee($conn);
+} elseif ($action === 'update-status') {
+    updateApplicationStatus($conn);
 } else {
     // Handle preflight or invalid
     if ($_SERVER['REQUEST_METHOD'] !== 'OPTIONS') {
@@ -37,12 +39,10 @@ function getOptions($conn) {
 }
 
 function checkTrainee($conn) {
-    $email = $_GET['email'] ?? '';
-    $firstName = $_GET['first_name'] ?? '';
-    $lastName = $_GET['last_name'] ?? '';
+    $schoolId = $_GET['school_id'] ?? '';
 
-    if (empty($email) || empty($firstName) || empty($lastName)) {
-        echo json_encode(['success' => false, 'message' => 'Email, first name, and last name are required.']);
+    if (empty($schoolId)) {
+        echo json_encode(['success' => false, 'message' => 'School ID is required.']);
         return;
     }
 
@@ -58,10 +58,10 @@ function checkTrainee($conn) {
                   FROM tbl_trainee_hdr AS th
                   LEFT JOIN tbl_trainee_dtl td ON th.trainee_id = td.trainee_id
                   LEFT JOIN tbl_trainee_ftr tf ON th.trainee_id = tf.trainee_id
-                  WHERE th.email = ? AND th.first_name = ? AND th.last_name = ?";
+                  WHERE th.trainee_school_id = ?";
         
         $stmt = $conn->prepare($query);
-        $stmt->execute([$email, $firstName, $lastName]);
+        $stmt->execute([$schoolId]);
         $trainee = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($trainee) {
@@ -127,8 +127,8 @@ function submitApplication($conn) {
             // Note: We keep 'address' and file paths in header for backward compatibility with other modules
             $queryHdr = "INSERT INTO tbl_trainee_hdr (
                 first_name, middle_name, last_name, extension_name, sex, 
-                email, phone_number, facebook_account, address,
-                birth_certificate_no, valid_id_file, birth_cert_file, photo_file, status
+                birth_certificate_no, email, facebook_account, phone_number, address,
+                valid_id_file, birth_cert_file, photo_file, status
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')";
 
             $stmtHdr = $conn->prepare($queryHdr);
@@ -142,11 +142,11 @@ function submitApplication($conn) {
                 $_POST['last_name'],
                 $_POST['extension_name'] ?? null,
                 $_POST['sex'],
-                $_POST['email'],
-                $_POST['phone'],
-                $_POST['facebook_account'] ?? null,
-                $fullAddress,
                 $_POST['birth_certificate_no'] ?? null,
+                $_POST['email'],
+                $_POST['facebook_account'] ?? null,
+                $_POST['phone'],
+                $fullAddress,
                 $validId,
                 $birthCert,
                 $photo
@@ -234,6 +234,27 @@ function submitApplication($conn) {
         $stmtEnroll->execute([$traineeId, $offeredId, $batchId, $_POST['scholarship_type'] ?? null]);
 
         $conn->commit();
+        // Notify all registrars (one notification per registrar user)
+        try {
+            $db2 = new Database();
+            $c2 = $db2->getConnection();
+            $title = 'New Application Submitted';
+            $msg = 'New application submitted by ' . ($_POST['first_name'] ?? '') . ' ' . ($_POST['last_name'] ?? '');
+            $link = '/Hohoo-ville/frontend/html/registrar/pages/trainee_application_list.html';
+
+            $uStmt = $c2->prepare("SELECT u.user_id FROM tbl_users u JOIN tbl_role r ON u.role_id = r.role_id WHERE r.role_name = 'registrar'");
+            $uStmt->execute();
+            $regIds = $uStmt->fetchAll(PDO::FETCH_COLUMN);
+            if (!empty($regIds)) {
+                $nstmt = $c2->prepare("INSERT INTO tbl_notifications (user_id, title, message, link) VALUES (?, ?, ?, ?)");
+                foreach ($regIds as $rid) {
+                    $nstmt->execute([$rid, $title, $msg, $link]);
+                }
+            }
+        } catch (Exception $ex) {
+            // ignore notification errors
+        }
+
         echo json_encode(['success' => true, 'message' => 'Application submitted']);
     } catch (Exception $e) {
         $conn->rollBack();
@@ -249,5 +270,66 @@ function uploadFile($file, $dir, $prefix) {
         }
     }
     return null;
+}
+
+function updateApplicationStatus($conn) {
+    // Note: In a production environment, ensure this action is protected by Admin/Registrar authentication.
+    
+    $enrollmentId = $_POST['enrollment_id'] ?? null;
+    $status = $_POST['status'] ?? null; // Expected values: 'reserved', 'rejected', 'qualified'
+    $remarks = $_POST['remarks'] ?? '';
+
+    if (!$enrollmentId || !$status) {
+        echo json_encode(['success' => false, 'message' => 'Missing parameters']);
+        return;
+    }
+
+    try {
+        // 1. Fetch trainee email and course details
+        $stmt = $conn->prepare("
+            SELECT t.email, t.first_name, t.last_name, q.qualification_name
+            FROM tbl_enrollment e
+            JOIN tbl_trainee_hdr t ON e.trainee_id = t.trainee_id
+            JOIN tbl_offered_qualifications oq ON e.offered_qualification_id = oq.offered_qualification_id
+            JOIN tbl_qualifications q ON oq.qualification_id = q.qualification_id
+            WHERE e.enrollment_id = ?
+        ");
+        $stmt->execute([$enrollmentId]);
+        $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$data) {
+            echo json_encode(['success' => false, 'message' => 'Enrollment record not found']);
+            return;
+        }
+
+        // 2. Update Status
+        $updateStmt = $conn->prepare("UPDATE tbl_enrollment SET status = ? WHERE enrollment_id = ?");
+        $updateStmt->execute([$status, $enrollmentId]);
+
+        // 3. Send Email Notification
+        $to = $data['email'];
+        $name = $data['first_name'] . ' ' . $data['last_name'];
+        $course = $data['qualification_name'];
+        $subject = "Application Status Update - Hohoo-Ville Technical School";
+        $message = "Dear $name,\n\n";
+
+        if ($status === 'reserved') {
+            $message .= "Thank you for your interest in $course.\n\nPlease be informed that the current batch is full. However, you are qualified for the program. Your application has been placed on our RESERVE list for the next available batch.\n\nWe will notify you once a slot opens up.";
+        } elseif ($status === 'rejected') {
+            $message .= "Thank you for your interest in $course.\n\nAfter careful review, we regret to inform you that your application has been REJECTED.\n\nRemarks: $remarks";
+        } elseif ($status === 'qualified') {
+            $message .= "Congratulations! You have been deemed QUALIFIED for the $course.\n\nPlease wait for the creation of your user account. You will receive a separate email containing your login credentials and further instructions soon.";
+        }
+
+        $message .= "\n\nRegards,\nRegistrar Office";
+        $headers = "From: registrar@hohooville.edu.ph";
+
+        // Use PHP's built-in mail function (requires SMTP config in php.ini)
+        mail($to, $subject, $message, $headers);
+
+        echo json_encode(['success' => true, 'message' => 'Status updated and notification sent.']);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    }
 }
 ?>
