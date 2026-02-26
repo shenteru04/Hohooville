@@ -85,7 +85,18 @@ function listBatches($conn) {
 function getFormData($conn) {
     try {
         // Get trainers
-        $trainer_query = "SELECT trainer_id, first_name, last_name, qualification_id FROM tbl_trainer WHERE status = 'active'";
+        $trainer_query = "SELECT
+                            t.trainer_id,
+                            t.first_name,
+                            t.last_name,
+                            COALESCE(
+                                GROUP_CONCAT(DISTINCT tq.qualification_id ORDER BY tq.qualification_id SEPARATOR ','),
+                                IFNULL(t.qualification_id, '')
+                            ) AS qualification_ids
+                          FROM tbl_trainer t
+                          LEFT JOIN tbl_trainer_qualifications tq ON t.trainer_id = tq.trainer_id
+                          WHERE t.status = 'active'
+                          GROUP BY t.trainer_id";
         $trainer_stmt = $conn->prepare($trainer_query);
         $trainer_stmt->execute();
         $trainers = $trainer_stmt->fetchAll(PDO::FETCH_ASSOC);

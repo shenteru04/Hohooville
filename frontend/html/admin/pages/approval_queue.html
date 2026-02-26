@@ -104,14 +104,13 @@
                 <div class="tab-content" id="approvalTabsContent">
                     <div class="tab-pane fade show active" id="pending" role="tabpanel">
                         <div class="table-responsive">
-                            <table class="table table-hover">
+                            <table class="table table-hover" id="approvalQueueTable" data-table-manager="true" data-filters="Course/Batch:2" data-filter-auto-options="true">
                                 <thead>
                                     <tr>
                                             <th>Photo</th>
                                             <th>Trainee Name</th>
                                             <th>Course/Batch</th>
                                             <th>Date Applied</th>
-                                            <th>Status</th>
                                             <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -129,14 +128,13 @@
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
-                                    <table class="table table-hover">
+                                    <table class="table table-hover" id="reservedQueueTable" data-table-manager="true" data-filters="Course/Batch:2" data-filter-auto-options="true">
                                         <thead>
                                             <tr>
                                                 <th>Photo</th>
                                                 <th>Trainee Name</th>
-                                                <th>Course</th>
+                                                <th>Course/Batch</th>
                                                 <th>Date Reserved</th>
-                                                <th>Status</th>
                                                 <th>Actions</th>
                                             </tr>
                                         </thead>
@@ -285,6 +283,7 @@
     <!-- Axios -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
     <!-- Custom JS -->
+    <script src="../../../js/table_manager.js"></script>
     <script src="../../../js/admin/pages/approval_queue.js"></script>
     <!-- Sidebar loader -->
     <script src="../../../js/sidebar.js"></script>

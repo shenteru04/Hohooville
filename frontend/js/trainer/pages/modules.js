@@ -160,11 +160,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     const user = JSON.parse(localStorage.getItem('user'));
+    let trainerId = null;
     if (user) {
         try {
             const response = await axios.get(`${API_BASE_URL}/role/trainer/profile.php?action=get-trainer-id&user_id=${user.user_id}`);
             if (response.data.success) {
                 const trainer = response.data.data;
+                trainerId = trainer.trainer_id;
                 if (trainer.first_name && trainer.last_name) {
                     const nameEl = document.getElementById('trainerName');
                     if (nameEl) nameEl.textContent = `${trainer.first_name} ${trainer.last_name}`;
@@ -199,7 +201,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.getElementById('modulesListCore').innerHTML = '';
         document.getElementById('modulesListCommon').innerHTML = '';
         document.getElementById('modulesListBasic').innerHTML = '';
-        if (qualificationId) loadModules(qualificationId, type);
+        if (qualificationId && trainerId) loadModules(qualificationId, type, trainerId);
     }
 
     document.getElementById('saveModuleBtn').addEventListener('click', saveModule);
@@ -708,7 +710,7 @@ async function loadModules(qualificationId, competencyType = 'core') {
     container.innerHTML = '<div class="col-12 text-center"><div class="spinner-border"></div></div>';
 
     try {
-        const response = await axios.get(`${API_BASE_URL}/role/trainer/modules.php?action=list`, { params: { qualification_id: qualificationId, type: competencyType } });
+        const response = await axios.get(`${API_BASE_URL}/role/trainer/modules.php?action=list`, { params: { qualification_id: qualificationId, type: competencyType, trainer_id: arguments[2] } });
         container.innerHTML = '';
 
         if (response.data.success && response.data.data.length > 0) {
@@ -795,7 +797,8 @@ async function saveModule() {
         qualification_id: qualificationId,
         competency_type: currentCompetencyType,
         module_title: title, 
-        module_description: description
+        module_description: description,
+        trainer_id: trainerId
     };
 
     if (id) payload.module_id = id;
@@ -806,7 +809,7 @@ async function saveModule() {
             Swal.fire('Success', `Module ${id ? 'updated' : 'created'} successfully`, 'success');
             moduleModal.hide();
             document.getElementById('createModuleForm').reset();
-            loadModules(qualificationId, currentCompetencyType);
+            loadModules(qualificationId, currentCompetencyType, trainerId);
         } else {
             Swal.fire('Error', 'Error: ' + response.data.message, 'error');
         }

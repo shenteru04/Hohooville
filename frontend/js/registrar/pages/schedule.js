@@ -1,6 +1,7 @@
 const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
 let scheduleModal;
 let allTrainers = [];
+let allBatches = [];
 
 document.addEventListener('DOMContentLoaded', function() {
     if (typeof Swal === 'undefined') {
@@ -13,6 +14,22 @@ document.addEventListener('DOMContentLoaded', function() {
     loadScheduleData();
 
     document.getElementById('assignScheduleForm').addEventListener('submit', saveSchedule);
+    const schedulesBody = document.getElementById('schedulesTableBody');
+    if (schedulesBody) {
+        schedulesBody.addEventListener('click', (e) => {
+            const btn = e.target.closest('.assign-btn');
+            if (!btn) return;
+            const data = btn.dataset;
+            openAssignModal(
+                data.batchId,
+                data.batchName,
+                data.trainerId || '',
+                data.schedule || '',
+                data.room || '',
+                data.qualificationId || ''
+            );
+        });
+    }
 
     // Inject Sidebar CSS (W3.CSS Reference Style)
     const ms = document.createElement('style');
@@ -96,37 +113,36 @@ async function loadScheduleData() {
         const response = await axios.get(`${API_BASE_URL}/role/registrar/schedule.php?action=get-data`);
         if (response.data.success) {
             const { trainers, batches } = response.data.data;
-            allTrainers = trainers;
-            
-            const trainerSelect = document.getElementById('assignTrainerSelect');
-            trainerSelect.innerHTML = '<option value="">Unassign</option>';
-            allTrainers.forEach(t => {
-                trainerSelect.innerHTML += `<option value="${t.trainer_id}">${t.first_name} ${t.last_name}</option>`;
-            });
+            allTrainers = (trainers || []).map(t => ({
+                ...t,
+                qualification_ids: parseIdList(t.qualification_ids)
+            }));
+            allBatches = batches || [];
 
             const tbody = document.getElementById('schedulesTableBody');
             tbody.innerHTML = '';
-            batches.forEach(batch => {
-                // Escape strings to prevent JS errors in onclick
-                const safeName = (batch.batch_name || '').replace(/'/g, "\\'");
-                const safeTrainer = (batch.trainer_id || '');
-                const safeSchedule = (batch.schedule || '').replace(/'/g, "\\'");
-                const safeRoom = (batch.room || '').replace(/'/g, "\\'");
 
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${batch.batch_name}</td>
-                        <td>${batch.course_name || 'N/A'}</td>
-                        <td>${batch.trainer_name || '<span class="text-muted">Not Assigned</span>'}</td>
-                        <td>${batch.schedule || '<span class="text-muted">Not Set</span>'}</td>
-                        <td>${batch.room || '<span class="text-muted">Not Set</span>'}</td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary" onclick="openAssignModal(${batch.batch_id}, '${safeName}', '${safeTrainer}', '${safeSchedule}', '${safeRoom}')">
-                                <i class="fas fa-edit"></i> Assign
-                            </button>
-                        </td>
-                    </tr>
+            allBatches.forEach(batch => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${escapeHtml(batch.batch_name)}</td>
+                    <td>${batch.course_name ? escapeHtml(batch.course_name) : '<span class="text-muted">N/A</span>'}</td>
+                    <td>${batch.trainer_name ? escapeHtml(batch.trainer_name) : '<span class="text-muted">Not Assigned</span>'}</td>
+                    <td>${batch.schedule ? escapeHtml(batch.schedule) : '<span class="text-muted">Not Set</span>'}</td>
+                    <td>${batch.room ? escapeHtml(batch.room) : '<span class="text-muted">Not Set</span>'}</td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-primary assign-btn"
+                            data-batch-id="${batch.batch_id}"
+                            data-batch-name="${escapeAttr(batch.batch_name)}"
+                            data-trainer-id="${batch.trainer_id || ''}"
+                            data-schedule="${escapeAttr(batch.schedule || '')}"
+                            data-room="${escapeAttr(batch.room || '')}"
+                            data-qualification-id="${batch.qualification_id || ''}">
+                            <i class="fas fa-edit"></i> Assign
+                        </button>
+                    </td>
                 `;
+                tbody.appendChild(row);
             });
         }
     } catch (error) {
@@ -134,10 +150,10 @@ async function loadScheduleData() {
     }
 }
 
-window.openAssignModal = function(batchId, batchName, trainerId, schedule, room) {
+window.openAssignModal = function(batchId, batchName, trainerId, schedule, room, qualificationId) {
     document.getElementById('assignBatchId').value = batchId;
     document.getElementById('assignBatchName').textContent = batchName;
-    document.getElementById('assignTrainerSelect').value = trainerId;
+    populateTrainerSelect(qualificationId, trainerId);
     document.getElementById('assignScheduleSelect').value = schedule;
     document.getElementById('assignRoomInput').value = room;
     scheduleModal.show();
@@ -192,4 +208,48 @@ function showAlert(message, type) {
         text: message,
         icon: iconMap[type] || 'info'
     });
+}
+
+function parseIdList(value) {
+    if (!value) return [];
+    return value
+        .toString()
+        .split(',')
+        .map(v => v.trim())
+        .filter(Boolean);
+}
+
+function populateTrainerSelect(qualificationId, selectedTrainerId) {
+    const trainerSelect = document.getElementById('assignTrainerSelect');
+    trainerSelect.innerHTML = '<option value="">Unassign</option>';
+
+    const qualIdStr = qualificationId ? String(qualificationId) : '';
+    const filtered = qualIdStr
+        ? allTrainers.filter(t => t.qualification_ids.includes(qualIdStr))
+        : allTrainers;
+
+    if (filtered.length === 0) {
+        trainerSelect.innerHTML += '<option value="" disabled>No trainers available</option>';
+    } else {
+        filtered.forEach(t => {
+            trainerSelect.innerHTML += `<option value="${t.trainer_id}">${escapeHtml(t.first_name)} ${escapeHtml(t.last_name)}</option>`;
+        });
+    }
+
+    if (selectedTrainerId) {
+        trainerSelect.value = String(selectedTrainerId);
+    }
+}
+
+function escapeHtml(value) {
+    return (value ?? '').toString()
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function escapeAttr(value) {
+    return escapeHtml(value);
 }

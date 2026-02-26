@@ -84,9 +84,56 @@ document.addEventListener('DOMContentLoaded', function() {
     const idToLoad = user.trainee_id || user.user_id;
     if (idToLoad) {
         loadGrades(idToLoad);
+        setupCertificatesTab(idToLoad);
     } else {
         document.getElementById('core').innerHTML = '<div class="alert alert-danger">User ID not found.</div>';
     }
+// Load certificates for the Certificates tab
+function setupCertificatesTab(traineeId) {
+    const certTab = document.getElementById('certificates-tab');
+    if (!certTab) return;
+    certTab.addEventListener('shown.bs.tab', function () {
+        loadCertificates(traineeId);
+    });
+}
+
+async function loadCertificates(traineeId) {
+    const certContainer = document.getElementById('certificates');
+    if (!certContainer) return;
+    certContainer.innerHTML = '<div class="text-center py-3"><div class="spinner-border text-primary"></div></div>';
+    try {
+        const response = await axios.get(`${API_BASE_URL}/role/trainee/certificates.php?trainee_id=${traineeId}`);
+        if (response.data.success) {
+            const certs = response.data.data;
+            if (!certs.length) {
+                certContainer.innerHTML = '<div class="alert alert-light text-center text-muted my-3">No certificates issued yet.</div>';
+                return;
+            }
+            let html = '<div class="row g-3">';
+            certs.forEach(cert => {
+                html += `
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-success shadow-sm h-100">
+                        <div class="card-body">
+                            <h6 class="fw-bold text-primary mb-2">${cert.module_title}</h6>
+                            <span class="badge bg-info mb-2">${cert.competency_type || 'Core'}</span><br>
+                            <span class="badge bg-success mb-2">Issued: ${cert.issued_at ? new Date(cert.issued_at).toLocaleDateString() : 'N/A'}</span>
+                            <div class="mt-3">
+                                ${cert.certificate_file ? `<a href="/Hohoo-ville/uploads/certificates/${encodeURIComponent(cert.certificate_file)}" target="_blank" class="btn btn-outline-primary btn-sm"><i class="fas fa-download me-1"></i>View Certificate</a>` : '<span class="text-muted small">Certificate file not found</span>'}
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            html += '</div>';
+            certContainer.innerHTML = html;
+        } else {
+            certContainer.innerHTML = `<div class="alert alert-danger">${response.data.message || 'Failed to load certificates.'}</div>`;
+        }
+    } catch (error) {
+        certContainer.innerHTML = '<div class="alert alert-danger">Failed to load certificates.</div>';
+    }
+}
 });
 
 async function loadGrades(traineeId) {

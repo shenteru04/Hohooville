@@ -20,12 +20,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Event Listeners
     document.getElementById('generateBtn').addEventListener('click', generateReport);
+    const exportBtn = document.getElementById('exportReportBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', () => {
+            const type = document.getElementById('reportType')?.value || 'report';
+            const filename = `admin_${type}_report`;
+            if (typeof window.exportTableToExcel === 'function') {
+                window.exportTableToExcel('reportTable', filename);
+            } else {
+                alert('Export is not available.');
+            }
+        });
+    }
     
     // Logout
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-        localStorage.clear();
-        window.location.href = '../../login.html';
-    });
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            localStorage.clear();
+            window.location.href = '/hohoo-ville/frontend/login.html';
+        });
+    }
 
     // Inject Sidebar CSS (W3.CSS Reference Style)
     const ms = document.createElement('style');

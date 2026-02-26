@@ -1,4 +1,9 @@
 const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
+const REPORT_LABELS = {
+    grading_summary: 'Class Grading Summary',
+    attendance_summary: 'Attendance Report',
+    competency_status: 'Competency Status (CTPR)'
+};
 
 document.addEventListener('DOMContentLoaded', async function() {
     if (typeof Swal === 'undefined') {
@@ -133,6 +138,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         generateReport();
     });
 
+    const exportBtn = document.getElementById('exportReportBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', () => {
+            const label = REPORT_LABELS[document.getElementById('reportType')?.value] || 'Report';
+            const batchLabel = getSelectedBatchLabel().replace(/[^a-z0-9_-]+/gi, '_');
+            const filename = `trainer_${label.replace(/[^a-z0-9_-]+/gi, '_')}_${batchLabel}`;
+            if (typeof window.exportTableToExcel === 'function') {
+                window.exportTableToExcel('reportTable', filename);
+            } else {
+                alert('Export is not available.');
+            }
+        });
+    }
+
     // Logout
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
@@ -168,16 +187,22 @@ async function generateReport() {
     }
 
     try {
+        setLoading(true, 'Generating report...');
         const response = await axios.get(`${API_BASE_URL}/role/trainer/reports.php?action=${type}&batch_id=${batchId}`);
         
         if (response.data.success) {
             renderReport(type, response.data.data);
+            setLoading(false, 'Report generated');
         } else {
             Swal.fire('No Data', 'No data found for this report.', 'info');
+            renderEmpty();
+            setLoading(false, 'No data found');
         }
     } catch (error) {
         console.error('Report Error:', error);
         Swal.fire('Error', 'Failed to generate report', 'error');
+        renderEmpty();
+        setLoading(false, 'Error generating report');
     }
 }
 
@@ -185,11 +210,25 @@ function renderReport(type, data) {
     const container = document.getElementById('reportResult');
     const thead = document.getElementById('reportHead');
     const tbody = document.getElementById('reportBody');
+    const reportTitle = document.getElementById('reportTitle');
+    const reportTypeLabel = document.getElementById('reportTypeLabel');
+    const reportDate = document.getElementById('reportDate');
+    const reportBatchName = document.getElementById('reportBatchName');
+    const emptyState = document.getElementById('reportEmpty');
     
     container.classList.remove('d-none');
-    document.getElementById('reportDate').textContent = new Date().toLocaleDateString();
+    reportTitle.textContent = `${REPORT_LABELS[type] || 'Report'} Preview`;
+    reportTypeLabel.textContent = REPORT_LABELS[type] || 'Report';
+    reportDate.textContent = new Date().toLocaleString();
+    reportBatchName.textContent = getSelectedBatchLabel();
     tbody.innerHTML = '';
     thead.innerHTML = '';
+    if (emptyState) emptyState.classList.add('d-none');
+
+    if (!data || data.length === 0) {
+        renderEmpty();
+        return;
+    }
 
     if (type === 'grading_summary' || type === 'competency_status') {
         thead.innerHTML = `
@@ -219,5 +258,82 @@ function renderReport(type, data) {
                 <tr><td>${row.trainee_name}</td><td>${row.present}</td><td>${row.absent}</td><td>${row.late}</td><td>${rate}%</td></tr>
             `;
         });
+    }
+
+    renderSummary(type, data);
+}
+
+function renderSummary(type, data) {
+    const summary = document.getElementById('reportSummary');
+    if (!summary) return;
+    summary.classList.remove('d-none');
+
+    const totalEl = document.getElementById('summaryTotal');
+    const competentEl = document.getElementById('summaryCompetent');
+    const avgEl = document.getElementById('summaryAverage');
+    const attendanceEl = document.getElementById('summaryAttendance');
+
+    const total = data.length;
+    totalEl.textContent = total;
+
+    if (type === 'attendance_summary') {
+        const rates = data.map(row => {
+            const totalDays = parseInt(row.present) + parseInt(row.absent) + parseInt(row.late);
+            return totalDays > 0 ? (parseInt(row.present) / totalDays) * 100 : 0;
+        });
+        const avgRate = rates.length ? (rates.reduce((a, b) => a + b, 0) / rates.length) : 0;
+        avgEl.textContent = 'N/A';
+        competentEl.textContent = 'N/A';
+        attendanceEl.textContent = `${avgRate.toFixed(1)}%`;
+        return;
+    }
+
+    const numericGrades = data
+        .map(row => parseFloat(row.total_grade))
+        .filter(val => !Number.isNaN(val));
+    const avg = numericGrades.length ? (numericGrades.reduce((a, b) => a + b, 0) / numericGrades.length) : 0;
+    const competent = data.filter(row => parseFloat(row.total_grade) >= 80).length;
+
+    competentEl.textContent = competent;
+    avgEl.textContent = numericGrades.length ? `${avg.toFixed(1)}%` : 'N/A';
+    attendanceEl.textContent = 'N/A';
+}
+
+function renderEmpty() {
+    const container = document.getElementById('reportResult');
+    const thead = document.getElementById('reportHead');
+    const tbody = document.getElementById('reportBody');
+    const summary = document.getElementById('reportSummary');
+    const emptyState = document.getElementById('reportEmpty');
+
+    container.classList.remove('d-none');
+    thead.innerHTML = '';
+    tbody.innerHTML = '';
+    if (summary) summary.classList.add('d-none');
+    if (emptyState) emptyState.classList.remove('d-none');
+}
+
+function getSelectedBatchLabel() {
+    const select = document.getElementById('batchSelect');
+    if (!select) return '-';
+    const option = select.options[select.selectedIndex];
+    return option ? option.textContent : '-';
+}
+
+function setLoading(isLoading, statusText) {
+    const viewBtn = document.getElementById('viewReportBtn');
+    const exportBtn = document.getElementById('exportReportBtn');
+    const status = document.getElementById('reportStatus');
+
+    if (status) status.textContent = statusText || '';
+
+    if (!viewBtn) return;
+    viewBtn.disabled = isLoading;
+    if (exportBtn) exportBtn.disabled = isLoading;
+    if (isLoading) {
+        viewBtn.dataset.originalText = viewBtn.innerHTML;
+        viewBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating';
+    } else if (viewBtn.dataset.originalText) {
+        viewBtn.innerHTML = viewBtn.dataset.originalText;
     }
 }

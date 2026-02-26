@@ -67,15 +67,16 @@ switch ($action) {
 function listModules($conn) {
     $qualificationId = $_GET['qualification_id'] ?? 0;
     $type = $_GET['type'] ?? 'core';
+    $trainerId = $_GET['trainer_id'] ?? 0;
 
-    if (!$qualificationId) {
-        echo json_encode(['success' => false, 'message' => 'Qualification ID is required.']);
+    if (!$qualificationId || !$trainerId) {
+        echo json_encode(['success' => false, 'message' => 'Qualification ID and Trainer ID are required.']);
         return;
     }
 
     try {
-        $stmt = $conn->prepare("SELECT * FROM tbl_module WHERE qualification_id = ? AND competency_type = ? ORDER BY module_id");
-        $stmt->execute([$qualificationId, $type]);
+        $stmt = $conn->prepare("SELECT * FROM tbl_module WHERE qualification_id = ? AND competency_type = ? AND trainer_id = ? ORDER BY module_id");
+        $stmt->execute([$qualificationId, $type, $trainerId]);
         $modules = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         $lessonStmt = $conn->prepare("SELECT * FROM tbl_lessons WHERE module_id = ? ORDER BY lesson_id");
@@ -98,14 +99,15 @@ function saveModule($conn, $action) {
     $desc = $data['module_description'];
     $type = $data['competency_type'];
     $qualificationId = $data['qualification_id'];
+    $trainerId = $data['trainer_id'] ?? 0;
 
     try {
         if ($action === 'update-module' && $id) {
-            $stmt = $conn->prepare("UPDATE tbl_module SET module_title = ?, module_description = ? WHERE module_id = ?");
-            $stmt->execute([$title, $desc, $id]);
+            $stmt = $conn->prepare("UPDATE tbl_module SET module_title = ?, module_description = ? WHERE module_id = ? AND trainer_id = ?");
+            $stmt->execute([$title, $desc, $id, $trainerId]);
         } else {
-            $stmt = $conn->prepare("INSERT INTO tbl_module (qualification_id, competency_type, module_title, module_description) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$qualificationId, $type, $title, $desc]);
+            $stmt = $conn->prepare("INSERT INTO tbl_module (qualification_id, competency_type, module_title, module_description, trainer_id) VALUES (?, ?, ?, ?, ?)");
+            $stmt->execute([$qualificationId, $type, $title, $desc, $trainerId]);
         }
         echo json_encode(['success' => true]);
     } catch (Exception $e) {

@@ -63,6 +63,7 @@
 </head>
 <body>
     <div class="d-flex">
+
         <!-- Sidebar -->
         <nav id="sidebar" class="p-3">
             <div class="sidebar-header mb-4">
@@ -80,7 +81,6 @@
                         <i class="fas fa-chalkboard-teacher me-2"></i> My Batches
                     </a>
                 </li>
-   
                 <li class="nav-item mb-1">
                     <a class="nav-link" href="modules.html">
                         <i class="fas fa-book me-2"></i> Modules
@@ -114,13 +114,9 @@
             </ul>
         </nav>
 
-        <!-- Content -->
-        <div class="flex-grow-1" id="content">
+                <div class="flex-grow-1" id="content">
             <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
                 <div class="container-fluid">
-                    <button type="button" id="sidebarCollapse" class="btn btn-outline-primary me-2 d-lg-none">
-                        <i class="fas fa-bars"></i>
-                    </button>
                     <div class="ms-auto d-flex align-items-center">
                         <ul class="navbar-nav flex-row me-2">
                             <li class="nav-item dropdown no-arrow mx-1">
@@ -128,10 +124,14 @@
                                     <i class="fas fa-bell fa-fw"></i>
                                     <span class="badge bg-danger badge-counter" id="notificationBadge" style="display: none;"></span>
                                 </a>
-                                <ul class="dropdown-menu dropdown-menu-end shadow animated--grow-in" aria-labelledby="alertsDropdown" id="notificationList">
-                                    <li><h6 class="dropdown-header">Alerts Center</h6></li>
-                                    <li><span class="dropdown-item text-center small text-muted">No new notifications</span></li>
-                                </ul>
+                                <div class="dropdown-menu dropdown-menu-end p-0 shadow animated--grow-in" aria-labelledby="alertsDropdown" style="min-width: 320px;">
+                                    <div class="p-2 border-bottom">
+                                        <strong class="small mb-0">Notifications</strong>
+                                    </div>
+                                    <div class="list-group list-group-flush" id="notificationList" style="max-height: 400px; overflow-y: auto;">
+                                        <div class="list-group-item text-center small text-muted">No new notifications</div>
+                                    </div>
+                                </div>
                             </li>
                         </ul>
                         <div class="dropdown">
@@ -193,13 +193,34 @@
                                     <input type="text" class="form-control form-control-lg bg-light" id="lastName" readonly>
                                 </div>
                             </div>
-                            <div class="mb-4">
-                                <label class="form-label small text-muted text-uppercase fw-bold">Email Address</label>
-                                <input type="email" class="form-control form-control-lg bg-light" id="email" readonly>
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted text-uppercase fw-bold">Email Address</label>
+                                    <input type="email" class="form-control form-control-lg bg-light" id="email" readonly>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted text-uppercase fw-bold">Phone Number</label>
+                                    <input type="text" class="form-control form-control-lg bg-light" id="phone_number" readonly>
+                                </div>
+                            </div>
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted text-uppercase fw-bold">Gender</label>
+                                    <input type="text" class="form-control form-control-lg bg-light" id="gender" readonly>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted text-uppercase fw-bold">Birthday</label>
+                                    <input type="text" class="form-control form-control-lg bg-light" id="birthday" readonly>
+                                </div>
                             </div>
                             <div class="mb-4">
-                                <label class="form-label small text-muted text-uppercase fw-bold">Specialization / Phone</label>
-                                <input type="text" class="form-control form-control-lg bg-light" id="specialization" readonly>
+                                <label class="form-label small text-muted text-uppercase fw-bold">Address</label>
+                                <input type="text" class="form-control form-control-lg bg-light" id="address" readonly>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label small text-muted text-uppercase fw-bold">Specialization</label>
+                                <label class="form-label small text-muted text-uppercase fw-bold">Qualification</label>
+                                <input type="text" class="form-control form-control-lg bg-light" id="qualification" readonly>
                             </div>
                         </form>
                     </div>
@@ -211,11 +232,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
     <script src="../../../js/trainer/pages/profile.js"></script>
-    <script src="../../../js/notifications.js"></script>
     <script>
-        document.getElementById('sidebarCollapse').addEventListener('click', function() {
-            document.getElementById('sidebar').classList.toggle('d-none');
-        });
+        var sidebarCollapseBtn = document.getElementById('sidebarCollapse');
+        if (sidebarCollapseBtn) {
+            sidebarCollapseBtn.addEventListener('click', function() {
+                document.getElementById('sidebar').classList.toggle('d-none');
+            });
+        }
     </script>
 </body>
 </html>

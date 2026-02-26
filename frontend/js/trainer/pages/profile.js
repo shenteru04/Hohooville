@@ -137,11 +137,17 @@ async function loadProfile(userId) {
         const response = await axios.get(`${API_BASE_URL}/role/trainer/profile.php?action=get&user_id=${userId}`);
         if (response.data.success) {
             const data = response.data.data;
-            document.getElementById('firstName').value = data.first_name;
-            document.getElementById('lastName').value = data.last_name;
-            document.getElementById('email').value = data.email;
-            document.getElementById('specialization').value = data.specialization || '';
-            
+            document.getElementById('firstName').value = data.first_name || '';
+            document.getElementById('lastName').value = data.last_name || '';
+            document.getElementById('email').value = data.email || '';
+            document.getElementById('qualification').value = data.qualification || data.specialization || '';
+            document.getElementById('gender').value = data.gender !== undefined && data.gender !== null ? data.gender : '';
+            document.getElementById('birthday').value = data.birthday !== undefined && data.birthday !== null ? data.birthday : '';
+            document.getElementById('phone_number').value = data.phone_number || '';
+            document.getElementById('gender').value = data.gender || '';
+            document.getElementById('birthday').value = data.birthday || '';
+            document.getElementById('address').value = data.address || '';
+
             document.getElementById('headerName').textContent = `${data.first_name} ${data.last_name}`;
             document.getElementById('profileAvatar').src = `https://ui-avatars.com/api/?name=${data.first_name}+${data.last_name}&background=random`;
 

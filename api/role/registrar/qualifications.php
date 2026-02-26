@@ -23,12 +23,28 @@ switch ($action) {
 
 function getApprovedQualifications($conn) {
     try {
+        autoActivatePendingQualifications($conn);
         $stmt = $conn->query("SELECT qualification_id, qualification_name as course_name, ctpr_number, duration, training_cost, status FROM tbl_qualifications WHERE status = 'active' ORDER BY qualification_name ASC");
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(['success' => true, 'data' => $data]);
     } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    }
+}
+
+function autoActivatePendingQualifications($conn) {
+    try {
+        $conn->exec("UPDATE tbl_qualifications SET status = 'active' WHERE status = 'pending'");
+        $conn->exec(
+            "INSERT INTO tbl_offered_qualifications (qualification_id)
+             SELECT q.qualification_id
+             FROM tbl_qualifications q
+             LEFT JOIN tbl_offered_qualifications oq ON oq.qualification_id = q.qualification_id
+             WHERE q.status = 'active' AND oq.qualification_id IS NULL"
+        );
+    } catch (Exception $e) {
+        // Ignore auto-activation failures to avoid breaking list endpoint
     }
 }
 
@@ -49,28 +65,7 @@ function createQualification($conn) {
             $data['description'] ?? null
         ]);
 
-            // Create notification for all admins (one per admin user)
-            try {
-                $qualificationId = $conn->lastInsertId();
-                $message = 'New qualification submitted for approval: ' . ($data['qualification_name'] ?? '');
-                $link = '/Hohoo-ville/frontend/html/admin/pages/manage_qualifications.html';
-                $title = 'Qualification submitted';
-
-                // Find admin user_ids
-                $uStmt = $conn->prepare("SELECT u.user_id FROM tbl_users u JOIN tbl_role r ON u.role_id = r.role_id WHERE r.role_name = 'admin'");
-                $uStmt->execute();
-                $adminIds = $uStmt->fetchAll(PDO::FETCH_COLUMN);
-                if (!empty($adminIds)) {
-                    $nstmt = $conn->prepare("INSERT INTO tbl_notifications (user_id, title, message, link) VALUES (?, ?, ?, ?)");
-                    foreach ($adminIds as $aid) {
-                        $nstmt->execute([$aid, $title, $message, $link]);
-                    }
-                }
-            } catch (Exception $nex) {
-                // don't block qualification creation if notification fails
-            }
-
-            echo json_encode(['success' => true, 'message' => 'Qualification submitted for approval']);
+        echo json_encode(['success' => true, 'message' => 'Qualification created successfully']);
     } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);

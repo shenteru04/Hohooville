@@ -3,9 +3,18 @@ const UPLOADS_URL = window.location.origin + '/hohoo-ville/uploads/trainees/';
 
 let accountModal;
 let profileModal;
+let sendingModal;
 let traineesData = [];
 
 document.addEventListener('DOMContentLoaded', function() {
+        // Logout
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                localStorage.clear();
+                window.location.href = '/hohoo-ville/frontend/login.html';
+            });
+        }
     if (typeof Swal === 'undefined') {
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
@@ -15,14 +24,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize Modals
     accountModal = new bootstrap.Modal(document.getElementById('createAccountModal'));
     profileModal = new bootstrap.Modal(document.getElementById('viewProfileModal'));
+    const sendingEl = document.getElementById('sendingEmailModal');
+    if (sendingEl) {
+        sendingModal = new bootstrap.Modal(sendingEl, { backdrop: 'static', keyboard: false });
+    }
 
     loadTrainees();
-
-    // Search & Filter
-    document.getElementById('searchBtn').addEventListener('click', () => renderTraineesTable(traineesData));
-    document.getElementById('searchInput').addEventListener('input', () => renderTraineesTable(traineesData));
-    document.getElementById('statusFilter').addEventListener('change', () => renderTraineesTable(traineesData));
-    document.getElementById('batchFilter').addEventListener('change', () => renderTraineesTable(traineesData));
 
     // Create Account Form Submission
     document.getElementById('createAccountForm').addEventListener('submit', handleCreateAccount);
@@ -119,44 +126,15 @@ async function loadTrainees() {
     }
 }
 
-function populateBatchFilter(data) {
-    const batchFilter = document.getElementById('batchFilter');
-    // Clear existing options except the first one
-    while (batchFilter.options.length > 1) {
-        batchFilter.remove(1);
-    }
-    const batches = [...new Set(data.map(t => t.batch_name).filter(Boolean))];
-    batches.sort();
-    batches.forEach(batch => {
-        const option = document.createElement('option');
-        option.value = batch;
-        option.textContent = batch;
-        batchFilter.appendChild(option);
-    });
-}
-
 function renderTraineesTable(data) {
     const tbody = document.getElementById('traineesTableBody');
     tbody.innerHTML = '';
-
-    const search = document.getElementById('searchInput').value.toLowerCase();
-    const statusFilter = document.getElementById('statusFilter').value;
-    const batchFilter = document.getElementById('batchFilter').value;
-
-    const filtered = data.filter(t => {
-        const name = (t.first_name + ' ' + t.last_name).toLowerCase();
-        const matchesSearch = name.includes(search) || (t.email && t.email.toLowerCase().includes(search));
-        const matchesStatus = statusFilter ? t.status === statusFilter : true;
-        const matchesBatch = batchFilter ? t.batch_name === batchFilter : true;
-        return matchesSearch && matchesStatus && matchesBatch;
-    });
-
-    if (filtered.length === 0) {
+    if (!data || data.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="text-center">No trainees found</td></tr>';
         return;
     }
     
-    filtered.forEach(trainee => {
+    data.forEach(trainee => {
         // Account Button Logic
         let accountBtn = '';
         if (!trainee.user_id) {
@@ -173,20 +151,59 @@ function renderTraineesTable(data) {
             <td>${trainee.last_name}, ${trainee.first_name}</td>
             <td>${trainee.email}</td>
             <td>${trainee.phone_number || '-'}</td>
-            <td>${trainee.batch_name || '<span class="text-muted">Not Enrolled</span>'}</td>
+            <td data-filter-value="${trainee.batch_id || ''}">${trainee.batch_name || '<span class="text-muted">Not Enrolled</span>'}</td>
             <td><span class="badge bg-${trainee.status === 'active' ? 'success' : 'secondary'}">${trainee.status}</span></td>
             <td>
-                ${accountBtn}
-                <button class="btn btn-sm btn-info text-white me-1" onclick="viewProfile(${trainee.trainee_id})" title="View Profile">
-                    <i class="fas fa-eye"></i>
-                </button>
-                <button class="btn btn-sm btn-danger" onclick="deleteTrainee(${trainee.trainee_id})" title="Delete">
-                    <i class="fas fa-trash"></i>
-                </button>
+                <div class="dropdown d-flex justify-content-center">
+                                      <button class="btn btn-sm px-2 py-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Actions">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    ${!trainee.user_id ? `<li><a class="dropdown-item" href="#" onclick="openAccountModal(${trainee.trainee_id})"><i class='fas fa-key me-2'></i>Create Account</a></li>` : `<li><span class='dropdown-item text-success'><i class='fas fa-check me-2'></i>Account Active</span></li>`}
+                    <li><a class="dropdown-item" href="#" onclick="viewProfile(${trainee.trainee_id})"><i class='fas fa-eye me-2'></i>View Profile</a></li>
+                    <li><a class="dropdown-item text-danger" href="#" onclick="deleteTrainee(${trainee.trainee_id})"><i class='fas fa-trash me-2'></i>Delete</a></li>
+                  </ul>
+                </div>
             </td>
         `;
         tbody.appendChild(row);
     });
+}
+
+function populateBatchFilter(data) {
+    const select = document.getElementById('batchFilter');
+    if (!select) return;
+
+    const current = select.value;
+    const batches = new Map();
+    (data || []).forEach(item => {
+        if (!item.batch_id || !item.batch_name) return;
+        if (!batches.has(item.batch_id)) {
+            batches.set(item.batch_id, item.batch_name);
+        }
+    });
+
+    select.innerHTML = '';
+    const allOption = document.createElement('option');
+    allOption.value = '';
+    allOption.textContent = 'All Batches';
+    select.appendChild(allOption);
+
+    Array.from(batches.entries())
+        .sort((a, b) => String(a[1]).localeCompare(String(b[1]), undefined, { sensitivity: 'base' }))
+        .forEach(([id, name]) => {
+            const option = document.createElement('option');
+            option.value = String(id);
+            option.textContent = name;
+            select.appendChild(option);
+        });
+
+    if (current) {
+        const hasOption = Array.from(select.options).some(opt => opt.value === current);
+        if (hasOption) {
+            select.value = current;
+        }
+    }
 }
 
 window.openAccountModal = function(id) {
@@ -204,7 +221,9 @@ async function handleCreateAccount(e) {
     };
 
     try {
+        if (sendingModal) sendingModal.show();
         const response = await axios.post(`${API_BASE_URL}/role/admin/trainees.php?action=create-account`, data);
+        if (sendingModal) sendingModal.hide();
         if (response.data.success) {
             Swal.fire('Success', 'Account created successfully!', 'success');
             accountModal.hide();
@@ -213,6 +232,7 @@ async function handleCreateAccount(e) {
             Swal.fire('Error', 'Error: ' + response.data.message, 'error');
         }
     } catch (error) {
+        if (sendingModal) sendingModal.hide();
         console.error('Error creating account:', error);
         let errorMsg = 'Failed to create account';
         if (error.response && error.response.data && error.response.data.message) {

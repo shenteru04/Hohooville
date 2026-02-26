@@ -132,7 +132,8 @@ async function loadDashboardData(traineeId) {
             document.getElementById('schedule').textContent = displaySchedule;
 
             // Update Stats
-            document.getElementById('attendanceRate').textContent = data.attendance_rate + '%';
+            const progressRate = (data.progress_rate ?? 0);
+            document.getElementById('progressRate').textContent = progressRate + '%';
             document.getElementById('currentGrade').textContent = data.current_grade || 'N/A';
             
             const statusEl = document.getElementById('competencyStatus');
@@ -170,7 +171,7 @@ async function loadDashboardData(traineeId) {
             }
             // Handle case where API returns success: false
             document.getElementById('activeCourseName').textContent = 'No active enrollment';
-            document.getElementById('attendanceRate').textContent = '-';
+            document.getElementById('progressRate').textContent = '-';
             document.getElementById('currentGrade').textContent = '-';
             document.getElementById('competencyStatus').textContent = 'Status: -';
             document.getElementById('nextClassTime').textContent = '-';
@@ -181,7 +182,7 @@ async function loadDashboardData(traineeId) {
     } catch (error) {
         console.error('Error loading dashboard:', error);
         document.getElementById('activeCourseName').textContent = 'Error loading data';
-        document.getElementById('attendanceRate').textContent = 'Error';
+        document.getElementById('progressRate').textContent = 'Error';
         document.getElementById('currentGrade').textContent = 'Error';
         document.getElementById('competencyStatus').textContent = 'Status: Error';
         document.getElementById('nextClassTime').textContent = '-';

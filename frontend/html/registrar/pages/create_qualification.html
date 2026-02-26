@@ -67,7 +67,7 @@
                                     <input type="text" class="form-control" id="courseName" required>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">CTPR Number</label>
+                                    <label class="form-label">CTPR (Certificate of TVET Program Registration) Number</label>
                                     <input type="text" class="form-control" id="ctprNumber">
                                 </div>
                             </div>
@@ -86,9 +86,9 @@
                                 <textarea class="form-control" id="description" rows="3"></textarea>
                             </div>
                             <div class="alert alert-info">
-                                <i class="fas fa-info-circle"></i> This qualification will be sent to the Admin for approval before it can be used for batches or modules.
+                                <i class="fas fa-info-circle"></i> Qualifications created here become available immediately for batches and modules.
                             </div>
-                            <button type="submit" class="btn btn-primary">Submit for Approval</button>
+                            <button type="submit" class="btn btn-primary">Create Qualification</button>
                         </form>
                     </div>
                 </div>
@@ -96,10 +96,10 @@
 
             <div class="container-fluid mt-4 mb-5">
                 <div class="card shadow-sm mt-4">
-                    <div class="card-header">Approved Qualifications</div>
+                    <div class="card-header">Active Qualifications</div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-hover table-striped">
+                            <table class="table table-hover table-striped" id="approvedQualificationsTable" data-table-manager="true" data-filters="Status:4" data-filter-auto-options="true">
                                 <thead>
                                     <tr>
                                         <th>Qualification / Course Name</th>
@@ -122,6 +122,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
     <script src="../../../js/sidebar.js"></script>
+    <script src="../../../js/table_manager.js"></script>
     <script src="../../../js/registrar/pages/create_qualification.js"></script>
     <script>
         document.getElementById('logoutBtn').addEventListener('click', () => {

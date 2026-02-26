@@ -140,11 +140,11 @@
                                     <div class="col-md-6">
                                         <div class="input-group">
                                             <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-                                            <input type="text" class="form-control border-start-0 ps-0 search-input" placeholder="Search by username or email...">
+                                            <input type="text" class="form-control border-start-0 ps-0 search-input" id="adminSearchInput" placeholder="Search by username or email...">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <select class="form-select status-filter">
+                                        <select class="form-select status-filter" id="adminStatusFilter">
                                             <option value="">All Status</option>
                                             <option value="active">Active</option>
                                             <option value="inactive">Inactive</option>
@@ -153,7 +153,7 @@
                                 </div>
                             </div>
                             <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0 admin-table">
+                                <table class="table table-hover align-middle mb-0 admin-table" id="adminUsersTable" data-table-manager="true" data-search-input="adminSearchInput" data-filter-controls="adminStatusFilter:1:Status" data-filter-auto-options="false">
                                     <thead class="bg-light">
                                         <tr>
                                             <th class="ps-4">User</th>
@@ -167,11 +167,7 @@
                                     </tbody>
                                 </table>
                             </div>
-                            <div class="card-footer bg-white py-3">
-                                <nav aria-label="Page navigation">
-                                    <ul class="pagination justify-content-end mb-0 role-pagination"></ul>
-                                </nav>
-                            </div>
+                            
                         </div>
 
                         <!-- Trainer Tab -->
@@ -181,11 +177,11 @@
                                     <div class="col-md-6">
                                         <div class="input-group">
                                             <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-                                            <input type="text" class="form-control border-start-0 ps-0 search-input" placeholder="Search by username or email...">
+                                            <input type="text" class="form-control border-start-0 ps-0 search-input" id="trainerSearchInput" placeholder="Search by username or email...">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <select class="form-select status-filter">
+                                        <select class="form-select status-filter" id="trainerStatusFilter">
                                             <option value="">All Status</option>
                                             <option value="active">Active</option>
                                             <option value="inactive">Inactive</option>
@@ -194,7 +190,7 @@
                                 </div>
                             </div>
                             <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0 trainer-table">
+                                <table class="table table-hover align-middle mb-0 trainer-table" id="trainerUsersTable" data-table-manager="true" data-search-input="trainerSearchInput" data-filter-controls="trainerStatusFilter:1:Status" data-filter-auto-options="false">
                                     <thead class="bg-light">
                                         <tr>
                                             <th class="ps-4">User</th>
@@ -208,11 +204,7 @@
                                     </tbody>
                                 </table>
                             </div>
-                            <div class="card-footer bg-white py-3">
-                                <nav aria-label="Page navigation">
-                                    <ul class="pagination justify-content-end mb-0 role-pagination"></ul>
-                                </nav>
-                            </div>
+                            
                         </div>
 
                         <!-- Trainee Tab -->
@@ -222,11 +214,11 @@
                                     <div class="col-md-6">
                                         <div class="input-group">
                                             <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-                                            <input type="text" class="form-control border-start-0 ps-0 search-input" placeholder="Search by username or email...">
+                                            <input type="text" class="form-control border-start-0 ps-0 search-input" id="traineeSearchInput" placeholder="Search by username or email...">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <select class="form-select status-filter">
+                                        <select class="form-select status-filter" id="traineeStatusFilter">
                                             <option value="">All Status</option>
                                             <option value="active">Active</option>
                                             <option value="inactive">Inactive</option>
@@ -235,7 +227,7 @@
                                 </div>
                             </div>
                             <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0 trainee-table">
+                                <table class="table table-hover align-middle mb-0 trainee-table" id="traineeUsersTable" data-table-manager="true" data-search-input="traineeSearchInput" data-filter-controls="traineeStatusFilter:1:Status" data-filter-auto-options="false">
                                     <thead class="bg-light">
                                         <tr>
                                             <th class="ps-4">User</th>
@@ -249,11 +241,7 @@
                                     </tbody>
                                 </table>
                             </div>
-                            <div class="card-footer bg-white py-3">
-                                <nav aria-label="Page navigation">
-                                    <ul class="pagination justify-content-end mb-0 role-pagination"></ul>
-                                </nav>
-                            </div>
+                            
                         </div>
 
                         <!-- Registrar Tab -->
@@ -263,11 +251,11 @@
                                     <div class="col-md-6">
                                         <div class="input-group">
                                             <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-                                            <input type="text" class="form-control border-start-0 ps-0 search-input" placeholder="Search by username or email...">
+                                            <input type="text" class="form-control border-start-0 ps-0 search-input" id="registrarSearchInput" placeholder="Search by username or email...">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <select class="form-select status-filter">
+                                        <select class="form-select status-filter" id="registrarStatusFilter">
                                             <option value="">All Status</option>
                                             <option value="active">Active</option>
                                             <option value="inactive">Inactive</option>
@@ -276,7 +264,7 @@
                                 </div>
                             </div>
                             <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0 registrar-table">
+                                <table class="table table-hover align-middle mb-0 registrar-table" id="registrarUsersTable" data-table-manager="true" data-search-input="registrarSearchInput" data-filter-controls="registrarStatusFilter:1:Status" data-filter-auto-options="false">
                                     <thead class="bg-light">
                                         <tr>
                                             <th class="ps-4">User</th>
@@ -290,11 +278,7 @@
                                     </tbody>
                                 </table>
                             </div>
-                            <div class="card-footer bg-white py-3">
-                                <nav aria-label="Page navigation">
-                                    <ul class="pagination justify-content-end mb-0 role-pagination"></ul>
-                                </nav>
-                            </div>
+                            
                         </div>
                     </div>
                 </div>
@@ -323,8 +307,8 @@
                         
                         <div class="mb-3">
                             <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" name="email" autocomplete="off">
-                            <div class="form-text">Optional but must be unique if provided</div>
+                            <input type="email" class="form-control" id="email" name="email" autocomplete="off" pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" title="Please enter a valid email address.">
+                            <div class="form-text">Optional but must be unique if provided. Must be a valid email address (e.g., user@example.com).</div>
                         </div>
                         
                         <div class="mb-3">
@@ -375,6 +359,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
     <!-- Sidebar Loader -->
     <script src="../../../js/sidebar.js"></script>
+    <script src="../../../js/table_manager.js"></script>
     <!-- Custom JS -->
      <script src="../../../js/admin/pages/user_management.js"></script>
     

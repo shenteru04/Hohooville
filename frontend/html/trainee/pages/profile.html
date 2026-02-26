@@ -65,23 +65,23 @@
     <div class="d-flex">
         <!-- Sidebar -->
         <nav id="sidebar" class="p-3">
-            <div class="sidebar-header mb-3">
+            <div class="sidebar-header mb-4">
                 <h3><img src="../../../../img/logo.jpg" alt="Logo" class="me-2" style="height: 35px; width: auto;">Hohooville</h3>
                 <p class="text-muted">Trainee Portal</p>
             </div>
             <ul class="nav flex-column">
-                <li class="nav-item mb-2">
-                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainee/trainee_dashboard.html">
-                        <i class="fas fa-home me-2"></i> Dashboard
+                <li class="nav-item mb-1">
+                    <a class="nav-link" href="../trainee_dashboard.html">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
                     </a>
                 </li>
-                <li class="nav-item mb-2">
-                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainee/pages/my_training.html">
-                        <i class="fas fa-book-open me-2"></i> My Training
+                <li class="nav-item mb-1">
+                    <a class="nav-link" href="my_training.html">
+                        <i class="fas fa-book me-2"></i> My Training
                     </a>
                 </li>
-                <li class="nav-item mb-2">
-                    <a class="nav-link" href="/Hohoo-ville/frontend/html/trainee/pages/my_grades.html">
+                <li class="nav-item mb-1">
+                    <a class="nav-link" href="my_grades.html">
                         <i class="fas fa-star me-2"></i> My Progress
                     </a>
                 </li>
@@ -92,7 +92,7 @@
         <div class="flex-grow-1" id="content">
             <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm px-4 py-3">
                 <span class="navbar-brand mb-0 h1">My Profile</span>
-                <div class="d-flex align-items-center">
+                <div class="ms-auto d-flex align-items-center">
                     <div id="notificationContainer"></div>
                     <div class="dropdown">
                     <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
@@ -138,6 +138,22 @@
                                         <div class="col-md-6">
                                             <label class="form-label">Last Name</label>
                                             <input type="text" class="form-control" id="lastName" required>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Qualification</label>
+                                            <input type="text" class="form-control" id="qualification" readonly>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Sex</label>
+                                            <input type="text" class="form-control" id="sex" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Birthdate</label>
+                                            <input type="text" class="form-control" id="birthdate" readonly>
                                         </div>
                                     </div>
                                     <div class="row mb-3">

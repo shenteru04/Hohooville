@@ -38,6 +38,20 @@
             font-weight: 700;
             color: var(--primary-color);
         }
+        .table-sticky-actions th:last-child,
+        .table-sticky-actions td:last-child {
+            position: sticky;
+            right: 0;
+            background: #fff;
+        }
+        .table-sticky-actions th:last-child {
+            background: #f8f9fc;
+            z-index: 3;
+        }
+        .table-sticky-actions td:last-child {
+            z-index: 2;
+            box-shadow: -6px 0 8px -6px rgba(0, 0, 0, 0.12);
+        }
     </style>
 </head>
 <body>
@@ -89,14 +103,13 @@
                             </div>
                         </div>
                         <div class="table-responsive">
-                            <table class="table table-hover">
+                            <table class="table table-hover table-sticky-actions" id="pendingApplicationsTable" data-table-manager="true" data-search-input="searchInput" data-filter-controls="qualificationFilter:2:Qualifications" data-filter-auto-options="true">
                                 <thead>
                                     <tr>
                                         <th>Photo</th>
                                         <th>Trainee Name</th>
                                         <th>Course/Batch</th>
                                         <th>Date Applied</th>
-                                        <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -117,14 +130,13 @@
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
-                                    <table class="table table-hover">
+                                    <table class="table table-hover table-sticky-actions" id="unqualifiedApplicationsTable" data-table-manager="true" data-filters="Course/Batch:2" data-filter-auto-options="true">
                                         <thead>
                                             <tr>
                                                 <th>Photo</th>
                                                 <th>Trainee Name</th>
                                                 <th>Course/Batch</th>
                                                 <th>Date Applied</th>
-                                                <th>Status</th>
                                                 <th>Actions</th>
                                             </tr>
                                         </thead>
@@ -229,6 +241,12 @@
                     </div>
                 </div>
                 <div class="modal-footer">
+                    <button type="button" id="modalQualifyBtn" class="btn btn-success">
+                        <i class="fas fa-check me-2"></i>Mark as Qualified
+                    </button>
+                    <button type="button" id="modalUnqualifyBtn" class="btn btn-danger">
+                        <i class="fas fa-times me-2"></i>Mark as Unqualified
+                    </button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
@@ -243,6 +261,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
     <!-- Custom JS -->
     <script src="../../../js/sidebar.js"></script>
+    <script src="../../../js/table_manager.js"></script>
     <script src="../../../js/registrar/pages/trainee_application_list.js"></script>
     <script>
         document.getElementById('logoutBtn').addEventListener('click', function() {

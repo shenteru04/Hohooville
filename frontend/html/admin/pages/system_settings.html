@@ -133,7 +133,7 @@
                             </button>
                         </div>
                         <div class="card-body">
-                            <table class="table table-hover" id="holidaysTable">
+                            <table class="table table-hover" id="holidaysTable" data-table-manager="true" data-filters="Type:2" data-filter-auto-options="true">
                                 <thead>
                                     <tr>
                                         <th>Date</th>
@@ -201,7 +201,7 @@
                             <h6 class="mb-0">Select Trainees to Generate Certificates</h6>
                         </div>
                         <div class="card-body">
-                            <table class="table table-sm" id="eligibleTable">
+                            <table class="table table-sm" id="eligibleTable" data-table-manager="true" data-filters="Course:2" data-filter-auto-options="true">
                                 <thead>
                                     <tr>
                                         <th><input type="checkbox" onclick="toggleAllCheckboxes(this)"></th>
@@ -273,7 +273,7 @@
                                     <h6 class="mb-0">Inactive Users (Still Manageable in User Management)</h6>
                                 </div>
                                 <div class="card-body">
-                                    <table class="table table-hover" id="inactiveUsersTable">
+                                    <table class="table table-hover" id="inactiveUsersTable" data-table-manager="true" data-filters="Role:2|Status:3" data-filter-auto-options="true">
                                         <thead>
                                             <tr>
                                                 <th>Username</th>
@@ -293,7 +293,7 @@
                         <div class="tab-pane" id="archived-trainees" role="tabpanel">
                             <div class="card">
                                 <div class="card-body">
-                                    <table class="table table-hover" id="archivedTraineesTable">
+                                    <table class="table table-hover" id="archivedTraineesTable" data-table-manager="true" data-filters="Role:2" data-filter-auto-options="true">
                                         <thead>
                                             <tr>
                                                 <th>Username</th>
@@ -313,7 +313,7 @@
                         <div class="tab-pane" id="archived-trainers" role="tabpanel">
                             <div class="card">
                                 <div class="card-body">
-                                    <table class="table table-hover" id="archivedTrainersTable">
+                                    <table class="table table-hover" id="archivedTrainersTable" data-table-manager="true" data-filters="Role:2" data-filter-auto-options="true">
                                         <thead>
                                             <tr>
                                                 <th>Username</th>
@@ -413,6 +413,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
     <!-- Sidebar Loader -->
     <script src="../../../js/sidebar.js"></script>
+    <script src="../../../js/table_manager.js"></script>
     <script src="../../../js/admin/pages/system_settings.js"></script>
 </body>
 </html>

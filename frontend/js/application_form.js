@@ -5,6 +5,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- Page Navigation ---
     window.nextPage = function() {
+        const birthdateInput = document.getElementById('birthdate');
+        const ageValue = parseInt(document.getElementById('age').value, 10);
+        if (!birthdateInput.value || isNaN(ageValue) || ageValue < 15) {
+            Swal && Swal.fire ? Swal.fire('Invalid Birthdate', 'Applicants must be at least 15 years old. Please select a valid birthdate.', 'error') : alert('Applicants must be at least 15 years old. Please select a valid birthdate.');
+            birthdateInput.focus();
+            return;
+        }
         if (validateStep1()) {
             document.getElementById('step1').style.display = 'none';
             document.getElementById('step2').style.display = 'block';
@@ -30,7 +37,16 @@ document.addEventListener('DOMContentLoaded', function() {
             if (m < 0 || (m === 0 && today.getDate() < birthdate.getDate())) {
                 age--;
             }
+            // Birthdate validation: minimum age 15
+            if (isNaN(birthdate.getTime()) || age < 15) {
+                document.getElementById('age').value = '';
+                this.value = '';
+                Swal && Swal.fire ? Swal.fire('Invalid Birthdate', 'Applicants must be at least 15 years old. Please select a valid birthdate.', 'error') : alert('Applicants must be at least 15 years old. Please select a valid birthdate.');
+                this.focus();
+                return;
+            }
             document.getElementById('age').value = age >= 0 ? age : '';
+            updateScholarshipEligibility(age);
         });
     }
 
@@ -142,30 +158,47 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function populateScholarships(scholarships) {
-        const select = document.getElementById('scholarshipSelect');
-        select.innerHTML = '<option value="">Not a Scholar</option>';
-        scholarships.forEach(s => {
-            select.innerHTML += `<option value="${s.scholarship_name}">${s.scholarship_name}</option>`;
-        });
+        // No-op: Scholarship field is now a readonly input auto-populated by batch selection
     }
 
     function populateBatches(qualificationId) {
         const batchSelect = document.getElementById('batchSelect');
         batchSelect.innerHTML = '<option value="">Select a Batch</option>';
+        const scholarshipSelect = document.getElementById('scholarshipSelect');
         if (!qualificationId) {
             batchSelect.innerHTML = '<option value="">Please select a course first</option>';
+            if (scholarshipSelect) {
+                scholarshipSelect.disabled = false;
+                scholarshipSelect.value = '';
+            }
             return;
         }
-
         const relevantBatches = allBatches.filter(b => b.qualification_id == qualificationId);
-        
         if (relevantBatches.length > 0) {
             relevantBatches.forEach(batch => {
-                batchSelect.innerHTML += `<option value="${batch.batch_id}">${batch.batch_name}</option>`;
+                batchSelect.innerHTML += `<option value="${batch.batch_id}" data-scholarship="${batch.scholarship_type || ''}">${batch.batch_name}</option>`;
             });
         } else {
             batchSelect.innerHTML = '<option value="">No open batches for this course</option>';
         }
+        // Reset scholarship field
+        if (scholarshipSelect) {
+            scholarshipSelect.disabled = false;
+            scholarshipSelect.value = '';
+        }
+        // Helper to set scholarship based on batch
+        function setScholarshipFromBatch() {
+            const selectedOption = batchSelect.options[batchSelect.selectedIndex];
+            const scholarship = selectedOption && selectedOption.getAttribute('data-scholarship');
+            if (scholarship && scholarship !== 'null' && scholarship !== '') {
+                scholarshipSelect.value = scholarship;
+            } else {
+                scholarshipSelect.value = '';
+            }
+        }
+        batchSelect.onchange = setScholarshipFromBatch;
+        setScholarshipFromBatch();
+    }
     }
 
 
@@ -267,12 +300,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Form Submission ---
     document.getElementById('applicationForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-        
+        const birthdateInput = document.getElementById('birthdate');
+        const ageValue = parseInt(document.getElementById('age').value, 10);
+        if (!birthdateInput.value || isNaN(ageValue) || ageValue < 15) {
+            Swal && Swal.fire ? Swal.fire('Invalid Birthdate', 'Applicants must be at least 15 years old. Please select a valid birthdate.', 'error') : alert('Applicants must be at least 15 years old. Please select a valid birthdate.');
+            birthdateInput.focus();
+            return;
+        }
         if (!document.getElementById('digitalSignatureInput').value) {
             alert('Please sign the application form.');
             return;
         }
-
         const formData = new FormData(this);
         try {
             const response = await axios.post(`${API_BASE_URL}/public/submit_application.php`, formData);

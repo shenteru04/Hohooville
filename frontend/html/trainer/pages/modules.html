@@ -98,6 +98,9 @@
             font-weight: 700;
             color: var(--primary-color);
         }
+        .swal2-container {
+            z-index: 20000 !important;
+        }
     </style>
 </head>
 <body>
@@ -163,10 +166,14 @@
                                     <i class="fas fa-bell fa-fw"></i>
                                     <span class="badge bg-danger badge-counter" id="notificationBadge" style="display: none;"></span>
                                 </a>
-                                <ul class="dropdown-menu dropdown-menu-end shadow animated--grow-in" aria-labelledby="alertsDropdown" id="notificationList">
-                                    <li><h6 class="dropdown-header">Alerts Center</h6></li>
-                                    <li><span class="dropdown-item text-center small text-muted">No new notifications</span></li>
-                                </ul>
+                                <div class="dropdown-menu dropdown-menu-end p-0 shadow animated--grow-in" aria-labelledby="alertsDropdown" style="min-width: 320px;">
+                                    <div class="p-2 border-bottom">
+                                        <strong class="small mb-0">Notifications</strong>
+                                    </div>
+                                    <div class="list-group list-group-flush" id="notificationList" style="max-height: 400px; overflow-y: auto;">
+                                        <div class="list-group-item text-center small text-muted">No new notifications</div>
+                                    </div>
+                                </div>
                             </li>
                         </ul>
                         <div class="dropdown">
@@ -174,6 +181,8 @@
                                 <i class="fas fa-user-circle"></i> <span id="trainerName">Trainer</span>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                                <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
                             </ul>
                         </div>
@@ -494,3 +503,4 @@
     </script>
 </body>
 </html>
+

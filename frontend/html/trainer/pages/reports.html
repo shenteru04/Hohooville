@@ -16,6 +16,7 @@
             --secondary-color: #858796;
             --bg-color: #f8f9fc;
             --text-color: #5a5c69;
+            --border-color: #e3e6f0;
         }
         body {
             font-family: 'Nunito', sans-serif;
@@ -56,10 +57,66 @@
         }
         .card-header {
             background-color: #f8f9fc;
-            border-bottom: 1px solid #e3e6f0;
+            border-bottom: 1px solid var(--border-color);
             padding: 1rem 1.25rem;
             font-weight: 700;
             color: var(--primary-color);
+        }
+        .page-header {
+            background: linear-gradient(135deg, #eef2ff 0%, #f8f9fc 70%);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 1rem 1.25rem;
+        }
+        .stat-tile {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 0.9rem 1rem;
+            height: 100%;
+        }
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--secondary-color);
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1f2a44;
+        }
+        .report-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem 1.5rem;
+            font-size: 0.9rem;
+        }
+        .report-meta span {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: var(--secondary-color);
+        }
+        .report-badge {
+            background: #eef2ff;
+            color: #2f4cc8;
+            border-radius: 999px;
+            padding: 0.15rem 0.6rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .table thead th {
+            background: #f3f6ff;
+        }
+        .btn-icon {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+        .muted-note {
+            color: var(--secondary-color);
+            font-size: 0.9rem;
         }
     </style>
 </head>
@@ -116,10 +173,14 @@
                                     <i class="fas fa-bell fa-fw"></i>
                                     <span class="badge bg-danger badge-counter" id="notificationBadge" style="display: none;"></span>
                                 </a>
-                                <ul class="dropdown-menu dropdown-menu-end shadow animated--grow-in" aria-labelledby="alertsDropdown" id="notificationList">
-                                    <li><h6 class="dropdown-header">Alerts Center</h6></li>
-                                    <li><span class="dropdown-item text-center small text-muted">No new notifications</span></li>
-                                </ul>
+                                <div class="dropdown-menu dropdown-menu-end p-0 shadow animated--grow-in" aria-labelledby="alertsDropdown" style="min-width: 320px;">
+                                    <div class="p-2 border-bottom">
+                                        <strong class="small mb-0">Notifications</strong>
+                                    </div>
+                                    <div class="list-group list-group-flush" id="notificationList" style="max-height: 400px; overflow-y: auto;">
+                                        <div class="list-group-item text-center small text-muted">No new notifications</div>
+                                    </div>
+                                </div>
                             </li>
                         </ul>
                         <div class="dropdown">
@@ -137,11 +198,21 @@
             </nav>
 
             <div class="container-fluid mt-4">
-                <h2 class="mb-4 text-gray-800">Reports & Analytics</h2>
+                <div class="page-header mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <div>
+                        <h2 class="mb-1 text-gray-800">Reports</h2>
+                        <p class="mb-0 muted-note">Generate printable summaries for attendance, grading, and competency progress.</p>
+                    </div>
+                    <div class="text-end">
+                        <div class="muted-note">Trainer Reporting</div>
+                        <div class="report-badge">Live Data</div>
+                    </div>
+                </div>
                 
                 <div class="card mb-4">
-                    <div class="card-header bg-white">
+                    <div class="card-header bg-white d-flex align-items-center justify-content-between">
                         <h5 class="mb-0">Generate Report</h5>
+                        <span class="muted-note" id="reportStatus">Select a batch to begin</span>
                     </div>
                     <div class="card-body">
                         <form id="reportForm" class="row g-3">
@@ -161,21 +232,60 @@
                                 </select>
                             </div>
                             <div class="col-md-4 d-flex align-items-end">
-                                <button type="submit" class="btn btn-primary me-2"><i class="fas fa-eye me-2"></i> View</button>
-                                <button type="button" class="btn btn-success" onclick="window.print()"><i class="fas fa-file-export me-2"></i> Export PDF</button>
+                                <button type="submit" class="btn btn-primary me-2 btn-icon" id="viewReportBtn">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                                <button type="button" class="btn btn-success btn-icon" id="exportReportBtn">
+                                    <i class="fas fa-file-export"></i> Export Excel
+                                </button>
                             </div>
                         </form>
                     </div>
                 </div>
 
                 <div id="reportResult" class="card d-none">
-                    <div class="card-header bg-white d-flex justify-content-between">
-                        <h5 class="mb-0">Report Preview</h5>
-                        <span class="text-muted" id="reportDate"></span>
+                    <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <h5 class="mb-0" id="reportTitle">Report Preview</h5>
+                            <div class="report-meta mt-2">
+                                <span><i class="fas fa-calendar-alt"></i> <span id="reportDate">-</span></span>
+                                <span><i class="fas fa-layer-group"></i> <span id="reportBatchName">-</span></span>
+                                <span><i class="fas fa-tag"></i> <span id="reportTypeLabel">-</span></span>
+                            </div>
+                        </div>
                     </div>
                     <div class="card-body">
+                        <div class="row g-3 mb-3 d-none" id="reportSummary">
+                            <div class="col-md-3">
+                                <div class="stat-tile">
+                                    <div class="stat-label">Trainees</div>
+                                    <div class="stat-value" id="summaryTotal">0</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-tile">
+                                    <div class="stat-label">Competent</div>
+                                    <div class="stat-value" id="summaryCompetent">0</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-tile">
+                                    <div class="stat-label">Avg. Score</div>
+                                    <div class="stat-value" id="summaryAverage">0%</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-tile">
+                                    <div class="stat-label">Attendance Avg.</div>
+                                    <div class="stat-value" id="summaryAttendance">0%</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="reportEmpty" class="alert alert-light text-center text-muted d-none">
+                            No data available for the selected report.
+                        </div>
                         <div class="table-responsive">
-                            <table class="table table-bordered table-striped" id="reportTable">
+                            <table class="table table-bordered table-striped" id="reportTable" data-table-manager="true" data-filters="Category:0" data-filter-auto-options="true">
                                 <thead id="reportHead"></thead>
                                 <tbody id="reportBody"></tbody>
                             </table>
@@ -189,6 +299,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
+    <script src="../../../js/table_manager.js"></script>
     <script src="../../../js/trainer/pages/reports.js"></script>
     <script src="../../../js/notifications.js"></script>
     <script>
@@ -203,3 +314,5 @@
     </script>
 </body>
 </html>
+
+

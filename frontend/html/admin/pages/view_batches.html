@@ -89,10 +89,15 @@
 
             <!-- Batches Table -->
             <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center"><h5 class="card-title mb-0">Batches List</h5></div>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Open Batches</h5>
+                    <button class="btn btn-outline-secondary btn-sm" id="openClosedBatches">
+                        <i class="fas fa-eye me-1"></i>View Closed Batches
+                    </button>
+                </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-hover" id="batchesTable">
+                        <table class="table table-hover" id="batchesTable" data-table-manager="true" data-filters="Status:1" data-filter-auto-options="true">
                             <thead>
                                 <tr>
                                     <th>Batch Name</th>
@@ -104,6 +109,37 @@
                             <tbody id="batchesTableBody"></tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Closed Batches Modal -->
+    <div class="modal fade" id="closedBatchesModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Closed Batches</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="closedBatchesTable" data-table-manager="true" data-filters="Status:1" data-filter-auto-options="true">
+                            <thead>
+                                <tr>
+                                    <th>Batch Name</th>
+                                    <th>Status</th>
+                                    <th>Enrolled Trainees</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="closedBatchesTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
@@ -129,7 +165,7 @@
                         <input type="text" class="form-control border-start-0 ps-0" id="modalSearchInput" placeholder="Search by name, email, or ID...">
                     </div>
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle" id="modalTraineesTable">
+                        <table class="table table-hover align-middle" id="modalTraineesTable" data-table-manager="true" data-search-input="modalSearchInput" data-filters="Status:3" data-filter-auto-options="true">
                             <thead class="table-light">
                                 <tr>
                                     <th>School ID</th>
@@ -151,6 +187,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script src="../../../js/table_manager.js"></script>
     <script src="../../../js/admin/pages/view_batches.js"></script>
     <script src="../../../js/sidebar.js"></script>
 </body>

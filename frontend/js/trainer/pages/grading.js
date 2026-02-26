@@ -247,32 +247,32 @@ async function loadGrades() {
                     rowsHtml += `
                     <tr data-id="${t.trainee_id}">
                         <td class="align-middle">${t.first_name} ${t.last_name}</td>
-                        <td><input type="number" class="form-control grade-input daily-quiz" value="${t.quiz_score || ''}" min="0" max="100" placeholder="0-100"></td>
-                        <td><input type="number" class="form-control grade-input daily-practical" value="${t.practical_score || ''}" min="0" max="100" placeholder="0-100"></td>
-                        <td><input type="text" class="form-control remarks" value="${t.remarks || ''}" placeholder="Remarks"></td>
+                        <td><input type="number" class="form-control grade-input daily-quiz" name="quiz_score_${t.trainee_id}" value="${t.quiz_score || ''}" min="0" max="100" placeholder="0-100"></td>
+                        <td><input type="number" class="form-control grade-input daily-practical" name="practical_score_${t.trainee_id}" value="${t.practical_score || ''}" min="0" max="100" placeholder="0-100"></td>
+                        <td><input type="text" class="form-control remarks" name="remarks_${t.trainee_id}" value="${t.remarks || ''}" placeholder="Remarks"></td>
                     </tr>`;
                 } else {
                     // Summary View Rows
                     rowsHtml += `
                     <tr data-id="${t.trainee_id}">
                         <td class="align-middle">${t.first_name} ${t.last_name}</td>
-                        <td><input type="number" class="form-control form-control-sm grade-input pre-test" value="${t.pre_test || ''}" min="0" max="100" placeholder="0-100"></td>
-                        <td><input type="number" class="form-control form-control-sm grade-input post-test" value="${t.post_test || ''}" min="0" max="100" placeholder="0-100"></td>
-                        <td><input type="number" class="form-control form-control-sm grade-input activities" value="${t.activities || ''}" min="0" max="100" placeholder="0-100"></td>
-                        <td><input type="number" class="form-control form-control-sm grade-input quizzes" value="${t.quizzes || ''}" min="0" max="100" placeholder="0-100"></td>
+                        <td><input type="number" class="form-control form-control-sm grade-input pre-test" name="pre_test_${t.trainee_id}" value="${t.pre_test || ''}" min="0" max="100" placeholder="0-100"></td>
+                        <td><input type="number" class="form-control form-control-sm grade-input post-test" name="post_test_${t.trainee_id}" value="${t.post_test || ''}" min="0" max="100" placeholder="0-100"></td>
+                        <td><input type="number" class="form-control form-control-sm grade-input activities" name="activities_${t.trainee_id}" value="${t.activities || ''}" min="0" max="100" placeholder="0-100"></td>
+                        <td><input type="number" class="form-control form-control-sm grade-input quizzes" name="quizzes_${t.trainee_id}" value="${t.quizzes || ''}" min="0" max="100" placeholder="0-100"></td>
                         <td>
                             <div class="input-group input-group-sm">
-                                <input type="number" class="form-control grade-input task-sheets" value="${t.task_sheets || ''}" min="0" max="100" placeholder="0-100">
+                                <input type="number" class="form-control grade-input task-sheets" name="task_sheets_${t.trainee_id}" value="${t.task_sheets || ''}" min="0" max="100" placeholder="0-100">
                                 <button class="btn btn-outline-secondary view-task-sheet" type="button" title="View Task Sheet">
                                     <i class="fas fa-file-image"></i>
                                 </button>
                             </div>
                         </td>
                         <td>
-                            <input type="number" class="form-control form-control-sm total-grade" value="${t.total_grade || ''}" readonly>
+                            <input type="number" class="form-control form-control-sm total-grade" name="total_grade_${t.trainee_id}" value="${t.total_grade || ''}" readonly>
                         </td>
                         <td>
-                            <input type="text" class="form-control form-control-sm remarks" value="${t.remarks || ''}" readonly>
+                            <input type="text" class="form-control form-control-sm remarks" name="remarks_summary_${t.trainee_id}" value="${t.remarks || ''}" readonly>
                         </td>
                     </tr>`;
                 }

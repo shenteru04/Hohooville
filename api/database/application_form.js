@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let allBatches = [];
     let allScholarships = [];
     let isReturningTrainee = false;
+    let phLocationData = {}; // Store PH location data
 
     // --- Element Selectors ---
     const preCheckSection = document.getElementById('preCheckSection');
@@ -25,8 +26,44 @@ document.addEventListener('DOMContentLoaded', function() {
     const signatureSection = document.getElementById('signatureSection');
     const submitBtn = document.getElementById('submitBtn');
 
+    // --- Section visibility + required handling ---
+    function initRequiredMarkers(section) {
+        if (!section) return;
+        section.querySelectorAll('[required]').forEach(el => {
+            el.dataset.wasRequired = '1';
+        });
+    }
+
+    function setSectionVisibility(section, show) {
+        if (!section) return;
+        section.style.display = show ? 'block' : 'none';
+        const fields = section.querySelectorAll('input, select, textarea');
+        fields.forEach(field => {
+            const wasRequired = field.dataset.wasRequired === '1';
+            if (show) {
+                field.disabled = false;
+                if (wasRequired) field.setAttribute('required', '');
+            } else {
+                field.disabled = true;
+                field.removeAttribute('required');
+                if (field.type === 'file') field.value = '';
+            }
+        });
+    }
+
+    initRequiredMarkers(requirementsUploadSection);
+    initRequiredMarkers(signatureSection);
+
     // --- Page Navigation (existing) ---
     window.nextPage = function() {
+        const ageVal = parseInt(document.getElementById('age').value);
+        if (isNaN(ageVal) || ageVal < 15) {
+            const msg = 'Applicants must be at least 15 years old. Please select a valid birthdate.';
+            typeof Swal !== 'undefined' ? Swal.fire('Invalid Birthdate', msg, 'error') : alert(msg);
+            document.getElementById('birthdate').focus();
+            return;
+        }
+
         if (validateStep1()) {
             document.getElementById('step1').style.display = 'none';
             document.getElementById('step2').style.display = 'block';
@@ -51,6 +88,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const m = today.getMonth() - birthdate.getMonth();
             if (m < 0 || (m === 0 && today.getDate() < birthdate.getDate())) {
                 age--;
+            }
+            
+            if (age < 15) {
+                const msg = 'Applicants must be at least 15 years old. Please select a valid birthdate.';
+                typeof Swal !== 'undefined' ? Swal.fire('Invalid Birthdate', msg, 'error') : alert(msg);
+                this.value = '';
+                document.getElementById('age').value = '';
+                return;
             }
             document.getElementById('age').value = age >= 0 ? age : '';
         });
@@ -187,8 +232,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (data.firstName) document.querySelector('[name="first_name"]').value = data.firstName;
         if (data.email) document.querySelector('[name="email"]').value = data.email;
         
-        requirementsUploadSection.style.display = 'block';
-        signatureSection.style.display = 'block';
+        setSectionVisibility(requirementsUploadSection, true);
+        setSectionVisibility(signatureSection, true);
         
         populateCourses(allCourses);
         if (allCourses.length > 0) {
@@ -198,8 +243,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function handleReturningTrainee(traineeData) {
         welcomeBackMessage.style.display = 'block';
-        requirementsUploadSection.style.display = 'none';
-        signatureSection.style.display = 'none';
+        setSectionVisibility(requirementsUploadSection, false);
+        setSectionVisibility(signatureSection, false);
 
         // Disable all inputs in step 1
         const step1Inputs = document.querySelectorAll('#step1 input, #step1 select, #step1 textarea');
@@ -209,10 +254,15 @@ document.addEventListener('DOMContentLoaded', function() {
         for (const key in traineeData) {
             if (traineeData.hasOwnProperty(key)) {
                 const value = traineeData[key];
-                
                 // Map database column names to HTML input names
                 let inputName = key;
                 if (key === 'phone_number') inputName = 'phone';
+                if (key === 'birthplace_city') inputName = 'birthplace_city';
+                if (key === 'birthplace_province') inputName = 'birthplace_province';
+                if (key === 'birthplace_region') inputName = 'birthplace_region';
+                if (key === 'city_municipality') inputName = 'city_municipality';
+                if (key === 'barangay') inputName = 'barangay';
+                if (key === 'birth_certificate_no') inputName = 'birth_certificate_no';
 
                 const field = document.querySelector(`[name="${inputName}"]`);
 
@@ -236,12 +286,68 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         }
-        
+
+        // Helper to set dropdown value after options are loaded
+        function setDropdownValue(selectElem, value, maxRetries = 10) {
+            let retries = 0;
+            function trySet() {
+                if ([...selectElem.options].some(opt => opt.value === value)) {
+                    selectElem.value = value;
+                    selectElem.dispatchEvent(new Event('change'));
+                } else if (retries < maxRetries) {
+                    retries++;
+                    setTimeout(trySet, 100);
+                }
+            }
+            trySet();
+        }
+
+        // Special handling for dropdowns (Birthplace, Address)
+        // Birthplace
+        if (traineeData.birthplace_province) {
+            const bpProvince = document.getElementById('birthplace_province');
+            setDropdownValue(bpProvince, traineeData.birthplace_province);
+        }
+        if (traineeData.birthplace_city) {
+            const bpCity = document.getElementById('birthplace_city');
+            setDropdownValue(bpCity, traineeData.birthplace_city);
+        }
+        if (traineeData.birthplace_region) {
+            const bpRegion = document.getElementById('birthplace_region');
+            bpRegion.value = traineeData.birthplace_region;
+        }
+        // Address
+        if (traineeData.province) {
+            const addrProvince = document.getElementById('addr_province');
+            setDropdownValue(addrProvince, traineeData.province);
+        }
+        if (traineeData.city_municipality) {
+            const addrCity = document.getElementById('addr_city');
+            setDropdownValue(addrCity, traineeData.city_municipality);
+        }
+        if (traineeData.barangay) {
+            const addrBarangay = document.getElementById('addr_barangay');
+            setDropdownValue(addrBarangay, traineeData.barangay);
+        }
+        if (traineeData.region) {
+            const addrRegion = document.getElementById('addr_region');
+            addrRegion.value = traineeData.region;
+        }
+        // Explicitly set district input value
+        if (traineeData.district) {
+            const addrDistrict = document.getElementById('addr_district');
+            if (addrDistrict) addrDistrict.value = traineeData.district;
+        }
+        if (traineeData.birth_certificate_no) {
+            const birthCert = document.querySelector('[name="birth_certificate_no"]');
+            if (birthCert) birthCert.value = traineeData.birth_certificate_no;
+        }
+
         // Re-enable key fields needed for backend lookup on submit
         document.querySelector('[name="last_name"]').disabled = false;
         document.querySelector('[name="first_name"]').disabled = false;
         document.querySelector('[name="email"]').disabled = false;
-        
+
         // Manually trigger change events for dependent fields to update UI
         document.getElementById('birthdate').dispatchEvent(new Event('change'));
         document.getElementById('employmentStatus').dispatchEvent(new Event('change'));
@@ -298,20 +404,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function populateScholarships(scholarships) {
-        const select = document.getElementById('scholarshipSelect');
-        select.innerHTML = '<option value="">Not a Scholar</option>';
-        if (scholarships && scholarships.length > 0) {
-            scholarships.forEach(s => {
-                select.innerHTML += `<option value="${s.scholarship_name}">${s.scholarship_name}</option>`;
-            });
-        }
+        // No-op: Scholarship field is now a readonly input auto-populated by batch selection
     }
 
     function populateBatches(courseId) {
         const batchSelect = document.getElementById('batchSelect');
         batchSelect.innerHTML = '<option value="">Select a Batch</option>';
+        const scholarshipInput = document.getElementById('scholarshipSelect');
         if (!courseId) {
             batchSelect.innerHTML = '<option value="">Select a course to see available batches</option>';
+            if (scholarshipInput) scholarshipInput.value = '';
             return;
         }
 
@@ -319,11 +421,26 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (relevantBatches.length > 0) {
             relevantBatches.forEach(batch => {
-                batchSelect.innerHTML += `<option value="${batch.batch_id}">${batch.batch_name}</option>`;
+                batchSelect.innerHTML += `<option value="${batch.batch_id}" data-scholarship="${batch.scholarship_type || ''}">${batch.batch_name}</option>`;
             });
         } else {
             batchSelect.innerHTML = '<option value="">No open batches for this qualification</option>';
         }
+
+        // Reset and auto-populate scholarship based on selected batch
+        if (scholarshipInput) scholarshipInput.value = '';
+        function setScholarshipFromBatch() {
+            if (!scholarshipInput) return;
+            const selectedOption = batchSelect.options[batchSelect.selectedIndex];
+            const scholarship = selectedOption && selectedOption.getAttribute('data-scholarship');
+            if (scholarship && scholarship !== 'null' && scholarship !== '') {
+                scholarshipInput.value = scholarship;
+            } else {
+                scholarshipInput.value = '';
+            }
+        }
+        batchSelect.onchange = setScholarshipFromBatch;
+        setScholarshipFromBatch();
     }
 
     document.getElementById('courseSelect').addEventListener('change', function() {
@@ -480,6 +597,208 @@ document.addEventListener('DOMContentLoaded', function() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     });
 
+    // --- NEW: Signature Method Toggle & Upload Logic ---
+    const sigMethodDraw = document.getElementById('sigMethodDraw');
+    const sigMethodUpload = document.getElementById('sigMethodUpload');
+    const drawSection = document.getElementById('drawSignatureSection');
+    const uploadSection = document.getElementById('uploadSignatureSection');
+    const uploadInput = document.getElementById('signatureUploadInput');
+    const uploadPreviewContainer = document.getElementById('uploadPreviewContainer');
+    const uploadPreview = document.getElementById('uploadPreview');
+
+    function resetSignatureState() {
+        // Clear hidden input
+        document.getElementById('digitalSignatureInput').value = '';
+        
+        // Clear Draw UI
+        document.getElementById('signaturePreview').src = '';
+        document.getElementById('signaturePreview').style.display = 'none';
+        document.getElementById('signaturePlaceholder').style.display = 'block';
+        document.getElementById('clearSignatureBtn').style.display = 'none';
+        
+        // Clear Upload UI
+        if(uploadInput) uploadInput.value = '';
+        if(uploadPreview) uploadPreview.src = '';
+        if(uploadPreviewContainer) uploadPreviewContainer.style.display = 'none';
+
+        // Update submit button state
+        if(privacyConsent) privacyConsent.dispatchEvent(new Event('change'));
+    }
+
+    if (sigMethodDraw && sigMethodUpload) {
+        sigMethodDraw.addEventListener('change', () => {
+            if (sigMethodDraw.checked) {
+                drawSection.style.display = 'block';
+                uploadSection.style.display = 'none';
+                resetSignatureState();
+            }
+        });
+        sigMethodUpload.addEventListener('change', () => {
+            if (sigMethodUpload.checked) {
+                drawSection.style.display = 'none';
+                uploadSection.style.display = 'block';
+                resetSignatureState();
+            }
+        });
+    }
+
+    if (uploadInput) {
+        uploadInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    const res = evt.target.result;
+                    document.getElementById('digitalSignatureInput').value = res;
+                    uploadPreview.src = res;
+                    uploadPreviewContainer.style.display = 'block';
+                    
+                    // Trigger validation check for submit button
+                    if(privacyConsent) privacyConsent.dispatchEvent(new Event('change'));
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    // --- NEW: PH Location Data Logic ---
+    async function loadPhAddressData() {
+        try {
+            // Fetching data from a reliable GitHub source
+            const response = await axios.get('https://raw.githubusercontent.com/flores-jacob/philippine-regions-provinces-cities-municipalities-barangays/master/philippine_provinces_cities_municipalities_and_barangays_2019v2.json');
+            phLocationData = response.data;
+            
+            populateAddressDropdowns();
+            populateBirthplaceDropdowns();
+        } catch (error) {
+            console.error('Error loading PH location data:', error);
+        }
+    }
+
+    function populateAddressDropdowns() {
+        const regionInput = document.getElementById('addr_region');
+        const provinceSelect = document.getElementById('addr_province');
+        const citySelect = document.getElementById('addr_city');
+        const barangaySelect = document.getElementById('addr_barangay');
+        const districtInput = document.getElementById('addr_district');
+
+        // Flatten provinces
+        const allProvinces = [];
+        for (const rKey in phLocationData) {
+            const regionName = phLocationData[rKey].region_name;
+            const provinces = phLocationData[rKey].province_list;
+            for (const pName in provinces) {
+                allProvinces.push({ name: pName, region: regionName, regionKey: rKey });
+            }
+        }
+        allProvinces.sort((a, b) => a.name.localeCompare(b.name));
+
+        // Populate Province Select
+        provinceSelect.innerHTML = '<option value="">Select Province</option>';
+        allProvinces.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.name;
+            opt.text = p.name;
+            opt.dataset.region = p.region;
+            opt.dataset.regionKey = p.regionKey;
+            provinceSelect.appendChild(opt);
+        });
+
+        // Province Change Listener
+        provinceSelect.addEventListener('change', function() {
+            citySelect.innerHTML = '<option value="">Select City/Municipality</option>';
+            barangaySelect.innerHTML = '<option value="">Select Barangay</option>';
+            regionInput.value = '';
+            if (districtInput) districtInput.value = '';
+            
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption.value) {
+                // Auto-populate Region
+                regionInput.value = selectedOption.dataset.region;
+
+                // Populate Cities
+                const rKey = selectedOption.dataset.regionKey;
+                const pName = this.value;
+                const municipalities = phLocationData[rKey].province_list[pName].municipality_list;
+                const cityNames = Object.keys(municipalities).sort();
+                
+                cityNames.forEach(muniName => {
+                    citySelect.innerHTML += `<option value="${muniName}">${muniName}</option>`;
+                });
+            }
+        });
+
+        // City Change Listener
+        citySelect.addEventListener('change', function() {
+            barangaySelect.innerHTML = '<option value="">Select Barangay</option>';
+            if (districtInput) districtInput.value = '';
+            
+            const selectedProvOption = provinceSelect.options[provinceSelect.selectedIndex];
+            if (!selectedProvOption.value) return;
+
+            const regionKey = selectedProvOption.dataset.regionKey;
+            const provName = provinceSelect.value;
+            const muniName = this.value;
+            
+            if (regionKey && provName && muniName) {
+                const barangays = phLocationData[regionKey].province_list[provName].municipality_list[muniName].barangay_list;
+                barangays.sort();
+                barangays.forEach(brgy => {
+                    barangaySelect.innerHTML += `<option value="${brgy}">${brgy}</option>`;
+                });
+            }
+        });
+    }
+
+    function populateBirthplaceDropdowns() {
+        const bpProvince = document.getElementById('birthplace_province');
+        const bpCity = document.getElementById('birthplace_city');
+        const bpRegion = document.getElementById('birthplace_region');
+
+        // Flatten provinces for Birthplace (since user might not know region first)
+        const allProvinces = [];
+        for (const rKey in phLocationData) {
+            const regionName = phLocationData[rKey].region_name;
+            const provinces = phLocationData[rKey].province_list;
+            for (const pName in provinces) {
+                allProvinces.push({ name: pName, region: regionName, regionKey: rKey });
+            }
+        }
+        
+        // Sort and populate
+        allProvinces.sort((a, b) => a.name.localeCompare(b.name));
+        allProvinces.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.name;
+            opt.text = p.name;
+            opt.dataset.region = p.region;
+            opt.dataset.regionKey = p.regionKey;
+            bpProvince.appendChild(opt);
+        });
+
+        // Birthplace Province Change
+        bpProvince.addEventListener('change', function() {
+            bpCity.innerHTML = '<option value="">Select City</option>';
+            bpRegion.value = '';
+
+            const selectedOpt = this.options[this.selectedIndex];
+            if (selectedOpt.value) {
+                // Auto-populate Region
+                bpRegion.value = selectedOpt.dataset.region;
+
+                // Populate Cities
+                const rKey = selectedOpt.dataset.regionKey;
+                const pName = this.value;
+                const municipalities = phLocationData[rKey].province_list[pName].municipality_list;
+                
+                for (const mName in municipalities) {
+                    bpCity.innerHTML += `<option value="${mName}">${mName}</option>`;
+                }
+            }
+        });
+    }
+
     // --- Initial Load ---
     loadInitialData();
+    loadPhAddressData();
 });

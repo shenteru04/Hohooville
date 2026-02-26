@@ -40,12 +40,28 @@ switch ($action) {
 
 function getQualifications($conn) {
     try {
-        $stmt = $conn->query("SELECT * FROM tbl_qualifications ORDER BY FIELD(status, 'pending', 'active', 'inactive', 'rejected'), qualification_id DESC");
+        autoActivatePendingQualifications($conn);
+        $stmt = $conn->query("SELECT * FROM tbl_qualifications ORDER BY FIELD(status, 'active', 'inactive', 'rejected', 'pending'), qualification_id DESC");
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(['success' => true, 'data' => $data]);
     } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    }
+}
+
+function autoActivatePendingQualifications($conn) {
+    try {
+        $conn->exec("UPDATE tbl_qualifications SET status = 'active' WHERE status = 'pending'");
+        $conn->exec(
+            "INSERT INTO tbl_offered_qualifications (qualification_id)
+             SELECT q.qualification_id
+             FROM tbl_qualifications q
+             LEFT JOIN tbl_offered_qualifications oq ON oq.qualification_id = q.qualification_id
+             WHERE q.status = 'active' AND oq.qualification_id IS NULL"
+        );
+    } catch (Exception $e) {
+        // Ignore auto-activation failures to avoid breaking list endpoint
     }
 }
 

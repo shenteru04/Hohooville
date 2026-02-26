@@ -157,6 +157,9 @@ async function loadProfileData(traineeId) {
             document.getElementById('phone').value = profile.phone_number || '';
             document.getElementById('facebook').value = profile.facebook_account || '';
             document.getElementById('address').value = profile.address || '';
+            document.getElementById('qualification').value = profile.qualification || profile.course_name || '';
+            document.getElementById('sex').value = profile.sex || '';
+            document.getElementById('birthdate').value = profile.birthdate ? new Date(profile.birthdate).toLocaleDateString() : '';
 
         } else {
             Swal.fire('Error', 'Could not load profile data: ' + response.data.message, 'error');

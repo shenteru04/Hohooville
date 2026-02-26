@@ -73,7 +73,7 @@
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-hover" id="schedulesTable">
+                            <table class="table table-hover" id="schedulesTable" data-table-manager="true" data-filters="Qualification:1|Trainer:2" data-filter-auto-options="true">
                                 <thead>
                                     <tr>
                                         <th>Batch Name</th>
@@ -151,6 +151,7 @@
     <!-- SweetAlert2 -->
     <!-- Custom JS -->
     <script src="../../../js/sidebar.js"></script>
+    <script src="../../../js/table_manager.js"></script>
     <script src="../../../js/registrar/pages/schedule.js"></script>
     <script>
         document.getElementById('logoutBtn').addEventListener('click', () => {

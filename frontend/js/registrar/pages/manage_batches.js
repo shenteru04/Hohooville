@@ -9,6 +9,7 @@ let allScholarships = [];
 let batchesData = [];
 let currentBatchId = null;
 let currentBatchName = null;
+let closedBatchesModal;
 
 document.addEventListener('DOMContentLoaded', function() {
     // Fix: Dynamically load SweetAlert2 if it's missing
@@ -21,11 +22,18 @@ document.addEventListener('DOMContentLoaded', function() {
     batchModal = new bootstrap.Modal(document.getElementById('batchModal'));
     viewBatchModal = new bootstrap.Modal(document.getElementById('viewBatchModal'));
     viewTraineeModal = new bootstrap.Modal(document.getElementById('viewTraineeModal'));
+    closedBatchesModal = new bootstrap.Modal(document.getElementById('closedBatchesModal'));
 
     loadInitialData();
 
     document.getElementById('addBatchForm').addEventListener('submit', saveBatch);
     document.getElementById('qualificationSelect').addEventListener('change', handleQualificationChange);
+    const openClosedBtn = document.getElementById('openClosedBatches');
+    if (openClosedBtn) {
+        openClosedBtn.addEventListener('click', () => {
+            if (closedBatchesModal) closedBatchesModal.show();
+        });
+    }
 
     // Inject Sidebar CSS (W3.CSS Reference Style)
     const ms = document.createElement('style');
@@ -125,7 +133,17 @@ async function loadFormData() {
         // Fetch trainers and scholarships
         const formDataResponse = await axios.get(`${API_BASE_URL}/role/registrar/batches.php?action=get-form-data`);
         if (formDataResponse.data.success) {
-            allTrainers = formDataResponse.data.data.trainers;
+            allTrainers = (formDataResponse.data.data.trainers || []).map(t => {
+                const ids = (t.qualification_ids || '')
+                    .toString()
+                    .split(',')
+                    .map(v => v.trim())
+                    .filter(Boolean);
+                return {
+                    ...t,
+                    qualification_ids: ids
+                };
+            });
             allScholarships = formDataResponse.data.data.scholarships;
 
             const trainerSelect = document.getElementById('trainerSelect');
@@ -145,36 +163,56 @@ async function loadFormData() {
 async function loadBatches() {
     try {
         const response = await axios.get(`${API_BASE_URL}/role/registrar/batches.php?action=list`);
-        const tbody = document.getElementById('batchesTableBody');
-        tbody.innerHTML = '';
         if (response.data.success) {
             batchesData = response.data.data;
-            response.data.data.forEach(batch => {
-                const statusClass = batch.status === 'open' ? 'bg-success' : 'bg-secondary';
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${batch.batch_name}</td>
-                        <td>${batch.course_name || 'N/A'}</td>
-                        <td>${batch.trainer_name || 'N/A'}</td>
-                        <td>${batch.scholarship_type || 'None'}</td>
-                        <td>${batch.start_date}</td>
-                        <td>${batch.end_date}</td>
-                        <td>${batch.max_trainees || '25'}</td>
-                        <td><span class="badge ${statusClass}">${batch.status}</span></td>
-                        <td class="text-center">
-                            <div class="d-flex justify-content-center gap-1">
-                                <button class="btn btn-sm btn-outline-info" onclick="viewBatch(${batch.batch_id}, '${batch.batch_name}')" title="View"><i class="fas fa-eye"></i></button>
-                                <button class="btn btn-sm btn-outline-primary" onclick="editBatch(${batch.batch_id})" title="Edit"><i class="fas fa-edit"></i></button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteBatch(${batch.batch_id})" title="Delete"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            });
+            const openBatches = batchesData.filter(b => b.status === 'open');
+            const closedBatches = batchesData.filter(b => b.status === 'closed');
+            renderBatchesTable(openBatches, 'batchesTableBody');
+            renderBatchesTable(closedBatches, 'closedBatchesTableBody');
         }
     } catch (error) {
         console.error('Error loading batches:', error);
     }
+}
+
+function renderBatchesTable(data, tbodyId) {
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center">No batches found</td></tr>';
+        return;
+    }
+
+    data.forEach(batch => {
+        const statusClass = batch.status === 'open' ? 'bg-success' : 'bg-secondary';
+        tbody.innerHTML += `
+            <tr>
+                <td>${batch.batch_name}</td>
+                <td>${batch.course_name || 'N/A'}</td>
+                <td>${batch.trainer_name || 'N/A'}</td>
+                <td>${batch.scholarship_type || 'None'}</td>
+                <td>${batch.start_date}</td>
+                <td>${batch.end_date}</td>
+                <td>${batch.max_trainees || '25'}</td>
+                <td><span class="badge ${statusClass}">${batch.status}</span></td>
+                <td class="text-center">
+                    <div class="d-flex justify-content-center gap-1 flex-wrap">
+                        <button class="btn btn-sm btn-outline-primary" type="button" onclick="viewBatch(${batch.batch_id}, '${batch.batch_name}')" title="View">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" onclick="editBatch(${batch.batch_id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" type="button" onclick="deleteBatch(${batch.batch_id})" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
 }
 
 window.openAddModal = function() {
@@ -218,7 +256,7 @@ function filterTrainers(qualId) {
     const qual = allQualifications.find(q => q.qualification_id == qualId);
     if (!qual) return;
 
-    const filtered = allTrainers.filter(t => t.qualification_id == qualId);
+    const filtered = allTrainers.filter(t => Array.isArray(t.qualification_ids) && t.qualification_ids.includes(String(qualId)));
     
     if (filtered.length === 0) {
         trainerSelect.innerHTML += '<option value="" disabled>No trainers available</option>';

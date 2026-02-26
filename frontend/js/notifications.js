@@ -1,10 +1,14 @@
 const NOTIF_API_URL = '/Hohoo-ville/api/notifications.php';
 
 let notificationPollInterval;
+let currentUser = null;
+let currentUserRole = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     const user = JSON.parse(localStorage.getItem('user'));
-    
+    currentUser = user || null;
+    currentUserRole = user?.role || null;
+
     if (user && user.user_id) {
         // Initial check
         checkNotifications(user.user_id);
@@ -32,11 +36,12 @@ async function checkNotifications(userId) {
 }
 
 function updateNotificationUI(notifications) {
+    const filteredNotifications = filterNotificationsByRole(notifications, currentUserRole);
     const badge = document.getElementById('notificationBadge');
     const list = document.getElementById('notificationList');
     
     // Count unread notifications
-    const unreadCount = notifications.filter(n => !n.is_read).length;
+    const unreadCount = filteredNotifications.filter(n => !n.is_read).length;
     
     // Update Badge Count
     if (badge) {
@@ -52,10 +57,10 @@ function updateNotificationUI(notifications) {
     if (list) {
         list.innerHTML = '';
         
-        if (notifications.length === 0) {
+        if (filteredNotifications.length === 0) {
             list.innerHTML = '<div class="list-group-item text-center small text-muted">No notifications</div>';
         } else {
-            notifications.forEach(notif => {
+            filteredNotifications.forEach(notif => {
                 const dateObj = new Date(notif.time);
                 const date = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 const readClass = notif.is_read ? '' : 'fw-bold';
@@ -79,15 +84,32 @@ function updateNotificationUI(notifications) {
     }
 }
 
+function filterNotificationsByRole(notifications, role) {
+    if (!Array.isArray(notifications) || !role) return notifications || [];
+    return notifications.filter(notif => isLinkAllowedForRole(notif.link, role));
+}
+
+function isLinkAllowedForRole(link, role) {
+    if (!link) return true;
+    const path = String(link).toLowerCase();
+    const roleMatch = ['admin', 'registrar', 'trainer', 'trainee'].find(r => path.includes(`/html/${r}/`));
+    if (!roleMatch) return true;
+    return roleMatch === role;
+}
+
 window.handleNotificationClick = async function(event, id, link) {
     event.preventDefault();
     event.stopPropagation();
     try {
         await axios.get(`${NOTIF_API_URL}?action=markRead&id=${id}`);
         // Redirect if a link is provided
-        if (link) window.location.href = link;
+        if (link && isLinkAllowedForRole(link, currentUserRole)) {
+            window.location.href = link;
+        }
     } catch (error) {
         console.error('Error marking read:', error);
-        if (link) window.location.href = link;
+        if (link && isLinkAllowedForRole(link, currentUserRole)) {
+            window.location.href = link;
+        }
     }
 };

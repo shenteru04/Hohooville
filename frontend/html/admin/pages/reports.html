@@ -110,8 +110,8 @@
             <div class="container-fluid mt-4">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2 class="text-gray-800">Reports & Analytics</h2>
-                    <button class="btn btn-secondary no-print" onclick="window.print()">
-                        <i class="fas fa-print me-2"></i>Print Report
+                    <button class="btn btn-secondary no-print" id="exportReportBtn">
+                        <i class="fas fa-file-export me-2"></i>Export Excel
                     </button>
                 </div>
 
@@ -158,7 +158,7 @@
                         <div class="card-header">Detailed Data</div>
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-striped table-bordered" id="reportTable">
+                                <table class="table table-striped table-bordered" id="reportTable" data-table-manager="true" data-filters="Category:0" data-filter-auto-options="true">
                                     <thead>
                                         <!-- Headers populated by JS -->
                                     </thead>
@@ -180,6 +180,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
     <!-- Sidebar Loader -->
     <script src="../../../js/sidebar.js"></script>
+    <script src="../../../js/table_manager.js"></script>
     <!-- Custom JS -->
     <script src="../../../js/admin/pages/reports.js"></script>
     

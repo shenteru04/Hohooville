@@ -71,7 +71,7 @@
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-hover" id="trainersTable">
+                            <table class="table table-hover" id="trainersTable" data-table-manager="true" data-filters="Status:3" data-filter-auto-options="true">
                                 <thead>
                                     <tr>
                                         <th>Name</th>
@@ -104,64 +104,92 @@
                         <input type="hidden" id="trainerId">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">First Name</label>
+                                <label class="form-label">First Name <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="firstName" required>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Last Name</label>
+                                <label class="form-label">Last Name <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="lastName" required>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Email Address</label>
-                                <input type="email" class="form-control" id="email" required>
+                                <label class="form-label">Email Address <span class="text-danger">*</span></label>
+                                    <input type="email" class="form-control" id="email" required
+                                        pattern="^[^@\s]+@[^@\s]+\.[^@\s]+$"
+                                        autocomplete="off"
+                                        title="Please enter a valid email address (e.g., name@example.com).">
+                                <div class="invalid-feedback">Please enter a valid email address (e.g., name@example.com).</div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Phone Number</label>
-                                <input type="text" class="form-control" id="phone">
+                                <label class="form-label">Phone Number <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="phone" required inputmode="numeric" pattern="[0-9]+"
+                                       title="Numbers only.">
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Qualification</label>
-                            <select class="form-select" id="qualification_id">
-                                <option value="">Select Qualification</option>
-                            </select>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <label class="form-label">Qualifications & Requirements <span class="text-danger">*</span></label>
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="addQualificationBtn">
+                                    <i class="fas fa-plus me-1"></i>Add Qualification
+                                </button>
+                            </div>
+                            <div id="qualificationsContainer"></div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Address</label>
-                            <textarea class="form-control" id="address" rows="2"></textarea>
+                            <label class="form-label">Address <span class="text-danger">*</span></label>
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <label class="form-label">Province <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="addrProvince" required>
+                                        <option value="">Select Province</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">City / Municipality <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="addrCity" required>
+                                        <option value="">Select City/Municipality</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Region <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="addrRegion" readonly required>
+                                </div>
+                            </div>
+                            <div class="row g-2 mt-1">
+                                <div class="col-md-4">
+                                    <label class="form-label">Barangay <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="addrBarangay" required>
+                                        <option value="">Select Barangay</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">District <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="addrDistrict" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">House No. / Street <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="addrHouse" required>
+                                </div>
+                            </div>
+                            <input type="hidden" id="address">
                         </div>
 
                         <h5 class="mt-4 mb-3">Certifications & Documents</h5>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">NTTC Number</label>
-                                <input type="text" class="form-control" id="nttcNo">
+                                <label class="form-label">NTTC Number <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="nttcNo" required>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">NTTC Certificate</label>
-                                <input type="file" class="form-control" id="nttcFile" accept=".pdf,.jpg,.png">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Trainer Methodology (TM) Certificate</label>
-                                <input type="file" class="form-control" id="tmFile" accept=".pdf,.jpg,.png">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Work Experience Documents</label>
-                                <input type="file" class="form-control" id="expFile" accept=".pdf,.jpg,.png">
+                                <label class="form-label">NTTC (National TVET Trainers Certificate)<span class="text-danger">*</span></label>
+                                <input type="file" class="form-control" id="nttcFile" accept=".pdf,.jpg,.png" required>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">National Certificate (NC) Level</label>
-                                <input type="text" class="form-control" id="ncLevel" placeholder="e.g. NC II">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">NC Certificate</label>
-                                <input type="file" class="form-control" id="ncFile" accept=".pdf,.jpg,.png">
+                                <label class="form-label">Trainer Methodology (TM) Certificate <span class="text-danger">*</span></label>
+                                <input type="file" class="form-control" id="tmFile" accept=".pdf,.jpg,.png" required>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -192,6 +220,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
     <script src="../../../js/sidebar.js"></script>
+    <script src="../../../js/table_manager.js"></script>
     <script src="../../../js/registrar/pages/add_trainer.js"></script>
     <script>
         document.getElementById('logoutBtn').addEventListener('click', () => {

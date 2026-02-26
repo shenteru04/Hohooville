@@ -129,7 +129,7 @@
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-hover" id="traineesTable">
+                            <table class="table table-hover" id="traineesTable" data-table-manager="true" data-search-input="searchInput" data-search-button="searchBtn" data-filter-controls="statusFilter:5:Status|batchFilter:4:Batch">
                                 <thead>
                                     <tr>
                                         <th>School ID</th>
@@ -218,6 +218,21 @@
         </div>
     </div>
 
+    <!-- Sending Credentials Modal -->
+    <div class="modal fade" id="sendingEmailModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body text-center py-4">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <h6 class="mb-1">Sending Account Credentials</h6>
+                    <p class="text-muted mb-0">Please wait while we email the trainee.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <!-- Axios -->
@@ -226,6 +241,7 @@
     <!-- Sidebar Loader -->
     <script src="../../../js/sidebar.js"></script>
     <!-- Custom JS -->
+    <script src="../../../js/table_manager.js"></script>
     <script src="../../../js/admin/pages/view_trainees.js"></script>
     
     <script>

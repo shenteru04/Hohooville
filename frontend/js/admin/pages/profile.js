@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
             localStorage.clear();
-            window.location.href = '../../login.html';
+            window.location.href = '/hohoo-ville/frontend/login.html';
         });
     }
 

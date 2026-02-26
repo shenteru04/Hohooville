@@ -278,7 +278,7 @@ function reassignBatch($conn) {
 
         $emailSent = false;
         if ($traineeDetails && !empty($traineeDetails['email'])) {
-            $emailSent = sendNotificationEmail($traineeDetails, 'approved');
+            $emailSent = sendNotificationEmail($traineeDetails, 'reassigned');
         }
 
         $message = 'Trainee reassigned and enrollment approved.';
@@ -489,6 +489,43 @@ function sendNotificationEmail($details, $status, $reason = '') {
                 <div class='footer'>
                     <p>📧 registrar@hohoo-ville.edu | 📞 +1 (123) 456-7890 | 🌐 www.hohoo-ville.edu</p>
                 </div>
+            </div>
+        </body>
+        </html>";
+    } elseif ($status === 'reassigned') {
+        $subject = "📬 Batch Assignment Update";
+        $message = "
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='UTF-8'>
+            <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+            <style>
+                body { font-family: Arial, Helvetica, sans-serif; background: #f5f7fb; padding: 20px; }
+                .container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+                .header { background: $brandColor; color: #fff; padding: 24px; text-align: center; }
+                .content { padding: 24px; color: #333; line-height: 1.6; }
+                .badge { display: inline-block; background: $successColor; color: #fff; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+                .info { background: #f3f6ff; border-left: 4px solid $brandColor; padding: 12px; border-radius: 6px; margin: 16px 0; }
+                .footer { padding: 16px 24px; font-size: 12px; color: #666; background: #f8f9fa; text-align: center; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h2>Hohoo-Ville Technical School</h2>
+                </div>
+                <div class='content'>
+                    <p>Dear <strong>$name</strong>,</p>
+                    <p>Good news! You have been assigned to a new batch for <strong>$course</strong>.</p>
+                    <div class='info'>
+                        <strong>Batch:</strong> $batch
+                    </div>
+                    <p><span class='badge'>APPROVED</span></p>
+                    <p>You are officially enrolled and will receive additional instructions from the registrar.</p>
+                    <p>Thank you,<br><strong>Hohoo-Ville Technical School</strong></p>
+                </div>
+                <div class='footer'>This is an automated message. Please do not reply.</div>
             </div>
         </body>
         </html>";

@@ -237,7 +237,7 @@
                                 <div class="card-header">Recent System Activities</div>
                                 <div class="card-body">
                                     <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                                        <table class="table table-sm table-hover">
+                                        <table class="table table-sm table-hover" id="recentActivitiesTable" data-table-manager="true" data-filters="Action:1" data-filter-auto-options="true">
                                             <thead>
                                                 <tr>
                                                     <th>User</th>
@@ -274,7 +274,7 @@
                                 <div class="card-header">Batch Enrollment Summary</div>
                                 <div class="card-body">
                                     <div class="table-responsive">
-                                        <table class="table table-striped">
+                                        <table class="table table-striped" id="batchSummaryTable" data-table-manager="true" data-filters="Status:2" data-filter-auto-options="true">
                                             <thead>
                                                 <tr>
                                                     <th>Batch Name</th>
@@ -295,7 +295,7 @@
                                 <div class="card-header">Batch Attendance Summary</div>
                                 <div class="card-body">
                                     <div class="table-responsive">
-                                        <table class="table table-striped">
+                                        <table class="table table-striped" id="batchAttendanceTable" data-table-manager="true" data-filters="Batch Code:0" data-filter-auto-options="true">
                                             <thead>
                                                 <tr>
                                                     <th>Batch Code</th>
@@ -326,6 +326,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
     <!-- Sidebar Loader -->
     <script src="../../js/sidebar.js"></script>
+    <script src="../../js/table_manager.js"></script>
     <!-- Custom JS -->
     <script src="../../js/admin/admindashboard.js"></script>
     <script>

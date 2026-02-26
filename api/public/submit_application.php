@@ -28,8 +28,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 function getOptions($conn) {
     try {
         $courses = $conn->query("SELECT qualification_id, qualification_name AS course_name FROM tbl_qualifications WHERE status = 'active' ORDER BY qualification_name ASC")->fetchAll(PDO::FETCH_ASSOC);
-        // Assumes tbl_batch has a qualification_id to link with courses
-        $batches = $conn->query("SELECT batch_id, batch_name, qualification_id FROM tbl_batch WHERE status = 'open'")->fetchAll(PDO::FETCH_ASSOC);
+        // Include scholarship type for auto-population on batch selection
+        $batches = $conn->query("
+            SELECT 
+                b.batch_id,
+                b.batch_name,
+                b.qualification_id,
+                COALESCE(NULLIF(b.scholarship_type, ''), st.scholarship_name) AS scholarship_type
+            FROM tbl_batch b
+            LEFT JOIN tbl_scholarship_type st ON b.scholarship_type_id = st.scholarship_type_id
+            WHERE b.status = 'open'
+        ")->fetchAll(PDO::FETCH_ASSOC);
         // Fetches scholarship programs to populate the dropdown
         $scholarships = $conn->query("SELECT scholarship_name FROM tbl_scholarship_type WHERE status = 'active' ORDER BY scholarship_name ASC")->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(['success' => true, 'data' => ['courses' => $courses, 'batches' => $batches, 'scholarships' => $scholarships]]);
@@ -230,7 +239,7 @@ function submitApplication($conn) {
         }
 
         // Insert Enrollment with 'pending' status
-        $stmtEnroll = $conn->prepare("INSERT INTO tbl_enrollment (trainee_id, offered_qualification_id, batch_id, scholarship_type, enrollment_date, status) VALUES (?, ?, ?, ?, CURDATE(), 'pending')");
+        $stmtEnroll = $conn->prepare("INSERT INTO tbl_enrollment (trainee_id, offered_qualification_id, batch_id, scholarship_type, enrollment_date, status) VALUES (?, ?, ?, ?, NOW(), 'pending')");
         $stmtEnroll->execute([$traineeId, $offeredId, $batchId, $_POST['scholarship_type'] ?? null]);
 
         $conn->commit();

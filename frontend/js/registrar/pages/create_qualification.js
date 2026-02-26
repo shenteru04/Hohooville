@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const response = await axios.post(`${API_BASE_URL}/role/registrar/qualifications.php?action=create`, payload);
             if (response.data.success) {
-                Swal.fire('Success', 'Qualification submitted for approval successfully!', 'success');
+                Swal.fire('Success', 'Qualification Created Successfully', 'success');
                 this.reset();
                 loadQualifications();
             } else {

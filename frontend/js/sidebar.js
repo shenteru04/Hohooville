@@ -77,6 +77,7 @@ class SidebarManager {
             });
     }
 
+
     /**
      * Normalize sidebar links so they work both from /admin/ and /admin/pages/
      */
@@ -433,43 +434,81 @@ class SidebarManager {
         const list = document.getElementById('notificationList');
         if (!list || !badge) return;
 
+        // Ensure list styling
+        list.style.minWidth = '320px';
+        list.style.maxHeight = '400px';
+        list.style.overflowY = 'auto';
+
         if (items.length === 0) {
-            list.innerHTML = '<div class="list-group-item text-center small text-muted">No new notifications</div>';
+            list.innerHTML = `
+                <li><h6 class="dropdown-header">Alerts Center</h6></li>
+                <li><div class="dropdown-item text-center small text-muted py-3">No new notifications</div></li>
+                <li><a class="dropdown-item text-center small text-primary border-top py-2" href="#" id="viewAllNotifications">Show All Alerts</a></li>
+            `;
             badge.style.display = 'none';
             badge.textContent = '0';
+            this.attachNotificationEvents();
             return;
         }
 
         // Build list
-        list.innerHTML = '';
+        list.innerHTML = `
+            <li>
+                <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                    <h6 class="dropdown-header p-0 m-0">Alerts Center</h6>
+                    <a href="#" class="small text-decoration-none" id="markAllRead">Mark Read</a>
+                </div>
+            </li>
+        `;
+        
         let unreadCount = 0;
         items.forEach(item => {
             const isUnread = !item.is_read;
             if (isUnread) unreadCount++;
 
+            const li = document.createElement('li');
             const a = document.createElement('a');
             a.href = item.link || '#';
-            a.className = 'list-group-item list-group-item-action d-flex align-items-start';
+            a.className = `dropdown-item d-flex align-items-center py-3 ${isUnread ? 'bg-light' : ''}`;
+            a.style.whiteSpace = 'normal';
             a.dataset.notificationId = item.id || '';
 
+            // Determine icon based on message content
+            let iconClass = 'fa-file-alt';
+            let bgClass = 'bg-primary';
+            if (item.message.toLowerCase().includes('quiz')) { iconClass = 'fa-question-circle'; bgClass = 'bg-success'; }
+            else if (item.message.toLowerCase().includes('task')) { iconClass = 'fa-tasks'; bgClass = 'bg-warning'; }
+            else if (item.message.toLowerCase().includes('grade')) { iconClass = 'fa-star'; bgClass = 'bg-info'; }
+
             const content = `
-                <div class="me-2">
-                    <div class="small text-muted">${item.time || ''}</div>
+                <div class="me-3">
+                    <div class="icon-circle ${bgClass} text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px; min-width: 35px;">
+                        <i class="fas ${iconClass}"></i>
+                    </div>
                 </div>
                 <div class="flex-grow-1">
-                    <div class="small ${isUnread ? 'fw-bold' : 'text-muted'}">${item.message}</div>
+                    <div class="small text-muted mb-1">${item.time || ''}</div>
+                    <div class="${isUnread ? 'fw-bold text-dark' : 'text-secondary'} small" style="line-height: 1.3;">${item.message}</div>
                 </div>
             `;
             a.innerHTML = content;
             a.addEventListener('click', (e) => {
-                e.preventDefault();
+                // Allow navigation if link is present
                 const id = a.dataset.notificationId;
                 if (id) this.markNotificationRead(id);
-                if (item.link) window.location.href = item.link;
             });
 
-            list.appendChild(a);
+            li.appendChild(a);
+            list.appendChild(li);
         });
+
+        // Footer link
+        const footerLi = document.createElement('li');
+        footerLi.innerHTML = `<a class="dropdown-item text-center small text-gray-500 border-top py-2" href="#" id="viewAllNotifications">Show All Alerts</a>`;
+        list.appendChild(footerLi);
+        
+        // Re-attach events for the new elements
+        this.attachNotificationEvents();
 
         // Update badge
         if (unreadCount > 0) {

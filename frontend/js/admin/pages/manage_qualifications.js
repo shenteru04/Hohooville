@@ -39,6 +39,14 @@ apiClient.interceptors.response.use(
 );
 
 document.addEventListener('DOMContentLoaded', function() {
+        // Logout
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                localStorage.clear();
+                window.location.href = '/hohoo-ville/frontend/login.html';
+            });
+        }
     if (typeof Swal === 'undefined') {
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
@@ -153,21 +161,16 @@ function initializePage() {
     const tableBody = document.getElementById('qualificationsTableBody');
     if (tableBody) {
         tableBody.addEventListener('click', (e) => {
-            const button = e.target.closest('button[data-action]');
-            if (!button) return;
+            const actionEl = e.target.closest('[data-action][data-id]');
+            if (!actionEl) return;
+            e.preventDefault();
 
-            const action = button.dataset.action;
-            const id = button.dataset.id;
+            const action = actionEl.dataset.action;
+            const id = actionEl.dataset.id;
 
             if (!action || !id) return;
 
             switch (action) {
-                case 'approve':
-                    approveQualification(id);
-                    break;
-                case 'reject':
-                    rejectQualification(id);
-                    break;
                 case 'edit':
                     editQualification(id);
                     break;
@@ -212,76 +215,32 @@ function renderTable(data) {
         const row = document.createElement('tr');
         let statusBadge = '';
         if (item.status === 'active') statusBadge = '<span class="badge bg-success">Active</span>';
-        else if (item.status === 'pending') statusBadge = '<span class="badge bg-warning text-dark">Pending Approval</span>';
+        else if (item.status === 'pending') statusBadge = '<span class="badge bg-warning text-dark">Pending</span>';
         else if (item.status === 'rejected') statusBadge = '<span class="badge bg-danger">Rejected</span>';
         else statusBadge = '<span class="badge bg-secondary">Inactive</span>';
 
-        let actionBtns = '';
-        if (item.status === 'pending') {
-            actionBtns = `
-                <button class="btn btn-success btn-sm me-1" data-action="approve" data-id="${item.qualification_id}" title="Approve"><i class="fas fa-check"></i></button>
-                <button class="btn btn-danger btn-sm me-1" data-action="reject" data-id="${item.qualification_id}" title="Reject"><i class="fas fa-times"></i></button>
-            `;
-        }
-        actionBtns += `
-            <button class="btn btn-warning btn-sm me-1" data-action="edit" data-id="${item.qualification_id}" title="Edit"><i class="fas fa-edit"></i></button>
-            <button class="btn btn-outline-danger btn-sm" data-action="delete" data-id="${item.qualification_id}" title="Delete"><i class="fas fa-trash"></i></button>
-        `;
-            
+        let menuItems = '';
+        menuItems += `<li><a class="dropdown-item" href="#" data-action="edit" data-id="${item.qualification_id}"><i class='fas fa-edit me-2'></i>Edit</a></li>`;
+        menuItems += `<li><a class="dropdown-item text-danger" href="#" data-action="delete" data-id="${item.qualification_id}"><i class='fas fa-trash me-2'></i>Delete</a></li>`;
         row.innerHTML = `
             <td>${item.qualification_name}</td>
             <td>${item.ctpr_number || '-'}</td>
             <td>${item.training_cost ? '₱' + item.training_cost : 'Free'}</td>
             <td>${item.duration || 'N/A'}</td>
             <td>${statusBadge}</td>
-            <td>${actionBtns}</td>
+            <td>
+                <div class="dropdown d-flex justify-content-center">
+                  <button class="btn btn-sm px-2 py-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Actions">
+                    <i class="fas fa-ellipsis-v"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    ${menuItems}
+                  </ul>
+                </div>
+            </td>
         `;
         tbody.appendChild(row);
     });
-}
-
-async function approveQualification(id) {
-    const result = await Swal.fire({
-        title: 'Approve Qualification?',
-        text: "It will become available for trainers.",
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, Approve'
-    });
-
-    if (!result.isConfirmed) return;
-    updateStatus(id, 'active');
-}
-
-async function rejectQualification(id) {
-    const result = await Swal.fire({
-        title: 'Reject Qualification?',
-        text: "Are you sure you want to reject this?",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, Reject'
-    });
-
-    if (!result.isConfirmed) return;
-    updateStatus(id, 'rejected');
-}
-
-async function updateStatus(id, status) {
-    try {
-        const response = await apiClient.post('/role/admin/manage_qualifications.php?action=update-status', {
-            qualification_id: id,
-            status: status
-        });
-        if (response.data.success) {
-            showAlert(`Qualification ${status} successfully`, 'success');
-            loadQualifications();
-        } else {
-            showAlert('Error: ' + response.data.message, 'danger');
-        }
-    } catch (error) {
-        console.error('Error updating status:', error);
-        showAlert('Error updating status', 'danger');
-    }
 }
 
 async function addQualification() {
@@ -297,7 +256,7 @@ async function addQualification() {
     try {
         const response = await apiClient.post('/role/admin/manage_qualifications.php?action=add', data);
         if (response.data.success) {
-            showAlert('Qualification added successfully', 'success');
+            showAlert('Qualification Created Successfully', 'success');
             resetForm();
             loadQualifications();
         } else {
@@ -310,6 +269,7 @@ async function addQualification() {
 }
 
 async function updateQualification(id) {
+    const existing = currentQualifications.find(q => q.qualification_id == id);
     const data = {
         qualification_id: id,
         qualification_name: document.getElementById('courseName').value,
@@ -317,7 +277,7 @@ async function updateQualification(id) {
         training_cost: document.getElementById('trainingCost').value,
         duration: document.getElementById('duration').value,
         description: document.getElementById('description').value,
-        status: document.getElementById('status').value
+        status: existing ? existing.status : 'active'
     };
 
     try {
@@ -387,7 +347,8 @@ function resetForm() {
     
     document.getElementById('qualificationId').value = '';
     document.getElementById('submitBtn').textContent = 'Add Qualification';
-    document.getElementById('formTitle').textContent = 'Add New Qualification';
+    const modalTitle = document.getElementById('addQualificationModalLabel');
+    if (modalTitle) modalTitle.textContent = 'Add New Qualification';
     document.getElementById('cancelBtn').style.display = 'none';
 }
 

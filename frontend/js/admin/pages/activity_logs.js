@@ -1,9 +1,17 @@
 const API_BASE = 'http://localhost/Hohoo-ville/api/role/admin';
 let currentPage = 1;
-const logsPerPage = 50;
+let logsPerPage = 50;
 let detailsModal;
 
 document.addEventListener('DOMContentLoaded', function() {
+        // Logout
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                localStorage.clear();
+                window.location.href = '/hohoo-ville/frontend/login.html';
+            });
+        }
     if (typeof Swal === 'undefined') {
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
@@ -51,6 +59,12 @@ window.loadLogs = async function() {
         });
         
         if (response.data.success) {
+            const total = response.data.pagination ? response.data.pagination.total : 0;
+            const suggested = autoPageSize(total);
+            if (suggested !== logsPerPage && currentPage === 1) {
+                logsPerPage = suggested;
+                return loadLogs();
+            }
             renderLogs(response.data.data);
             renderPagination(response.data.pagination);
         } else {
@@ -145,3 +159,11 @@ window.clearOldLogs = async function() {
         loadLogs();
     } catch (error) { Swal.fire('Error', 'Error: ' + error.message, 'error'); }
 };
+
+function autoPageSize(total) {
+    if (total <= 0) return 1;
+    if (total <= 10) return total;
+    if (total <= 25) return 10;
+    if (total <= 50) return 25;
+    return 50;
+}

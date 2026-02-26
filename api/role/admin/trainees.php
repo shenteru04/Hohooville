@@ -82,7 +82,7 @@ function getTrainees($conn) {
             SELECT 
                 t.trainee_id, t.user_id, t.trainee_school_id, t.first_name, t.last_name, t.email, t.phone_number, t.status,
                 t.photo_file, t.valid_id_file, t.birth_cert_file, t.address,
-                b.batch_name, c.qualification_name as course_name
+                e.batch_id, b.batch_name, c.qualification_name as course_name
             FROM tbl_trainee_hdr t 
             JOIN tbl_enrollment e ON t.trainee_id = e.trainee_id 
             LEFT JOIN tbl_batch b ON e.batch_id = b.batch_id 
@@ -183,7 +183,7 @@ function addTrainee($conn) {
         }
 
         // Insert Enrollment (Pending - Sent to Approval Queue for Document Verification)
-        $stmtEnroll = $conn->prepare("INSERT INTO tbl_enrollment (trainee_id, offered_qualification_id, batch_id, enrollment_date, status) VALUES (?, ?, ?, CURDATE(), 'pending')");
+        $stmtEnroll = $conn->prepare("INSERT INTO tbl_enrollment (trainee_id, offered_qualification_id, batch_id, enrollment_date, status) VALUES (?, ?, ?, NOW(), 'pending')");
         $stmtEnroll->execute([$traineeId, $offeredId, $data['batch_id']]);
         $enrollmentId = $conn->lastInsertId();
 

@@ -42,7 +42,30 @@ switch ($action) {
 
 function getTrainers($conn) {
     try {
-        $stmt = $conn->query("SELECT t.*, q.qualification_name FROM tbl_trainer t LEFT JOIN tbl_qualifications q ON t.qualification_id = q.qualification_id ORDER BY t.trainer_id DESC");
+        $stmt = $conn->query("SELECT 
+                                    t.trainer_id,
+                                    t.user_id,
+                                    t.first_name,
+                                    t.last_name,
+                                    t.email,
+                                    t.phone_number,
+                                    t.qualification_id,
+                                    t.status,
+                                    q_primary.qualification_name AS qualification_name,
+                                    COALESCE(
+                                        GROUP_CONCAT(DISTINCT q.qualification_name ORDER BY q.qualification_name SEPARATOR ', '),
+                                        q_primary.qualification_name
+                                    ) AS qualification_names,
+                                    CASE 
+                                        WHEN COUNT(DISTINCT tq.qualification_id) = 0 AND t.qualification_id IS NOT NULL THEN 1
+                                        ELSE COUNT(DISTINCT tq.qualification_id)
+                                    END AS qualification_count
+                                FROM tbl_trainer t
+                                LEFT JOIN tbl_trainer_qualifications tq ON t.trainer_id = tq.trainer_id
+                                LEFT JOIN tbl_qualifications q ON tq.qualification_id = q.qualification_id
+                                LEFT JOIN tbl_qualifications q_primary ON t.qualification_id = q_primary.qualification_id
+                                GROUP BY t.trainer_id
+                                ORDER BY t.trainer_id DESC");
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(['success' => true, 'data' => $data]);
     } catch (Exception $e) {

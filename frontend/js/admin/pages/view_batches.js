@@ -1,6 +1,8 @@
 const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
 let traineesModal;
 let currentBatchTrainees = [];
+let allBatches = [];
+let closedBatchesModal;
 
 document.addEventListener('DOMContentLoaded', function() {
     if (typeof Swal === 'undefined') {
@@ -10,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     traineesModal = new bootstrap.Modal(document.getElementById('viewTraineesModal'));
+    closedBatchesModal = new bootstrap.Modal(document.getElementById('closedBatchesModal'));
     loadBatches();
 
     // Sidebar Logic (Same as view_trainees.js)
@@ -47,16 +50,19 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Logout
-    document.getElementById('logoutBtn').addEventListener('click', function() {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '../../../login.html';
-    });
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            localStorage.clear();
+            window.location.href = '/hohoo-ville/frontend/login.html';
+        });
+    }
 
-    // Modal Search Listener
-    const searchInput = document.getElementById('modalSearchInput');
-    if(searchInput) {
-        searchInput.addEventListener('keyup', filterModalTrainees);
+    const openClosedBtn = document.getElementById('openClosedBatches');
+    if (openClosedBtn) {
+        openClosedBtn.addEventListener('click', () => {
+            if (closedBatchesModal) closedBatchesModal.show();
+        });
     }
 });
 
@@ -64,7 +70,11 @@ async function loadBatches() {
     try {
         const response = await axios.get(`${API_BASE_URL}/role/admin/trainees.php?action=get-batches`);
         if (response.data.success) {
-            renderBatchesTable(response.data.data);
+            allBatches = response.data.data || [];
+            const openBatches = allBatches.filter(b => normalizeStatus(b.status) === 'open');
+            const closedBatches = allBatches.filter(b => normalizeStatus(b.status) !== 'open');
+            renderBatchesTable(openBatches, 'batchesTableBody');
+            renderBatchesTable(closedBatches, 'closedBatchesTableBody');
         } else {
             Swal.fire('Error', 'Error loading batches: ' + response.data.message, 'error');
         }
@@ -74,11 +84,11 @@ async function loadBatches() {
     }
 }
 
-function renderBatchesTable(data) {
-    const tbody = document.getElementById('batchesTableBody');
+function renderBatchesTable(data, tbodyId) {
+    const tbody = document.getElementById(tbodyId);
     tbody.innerHTML = '';
 
-    if (data.length === 0) {
+    if (!data || data.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" class="text-center">No batches found</td></tr>';
         return;
     }
@@ -86,11 +96,12 @@ function renderBatchesTable(data) {
     data.forEach(batch => {
         const row = document.createElement('tr');
         const count = batch.enrolled_count || 0;
-        const badgeClass = batch.status === 'open' ? 'success' : 'secondary';
+        const statusValue = normalizeStatus(batch.status);
+        const badgeClass = statusValue === 'open' ? 'success' : 'secondary';
         
         row.innerHTML = `
             <td>${batch.batch_name}</td>
-            <td><span class="badge bg-${badgeClass}">${batch.status.toUpperCase()}</span></td>
+            <td><span class="badge bg-${badgeClass}">${(batch.status || statusValue || 'UNKNOWN').toString().toUpperCase()}</span></td>
             <td>
                 <span class="badge bg-info text-dark">${count} Trainees</span>
                 ${count >= 25 ? '<span class="badge bg-danger ms-1">FULL</span>' : ''}
@@ -103,6 +114,10 @@ function renderBatchesTable(data) {
         `;
         tbody.appendChild(row);
     });
+}
+
+function normalizeStatus(status) {
+    return (status || '').toString().trim().toLowerCase();
 }
 
 window.viewBatchTrainees = async function(batchId, batchName) {
@@ -162,13 +177,3 @@ function renderModalTrainees(data) {
     });
 }
 
-function filterModalTrainees() {
-    const term = document.getElementById('modalSearchInput').value.toLowerCase();
-    const filtered = currentBatchTrainees.filter(t => 
-        (t.first_name && t.first_name.toLowerCase().includes(term)) ||
-        (t.last_name && t.last_name.toLowerCase().includes(term)) ||
-        (t.email && t.email.toLowerCase().includes(term)) ||
-        (t.trainee_school_id && t.trainee_school_id.toLowerCase().includes(term))
-    );
-    renderModalTrainees(filtered);
-}

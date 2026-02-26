@@ -3,6 +3,14 @@ const EMAIL_API_URL = '/Hohoo-ville/api/role/admin/email_templates.php';
 const ARCHIVAL_API_URL = '/Hohoo-ville/api/role/admin/user_archival.php';
 
 document.addEventListener('DOMContentLoaded', function() {
+        // Logout
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                localStorage.clear();
+                window.location.href = '/hohoo-ville/frontend/login.html';
+            });
+        }
     if (typeof Swal === 'undefined') {
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';

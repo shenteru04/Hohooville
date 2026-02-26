@@ -94,12 +94,26 @@
         </nav>
 
         <!-- Page Content -->
-        <div class="flex-grow-1" id="content">
-            <!-- Top Navigation -->
+                <div class="flex-grow-1" id="content">
             <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
                 <div class="container-fluid">
-                    <button type="button" id="sidebarCollapse" class="btn btn-outline-primary me-2 d-lg-none"><i class="fas fa-bars"></i></button>
                     <div class="ms-auto d-flex align-items-center">
+                        <ul class="navbar-nav flex-row me-2">
+                            <li class="nav-item dropdown no-arrow mx-1">
+                                <a class="nav-link dropdown-toggle" href="#" id="alertsDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <i class="fas fa-bell fa-fw"></i>
+                                    <span class="badge bg-danger badge-counter" id="notificationBadge" style="display: none;"></span>
+                                </a>
+                                <div class="dropdown-menu dropdown-menu-end p-0 shadow animated--grow-in" aria-labelledby="alertsDropdown" style="min-width: 320px;">
+                                    <div class="p-2 border-bottom">
+                                        <strong class="small mb-0">Notifications</strong>
+                                    </div>
+                                    <div class="list-group list-group-flush" id="notificationList" style="max-height: 400px; overflow-y: auto;">
+                                        <div class="list-group-item text-center small text-muted">No new notifications</div>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
                         <div class="dropdown">
                             <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
                                 <i class="fas fa-user-circle"></i> <span id="trainerName">Trainer</span>

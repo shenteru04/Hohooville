@@ -287,7 +287,7 @@ class BulkImport {
                             $status = ($batchId > 0) ? 'approved' : 'pending';
 
                             // Insert Enrollment
-                            $stmtEnroll = $this->conn->prepare("INSERT INTO tbl_enrollment (trainee_id, offered_qualification_id, batch_id, enrollment_date, status, scholarship_type, scholarship_type_id) VALUES (?, ?, ?, CURDATE(), ?, ?, ?)");
+                            $stmtEnroll = $this->conn->prepare("INSERT INTO tbl_enrollment (trainee_id, offered_qualification_id, batch_id, enrollment_date, status, scholarship_type, scholarship_type_id) VALUES (?, ?, ?, NOW(), ?, ?, ?)");
                             $stmtEnroll->execute([$traineeId, $offeredId, ($batchId > 0 ? $batchId : null), $status, $scholarshipName, $scholarshipId]);
                             $enrollmentId = $this->conn->lastInsertId();
 

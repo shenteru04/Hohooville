@@ -1,0 +1,2121 @@
+-- phpMyAdmin SQL Dump
+-- version 5.2.1
+-- https://www.phpmyadmin.net/
+--
+-- Host: 127.0.0.1
+-- Generation Time: Feb 21, 2026 at 05:10 AM
+-- Server version: 10.4.32-MariaDB
+-- PHP Version: 8.2.12
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Database: `technical_db`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_activities_type`
+--
+
+CREATE TABLE `tbl_activities_type` (
+  `activity_type_id` int(11) NOT NULL,
+  `activity_name` varchar(100) DEFAULT NULL,
+  `description` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_activities_type`
+--
+
+INSERT INTO `tbl_activities_type` (`activity_type_id`, `activity_name`, `description`) VALUES
+(1, 'Quiz', 'Written assessment or multiple choice questions'),
+(2, 'Task Sheet', 'Practical demonstration or hands-on activity');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_activity_logs`
+--
+
+CREATE TABLE `tbl_activity_logs` (
+  `activity_log_id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `action` varchar(50) NOT NULL,
+  `table_name` varchar(50) DEFAULT NULL,
+  `record_id` int(11) DEFAULT NULL,
+  `details` text DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `timestamp` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_activity_logs`
+--
+
+INSERT INTO `tbl_activity_logs` (`activity_log_id`, `user_id`, `action`, `table_name`, `record_id`, `details`, `ip_address`, `timestamp`) VALUES
+(1, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '::1', '2026-01-28 15:49:39'),
+(2, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '::1', '2026-01-28 15:57:51'),
+(3, 15, 'login_success', 'tbl_users', 15, 'User logged in successfully', '::1', '2026-01-29 15:15:26'),
+(4, 14, 'login_success', 'tbl_users', 14, 'User logged in successfully', '::1', '2026-01-29 15:16:26'),
+(5, 14, 'login_success', 'tbl_users', 14, 'User logged in successfully', '::1', '2026-01-29 15:31:20'),
+(6, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '::1', '2026-01-29 15:59:54'),
+(7, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '::1', '2026-01-29 16:03:42'),
+(8, 1, 'login_success', 'tbl_users', 1, 'User logged in successfully', '::1', '2026-02-04 19:41:52'),
+(9, 1, 'login_success', 'tbl_users', 1, 'User logged in successfully', '::1', '2026-02-04 19:43:11'),
+(10, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '::1', '2026-02-05 08:35:44'),
+(11, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '::1', '2026-02-05 09:22:08'),
+(12, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '::1', '2026-02-05 11:31:55'),
+(13, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '::1', '2026-02-05 11:33:24'),
+(14, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '::1', '2026-02-05 11:42:13'),
+(15, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '::1', '2026-02-05 13:19:52'),
+(16, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '::1', '2026-02-05 15:35:06'),
+(17, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '::1', '2026-02-05 15:35:57'),
+(18, 16, 'login_success', 'tbl_users', 16, 'User logged in successfully', '::1', '2026-02-05 21:53:43'),
+(19, 14, 'login_success', 'tbl_users', 14, 'User logged in successfully', '::1', '2026-02-06 00:31:47'),
+(20, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '::1', '2026-02-06 00:32:32'),
+(21, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '::1', '2026-02-06 06:49:12'),
+(22, 14, 'login_success', 'tbl_users', 14, 'User logged in successfully', '::1', '2026-02-06 12:11:51'),
+(23, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '::1', '2026-02-06 12:47:58'),
+(24, 16, 'login_success', 'tbl_users', 16, 'User logged in successfully', '::1', '2026-02-06 13:01:25'),
+(25, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '::1', '2026-02-06 13:01:47'),
+(26, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '192.168.88.126', '2026-02-07 14:40:44'),
+(27, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '192.168.88.126', '2026-02-07 14:45:06'),
+(28, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '192.168.88.126', '2026-02-07 14:45:37'),
+(29, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '192.168.88.126', '2026-02-07 15:09:36'),
+(30, 10, 'login_failed', 'tbl_users', 10, 'Invalid password', '192.168.137.99', '2026-02-07 19:49:11'),
+(31, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '192.168.137.99', '2026-02-07 19:49:20'),
+(32, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '192.168.137.99', '2026-02-07 19:50:58'),
+(33, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '192.168.88.126', '2026-02-08 11:23:47'),
+(34, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '192.168.88.126', '2026-02-08 11:37:37'),
+(35, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '192.168.88.126', '2026-02-08 11:54:57'),
+(36, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '192.168.88.126', '2026-02-08 12:01:36'),
+(37, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '192.168.88.126', '2026-02-08 12:04:23'),
+(38, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '192.168.88.126', '2026-02-08 12:06:28'),
+(39, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '192.168.88.126', '2026-02-08 12:07:58'),
+(40, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '192.168.88.126', '2026-02-08 12:09:25'),
+(41, 14, 'login_success', 'tbl_users', 14, 'User logged in successfully', '192.168.88.126', '2026-02-08 12:15:09'),
+(42, 14, 'login_success', 'tbl_users', 14, 'User logged in successfully', '::1', '2026-02-08 12:15:54'),
+(43, 15, 'login_success', 'tbl_users', 15, 'User logged in successfully', '::1', '2026-02-08 12:16:38'),
+(44, 16, 'login_success', 'tbl_users', 16, 'User logged in successfully', '::1', '2026-02-08 12:16:53'),
+(45, 15, 'login_success', 'tbl_users', 15, 'User logged in successfully', '::1', '2026-02-08 12:17:53'),
+(46, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '192.168.137.99', '2026-02-09 07:59:06'),
+(47, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '192.168.137.99', '2026-02-09 08:00:30'),
+(48, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '::1', '2026-02-09 08:02:43'),
+(49, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '192.168.137.99', '2026-02-09 08:04:02'),
+(50, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '192.168.137.99', '2026-02-09 08:05:04'),
+(51, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '192.168.137.99', '2026-02-09 08:05:17'),
+(52, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '192.168.137.99', '2026-02-09 08:05:58'),
+(53, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '192.168.137.99', '2026-02-09 08:06:17'),
+(54, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '192.168.137.99', '2026-02-09 08:08:59'),
+(55, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '192.168.137.99', '2026-02-09 08:09:22'),
+(56, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '192.168.137.99', '2026-02-09 08:11:44'),
+(57, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '192.168.137.99', '2026-02-09 08:12:27'),
+(58, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '192.168.137.99', '2026-02-09 08:12:39'),
+(59, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '::1', '2026-02-09 08:54:46'),
+(60, 14, 'login_success', 'tbl_users', 14, 'User logged in successfully', '::1', '2026-02-09 09:01:25'),
+(61, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '::1', '2026-02-09 09:01:36'),
+(62, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '10.20.100.102', '2026-02-09 09:40:43'),
+(63, 14, 'login_success', 'tbl_users', 14, 'User logged in successfully', '10.20.100.102', '2026-02-09 09:44:20'),
+(64, 15, 'login_success', 'tbl_users', 15, 'User logged in successfully', '10.20.100.102', '2026-02-09 09:47:35'),
+(65, 15, 'login_success', 'tbl_users', 15, 'User logged in successfully', '::1', '2026-02-09 09:51:22'),
+(66, 1, 'password_reset', 'tbl_users', 1, 'Password reset via OTP', '::1', '2026-02-10 18:55:47'),
+(67, 1, 'password_reset', 'tbl_users', 1, 'Password reset via OTP', '::1', '2026-02-10 18:56:21'),
+(68, 12, 'login_failed', 'tbl_users', 12, 'Invalid password', '::1', '2026-02-10 18:56:30'),
+(69, 12, 'login_failed', 'tbl_users', 12, 'Invalid password', '::1', '2026-02-10 18:56:59'),
+(70, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '::1', '2026-02-10 18:57:04'),
+(71, 1, 'password_reset', 'tbl_users', 1, 'Password reset via OTP', '::1', '2026-02-10 19:02:31'),
+(72, 12, 'login_failed', 'tbl_users', 12, 'Invalid password', '::1', '2026-02-10 19:02:41'),
+(73, 12, 'login_failed', 'tbl_users', 12, 'Invalid password', '::1', '2026-02-10 19:02:50'),
+(74, 1, 'password_reset', 'tbl_users', 1, 'Password reset via OTP', '::1', '2026-02-10 19:03:24'),
+(75, 12, 'login_failed', 'tbl_users', 12, 'Invalid password', '::1', '2026-02-10 19:03:36'),
+(76, 1, 'login_failed', 'tbl_users', 1, 'Invalid password', '::1', '2026-02-10 19:07:43'),
+(77, 12, 'password_reset', 'tbl_users', 12, 'Password reset via OTP', '::1', '2026-02-10 19:09:35'),
+(78, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '::1', '2026-02-10 19:09:46'),
+(79, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '::1', '2026-02-10 19:11:34'),
+(80, 15, 'login_success', 'tbl_users', 15, 'User logged in successfully', '192.168.1.23', '2026-02-12 15:18:32'),
+(81, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '::1', '2026-02-12 17:59:49'),
+(82, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '::1', '2026-02-13 12:34:14'),
+(83, NULL, 'login_success', 'tbl_users', 19, 'User logged in successfully', '::1', '2026-02-15 17:36:23'),
+(84, 20, 'login_success', 'tbl_users', 20, 'User logged in successfully', '::1', '2026-02-15 17:39:28'),
+(85, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '::1', '2026-02-15 17:58:06'),
+(86, 20, 'login_success', 'tbl_users', 20, 'User logged in successfully', '::1', '2026-02-15 18:06:13'),
+(87, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '::1', '2026-02-15 18:28:56'),
+(88, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '::1', '2026-02-16 08:58:52'),
+(89, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '::1', '2026-02-16 09:16:11'),
+(90, 16, 'login_success', 'tbl_users', 16, 'User logged in successfully', '::1', '2026-02-16 10:49:11'),
+(91, 21, 'login_success', 'tbl_users', 21, 'User logged in successfully', '::1', '2026-02-16 15:44:24'),
+(92, NULL, 'login_success', 'tbl_users', 22, 'User logged in successfully', '::1', '2026-02-16 15:45:35'),
+(93, 16, 'login_success', 'tbl_users', 16, 'User logged in successfully', '::1', '2026-02-16 15:48:33'),
+(94, NULL, 'login_success', 'tbl_users', 22, 'User logged in successfully', '::1', '2026-02-16 15:48:43'),
+(95, 16, 'login_success', 'tbl_users', 16, 'User logged in successfully', '::1', '2026-02-16 15:59:45'),
+(96, NULL, 'login_success', 'tbl_users', 22, 'User logged in successfully', '::1', '2026-02-16 15:59:55'),
+(97, NULL, 'login_success', 'tbl_users', 22, 'User logged in successfully', '::1', '2026-02-16 16:04:32'),
+(98, NULL, 'login_success', 'tbl_users', 22, 'User logged in successfully', '::1', '2026-02-16 16:05:31'),
+(99, NULL, 'login_success', 'tbl_users', 22, 'User logged in successfully', '::1', '2026-02-16 16:11:41'),
+(100, NULL, 'login_failed', 'tbl_users', NULL, 'Invalid username: dd', '::1', '2026-02-16 16:15:56'),
+(101, 16, 'login_failed', 'tbl_users', 16, 'Invalid password', '::1', '2026-02-16 16:16:06'),
+(102, 16, 'login_success', 'tbl_users', 16, 'User logged in successfully', '::1', '2026-02-16 16:16:12'),
+(103, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '::1', '2026-02-16 17:12:37'),
+(104, 25, 'login_success', 'tbl_users', 25, 'User logged in successfully', '::1', '2026-02-16 23:03:31'),
+(105, NULL, 'login_failed', 'tbl_users', NULL, 'Invalid username: gas', '::1', '2026-02-16 23:04:21'),
+(106, 26, 'login_success', 'tbl_users', 26, 'User logged in successfully', '::1', '2026-02-16 23:04:33'),
+(107, 16, 'login_success', 'tbl_users', 16, 'User logged in successfully', '::1', '2026-02-16 23:06:23'),
+(108, 26, 'login_success', 'tbl_users', 26, 'User logged in successfully', '::1', '2026-02-16 23:07:06'),
+(109, 16, 'login_success', 'tbl_users', 16, 'User logged in successfully', '::1', '2026-02-17 12:55:04'),
+(110, 10, 'login_success', 'tbl_users', 10, 'User logged in successfully', '::1', '2026-02-17 14:24:29'),
+(111, 27, 'login_success', 'tbl_users', 27, 'User logged in successfully', '::1', '2026-02-17 16:04:23'),
+(112, 12, 'login_success', 'tbl_users', 12, 'User logged in successfully', '::1', '2026-02-17 16:17:04'),
+(113, NULL, 'login_failed', 'tbl_users', NULL, 'Invalid username: vill', '::1', '2026-02-20 13:20:43'),
+(114, NULL, 'login_failed', 'tbl_users', NULL, 'Invalid username: vill', '::1', '2026-02-20 13:20:47'),
+(115, 13, 'login_failed', 'tbl_users', 13, 'Invalid password', '::1', '2026-02-20 13:20:56');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_attendance`
+--
+
+CREATE TABLE `tbl_attendance` (
+  `attendance_id` int(11) NOT NULL,
+  `batch_id` int(11) DEFAULT NULL,
+  `trainee_id` int(11) DEFAULT NULL,
+  `date_recorded` date DEFAULT curdate(),
+  `status` enum('present','absent','late') DEFAULT 'present',
+  `remarks` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_batch`
+--
+
+CREATE TABLE `tbl_batch` (
+  `batch_id` int(11) NOT NULL,
+  `batch_name` varchar(100) DEFAULT NULL,
+  `qualification_id` int(11) DEFAULT NULL,
+  `trainer_id` int(11) DEFAULT NULL,
+  `scholarship_type` varchar(100) DEFAULT NULL,
+  `scholarship_type_id` int(11) DEFAULT NULL,
+  `start_date` date DEFAULT NULL,
+  `end_date` date DEFAULT NULL,
+  `status` enum('open','closed') DEFAULT 'open',
+  `max_trainees` int(11) NOT NULL DEFAULT 25 COMMENT 'Maximum number of trainees allowed in this batch'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_batch`
+--
+
+INSERT INTO `tbl_batch` (`batch_id`, `batch_name`, `qualification_id`, `trainer_id`, `scholarship_type`, `scholarship_type_id`, `start_date`, `end_date`, `status`, `max_trainees`) VALUES
+(2, 'Batch 2026', 1, 1, 'STEP', 3, '2026-01-27', '2026-01-28', 'open', 25),
+(3, 'Batch 2026.1', 3, 2, 'STEP', 3, '2026-01-29', '2026-02-01', 'open', 25),
+(4, 'Cookery NC II - Batch 1', 4, 5, 'TTSP', 2, '2026-02-17', '2026-03-13', 'open', 25),
+(5, 'Shielded Metal Arc Welding (SMAW) NC II - Batch 1', 6, 6, 'TTSP', 2, '2026-02-18', '2026-03-22', 'closed', 15),
+(11, 'Driving 101 - Batch 1', 12, 8, NULL, 2, '2026-02-20', '2026-03-27', 'open', 25),
+(12, 'Driving 101 - Batch 2', 12, 8, NULL, 2, '2026-02-20', '2026-02-27', 'open', 25);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_certificate`
+--
+
+CREATE TABLE `tbl_certificate` (
+  `certificate_id` int(11) NOT NULL,
+  `trainee_id` int(11) DEFAULT NULL,
+  `qualification_id` int(11) DEFAULT NULL,
+  `issue_date` date DEFAULT curdate(),
+  `validity_date` date DEFAULT NULL,
+  `certificate_status` enum('valid','expired') DEFAULT 'valid'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_email_templates`
+--
+
+CREATE TABLE `tbl_email_templates` (
+  `template_id` int(11) NOT NULL,
+  `template_name` varchar(255) NOT NULL,
+  `subject` varchar(255) NOT NULL,
+  `body_html` text NOT NULL,
+  `body_text` text DEFAULT NULL,
+  `variables` text DEFAULT NULL COMMENT 'JSON array of available variables',
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_email_templates`
+--
+
+INSERT INTO `tbl_email_templates` (`template_id`, `template_name`, `subject`, `body_html`, `body_text`, `variables`, `is_active`, `created_at`, `updated_at`) VALUES
+(1, 'Trainee Account Created', 'Your Hohoo-ville Account Credentials', '<h1>Welcome to Hohoo-ville</h1><p>Hello {{trainee_name}},</p><p>Username: {{username}}</p><p>Password: {{password}}</p>', 'Username: {{username}}\\nPassword: {{password}}', '[\"trainee_name\",\"username\",\"password\"]', 1, '2026-02-12 08:30:55', '2026-02-12 08:30:55'),
+(2, 'Enrollment Approved', 'Your Enrollment Has Been Approved', '<p>Hello {{trainee_name}},</p><p>Your enrollment for {{course_name}} has been approved!</p><p>Batch: {{batch_name}}</p>', 'Your enrollment for {{course_name}} has been approved.\\nBatch: {{batch_name}}', '[\"trainee_name\",\"course_name\",\"batch_name\"]', 1, '2026-02-12 08:30:55', '2026-02-12 08:30:55'),
+(3, 'Task Sheet Submission', 'New Task Sheet Submission from {{trainee_name}}', '<p>Task: {{task_name}}</p><p>Submitted on: {{submitted_date}}</p>', 'Task: {{task_name}}\\nSubmitted on: {{submitted_date}}', '[\"trainee_name\",\"task_name\",\"submitted_date\"]', 1, '2026-02-12 08:30:55', '2026-02-12 08:30:55'),
+(4, 'Course Completion', 'Congratulations! Course Completed', '<p>Hello {{trainee_name}},</p><p>You have successfully completed {{course_name}}!</p><p>Score: {{final_score}}</p>', 'You have successfully completed {{course_name}}!\\nScore: {{final_score}}', '[\"trainee_name\",\"course_name\",\"final_score\"]', 1, '2026-02-12 08:30:55', '2026-02-12 08:30:55');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_enrolled_trainee`
+--
+
+CREATE TABLE `tbl_enrolled_trainee` (
+  `enrolled_id` int(11) NOT NULL,
+  `enrollment_id` int(11) NOT NULL,
+  `trainee_id` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_enrolled_trainee`
+--
+
+INSERT INTO `tbl_enrolled_trainee` (`enrolled_id`, `enrollment_id`, `trainee_id`) VALUES
+(4, 4, 5),
+(6, 6, 7),
+(7, 7, 8),
+(9, 9, 10),
+(10, 10, 11),
+(11, 11, 12),
+(12, 12, 13),
+(13, 13, 14),
+(14, 14, 15),
+(15, 15, 16),
+(16, 16, 17),
+(17, 17, 18),
+(18, 18, 19),
+(19, 19, 20),
+(20, 20, 21),
+(21, 21, 22),
+(22, 22, 23),
+(23, 23, 24),
+(24, 24, 25),
+(25, 25, 26),
+(26, 27, 28),
+(27, 28, 29),
+(28, 29, 30),
+(29, 30, 31),
+(30, 31, 32),
+(31, 32, 33),
+(32, 33, 34),
+(33, 34, 35),
+(34, 35, 36),
+(35, 36, 37),
+(36, 37, 38),
+(37, 38, 39),
+(38, 39, 40),
+(39, 40, 41),
+(40, 41, 42),
+(41, 42, 43),
+(42, 43, 44),
+(43, 44, 45),
+(44, 45, 46),
+(45, 46, 47),
+(46, 48, 49),
+(47, 47, 48),
+(48, 49, 50);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_enrollment`
+--
+
+CREATE TABLE `tbl_enrollment` (
+  `enrollment_id` int(11) NOT NULL,
+  `trainee_id` int(11) DEFAULT NULL,
+  `offered_qualification_id` int(11) DEFAULT NULL,
+  `batch_id` int(11) DEFAULT NULL,
+  `enrollment_date` date DEFAULT curdate(),
+  `status` enum('pending','approved','rejected','completed','qualified','unqualified','reserved') NOT NULL DEFAULT 'pending',
+  `scholarship_type` varchar(50) DEFAULT NULL,
+  `scholarship_type_id` int(11) DEFAULT NULL,
+  `completion_date` date DEFAULT NULL COMMENT 'Date when trainee achieves competency (score >= 80)',
+  `is_archived` tinyint(1) NOT NULL DEFAULT 0 COMMENT 'Flag to indicate if qualification is archived by trainee',
+  `archive_date` date DEFAULT NULL COMMENT 'Date when trainee manually archived the qualification'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_enrollment`
+--
+
+INSERT INTO `tbl_enrollment` (`enrollment_id`, `trainee_id`, `offered_qualification_id`, `batch_id`, `enrollment_date`, `status`, `scholarship_type`, `scholarship_type_id`, `completion_date`, `is_archived`, `archive_date`) VALUES
+(4, 5, 1, 2, '2026-01-27', 'approved', 'STEP', 3, NULL, 0, NULL),
+(6, 7, 2, 3, '2026-01-29', 'approved', 'TWSP', 1, NULL, 0, NULL),
+(7, 8, 1, 2, '2026-02-05', 'approved', 'STEP', NULL, NULL, 0, NULL),
+(9, 10, 4, 5, '2026-02-16', 'approved', 'TTSP', NULL, NULL, 0, NULL),
+(10, 11, 5, 4, '2026-02-16', 'approved', 'TTSP', NULL, NULL, 0, NULL),
+(11, 12, 4, 5, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(12, 13, 4, 5, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(13, 14, 4, 5, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(14, 15, 4, 5, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(15, 16, 4, 5, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(16, 17, 4, 5, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(17, 18, 4, 5, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(18, 19, 4, 5, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(19, 20, 4, 5, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(20, 21, 4, 5, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(21, 22, 4, 5, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(22, 23, 4, 5, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(23, 24, 4, 5, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(24, 25, 4, 5, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(25, 26, 5, 4, '2026-02-17', 'approved', 'TTSP', NULL, NULL, 0, NULL),
+(27, 28, 5, 4, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(28, 29, 5, 4, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(29, 30, 5, 4, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(30, 31, 5, 4, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(31, 32, 5, 4, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(32, 33, 5, 4, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(33, 34, 5, 4, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(34, 35, 5, 4, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(35, 36, 5, 4, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(36, 37, 5, 4, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(37, 38, 5, 4, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(38, 39, 5, 4, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(39, 40, 5, 4, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(40, 41, 5, 4, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(41, 42, 5, 4, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(42, 43, 5, 4, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(43, 44, 5, 4, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(44, 45, 5, 4, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(45, 46, 5, 4, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(46, 47, 5, 4, '2026-02-17', 'approved', 'TTSP', 2, NULL, 0, NULL),
+(47, 48, 7, 11, '2026-02-20', 'approved', 'TTSP', NULL, NULL, 0, NULL),
+(48, 49, 7, 12, '2026-02-20', 'approved', '', NULL, NULL, 0, NULL),
+(49, 50, 7, 11, '2026-02-21', 'approved', '', NULL, NULL, 0, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_feedback`
+--
+
+CREATE TABLE `tbl_feedback` (
+  `feedback_id` int(11) NOT NULL,
+  `trainee_id` int(11) DEFAULT NULL,
+  `trainer_id` int(11) DEFAULT NULL,
+  `feedback_text` text DEFAULT NULL,
+  `rating` int(11) DEFAULT NULL CHECK (`rating` between 1 and 5),
+  `date_submitted` date DEFAULT curdate()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_grades`
+--
+
+CREATE TABLE `tbl_grades` (
+  `grade_id` int(11) NOT NULL,
+  `trainee_id` int(11) NOT NULL,
+  `qualification_id` int(11) NOT NULL,
+  `test_id` int(11) NOT NULL,
+  `score` decimal(10,2) DEFAULT NULL,
+  `remarks` varchar(100) DEFAULT NULL,
+  `date_recorded` date DEFAULT curdate()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_grades`
+--
+
+INSERT INTO `tbl_grades` (`grade_id`, `trainee_id`, `qualification_id`, `test_id`, `score`, `remarks`, `date_recorded`) VALUES
+(1, 5, 1, 4, 10.00, NULL, '2026-01-28'),
+(2, 8, 1, 4, 1.00, NULL, '2026-02-06'),
+(3, 5, 1, 5, 1.00, NULL, '2026-02-06'),
+(4, 7, 3, 7, 0.00, NULL, '2026-02-09'),
+(5, 8, 1, 8, 0.00, NULL, '2026-02-17');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_holidays`
+--
+
+CREATE TABLE `tbl_holidays` (
+  `holiday_id` int(11) NOT NULL,
+  `holiday_name` varchar(255) NOT NULL,
+  `holiday_date` date NOT NULL,
+  `description` text DEFAULT NULL,
+  `holiday_type` enum('national','local','special','maintenance') DEFAULT 'national',
+  `affected_batches` text DEFAULT NULL COMMENT 'Comma-separated batch IDs or null for all',
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_lessons`
+--
+
+CREATE TABLE `tbl_lessons` (
+  `lesson_id` int(11) NOT NULL,
+  `module_id` int(11) NOT NULL,
+  `day_number` int(11) DEFAULT NULL,
+  `lesson_title` varchar(150) DEFAULT NULL,
+  `lesson_description` text DEFAULT NULL,
+  `posting_date` datetime DEFAULT NULL,
+  `task_sheet_file` varchar(255) DEFAULT NULL,
+  `lesson_file_path` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_lessons`
+--
+
+INSERT INTO `tbl_lessons` (`lesson_id`, `module_id`, `day_number`, `lesson_title`, `lesson_description`, `posting_date`, `task_sheet_file`, `lesson_file_path`) VALUES
+(2, 3, NULL, 'LEARNING OUTCOME 1: PLAN AND PREPARE WORK', '', '2026-02-06 05:22:00', 'task_1769617613_598706627_3335430083274662_7994946475721277614_n (1).png', NULL),
+(3, 3, NULL, 'LEARNING OUTCOME 2: INSTALL ELECTRICAL PROTECTIVE DEVICES', '', NULL, NULL, NULL),
+(4, 3, NULL, 'LEARNING OUTCOME 3: INSTALL LIGHTING FIXTURES AND AUXILIARY', '', NULL, NULL, NULL),
+(5, 3, NULL, 'LEARNING OUTCOME 4: NOTIFY COMPLETION OF WORK', '', NULL, NULL, NULL),
+(6, 5, NULL, '1.1 Install electrical metallic /nonmetallic (PVC conduit)', '', '2026-02-05 16:00:00', NULL, 'lesson_6_1770278388.docx'),
+(7, 6, NULL, 'Learning 1.0', '', NULL, NULL, NULL),
+(8, 7, NULL, 'LO1', '', NULL, NULL, NULL),
+(10, 8, NULL, 'LO1', '', '2026-02-09 10:01:00', NULL, 'lesson_10_1770602457.pdf'),
+(11, 3, NULL, 'Learning outcome 5', '', NULL, NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_lesson_contents`
+--
+
+CREATE TABLE `tbl_lesson_contents` (
+  `content_id` int(11) NOT NULL,
+  `lesson_id` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `content` longtext DEFAULT NULL,
+  `display_order` int(11) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_lesson_contents`
+--
+
+INSERT INTO `tbl_lesson_contents` (`content_id`, `lesson_id`, `title`, `content`, `display_order`) VALUES
+(1, 2, 'Information Sheet 2.1-1', '', 0),
+(2, 2, 'Information Sheet 2.1-4', '', 0),
+(3, 11, 'Information1', '', 0);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_module`
+--
+
+CREATE TABLE `tbl_module` (
+  `module_id` int(11) NOT NULL,
+  `qualification_id` int(11) NOT NULL,
+  `competency_type` enum('core','basic','common') NOT NULL DEFAULT 'core',
+  `module_title` varchar(150) DEFAULT NULL,
+  `module_description` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_module`
+--
+
+INSERT INTO `tbl_module` (`module_id`, `qualification_id`, `competency_type`, `module_title`, `module_description`) VALUES
+(3, 1, 'core', 'Installing Electrical Protective Devices for Distribution, Power, Lighting, Auxiliary, Lightning Protection and Grounding Systems', ' Perform roughing-in activities, wiring and cabling works for\nsingle-phase distribution, power, lighting and auxiliary systems'),
+(5, 1, 'common', 'ELC741301', ''),
+(6, 1, 'basic', 'Introduction', ''),
+(7, 1, 'core', 'UC2', ''),
+(8, 3, 'basic', 'Basic 101', 'Haka');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_notifications`
+--
+
+CREATE TABLE `tbl_notifications` (
+  `notification_id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `title` varchar(255) DEFAULT NULL,
+  `message` text DEFAULT NULL,
+  `link` varchar(255) DEFAULT NULL,
+  `is_read` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_notifications`
+--
+
+INSERT INTO `tbl_notifications` (`notification_id`, `user_id`, `title`, `message`, `link`, `is_read`, `created_at`) VALUES
+(1, 10, 'Task Sheet Submitted', 'Christian Dave Boncales submitted task sheet: Task Sheet 2.1-3', '/Hohoo-ville/frontend/html/trainer/pages/grading.html', 1, '2026-02-06 00:35:26'),
+(2, 10, 'Task Sheet Submitted', 'Christian Dave Boncales submitted task sheet: Task Sheet 2.1-2', '/Hohoo-ville/frontend/html/trainer/pages/grading.html', 1, '2026-02-06 02:16:29'),
+(3, 10, 'Task Sheet Submitted', 'Christian Dave Boncales submitted task sheet: Task Sheet 2.1-2', '/Hohoo-ville/frontend/html/trainer/pages/grading.html', 1, '2026-02-09 01:02:19'),
+(4, 10, 'Task Sheet Submitted', 'Apple Jane Edrolin submitted task sheet: Task Sheet 2.1-2', '/Hohoo-ville/frontend/html/trainer/pages/grading.html', 1, '2026-02-17 04:59:30'),
+(5, NULL, 'Qualification submitted', 'New qualification submitted for approval: FASfafafa', '/hohoo-ville/frontend/html/admin/pages/manage_qualifications.html', 1, '2026-02-17 06:15:45'),
+(6, 1, 'Qualification submitted', 'New qualification submitted for approval: FASfafafa', '/hohoo-ville/frontend/html/admin/pages/manage_qualifications.html', 1, '2026-02-17 06:22:34'),
+(7, 13, 'Qualification Rejected', 'Qualification rejected: FASfafafa', '/hohoo-ville/frontend/html/registrar/pages/create_qualification.html', 1, '2026-02-17 06:22:58'),
+(8, 17, 'Qualification Rejected', 'Qualification rejected: FASfafafa', '/hohoo-ville/frontend/html/registrar/pages/create_qualification.html', 1, '2026-02-17 06:22:58'),
+(9, 10, 'Task Sheet Submitted', 'Apple Jane Edrolin submitted task sheet: Task sheet 2.1', '/Hohoo-ville/frontend/html/trainer/pages/grading.html', 1, '2026-02-17 06:24:13'),
+(10, 10, 'Task Sheet Submitted', 'Apple Jane Edrolin submitted task sheet: Task Sheet 2.1-2', '/Hohoo-ville/frontend/html/trainer/pages/grading.html', 1, '2026-02-17 06:30:02'),
+(11, 10, 'Task Sheet Submitted', 'Apple Jane Edrolin submitted task sheet: Task Sheet 2.1-2', '/Hohoo-ville/frontend/html/trainer/pages/grading.html', 1, '2026-02-17 06:37:07'),
+(12, 10, 'Task Sheet Submitted', 'Apple Jane Edrolin submitted task sheet: Task sheet 2.1', '/Hohoo-ville/frontend/html/trainer/pages/trainee_details.html?trainee_id=8&tab=progress', 1, '2026-02-17 06:47:46'),
+(13, 10, 'Task Sheet Submitted', 'Apple Jane Edrolin submitted task sheet: Task Sheet 2.1-2', '/Hohoo-ville/frontend/html/trainer/pages/trainee_details.html?trainee_id=8&tab=progress', 1, '2026-02-17 06:56:50'),
+(14, 13, 'New Application Submitted', 'New application submitted by Clark Luzon', '/frontend/html/registrar/pages/trainee_application_list.html', 1, '2026-02-17 07:49:10'),
+(15, 17, 'New Application Submitted', 'New application submitted by Clark Luzon', '/frontend/html/registrar/pages/trainee_application_list.html', 1, '2026-02-17 07:49:10'),
+(16, 1, 'Qualification submitted', 'New qualification submitted for approval: FASfafafa', '/Hohoo-ville/frontend/html/admin/pages/manage_qualifications.html', 1, '2026-02-17 08:00:41'),
+(17, 13, 'Qualification Rejected', 'Qualification rejected: FASfafafa', '/Hohoo-ville/frontend/html/registrar/pages/create_qualification.html', 1, '2026-02-17 08:00:51'),
+(18, 17, 'Qualification Rejected', 'Qualification rejected: FASfafafa', '/Hohoo-ville/frontend/html/registrar/pages/create_qualification.html', 1, '2026-02-17 08:00:51'),
+(19, 12, 'Enrollment Approved', 'Your enrollment for Cookery NC II has been approved.', NULL, 1, '2026-02-17 08:01:39'),
+(20, 15, 'Enrollment Approved', 'Your enrollment for Cookery NC II has been approved.', NULL, 0, '2026-02-17 08:01:39'),
+(21, 16, 'Enrollment Approved', 'Your enrollment for Cookery NC II has been approved.', NULL, 0, '2026-02-17 08:01:39'),
+(22, 25, 'Enrollment Approved', 'Your enrollment for Cookery NC II has been approved.', NULL, 0, '2026-02-17 08:01:39'),
+(23, 26, 'Enrollment Approved', 'Your enrollment for Cookery NC II has been approved.', NULL, 0, '2026-02-17 08:01:39'),
+(24, 12, 'Enrollment Approved', 'Your enrollment for Cookery NC II has been approved.', NULL, 1, '2026-02-17 08:01:41'),
+(25, 15, 'Enrollment Approved', 'Your enrollment for Cookery NC II has been approved.', NULL, 0, '2026-02-17 08:01:41'),
+(26, 16, 'Enrollment Approved', 'Your enrollment for Cookery NC II has been approved.', NULL, 0, '2026-02-17 08:01:41'),
+(27, 25, 'Enrollment Approved', 'Your enrollment for Cookery NC II has been approved.', NULL, 0, '2026-02-17 08:01:41'),
+(28, 26, 'Enrollment Approved', 'Your enrollment for Cookery NC II has been approved.', NULL, 0, '2026-02-17 08:01:41'),
+(29, 12, 'Enrollment Approved', 'Your enrollment for Cookery NC II has been approved.', NULL, 1, '2026-02-17 08:01:52'),
+(30, 15, 'Enrollment Approved', 'Your enrollment for Cookery NC II has been approved.', NULL, 0, '2026-02-17 08:01:52'),
+(31, 16, 'Enrollment Approved', 'Your enrollment for Cookery NC II has been approved.', NULL, 0, '2026-02-17 08:01:52'),
+(32, 25, 'Enrollment Approved', 'Your enrollment for Cookery NC II has been approved.', NULL, 0, '2026-02-17 08:01:52'),
+(33, 26, 'Enrollment Approved', 'Your enrollment for Cookery NC II has been approved.', NULL, 0, '2026-02-17 08:01:52'),
+(34, 10, 'Task Sheet Submitted', 'Christian Dave Boncales submitted task sheet: Task Sheet 2.1-2', '/Hohoo-ville/frontend/html/trainer/pages/trainee_details.html?trainee_id=5&tab=progress', 1, '2026-02-17 08:17:16'),
+(35, 13, 'New Application Submitted', 'New application submitted by Lab Gas', '/Hohoo-ville/frontend/html/registrar/pages/trainee_application_list.html', 1, '2026-02-17 12:21:34'),
+(36, 17, 'New Application Submitted', 'New application submitted by Lab Gas', '/Hohoo-ville/frontend/html/registrar/pages/trainee_application_list.html', 1, '2026-02-17 12:21:34'),
+(37, 1, 'Qualification submitted', 'New qualification submitted for approval: Driving 101', '/Hohoo-ville/frontend/html/admin/pages/manage_qualifications.html', 1, '2026-02-20 05:40:10'),
+(38, 13, 'New Application Submitted', 'New application submitted by Cyrus Tadoy', '/Hohoo-ville/frontend/html/registrar/pages/trainee_application_list.html', 1, '2026-02-20 06:02:55'),
+(39, 17, 'New Application Submitted', 'New application submitted by Cyrus Tadoy', '/Hohoo-ville/frontend/html/registrar/pages/trainee_application_list.html', 1, '2026-02-20 06:02:55'),
+(40, 13, 'New Application Submitted', 'New application submitted by Brian Ragasi', '/Hohoo-ville/frontend/html/registrar/pages/trainee_application_list.html', 1, '2026-02-20 06:09:51'),
+(41, 17, 'New Application Submitted', 'New application submitted by Brian Ragasi', '/Hohoo-ville/frontend/html/registrar/pages/trainee_application_list.html', 1, '2026-02-20 06:09:51'),
+(42, 13, 'New Application Submitted', 'New application submitted by France Luzon', '/Hohoo-ville/frontend/html/registrar/pages/trainee_application_list.html', 1, '2026-02-21 03:35:13'),
+(43, 17, 'New Application Submitted', 'New application submitted by France Luzon', '/Hohoo-ville/frontend/html/registrar/pages/trainee_application_list.html', 1, '2026-02-21 03:35:13');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_offered_qualifications`
+--
+
+CREATE TABLE `tbl_offered_qualifications` (
+  `offered_qualification_id` int(11) NOT NULL,
+  `qualification_id` int(11) NOT NULL,
+  `trainer_id` int(11) DEFAULT NULL,
+  `start_date` date DEFAULT NULL,
+  `end_date` date DEFAULT NULL,
+  `schedule` varchar(100) DEFAULT NULL,
+  `room` varchar(100) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_offered_qualifications`
+--
+
+INSERT INTO `tbl_offered_qualifications` (`offered_qualification_id`, `qualification_id`, `trainer_id`, `start_date`, `end_date`, `schedule`, `room`) VALUES
+(1, 1, 1, NULL, NULL, 'Day Shift (8:00 AM - 5:00 PM)', 'Main Room'),
+(2, 3, 2, NULL, NULL, 'Night Shift (6:00 PM - 10:00 PM)', 'Main Room'),
+(4, 6, NULL, NULL, NULL, NULL, NULL),
+(5, 4, NULL, NULL, NULL, NULL, NULL),
+(7, 12, NULL, NULL, NULL, NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_permissions`
+--
+
+CREATE TABLE `tbl_permissions` (
+  `permission_id` int(11) NOT NULL,
+  `permission_name` varchar(255) NOT NULL,
+  `resource` varchar(100) NOT NULL COMMENT 'e.g. trainee, trainer, batch, grades',
+  `action` varchar(50) NOT NULL COMMENT 'e.g. view, create, edit, delete, export',
+  `description` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_progress_charts`
+--
+
+CREATE TABLE `tbl_progress_charts` (
+  `chart_id` int(11) NOT NULL,
+  `trainer_id` int(11) NOT NULL,
+  `title` varchar(255) DEFAULT NULL,
+  `chart_content` longtext DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_progress_charts`
+--
+
+INSERT INTO `tbl_progress_charts` (`chart_id`, `trainer_id`, `title`, `chart_content`, `created_at`, `updated_at`) VALUES
+(1, 1, 'Progress Chart 2026', '<meta charset=\"utf-8\"><title>SheetJS Table Export</title><table id=\"progressTable\" class=\"tesda-table\"><tbody><tr style=\"font-weight: bold; background-color: rgb(248, 249, 250); text-align: center;\"><td colspan=\"60\" data-t=\"s\" data-v=\"Hohoo Ville Technical School Inc.\" id=\"progressTable-A1\" contenteditable=\"true\">Hohoo Ville Technical School Inc.</td></tr><tr style=\"font-weight: bold; background-color: rgb(248, 249, 250); text-align: center;\"><td colspan=\"60\" data-t=\"s\" data-v=\"Purok 6A, Poblacion, Lagonglong, Misamis Oriental\" id=\"progressTable-A2\" contenteditable=\"true\">Purok 6A, Poblacion, Lagonglong, Misamis Oriental</td></tr><tr style=\"font-weight: bold; background-color: rgb(248, 249, 250); text-align: center;\"><td colspan=\"60\" data-t=\"s\" data-v=\"PROGRESS CHART\" id=\"progressTable-A3\" contenteditable=\"true\">PROGRESS CHART</td></tr><tr style=\"font-weight: bold; background-color: rgb(248, 249, 250); text-align: center;\"><td colspan=\"60\" data-t=\"s\" data-v=\"ELECTRICAL INSTALLATION AND MAINTENANCE NC II (196 HOURS)\" id=\"progressTable-A4\" contenteditable=\"true\">ELECTRICAL INSTALLATION AND MAINTENANCE NC II (196 HOURS)</td></tr><tr><td id=\"progressTable-A5\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-B5\" contenteditable=\"true\" class=\"progress-mark\"></td><td colspan=\"27\" data-t=\"s\" data-v=\"BASIC COMPETENCIES\" id=\"progressTable-C5\" contenteditable=\"true\">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; BASIC COMPETENCIES</td><td colspan=\"17\" data-t=\"s\" data-v=\"COMMON COMPETENCIES\" id=\"progressTable-AD5\" contenteditable=\"true\">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; COMMON COMPETENCIES</td><td colspan=\"14\" data-t=\"s\" data-v=\"CORE COMPETENCY\" id=\"progressTable-AU5\" contenteditable=\"true\">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;CORE COMPETENCY</td></tr><tr><td id=\"progressTable-A6\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-B6\" contenteditable=\"true\" class=\"progress-mark\"></td><td colspan=\"3\" data-t=\"s\" data-v=\"UC #1 PARTICIPATE IN WORKPLACE COMMUNICATION\" id=\"progressTable-C6\" contenteditable=\"true\">UC #1 PARTICIPATE IN WORKPLACE COMMUNICATION</td><td colspan=\"3\" data-t=\"s\" data-v=\"UC #2 WORK IN TEAM ENVIRONMENT\" id=\"progressTable-F6\" contenteditable=\"true\">UC #2 WORK IN TEAM ENVIRONMENT</td><td colspan=\"3\" data-t=\"s\" data-v=\"UC #3 SOLVE/ADDRESS ROUTINE PROBLEMS\" id=\"progressTable-I6\" contenteditable=\"true\">UC #3 SOLVE/ADDRESS ROUTINE PROBLEMS</td><td colspan=\"3\" data-t=\"s\" data-v=\"UC # 4 DEVELOP CAREER AND LIFE DECISION\" id=\"progressTable-L6\" contenteditable=\"true\">UC # 4 DEVELOP CAREER AND LIFE DECISION</td><td colspan=\"3\" data-t=\"s\" data-v=\"UC # 5 CONTRIBUTE TO WORKPLACE INNOVATION\" id=\"progressTable-O6\" contenteditable=\"true\">UC # 5 CONTRIBUTE TO WORKPLACE INNOVATION</td><td colspan=\"3\" data-t=\"s\" data-v=\"UC #6 PRESENT RELEVANT INFORMATION\" id=\"progressTable-R6\" contenteditable=\"true\">UC #6 PRESENT RELEVANT INFORMATION</td><td colspan=\"3\" data-t=\"s\" data-v=\"UC # 7 PRACTICE OCCUPATIONAL SAFETY AND HEALTH POLICIES AND PROCEDURES\" id=\"progressTable-U6\" contenteditable=\"true\">UC # 7 PRACTICE OCCUPATIONAL SAFETY AND HEALTH POLICIES AND PROCEDURES</td><td colspan=\"3\" data-t=\"s\" data-v=\"UC #8 EXERCISE EFFICIENT AND EFFECTIVE SUSTAINABLE PRACTICES IN THE WORKPLACE\" id=\"progressTable-X6\" contenteditable=\"true\">UC #8 EXERCISE EFFICIENT AND EFFECTIVE SUSTAINABLE PRACTICES IN THE WORKPLACE</td><td colspan=\"3\" data-t=\"s\" data-v=\"UC #9 PRACTICE ENTREPRENEURIAL SKILLS IN THE WORKPLACE\" id=\"progressTable-AA6\" contenteditable=\"true\">UC #9 PRACTICE ENTREPRENEURIAL SKILLS IN THE WORKPLACE</td><td colspan=\"4\" data-t=\"s\" data-v=\"UC #1 USE HAND TOOLS\" id=\"progressTable-AD6\" contenteditable=\"true\">UC #1 USE HAND TOOLS</td><td colspan=\"3\" data-t=\"s\" data-v=\"UC #2 PERFORM MENSURATION AND CALCULATION\" id=\"progressTable-AH6\" contenteditable=\"true\">UC #2 PERFORM MENSURATION AND CALCULATION</td><td colspan=\"4\" data-t=\"s\" data-v=\"UC #3 PREPARE AND INTERPRET TECHNICAL DRAWING\" id=\"progressTable-AK6\" contenteditable=\"true\">UC #3 PREPARE AND INTERPRET TECHNICAL DRAWING</td><td colspan=\"3\" data-t=\"s\" data-v=\"UC #4 APPLY QUALITY STANDARDS\" id=\"progressTable-AO6\" contenteditable=\"true\">UC #4 APPLY QUALITY STANDARDS</td><td colspan=\"3\" data-t=\"s\" data-v=\"UC #5 TERMINATE AND CONNECT ELETRCIAL WIRING AND ELECTRONIC CIRCUITS\" id=\"progressTable-AR6\" contenteditable=\"true\">UC #5 TERMINATE AND CONNECT ELETRCIAL WIRING AND ELECTRONIC CIRCUITS</td><td colspan=\"6\" data-t=\"s\" data-v=\"UC #1 PERFORM ROUGHING IN, WIRING AND CABLING FOR SINGLE PHASE DISTRIBUTION, POWER, LIGHTING AND AUXILIARY SYSTEMS\" id=\"progressTable-AU6\" contenteditable=\"true\">UC #1 PERFORM ROUGHING IN, WIRING AND CABLING FOR SINGLE PHASE DISTRIBUTION, POWER, LIGHTING AND AUXILIARY SYSTEMS</td><td colspan=\"4\" data-t=\"s\" data-v=\"UC # 2 INSTALL ELECTRICAL PROTECTIVE DEVICES FOR DISTRIBUTION, POWER, LIGHTING, AUXILIARY, LIGHTING PROTECTION AND GROUNDING SYSTEMS\" id=\"progressTable-BA6\" contenteditable=\"true\">UC # 2 INSTALL ELECTRICAL PROTECTIVE DEVICES FOR DISTRIBUTION, POWER, LIGHTING, AUXILIARY, LIGHTING PROTECTION AND GROUNDING SYSTEMS</td><td colspan=\"4\" data-t=\"s\" data-v=\"UC #3 INSTALL WIRING DEVICES OF FLOOR AND WALL MOUNTED OUTLETS, LIGHTING FIXTURE/SWITCHES AND AUXILIARY OUTLETS\" id=\"progressTable-BE6\" contenteditable=\"true\">UC #3 INSTALL WIRING DEVICES OF FLOOR AND WALL MOUNTED OUTLETS, LIGHTING FIXTURE/SWITCHES AND AUXILIARY OUTLETS</td></tr><tr><td data-t=\"s\" data-v=\"NO.\" id=\"progressTable-A7\" contenteditable=\"true\" class=\"progress-mark\">NO.</td><td data-t=\"s\" data-v=\"NAME OF THE TRAINEE\" id=\"progressTable-B7\" contenteditable=\"true\">NAME OF THE TRAINEE</td><td data-t=\"s\" data-v=\"LO1 Obtain and convey workplace information\" id=\"progressTable-C7\" contenteditable=\"true\">LO1 Obtain and convey workplace information</td><td data-t=\"s\" data-v=\"LO2 Complete relevant work-related documents\" id=\"progressTable-D7\" contenteditable=\"true\">LO2 Complete relevant work-related documents</td><td data-t=\"s\" data-v=\"LO3 Participate in workplace meeting and discussion\" id=\"progressTable-E7\" contenteditable=\"true\">LO3 Participate in workplace meeting and discussion</td><td data-t=\"s\" data-v=\"LO1 Describe and identify team role and responsibil-ity in a team\" id=\"progressTable-F7\" contenteditable=\"true\">LO1 Describe and identify team role and responsibil-ity in a team</td><td data-t=\"s\" data-v=\"LO2 Describe work as a team member\" id=\"progressTable-G7\" contenteditable=\"true\">LO2 Describe work as a team member</td><td data-t=\"s\" data-v=\"LO3 Work as a team member\" id=\"progressTable-H7\" contenteditable=\"true\">LO3 Work as a team member</td><td data-t=\"s\" data-v=\"LO1 Identify routine problems\" id=\"progressTable-I7\" contenteditable=\"true\">LO1 Identify routine problems</td><td data-t=\"s\" data-v=\"LO2 Look for solutions to routine problems\" id=\"progressTable-J7\" contenteditable=\"true\">LO2 Look for solutions to routine problems</td><td data-t=\"s\" data-v=\"LO3 Recommend solutions to problems\" id=\"progressTable-K7\" contenteditable=\"true\">LO3 Recommend solutions to problems</td><td data-t=\"s\" data-v=\"LO1 Manage one’s emotion\" id=\"progressTable-L7\" contenteditable=\"true\">LO1 Manage one’s emotion</td><td data-t=\"s\" data-v=\"LO2 Look for solutions \nto routine problems\" id=\"progressTable-M7\" contenteditable=\"true\">LO2 Look for solutions <br>to routine problems</td><td data-t=\"s\" data-v=\"LO3 Recommend \nsolutions to problems\" id=\"progressTable-N7\" contenteditable=\"true\">LO3 Recommend <br>solutions to problems</td><td data-t=\"s\" data-v=\"LO1 Identify opportunities to do things better\" id=\"progressTable-O7\" contenteditable=\"true\">LO1 Identify opportunities to do things better</td><td data-t=\"s\" data-v=\"LO2 Discuss and develop ideas with others\" id=\"progressTable-P7\" contenteditable=\"true\">LO2 Discuss and develop ideas with others</td><td data-t=\"s\" data-v=\"LO3 Integrate ideas for change in the workplace\" id=\"progressTable-Q7\" contenteditable=\"true\">LO3 Integrate ideas for change in the workplace</td><td data-t=\"s\" data-v=\"LO1 Gather data/information\" id=\"progressTable-R7\" contenteditable=\"true\">LO1 Gather data/information</td><td data-t=\"s\" data-v=\"LO2 Assess Gathered data/information\" id=\"progressTable-S7\" contenteditable=\"true\">LO2 Assess Gathered data/information</td><td data-t=\"s\" data-v=\"LO3 Record and present information\" id=\"progressTable-T7\" contenteditable=\"true\">LO3 Record and present information</td><td data-t=\"s\" data-v=\"LO1 Identify OSH compliance requirements\" id=\"progressTable-U7\" contenteditable=\"true\">LO1 Identify OSH compliance requirements</td><td data-t=\"s\" data-v=\"LO2 Prepare OSH requirements for compliance\" id=\"progressTable-V7\" contenteditable=\"true\">LO2 Prepare OSH requirements for compliance</td><td data-t=\"s\" data-v=\"LO3 Perform tasks in accordance with relevant OSH policies and procedures\" id=\"progressTable-W7\" contenteditable=\"true\">LO3 Perform tasks in accordance with relevant OSH policies and procedures</td><td data-t=\"s\" data-v=\"LO1 Identify the efficiency and effectiveness of resource utilization\" id=\"progressTable-X7\" contenteditable=\"true\">LO1 Identify the efficiency and effectiveness of resource utilization</td><td data-t=\"s\" data-v=\"LO2 Determine causes of inefficiency and/or ineffectiveness of resource utilization\" id=\"progressTable-Y7\" contenteditable=\"true\">LO2 Determine causes of inefficiency and/or ineffectiveness of resource utilization</td><td data-t=\"s\" data-v=\"LO3 Convey inefficient and ineffective environmental practices\" id=\"progressTable-Z7\" contenteditable=\"true\">LO3 Convey inefficient and ineffective environmental practices</td><td data-t=\"s\" data-v=\"LO1 Apply entrepreneurial workplace best practices\" id=\"progressTable-AA7\" contenteditable=\"true\">LO1 Apply entrepreneurial workplace best practices</td><td data-t=\"s\" data-v=\"LO 2 Communicate entrepre-neurial workplace best practices\" id=\"progressTable-AB7\" contenteditable=\"true\">LO 2 Communicate entrepre-neurial workplace best practices</td><td data-t=\"s\" data-v=\"LO3 Implement cost effective operation\" id=\"progressTable-AC7\" contenteditable=\"true\">LO3 Implement cost effective operation</td><td data-t=\"s\" data-v=\"LO 1 Plan and prepare for \ntasks to be undertak-en\" id=\"progressTable-AD7\" contenteditable=\"true\">LO 1 Plan and prepare for <br>tasks to be undertak-en</td><td data-t=\"s\" data-v=\"LO 2 Prepare hand Tools\" id=\"progressTable-AE7\" contenteditable=\"true\">LO 2 Prepare hand Tools</td><td data-t=\"s\" data-v=\"LO 3 Use appropriate hand tools and test equip-ment\" id=\"progressTable-AF7\" contenteditable=\"true\">LO 3 Use appropriate hand tools and test equip-ment</td><td data-t=\"s\" data-v=\"LO 4 Maintain hand tools\" id=\"progressTable-AG7\" contenteditable=\"true\">LO 4 Maintain hand tools</td><td data-t=\"s\" data-v=\"LO 1 Select measuring in-struments\" id=\"progressTable-AH7\" contenteditable=\"true\">LO 1 Select measuring in-struments</td><td data-t=\"s\" data-v=\"LO 2 Carry-out measure-ments and calcula-tions\" id=\"progressTable-AI7\" contenteditable=\"true\">LO 2 Carry-out measure-ments and calcula-tions</td><td data-t=\"s\" data-v=\"LO 3 Maintain measuring instruments\" id=\"progressTable-AJ7\" contenteditable=\"true\">LO 3 Maintain measuring instruments</td><td data-t=\"s\" data-v=\"LO 1 Identify different kinds of technical drawings\" id=\"progressTable-AK7\" contenteditable=\"true\">LO 1 Identify different kinds of technical drawings</td><td data-t=\"s\" data-v=\"LO 2  Interpret technical drawing\" id=\"progressTable-AL7\" contenteditable=\"true\">LO 2  Interpret technical drawing</td><td data-t=\"s\" data-v=\"LO 3 Prepare/ make changes to electrical/ electronic schematics and draw-ings\" id=\"progressTable-AM7\" contenteditable=\"true\">LO 3 Prepare/ make changes to electrical/ electronic schematics and draw-ings</td><td data-t=\"s\" data-v=\"LO 4 Store technical drawings and equipment/ in-struments\" id=\"progressTable-AN7\" contenteditable=\"true\">LO 4 Store technical drawings and equipment/ in-struments</td><td data-t=\"s\" data-v=\"LO 1 Assess quality of re-ceived materials\" id=\"progressTable-AO7\" contenteditable=\"true\">LO 1 Assess quality of re-ceived materials</td><td data-t=\"s\" data-v=\"LO 2 Assess own work\" id=\"progressTable-AP7\" contenteditable=\"true\">LO 2 Assess own work</td><td data-t=\"s\" data-v=\"LO 3 Engage in quality im-provement\" id=\"progressTable-AQ7\" contenteditable=\"true\">LO 3 Engage in quality im-provement</td><td data-t=\"s\" data-v=\"LO 1  Plan and prepare for termination/ connec-tion of electrical wir-ing/ electronics cir-cuits\" id=\"progressTable-AR7\" contenteditable=\"true\">LO 1  Plan and prepare for termination/ connec-tion of electrical wir-ing/ electronics cir-cuits</td><td data-t=\"s\" data-v=\"LO 2 Terminate/ connect electrical wirings/ electronic circuits\" id=\"progressTable-AS7\" contenteditable=\"true\">LO 2 Terminate/ connect electrical wirings/ electronic circuits</td><td data-t=\"s\" data-v=\"LO 3 Test termination/ connections of elec-trical wiring/ elec-tronics circuits\" id=\"progressTable-AT7\" contenteditable=\"true\">LO 3 Test termination/ connections of elec-trical wiring/ elec-tronics circuits</td><td data-t=\"s\" data-v=\"LO 1 Install electrical metal-lic /non- metallic (PVC conduit)\" id=\"progressTable-AU7\" contenteditable=\"true\">LO 1 Install electrical metal-lic /non- metallic (PVC conduit)</td><td data-t=\"s\" data-v=\"LO 2 Install wire ways and cable tray\" id=\"progressTable-AV7\" contenteditable=\"true\">LO 2 Install wire ways and cable tray</td><td data-t=\"s\" data-v=\"LO 3 Install auxiliary termi-nal cabinet and distri-bution panel\" id=\"progressTable-AW7\" contenteditable=\"true\">LO 3 Install auxiliary termi-nal cabinet and distri-bution panel</td><td data-t=\"s\" data-v=\"LO 4 Prepare for cable pull-ing and installation\" id=\"progressTable-AX7\" contenteditable=\"true\">LO 4 Prepare for cable pull-ing and installation</td><td data-t=\"s\" data-v=\"LO 5 Perform wiring and ca-bling lay out\" id=\"progressTable-AY7\" contenteditable=\"true\">LO 5 Perform wiring and ca-bling lay out</td><td data-t=\"s\" data-v=\"LO 6 Notify completion of work\" id=\"progressTable-AZ7\" contenteditable=\"true\">LO 6 Notify completion of work</td><td data-t=\"s\" data-v=\"LO 1 Plan and prepare work\" id=\"progressTable-BA7\" contenteditable=\"true\">LO 1 Plan and prepare work</td><td data-t=\"s\" data-v=\"LO 2 Install electrical protec-tive devices\" id=\"progressTable-BB7\" contenteditable=\"true\">LO 2 Install electrical protec-tive devices</td><td data-t=\"s\" data-v=\"LO 3 Install lighting fixture and auxiliary outlet\" id=\"progressTable-BC7\" contenteditable=\"true\">LO 3 Install lighting fixture and auxiliary outlet</td><td data-t=\"s\" data-v=\"LO 4 Notify completion of work\" id=\"progressTable-BD7\" contenteditable=\"true\">LO 4 Notify completion of work</td><td data-t=\"s\" data-v=\"LO 1 Select wiring devices\" id=\"progressTable-BE7\" contenteditable=\"true\">LO 1 Select wiring devices</td><td data-t=\"s\" data-v=\"LO 2 Install wiring devices\" id=\"progressTable-BF7\" contenteditable=\"true\">LO 2 Install wiring devices</td><td data-t=\"s\" data-v=\"LO 3 Install lighting fix-tures/switches\" id=\"progressTable-BG7\" contenteditable=\"true\">LO 3 Install lighting fix-tures/switches</td><td data-t=\"s\" data-v=\"LO 4 Notify completion of work\" id=\"progressTable-BH7\" contenteditable=\"true\">LO 4 Notify completion of work</td></tr><tr><td data-t=\"n\" data-v=\"1\" id=\"progressTable-A8\" contenteditable=\"true\" class=\"progress-mark\">1</td><td id=\"progressTable-B8\" contenteditable=\"true\" class=\"progress-mark\">Christian Dave Boncales</td><td id=\"progressTable-C8\" contenteditable=\"true\" class=\"progress-mark\" style=\"color: green;\">✓</td><td id=\"progressTable-D8\" contenteditable=\"true\" class=\"progress-mark\" style=\"color: green;\">✓</td><td id=\"progressTable-E8\" contenteditable=\"true\" class=\"progress-mark\" style=\"color: green;\">✓</td><td id=\"progressTable-F8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Q8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-R8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-S8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-T8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-U8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-V8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-W8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-X8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Y8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Z8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AA8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AB8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AC8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AD8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AE8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AF8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AG8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AH8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AI8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AJ8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AK8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AL8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AM8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AN8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AO8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AP8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AQ8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AR8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AS8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AT8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AU8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AV8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AW8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AX8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AY8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AZ8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BA8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BB8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BC8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BD8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BE8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BF8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BG8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BH8\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"2\" id=\"progressTable-A9\" contenteditable=\"true\" class=\"progress-mark\">2</td><td id=\"progressTable-B9\" contenteditable=\"true\" class=\"progress-mark\">James Gabriel Go</td><td id=\"progressTable-C9\" contenteditable=\"true\" class=\"progress-mark\" style=\"color: green;\">✓</td><td id=\"progressTable-D9\" contenteditable=\"true\" class=\"progress-mark\" style=\"color: green;\">✓</td><td id=\"progressTable-E9\" contenteditable=\"true\" class=\"progress-mark\" style=\"color: orange;\">IP</td><td id=\"progressTable-F9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Q9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-R9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-S9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-T9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-U9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-V9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-W9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-X9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Y9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Z9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AA9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AB9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AC9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AD9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AE9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AF9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AG9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AH9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AI9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AJ9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AK9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AL9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AM9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AN9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AO9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AP9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AQ9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AR9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AS9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AT9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AU9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AV9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AW9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AX9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AY9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AZ9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BA9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BB9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BC9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BD9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BE9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BF9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BG9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BH9\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"3\" id=\"progressTable-A10\" contenteditable=\"true\" class=\"progress-mark\">3</td><td id=\"progressTable-B10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Q10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-R10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-S10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-T10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-U10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-V10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-W10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-X10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Y10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Z10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AA10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AB10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AC10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AD10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AE10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AF10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AG10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AH10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AI10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AJ10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AK10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AL10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AM10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AN10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AO10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AP10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AQ10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AR10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AS10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AT10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AU10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AV10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AW10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AX10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AY10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AZ10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BA10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BB10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BC10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BD10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BE10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BF10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BG10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BH10\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"4\" id=\"progressTable-A11\" contenteditable=\"true\" class=\"progress-mark\">4</td><td id=\"progressTable-B11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Q11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-R11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-S11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-T11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-U11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-V11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-W11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-X11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Y11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Z11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AA11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AB11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AC11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AD11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AE11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AF11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AG11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AH11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AI11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AJ11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AK11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AL11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AM11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AN11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AO11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AP11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AQ11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AR11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AS11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AT11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AU11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AV11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AW11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AX11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AY11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AZ11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BA11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BB11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BC11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BD11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BE11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BF11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BG11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BH11\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"5\" id=\"progressTable-A12\" contenteditable=\"true\" class=\"progress-mark\">5</td><td id=\"progressTable-B12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Q12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-R12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-S12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-T12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-U12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-V12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-W12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-X12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Y12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Z12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AA12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AB12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AC12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AD12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AE12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AF12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AG12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AH12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AI12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AJ12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AK12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AL12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AM12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AN12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AO12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AP12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AQ12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AR12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AS12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AT12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AU12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AV12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AW12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AX12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AY12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AZ12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BA12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BB12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BC12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BD12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BE12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BF12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BG12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BH12\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"6\" id=\"progressTable-A13\" contenteditable=\"true\" class=\"progress-mark\">6</td><td id=\"progressTable-B13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Q13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-R13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-S13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-T13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-U13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-V13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-W13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-X13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Y13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Z13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AA13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AB13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AC13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AD13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AE13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AF13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AG13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AH13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AI13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AJ13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AK13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AL13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AM13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AN13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AO13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AP13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AQ13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AR13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AS13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AT13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AU13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AV13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AW13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AX13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AY13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AZ13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BA13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BB13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BC13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BD13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BE13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BF13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BG13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BH13\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"7\" id=\"progressTable-A14\" contenteditable=\"true\" class=\"progress-mark\">7</td><td id=\"progressTable-B14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Q14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-R14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-S14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-T14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-U14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-V14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-W14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-X14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Y14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Z14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AA14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AB14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AC14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AD14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AE14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AF14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AG14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AH14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AI14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AJ14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AK14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AL14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AM14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AN14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AO14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AP14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AQ14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AR14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AS14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AT14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AU14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AV14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AW14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AX14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AY14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AZ14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BA14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BB14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BC14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BD14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BE14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BF14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BG14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BH14\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"8\" id=\"progressTable-A15\" contenteditable=\"true\" class=\"progress-mark\">8</td><td id=\"progressTable-B15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Q15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-R15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-S15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-T15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-U15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-V15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-W15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-X15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Y15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Z15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AA15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AB15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AC15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AD15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AE15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AF15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AG15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AH15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AI15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AJ15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AK15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AL15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AM15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AN15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AO15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AP15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AQ15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AR15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AS15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AT15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AU15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AV15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AW15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AX15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AY15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AZ15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BA15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BB15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BC15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BD15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BE15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BF15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BG15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BH15\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"9\" id=\"progressTable-A16\" contenteditable=\"true\" class=\"progress-mark\">9</td><td id=\"progressTable-B16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Q16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-R16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-S16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-T16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-U16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-V16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-W16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-X16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Y16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Z16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AA16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AB16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AC16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AD16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AE16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AF16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AG16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AH16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AI16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AJ16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AK16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AL16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AM16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AN16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AO16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AP16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AQ16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AR16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AS16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AT16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AU16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AV16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AW16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AX16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AY16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AZ16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BA16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BB16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BC16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BD16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BE16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BF16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BG16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BH16\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"10\" id=\"progressTable-A17\" contenteditable=\"true\" class=\"progress-mark\">10</td><td id=\"progressTable-B17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Q17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-R17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-S17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-T17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-U17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-V17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-W17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-X17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Y17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Z17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AA17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AB17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AC17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AD17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AE17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AF17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AG17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AH17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AI17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AJ17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AK17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AL17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AM17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AN17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AO17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AP17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AQ17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AR17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AS17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AT17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AU17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AV17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AW17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AX17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AY17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AZ17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BA17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BB17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BC17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BD17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BE17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BF17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BG17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BH17\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"11\" id=\"progressTable-A18\" contenteditable=\"true\" class=\"progress-mark\">11</td><td id=\"progressTable-B18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Q18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-R18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-S18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-T18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-U18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-V18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-W18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-X18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Y18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Z18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AA18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AB18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AC18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AD18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AE18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AF18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AG18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AH18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AI18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AJ18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AK18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AL18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AM18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AN18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AO18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AP18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AQ18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AR18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AS18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AT18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AU18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AV18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AW18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AX18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AY18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AZ18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BA18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BB18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BC18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BD18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BE18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BF18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BG18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BH18\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"12\" id=\"progressTable-A19\" contenteditable=\"true\" class=\"progress-mark\">12</td><td id=\"progressTable-B19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Q19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-R19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-S19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-T19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-U19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-V19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-W19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-X19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Y19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Z19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AA19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AB19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AC19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AD19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AE19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AF19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AG19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AH19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AI19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AJ19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AK19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AL19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AM19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AN19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AO19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AP19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AQ19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AR19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AS19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AT19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AU19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AV19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AW19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AX19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AY19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AZ19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BA19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BB19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BC19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BD19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BE19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BF19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BG19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BH19\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"13\" id=\"progressTable-A20\" contenteditable=\"true\" class=\"progress-mark\">13</td><td id=\"progressTable-B20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Q20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-R20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-S20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-T20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-U20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-V20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-W20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-X20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Y20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Z20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AA20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AB20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AC20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AD20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AE20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AF20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AG20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AH20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AI20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AJ20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AK20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AL20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AM20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AN20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AO20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AP20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AQ20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AR20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AS20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AT20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AU20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AV20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AW20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AX20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AY20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AZ20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BA20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BB20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BC20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BD20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BE20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BF20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BG20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BH20\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"14\" id=\"progressTable-A21\" contenteditable=\"true\" class=\"progress-mark\">14</td><td id=\"progressTable-B21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Q21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-R21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-S21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-T21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-U21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-V21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-W21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-X21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Y21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Z21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AA21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AB21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AC21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AD21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AE21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AF21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AG21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AH21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AI21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AJ21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AK21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AL21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AM21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AN21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AO21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AP21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AQ21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AR21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AS21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AT21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AU21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AV21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AW21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AX21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AY21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AZ21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BA21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BB21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BC21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BD21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BE21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BF21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BG21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BH21\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"15\" id=\"progressTable-A22\" contenteditable=\"true\" class=\"progress-mark\">15</td><td id=\"progressTable-B22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Q22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-R22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-S22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-T22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-U22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-V22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-W22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-X22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Y22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Z22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AA22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AB22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AC22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AD22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AE22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AF22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AG22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AH22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AI22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AJ22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AK22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AL22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AM22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AN22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AO22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AP22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AQ22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AR22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AS22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AT22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AU22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AV22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AW22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AX22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AY22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AZ22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BA22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BB22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BC22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BD22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BE22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BF22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BG22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BH22\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"16\" id=\"progressTable-A23\" contenteditable=\"true\" class=\"progress-mark\">16</td><td id=\"progressTable-B23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Q23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-R23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-S23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-T23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-U23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-V23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-W23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-X23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Y23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Z23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AA23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AB23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AC23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AD23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AE23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AF23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AG23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AH23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AI23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AJ23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AK23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AL23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AM23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AN23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AO23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AP23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AQ23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AR23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AS23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AT23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AU23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AV23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AW23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AX23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AY23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AZ23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BA23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BB23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BC23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BD23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BE23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BF23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BG23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BH23\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"17\" id=\"progressTable-A24\" contenteditable=\"true\" class=\"progress-mark\">17</td><td id=\"progressTable-B24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Q24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-R24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-S24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-T24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-U24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-V24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-W24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-X24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Y24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Z24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AA24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AB24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AC24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AD24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AE24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AF24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AG24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AH24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AI24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AJ24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AK24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AL24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AM24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AN24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AO24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AP24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AQ24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AR24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AS24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AT24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AU24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AV24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AW24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AX24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AY24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AZ24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BA24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BB24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BC24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BD24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BE24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BF24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BG24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BH24\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"18\" id=\"progressTable-A25\" contenteditable=\"true\" class=\"progress-mark\">18</td><td id=\"progressTable-B25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Q25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-R25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-S25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-T25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-U25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-V25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-W25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-X25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Y25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Z25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AA25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AB25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AC25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AD25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AE25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AF25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AG25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AH25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AI25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AJ25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AK25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AL25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AM25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AN25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AO25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AP25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AQ25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AR25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AS25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AT25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AU25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AV25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AW25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AX25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AY25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AZ25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BA25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BB25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BC25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BD25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BE25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BF25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BG25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BH25\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"19\" id=\"progressTable-A26\" contenteditable=\"true\" class=\"progress-mark\">19</td><td id=\"progressTable-B26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Q26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-R26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-S26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-T26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-U26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-V26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-W26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-X26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Y26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Z26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AA26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AB26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AC26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AD26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AE26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AF26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AG26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AH26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AI26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AJ26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AK26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AL26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AM26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AN26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AO26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AP26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AQ26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AR26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AS26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AT26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AU26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AV26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AW26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AX26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AY26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AZ26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BA26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BB26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BC26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BD26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BE26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BF26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BG26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BH26\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"20\" id=\"progressTable-A27\" contenteditable=\"true\" class=\"progress-mark\">20</td><td id=\"progressTable-B27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Q27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-R27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-S27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-T27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-U27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-V27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-W27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-X27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Y27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Z27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AA27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AB27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AC27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AD27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AE27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AF27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AG27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AH27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AI27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AJ27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AK27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AL27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AM27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AN27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AO27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AP27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AQ27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AR27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AS27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AT27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AU27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AV27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AW27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AX27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AY27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AZ27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BA27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BB27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BC27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BD27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BE27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BF27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BG27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BH27\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"21\" id=\"progressTable-A28\" contenteditable=\"true\" class=\"progress-mark\">21</td><td id=\"progressTable-B28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Q28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-R28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-S28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-T28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-U28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-V28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-W28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-X28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Y28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Z28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AA28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AB28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AC28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AD28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AE28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AF28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AG28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AH28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AI28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AJ28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AK28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AL28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AM28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AN28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AO28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AP28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AQ28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AR28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AS28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AT28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AU28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AV28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AW28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AX28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AY28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AZ28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BA28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BB28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BC28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BD28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BE28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BF28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BG28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BH28\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"22\" id=\"progressTable-A29\" contenteditable=\"true\" class=\"progress-mark\">22</td><td id=\"progressTable-B29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Q29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-R29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-S29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-T29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-U29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-V29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-W29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-X29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Y29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Z29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AA29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AB29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AC29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AD29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AE29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AF29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AG29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AH29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AI29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AJ29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AK29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AL29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AM29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AN29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AO29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AP29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AQ29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AR29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AS29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AT29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AU29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AV29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AW29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AX29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AY29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AZ29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BA29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BB29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BC29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BD29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BE29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BF29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BG29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BH29\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"23\" id=\"progressTable-A30\" contenteditable=\"true\" class=\"progress-mark\">23</td><td id=\"progressTable-B30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Q30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-R30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-S30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-T30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-U30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-V30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-W30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-X30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Y30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Z30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AA30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AB30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AC30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AD30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AE30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AF30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AG30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AH30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AI30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AJ30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AK30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AL30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AM30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AN30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AO30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AP30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AQ30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AR30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AS30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AT30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AU30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AV30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AW30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AX30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AY30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AZ30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BA30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BB30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BC30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BD30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BE30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BF30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BG30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BH30\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"24\" id=\"progressTable-A31\" contenteditable=\"true\" class=\"progress-mark\">24</td><td id=\"progressTable-B31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Q31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-R31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-S31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-T31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-U31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-V31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-W31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-X31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Y31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Z31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AA31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AB31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AC31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AD31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AE31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AF31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AG31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AH31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AI31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AJ31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AK31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AL31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AM31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AN31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AO31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AP31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AQ31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AR31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AS31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AT31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AU31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AV31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AW31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AX31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AY31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AZ31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BA31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BB31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BC31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BD31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BE31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BF31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BG31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BH31\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"25\" id=\"progressTable-A32\" contenteditable=\"true\" class=\"progress-mark\">25</td><td id=\"progressTable-B32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Q32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-R32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-S32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-T32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-U32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-V32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-W32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-X32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Y32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-Z32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AA32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AB32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AC32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AD32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AE32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AF32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AG32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AH32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AI32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AJ32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AK32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AL32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AM32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AN32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AO32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AP32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AQ32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AR32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AS32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AT32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AU32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AV32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AW32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AX32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AY32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-AZ32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BA32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BB32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BC32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BD32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BE32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BF32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BG32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-BH32\" contenteditable=\"true\" class=\"progress-mark\"></td></tr></tbody></table>', '2026-01-29 20:19:45', '2026-02-02 08:09:25');
+INSERT INTO `tbl_progress_charts` (`chart_id`, `trainer_id`, `title`, `chart_content`, `created_at`, `updated_at`) VALUES
+(2, 1, 'ACHIEVEMENT CHART', '<meta charset=\"utf-8\"><title>SheetJS Table Export</title><table id=\"progressTable\" class=\"tesda-table\"><tbody><tr style=\"font-weight: bold; background-color: rgb(248, 249, 250); text-align: center;\"><td colspan=\"16\" data-t=\"s\" data-v=\"Hohoo Ville Technical School Inc.\" id=\"progressTable-A1\" contenteditable=\"true\">Hohoo Ville Technical School Inc.</td></tr><tr style=\"font-weight: bold; background-color: rgb(248, 249, 250); text-align: center;\"><td colspan=\"16\" data-t=\"s\" data-v=\"Purok 6A, Poblacion, Lagonglong, Misamis Oriental\" id=\"progressTable-A2\" contenteditable=\"true\">Purok 6A, Poblacion, Lagonglong, Misamis Oriental</td></tr><tr style=\"font-weight: bold; background-color: rgb(248, 249, 250); text-align: center;\"><td colspan=\"16\" data-t=\"s\" data-v=\"ACHIEVEMENT CHART\" id=\"progressTable-A3\" contenteditable=\"true\">ACHIEVEMENT CHART</td></tr><tr style=\"font-weight: bold; background-color: rgb(248, 249, 250); text-align: center;\"><td colspan=\"16\" data-t=\"s\" data-v=\"ELECTRICAL INSTALLATION AND MAINTENANCE NC II (196 HOURS)\" id=\"progressTable-A4\" contenteditable=\"true\">ELECTRICAL INSTALLATION AND MAINTENANCE NC II (196 HOURS)</td></tr><tr><td id=\"progressTable-A5\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-B5\" contenteditable=\"true\" class=\"progress-mark\"></td><td colspan=\"6\" data-t=\"s\" data-v=\"Perform roughing-in activities,wiring and cabling for single phase distribution,power,lighting and auxiliary system\" id=\"progressTable-C5\" contenteditable=\"true\">Perform roughing-in activities,wiring and cabling for single phase distribution,power,lighting and auxiliary system</td><td colspan=\"4\" data-t=\"s\" data-v=\"Install electrical protective devices for distribution,power,lighting,auxiliary protection and grounding system\" id=\"progressTable-I5\" contenteditable=\"true\">Install electrical protective devices for distribution,power,lighting,auxiliary protection and grounding system</td><td colspan=\"4\" data-t=\"s\" data-v=\"Install wiring devices of floor and wall mounted outlets,lighting fixture/switches,and auxiliary outlet\" id=\"progressTable-M5\" contenteditable=\"true\">Install wiring devices of floor and wall mounted outlets,lighting fixture/switches,and auxiliary outlet</td></tr><tr><td data-t=\"s\" data-v=\"NO\" id=\"progressTable-A6\" contenteditable=\"true\" class=\"progress-mark\">NO</td><td data-t=\"s\" data-v=\"NAME OF TRAINEE\" id=\"progressTable-B6\" contenteditable=\"true\">NAME OF TRAINEE</td><td data-t=\"s\" data-v=\"1. Install electrical metallic /nonmetallic (PVC conduit)\" id=\"progressTable-C6\" contenteditable=\"true\">1. Install electrical metallic /nonmetallic (PVC conduit)</td><td data-t=\"s\" data-v=\"2. Install wire ways and cable tray\" id=\"progressTable-D6\" contenteditable=\"true\">2. Install wire ways and cable tray</td><td data-t=\"s\" data-v=\"3. Install auxiliary terminal cabinet and distribution panel\" id=\"progressTable-E6\" contenteditable=\"true\">3. Install auxiliary terminal cabinet and distribution panel</td><td data-t=\"s\" data-v=\"4. Prepare for cable pulling and installation\" id=\"progressTable-F6\" contenteditable=\"true\">4. Prepare for cable pulling and installation</td><td data-t=\"s\" data-v=\"5. Perform wiring and cabling lay out\" id=\"progressTable-G6\" contenteditable=\"true\">5. Perform wiring and cabling lay out</td><td data-t=\"s\" data-v=\"6. Notify completion of work\" id=\"progressTable-H6\" contenteditable=\"true\">6. Notify completion of work</td><td data-t=\"s\" data-v=\"1. Plan and prepare work\" id=\"progressTable-I6\" contenteditable=\"true\">1. Plan and prepare work</td><td data-t=\"s\" data-v=\"2. Install electrical protective devices\" id=\"progressTable-J6\" contenteditable=\"true\">2. Install electrical protective devices</td><td data-t=\"s\" data-v=\"3. Install lighting fixture and auxiliary outlet.\" id=\"progressTable-K6\" contenteditable=\"true\">3. Install lighting fixture and auxiliary outlet.</td><td data-t=\"s\" data-v=\"4. Notify completion of work.\" id=\"progressTable-L6\" contenteditable=\"true\">4. Notify completion of work.</td><td data-t=\"s\" data-v=\"1. Select wiring devices\" id=\"progressTable-M6\" contenteditable=\"true\">1. Select wiring devices</td><td data-t=\"s\" data-v=\"2. Install wiring devices\" id=\"progressTable-N6\" contenteditable=\"true\">2. Install wiring devices</td><td data-t=\"s\" data-v=\"3. Install lighting fixture/ switches\" id=\"progressTable-O6\" contenteditable=\"true\">3. Install lighting fixture/ switches</td><td data-t=\"s\" data-v=\"4. Notify completion of work\" id=\"progressTable-P6\" contenteditable=\"true\">4. Notify completion of work</td></tr><tr><td data-t=\"n\" data-v=\"1\" id=\"progressTable-A7\" contenteditable=\"true\" class=\"progress-mark\">1</td><td id=\"progressTable-B7\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C7\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D7\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E7\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F7\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G7\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H7\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I7\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J7\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K7\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L7\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M7\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N7\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O7\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P7\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"2\" id=\"progressTable-A8\" contenteditable=\"true\" class=\"progress-mark\">2</td><td id=\"progressTable-B8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O8\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P8\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"3\" id=\"progressTable-A9\" contenteditable=\"true\" class=\"progress-mark\">3</td><td id=\"progressTable-B9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O9\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P9\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"4\" id=\"progressTable-A10\" contenteditable=\"true\" class=\"progress-mark\">4</td><td id=\"progressTable-B10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O10\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P10\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"5\" id=\"progressTable-A11\" contenteditable=\"true\" class=\"progress-mark\">5</td><td id=\"progressTable-B11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O11\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P11\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"6\" id=\"progressTable-A12\" contenteditable=\"true\" class=\"progress-mark\">6</td><td id=\"progressTable-B12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O12\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P12\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"7\" id=\"progressTable-A13\" contenteditable=\"true\" class=\"progress-mark\">7</td><td id=\"progressTable-B13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O13\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P13\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"8\" id=\"progressTable-A14\" contenteditable=\"true\" class=\"progress-mark\">8</td><td id=\"progressTable-B14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O14\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P14\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"9\" id=\"progressTable-A15\" contenteditable=\"true\" class=\"progress-mark\">9</td><td id=\"progressTable-B15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O15\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P15\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"10\" id=\"progressTable-A16\" contenteditable=\"true\" class=\"progress-mark\">10</td><td id=\"progressTable-B16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O16\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P16\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"11\" id=\"progressTable-A17\" contenteditable=\"true\" class=\"progress-mark\">11</td><td id=\"progressTable-B17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O17\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P17\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"12\" id=\"progressTable-A18\" contenteditable=\"true\" class=\"progress-mark\">12</td><td id=\"progressTable-B18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O18\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P18\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"13\" id=\"progressTable-A19\" contenteditable=\"true\" class=\"progress-mark\">13</td><td id=\"progressTable-B19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O19\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P19\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"14\" id=\"progressTable-A20\" contenteditable=\"true\" class=\"progress-mark\">14</td><td id=\"progressTable-B20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O20\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P20\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"15\" id=\"progressTable-A21\" contenteditable=\"true\" class=\"progress-mark\">15</td><td id=\"progressTable-B21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O21\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P21\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"16\" id=\"progressTable-A22\" contenteditable=\"true\" class=\"progress-mark\">16</td><td id=\"progressTable-B22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O22\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P22\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"17\" id=\"progressTable-A23\" contenteditable=\"true\" class=\"progress-mark\">17</td><td id=\"progressTable-B23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O23\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P23\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"18\" id=\"progressTable-A24\" contenteditable=\"true\" class=\"progress-mark\">18</td><td id=\"progressTable-B24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O24\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P24\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"19\" id=\"progressTable-A25\" contenteditable=\"true\" class=\"progress-mark\">19</td><td id=\"progressTable-B25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O25\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P25\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"20\" id=\"progressTable-A26\" contenteditable=\"true\" class=\"progress-mark\">20</td><td id=\"progressTable-B26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O26\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P26\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"21\" id=\"progressTable-A27\" contenteditable=\"true\" class=\"progress-mark\">21</td><td id=\"progressTable-B27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O27\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P27\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"22\" id=\"progressTable-A28\" contenteditable=\"true\" class=\"progress-mark\">22</td><td id=\"progressTable-B28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O28\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P28\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"23\" id=\"progressTable-A29\" contenteditable=\"true\" class=\"progress-mark\">23</td><td id=\"progressTable-B29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O29\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P29\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"24\" id=\"progressTable-A30\" contenteditable=\"true\" class=\"progress-mark\">24</td><td id=\"progressTable-B30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O30\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P30\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td data-t=\"n\" data-v=\"25\" id=\"progressTable-A31\" contenteditable=\"true\" class=\"progress-mark\">25</td><td id=\"progressTable-B31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O31\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P31\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td id=\"progressTable-A32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-B32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O32\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P32\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td id=\"progressTable-A33\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-B33\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C33\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D33\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E33\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F33\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G33\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H33\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I33\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J33\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K33\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L33\" contenteditable=\"true\" class=\"progress-mark\"></td><td data-t=\"s\" data-v=\"LEGENDS:\" id=\"progressTable-M33\" contenteditable=\"true\">LEGENDS:</td><td id=\"progressTable-N33\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O33\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P33\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td id=\"progressTable-A34\" contenteditable=\"true\" class=\"progress-mark\"></td><td data-t=\"s\" data-v=\"Training Duration: 196 hours\" id=\"progressTable-B34\" contenteditable=\"true\">Training Duration: 196 hours</td><td id=\"progressTable-C34\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D34\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E34\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F34\" contenteditable=\"true\" class=\"progress-mark\"></td><td data-t=\"s\" data-v=\"Date Started: September 23, 2024\" id=\"progressTable-G34\" contenteditable=\"true\">Date Started: September 23, 2024</td><td id=\"progressTable-H34\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I34\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J34\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K34\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L34\" contenteditable=\"true\" class=\"progress-mark\"></td><td data-t=\"s\" data-v=\"C - COMPETENT\" id=\"progressTable-M34\" contenteditable=\"true\">C - COMPETENT</td><td id=\"progressTable-N34\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O34\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P34\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td id=\"progressTable-A35\" contenteditable=\"true\" class=\"progress-mark\"></td><td data-t=\"s\" data-v=\"Trainer: IVY MAE O. BAGONGON\" id=\"progressTable-B35\" contenteditable=\"true\">Trainer: IVY MAE O. BAGONGON</td><td id=\"progressTable-C35\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D35\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E35\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F35\" contenteditable=\"true\" class=\"progress-mark\"></td><td data-t=\"s\" data-v=\"Date Finished: October 25, 2024\" id=\"progressTable-G35\" contenteditable=\"true\">Date Finished: October 25, 2024</td><td id=\"progressTable-H35\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I35\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J35\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K35\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L35\" contenteditable=\"true\" class=\"progress-mark\"></td><td data-t=\"s\" data-v=\"NYC - NOT YET COMPETENT\" id=\"progressTable-M35\" contenteditable=\"true\">NYC - NOT YET COMPETENT</td><td id=\"progressTable-N35\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O35\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P35\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td id=\"progressTable-A36\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-B36\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C36\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D36\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E36\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F36\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G36\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H36\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I36\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J36\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K36\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L36\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M36\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N36\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O36\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P36\" contenteditable=\"true\" class=\"progress-mark\"></td></tr><tr><td id=\"progressTable-A37\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-B37\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-C37\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-D37\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-E37\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-F37\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-G37\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-H37\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-I37\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-J37\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-K37\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-L37\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-M37\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-N37\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-O37\" contenteditable=\"true\" class=\"progress-mark\"></td><td id=\"progressTable-P37\" contenteditable=\"true\" class=\"progress-mark\"></td></tr></tbody></table>', '2026-01-29 20:37:55', '2026-01-29 20:37:55');
+INSERT INTO `tbl_progress_charts` (`chart_id`, `trainer_id`, `title`, `chart_content`, `created_at`, `updated_at`) VALUES
+(3, 1, 'Progress 1', '\n        <ul class=\"nav nav-tabs mb-3\" id=\"chartTabs\" role=\"tablist\">\n            <li class=\"nav-item\"><button class=\"nav-link active\" id=\"core-tab\" data-bs-toggle=\"tab\" data-bs-target=\"#core-pane\" type=\"button\">Core Competencies</button></li>\n            <li class=\"nav-item\"><button class=\"nav-link\" id=\"common-tab\" data-bs-toggle=\"tab\" data-bs-target=\"#common-pane\" type=\"button\">Common Competencies</button></li>\n            <li class=\"nav-item\"><button class=\"nav-link\" id=\"basic-tab\" data-bs-toggle=\"tab\" data-bs-target=\"#basic-pane\" type=\"button\">Basic Competencies</button></li>\n        </ul>\n        <div class=\"tab-content\" id=\"chartTabsContent\">\n            <div class=\"tab-pane fade show active\" id=\"core-pane\" role=\"tabpanel\"><table class=\"tesda-table\" id=\"progressTable_core\"><thead><tr style=\"font-weight: bold; background-color: rgb(248, 249, 250); text-align: center;\"><th rowspan=\"3\" contenteditable=\"true\" class=\"progress-mark\">NO.</th><th rowspan=\"3\" style=\"width: 200px;\" contenteditable=\"true\">NAME OF TRAINEE</th><th colspan=\"4\" contenteditable=\"true\">CORE COMPETENCIES</th></tr><tr style=\"font-weight: bold; background-color: rgb(248, 249, 250); text-align: center;\"><th colspan=\"4\" contenteditable=\"true\">Installing Electrical Protective Devices for Distribution, Power, Lighting, Auxiliary, Lightning Protection and Grounding Systems</th></tr><tr style=\"font-weight: bold; background-color: rgb(248, 249, 250); text-align: center;\"><th style=\"background-color: #1cc88a; color: white;\" data-outcome-id=\"2\" contenteditable=\"true\">LEARNING OUTCOME 1: PLAN AND PREPARE WORK</th><th data-outcome-id=\"3\" contenteditable=\"true\">LEARNING OUTCOME 2: INSTALL ELECTRICAL PROTECTIVE DEVICES</th><th data-outcome-id=\"4\" contenteditable=\"true\">LEARNING OUTCOME 3: INSTALL LIGHTING FIXTURES AND AUXILIARY</th><th data-outcome-id=\"5\" contenteditable=\"true\">LEARNING OUTCOME 4: NOTIFY COMPLETION OF WORK</th></tr></thead><tbody><tr data-trainee-id=\"5\" style=\"font-weight: bold; background-color: rgb(248, 249, 250); text-align: center;\"><td class=\"text-center progress-mark\" contenteditable=\"true\">1</td><td contenteditable=\"true\">Christian Dave Boncales</td><td class=\"progress-mark text-success fw-bold\" contenteditable=\"true\">✓</td><td class=\"progress-mark\" contenteditable=\"true\"></td><td class=\"progress-mark\" contenteditable=\"true\"></td><td class=\"progress-mark\" contenteditable=\"true\"></td></tr><tr data-trainee-id=\"8\"><td class=\"text-center progress-mark\" contenteditable=\"true\">2</td><td contenteditable=\"true\">Apple Jane Edrolin</td><td class=\"progress-mark text-success fw-bold\" contenteditable=\"true\">✓</td><td class=\"progress-mark\" contenteditable=\"true\"></td><td class=\"progress-mark\" contenteditable=\"true\"></td><td class=\"progress-mark\" contenteditable=\"true\"></td></tr></tbody></table></div>\n            <div class=\"tab-pane fade\" id=\"common-pane\" role=\"tabpanel\"><table class=\"tesda-table\" id=\"progressTable_common\"><thead><tr style=\"font-weight: bold; background-color: rgb(248, 249, 250); text-align: center;\"><th rowspan=\"3\" contenteditable=\"true\" class=\"progress-mark\">NO.</th><th rowspan=\"3\" style=\"width: 200px;\" contenteditable=\"true\">NAME OF TRAINEE</th><th colspan=\"1\" contenteditable=\"true\">COMMON COMPETENCIES</th></tr><tr style=\"font-weight: bold; background-color: rgb(248, 249, 250); text-align: center;\"><th colspan=\"1\" contenteditable=\"true\">ELC741301</th></tr><tr style=\"font-weight: bold; background-color: rgb(248, 249, 250); text-align: center;\"><th data-outcome-id=\"6\" contenteditable=\"true\">1.1 Install electrical metallic /nonmetallic (PVC conduit)</th></tr></thead><tbody><tr data-trainee-id=\"5\" style=\"font-weight: bold; background-color: rgb(248, 249, 250); text-align: center;\"><td class=\"text-center progress-mark\" contenteditable=\"true\">1</td><td contenteditable=\"true\">Christian Dave Boncales</td><td class=\"progress-mark text-success fw-bold\" contenteditable=\"true\">✓</td></tr><tr data-trainee-id=\"8\"><td class=\"text-center progress-mark\" contenteditable=\"true\">2</td><td contenteditable=\"true\">Apple Jane Edrolin</td><td class=\"progress-mark\" contenteditable=\"true\"></td></tr></tbody></table></div>\n            <div class=\"tab-pane fade\" id=\"basic-pane\" role=\"tabpanel\"><div class=\"alert alert-info m-3\">No basic competencies found for this qualification.</div></div>\n        </div>\n    ', '2026-02-07 18:26:09', '2026-02-07 18:26:09');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_qualifications`
+--
+
+CREATE TABLE `tbl_qualifications` (
+  `qualification_id` int(11) NOT NULL,
+  `qualification_name` varchar(150) NOT NULL,
+  `ctpr_number` varchar(100) DEFAULT NULL,
+  `training_cost` decimal(10,2) DEFAULT 0.00,
+  `description` text DEFAULT NULL,
+  `duration` varchar(50) DEFAULT NULL,
+  `status` enum('active','inactive','pending','rejected') DEFAULT 'pending'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_qualifications`
+--
+
+INSERT INTO `tbl_qualifications` (`qualification_id`, `qualification_name`, `ctpr_number`, `training_cost`, `description`, `duration`, `status`) VALUES
+(1, 'Electrical Installation and Maintenance NC II', 'CTPR-0001-2024', 18000.00, 'Electrical Installation and Maintenance NC II equips learners with skills to install, maintain, and repair electrical wiring and equipment in residential and commercial buildings, following safety standards and the Philippine Electrical Code.', '120 hours', 'active'),
+(3, 'Electronic Products Assembly and Servicing (EPAS) NC II', '523526253', 20000.00, 'This qualification covers the knowledge, skills, and attitudes required to assemble, install, service, and repair electronic products and systems such as consumer electronics, audio-video equipment, and related devices. It includes workplace safety, use of tools and test instruments, interpretation of technical diagrams, and compliance with industry standards.', '240 Hours', 'active'),
+(4, 'Cookery NC II', '980-3213-3213', 12000.00, '', '120', 'active'),
+(6, 'Shielded Metal Arc Welding (SMAW) NC II', 'CTPR-SMAW-2026-00123', 260.00, 'This course equips trainees with the knowledge, skills, and proper work attitude required in performing basic welding works using Shielded Metal Arc Welding (SMAW). It includes competencies in preparing materials, setting up welding equipment, performing fillet and groove welds in different positions, and applying safety procedures in the workplace.', '260 Hours', 'active'),
+(12, 'Driving 101', '4903248', 12000.00, 'Driving', '120', 'active');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_quiz_options`
+--
+
+CREATE TABLE `tbl_quiz_options` (
+  `option_id` int(11) NOT NULL,
+  `question_id` int(11) NOT NULL,
+  `option_text` text NOT NULL,
+  `is_correct` tinyint(1) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_quiz_options`
+--
+
+INSERT INTO `tbl_quiz_options` (`option_id`, `question_id`, `option_text`, `is_correct`) VALUES
+(704, 237, 'True', 1),
+(705, 237, 'False', 0),
+(712, 241, 'True', 1),
+(713, 241, 'False', 0),
+(722, 246, 'True', 0),
+(723, 246, 'False', 0),
+(724, 247, 'True', 0),
+(725, 247, 'False', 0);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_quiz_questions`
+--
+
+CREATE TABLE `tbl_quiz_questions` (
+  `question_id` int(11) NOT NULL,
+  `test_id` int(11) NOT NULL,
+  `question_text` text NOT NULL,
+  `question_type` enum('multiple_choice','true_false') DEFAULT 'multiple_choice'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_quiz_questions`
+--
+
+INSERT INTO `tbl_quiz_questions` (`question_id`, `test_id`, `question_text`, `question_type`) VALUES
+(237, 4, 'ARe you okay?', 'multiple_choice'),
+(241, 5, 'IM gwapo', 'multiple_choice'),
+(246, 7, 'Pangit si bins', 'true_false'),
+(247, 8, '', 'true_false');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_role`
+--
+
+CREATE TABLE `tbl_role` (
+  `role_id` int(11) NOT NULL,
+  `role_name` varchar(50) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_role`
+--
+
+INSERT INTO `tbl_role` (`role_id`, `role_name`) VALUES
+(1, 'admin'),
+(2, 'trainer'),
+(3, 'trainee'),
+(4, 'registrar');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_roles`
+--
+
+CREATE TABLE `tbl_roles` (
+  `role_id` int(11) NOT NULL,
+  `role_name` varchar(100) NOT NULL,
+  `description` text DEFAULT NULL,
+  `is_custom` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_role_permissions`
+--
+
+CREATE TABLE `tbl_role_permissions` (
+  `role_id` int(11) NOT NULL,
+  `permission_id` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_schedule`
+--
+
+CREATE TABLE `tbl_schedule` (
+  `schedule_id` int(11) NOT NULL,
+  `batch_id` int(11) NOT NULL,
+  `schedule` varchar(255) DEFAULT NULL,
+  `room` varchar(100) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_schedule`
+--
+
+INSERT INTO `tbl_schedule` (`schedule_id`, `batch_id`, `schedule`, `room`, `created_at`, `updated_at`) VALUES
+(1, 3, 'Night Shift (6:00 PM - 10:00 PM)', 'Main Room', '2026-01-29 07:01:23', '2026-01-29 07:01:49'),
+(2, 2, 'Day Shift (8:00 AM - 5:00 PM)', 'Main Room', '2026-01-29 07:01:40', '2026-01-29 07:01:40'),
+(5, 4, 'Day Shift (8:00 AM - 5:00 PM)', 'Main Room', '2026-02-15 10:16:45', '2026-02-17 08:11:28'),
+(7, 5, 'Night Shift (6:00 PM - 10:00 PM)', 'Main Room', '2026-02-16 08:05:24', '2026-02-16 15:06:40');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_scholarship`
+--
+
+CREATE TABLE `tbl_scholarship` (
+  `scholarship_id` int(11) NOT NULL,
+  `trainee_id` int(11) DEFAULT NULL,
+  `scholarship_name` varchar(150) DEFAULT NULL,
+  `scholarship_type_id` int(11) DEFAULT NULL,
+  `amount` decimal(10,2) DEFAULT NULL,
+  `sponsor` varchar(150) DEFAULT NULL,
+  `date_granted` date DEFAULT curdate()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_scholarship`
+--
+
+INSERT INTO `tbl_scholarship` (`scholarship_id`, `trainee_id`, `scholarship_name`, `scholarship_type_id`, `amount`, `sponsor`, `date_granted`) VALUES
+(6, 5, 'STEP', 3, NULL, NULL, '2026-01-27'),
+(8, 7, 'TWSP', 1, NULL, NULL, '2026-01-29'),
+(9, 8, 'STEP', NULL, NULL, NULL, '2026-02-05'),
+(11, 10, 'TTSP', NULL, NULL, NULL, '2026-02-16'),
+(12, 11, 'TTSP', NULL, NULL, NULL, '2026-02-16'),
+(13, 12, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(14, 13, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(15, 14, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(16, 15, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(17, 16, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(18, 17, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(19, 18, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(20, 19, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(21, 20, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(22, 21, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(23, 22, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(24, 23, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(25, 24, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(26, 25, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(27, 26, 'TTSP', NULL, NULL, NULL, '2026-02-17'),
+(28, 28, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(29, 29, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(30, 30, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(31, 31, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(32, 32, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(33, 33, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(34, 34, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(35, 35, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(36, 36, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(37, 37, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(38, 38, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(39, 39, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(40, 40, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(41, 41, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(42, 42, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(43, 43, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(44, 44, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(45, 45, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(46, 46, 'TTSP', 2, NULL, NULL, '2026-02-17'),
+(47, 47, 'TTSP', 2, NULL, NULL, '2026-02-17');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_scholarship_type`
+--
+
+CREATE TABLE `tbl_scholarship_type` (
+  `scholarship_type_id` int(11) NOT NULL,
+  `scholarship_name` varchar(50) NOT NULL,
+  `scholarship_provider` varchar(100) NOT NULL,
+  `description` text DEFAULT NULL,
+  `status` enum('active','inactive') NOT NULL DEFAULT 'active',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_scholarship_type`
+--
+
+INSERT INTO `tbl_scholarship_type` (`scholarship_type_id`, `scholarship_name`, `scholarship_provider`, `description`, `status`, `created_at`) VALUES
+(1, 'TWSP', 'TESDA', 'Training for Work Scholarship Program', 'inactive', '2026-01-11 03:40:12'),
+(2, 'TTSP', 'TESDA', 'Tulong Trabaho Scholarship Program', 'active', '2026-01-11 03:40:12'),
+(3, 'STEP', 'TESDA', 'Special Training for Employment Program', 'inactive', '2026-01-11 03:40:12'),
+(4, 'PESFA', 'TESDA', 'Private Education Student Financial Assistance', 'inactive', '2026-01-11 03:40:12');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_score_type`
+--
+
+CREATE TABLE `tbl_score_type` (
+  `score_type_id` int(11) NOT NULL,
+  `score_type_name` varchar(100) DEFAULT NULL,
+  `description` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_system_settings`
+--
+
+CREATE TABLE `tbl_system_settings` (
+  `setting_id` int(11) NOT NULL,
+  `setting_key` varchar(50) NOT NULL,
+  `setting_value` text DEFAULT NULL,
+  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_system_settings`
+--
+
+INSERT INTO `tbl_system_settings` (`setting_id`, `setting_key`, `setting_value`, `updated_at`) VALUES
+(1, 'default_batch_size', '20', '2026-02-04 22:11:46'),
+(2, 'session_timeout', '60', '2026-02-04 22:11:46'),
+(3, 'email_notifications', '1', '2026-02-04 22:11:46');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_task_sheets`
+--
+
+CREATE TABLE `tbl_task_sheets` (
+  `task_sheet_id` int(11) NOT NULL,
+  `lesson_id` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `content` longtext DEFAULT NULL,
+  `display_order` int(11) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_task_sheets`
+--
+
+INSERT INTO `tbl_task_sheets` (`task_sheet_id`, `lesson_id`, `title`, `content`, `display_order`) VALUES
+(3, 2, 'Task Sheet 2.1-2', '<div class=\"custom-field-block mb-3 p-3 border rounded bg-white\">\n        <div class=\"d-flex justify-content-between align-items-center mb-2\">\n            <strong contenteditable=\"true\" class=\"field-label\" style=\"cursor: text; border: 1px dashed #dee2e6; padding: 0 5px;\">Table Title</strong>\n            <div>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableRow(\'table_1770327000323\')\" title=\"Add Row\"><i class=\"fas fa-plus\"></i> Row</button>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableCol(\'table_1770327000323\')\" title=\"Add Column\"><i class=\"fas fa-plus\"></i> Col</button>\n                <button class=\"btn btn-sm btn-outline-info\" onclick=\"addTableCheckboxCol(\'table_1770327000323\')\" title=\"Add Checkbox Column\"><i class=\"fas fa-check-square\"></i> Checkbox</button>\n                <button class=\"btn btn-sm btn-outline-danger\" onclick=\"this.closest(\'.custom-field-block\').remove()\" title=\"Delete Table\"><i class=\"fas fa-trash\"></i></button>\n            </div>\n        </div>\n        <div class=\"table-responsive\">\n            <table class=\"table table-bordered mb-0\" id=\"table_1770327000323\" style=\"background-color: white;\">\n                <thead>\n                    <tr>\n                        <th><span contenteditable=\"true\">Header 1</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th><span contenteditable=\"true\">Header 2</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th style=\"text-align: center; width: 50px;\"><span contenteditable=\"true\">Check</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th><th style=\"text-align: center; width: 50px;\"><span contenteditable=\"true\">Check</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th><th class=\"table-actions-header\" style=\"width: 1%;\" contenteditable=\"false\">Actions</th>\n                    </tr>\n                </thead>\n                <tbody>\n                    <tr>\n                        <td contenteditable=\"true\"></td>\n                        <td contenteditable=\"true\"></td>\n                        <td contenteditable=\"false\" style=\"text-align: center;\"><input type=\"checkbox\" class=\"form-check-input\" style=\"cursor: pointer;\"></td><td contenteditable=\"false\" style=\"text-align: center;\"><input type=\"checkbox\" class=\"form-check-input\" style=\"cursor: pointer;\"></td><td class=\"text-center\" contenteditable=\"false\"><button class=\"btn btn-sm btn-outline-danger\" onclick=\"deleteTableRow(this)\" title=\"Delete Row\"><i class=\"fas fa-trash-alt\"></i></button></td>\n                    </tr>\n                </tbody>\n            </table>\n        </div>\n    </div>', 0),
+(4, 2, 'Task Sheet 2.1-3', '<div class=\"custom-field-block mb-3 p-3 border rounded bg-white\">\n        <div class=\"d-flex justify-content-between align-items-center mb-2\">\n            <strong contenteditable=\"true\" class=\"field-label\" style=\"cursor: text; border: 1px dashed #dee2e6; padding: 0 5px;\">Table Title</strong>\n            <div>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableRow(\'table_1770327026190\')\" title=\"Add Row\"><i class=\"fas fa-plus\"></i> Row</button>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableCol(\'table_1770327026190\')\" title=\"Add Column\"><i class=\"fas fa-plus\"></i> Col</button>\n                <button class=\"btn btn-sm btn-outline-info\" onclick=\"addTableCheckboxCol(\'table_1770327026190\')\" title=\"Add Checkbox Column\"><i class=\"fas fa-check-square\"></i> Checkbox</button>\n                <button class=\"btn btn-sm btn-outline-danger\" onclick=\"this.closest(\'.custom-field-block\').remove()\" title=\"Delete Table\"><i class=\"fas fa-trash\"></i></button>\n            </div>\n        </div>\n        <div class=\"table-responsive\">\n            <table class=\"table table-bordered mb-0\" id=\"table_1770327026190\" style=\"background-color: white;\">\n                <thead>\n                    <tr>\n                        <th><span contenteditable=\"true\">Header 1</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th><span contenteditable=\"true\">Header 2</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th style=\"text-align: center; width: 50px;\"><span contenteditable=\"true\">Check</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th><th style=\"text-align: center; width: 50px;\"><span contenteditable=\"true\">Check</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th><th class=\"table-actions-header\" style=\"width: 1%;\" contenteditable=\"false\">Actions</th>\n                    </tr>\n                </thead>\n                <tbody>\n                    <tr>\n                        <td contenteditable=\"true\"></td>\n                        <td contenteditable=\"true\"></td>\n                        <td contenteditable=\"false\" style=\"text-align: center;\"><input type=\"checkbox\" class=\"form-check-input\" style=\"cursor: pointer;\"></td><td contenteditable=\"false\" style=\"text-align: center;\"><input type=\"checkbox\" class=\"form-check-input\" style=\"cursor: pointer;\"></td><td class=\"text-center\" contenteditable=\"false\"><button class=\"btn btn-sm btn-outline-danger\" onclick=\"deleteTableRow(this)\" title=\"Delete Row\"><i class=\"fas fa-trash-alt\"></i></button></td>\n                    </tr>\n                </tbody>\n            </table>\n        </div>\n    </div>', 0),
+(5, 11, 'Task sheet 2.1', '<div class=\"custom-field-block mb-3 p-3 border rounded bg-white\">\n        <div class=\"d-flex justify-content-between align-items-center mb-2\">\n            <strong contenteditable=\"true\" class=\"field-label\" style=\"cursor: text; border: 1px dashed #dee2e6; padding: 0 5px;\">Table Title</strong>\n            <div>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableRow(\'table_1770957547056\')\" title=\"Add Row\"><i class=\"fas fa-plus\"></i> Row</button>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableCol(\'table_1770957547056\')\" title=\"Add Column\"><i class=\"fas fa-plus\"></i> Col</button>\n                <button class=\"btn btn-sm btn-outline-info\" onclick=\"addTableCheckboxCol(\'table_1770957547056\')\" title=\"Add Checkbox Column\"><i class=\"fas fa-check-square\"></i> Checkbox</button>\n                <button class=\"btn btn-sm btn-outline-danger\" onclick=\"this.closest(\'.custom-field-block\').remove()\" title=\"Delete Table\"><i class=\"fas fa-trash\"></i></button>\n            </div>\n        </div>\n        <div class=\"table-responsive\">\n            <table class=\"table table-bordered mb-0\" id=\"table_1770957547056\" style=\"background-color: white;\">\n                <thead>\n                    <tr>\n                        <th><span contenteditable=\"true\">Header 1</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th><span contenteditable=\"true\">Header 2</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th class=\"table-actions-header\" style=\"width: 1%;\" contenteditable=\"false\">Actions</th>\n                    </tr>\n                </thead>\n                <tbody>\n                    <tr>\n                        <td contenteditable=\"true\"></td>\n                        <td contenteditable=\"true\"></td>\n                        <td class=\"text-center\" contenteditable=\"false\"><button class=\"btn btn-sm btn-outline-danger\" onclick=\"deleteTableRow(this)\" title=\"Delete Row\"><i class=\"fas fa-trash-alt\"></i></button></td>\n                    </tr>\n                </tbody>\n            </table>\n        </div>\n    </div>', 0);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_task_sheet_submissions`
+--
+
+CREATE TABLE `tbl_task_sheet_submissions` (
+  `submission_id` int(11) NOT NULL,
+  `lesson_id` int(11) NOT NULL,
+  `task_sheet_id` int(11) NOT NULL,
+  `trainee_id` int(11) NOT NULL,
+  `submitted_content` longtext DEFAULT NULL,
+  `submission_date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `grade` decimal(5,2) DEFAULT NULL,
+  `remarks` text DEFAULT NULL,
+  `graded_by` int(11) DEFAULT NULL,
+  `grade_date` timestamp NULL DEFAULT NULL,
+  `status` enum('submitted','recorded') NOT NULL DEFAULT 'submitted'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_task_sheet_submissions`
+--
+
+INSERT INTO `tbl_task_sheet_submissions` (`submission_id`, `lesson_id`, `task_sheet_id`, `trainee_id`, `submitted_content`, `submission_date`, `grade`, `remarks`, `graded_by`, `grade_date`, `status`) VALUES
+(13, 2, 4, 8, '<div class=\"custom-field-block mb-3 p-3 border rounded bg-white\">\n        <div class=\"d-flex justify-content-between align-items-center mb-2\">\n            <strong contenteditable=\"true\" class=\"field-label\" style=\"cursor: text; border: 1px dashed #dee2e6; padding: 0 5px;\">Table Title</strong>\n            <div>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableRow(\'table_1770327026190\')\" title=\"Add Row\"><i class=\"fas fa-plus\"></i> Row</button>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableCol(\'table_1770327026190\')\" title=\"Add Column\"><i class=\"fas fa-plus\"></i> Col</button>\n                <button class=\"btn btn-sm btn-outline-info\" onclick=\"addTableCheckboxCol(\'table_1770327026190\')\" title=\"Add Checkbox Column\"><i class=\"fas fa-check-square\"></i> Checkbox</button>\n                <button class=\"btn btn-sm btn-outline-danger\" onclick=\"this.closest(\'.custom-field-block\').remove()\" title=\"Delete Table\"><i class=\"fas fa-trash\"></i></button>\n            </div>\n        </div>\n        <div class=\"table-responsive\">\n            <table class=\"table table-bordered mb-0\" id=\"table_1770327026190\" style=\"background-color: white;\">\n                <thead>\n                    <tr>\n                        <th><span contenteditable=\"true\">Header 1</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th><span contenteditable=\"true\">Header 2</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th style=\"text-align: center; width: 50px;\"><span contenteditable=\"true\">Check</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th><th style=\"text-align: center; width: 50px;\"><span contenteditable=\"true\">Check</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th><th class=\"table-actions-header\" style=\"width: 1%;\" contenteditable=\"false\">Actions</th>\n                    </tr>\n                </thead>\n                <tbody>\n                    <tr>\n                        <td contenteditable=\"true\"></td>\n                        <td contenteditable=\"true\"></td>\n                        <td contenteditable=\"false\" style=\"text-align: center;\"><input type=\"checkbox\" class=\"form-check-input\" style=\"cursor: pointer;\" checked=\"checked\"></td><td contenteditable=\"false\" style=\"text-align: center;\"><input type=\"checkbox\" class=\"form-check-input\" style=\"cursor: pointer;\"></td><td class=\"text-center\" contenteditable=\"false\"><button class=\"btn btn-sm btn-outline-danger\" onclick=\"deleteTableRow(this)\" title=\"Delete Row\"><i class=\"fas fa-trash-alt\"></i></button></td>\n                    </tr>\n                </tbody>\n            </table>\n        </div>\n    </div>', '2026-02-05 22:38:47', NULL, NULL, NULL, NULL, 'submitted'),
+(15, 2, 4, 5, '<div class=\"custom-field-block mb-3 p-3 border rounded bg-white\">\n        <div class=\"d-flex justify-content-between align-items-center mb-2\">\n            <strong contenteditable=\"true\" class=\"field-label\" style=\"cursor: text; border: 1px dashed #dee2e6; padding: 0 5px;\">Table Title</strong>\n            <div>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableRow(\'table_1770327026190\')\" title=\"Add Row\"><i class=\"fas fa-plus\"></i> Row</button>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableCol(\'table_1770327026190\')\" title=\"Add Column\"><i class=\"fas fa-plus\"></i> Col</button>\n                <button class=\"btn btn-sm btn-outline-info\" onclick=\"addTableCheckboxCol(\'table_1770327026190\')\" title=\"Add Checkbox Column\"><i class=\"fas fa-check-square\"></i> Checkbox</button>\n                <button class=\"btn btn-sm btn-outline-danger\" onclick=\"this.closest(\'.custom-field-block\').remove()\" title=\"Delete Table\"><i class=\"fas fa-trash\"></i></button>\n            </div>\n        </div>\n        <div class=\"table-responsive\">\n            <table class=\"table table-bordered mb-0\" id=\"table_1770327026190\" style=\"background-color: white;\">\n                <thead>\n                    <tr>\n                        <th><span contenteditable=\"true\">Header 1</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th><span contenteditable=\"true\">Header 2</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th style=\"text-align: center; width: 50px;\"><span contenteditable=\"true\">Check</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th><th style=\"text-align: center; width: 50px;\"><span contenteditable=\"true\">Check</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th><th class=\"table-actions-header\" style=\"width: 1%;\" contenteditable=\"false\">Actions</th>\n                    </tr>\n                </thead>\n                <tbody>\n                    <tr>\n                        <td contenteditable=\"true\"></td>\n                        <td contenteditable=\"true\"></td>\n                        <td contenteditable=\"false\" style=\"text-align: center;\"><input type=\"checkbox\" class=\"form-check-input\" style=\"cursor: pointer;\"></td><td contenteditable=\"false\" style=\"text-align: center;\"><input type=\"checkbox\" class=\"form-check-input\" style=\"cursor: pointer;\"></td><td class=\"text-center\" contenteditable=\"false\"><button class=\"btn btn-sm btn-outline-danger\" onclick=\"deleteTableRow(this)\" title=\"Delete Row\"><i class=\"fas fa-trash-alt\"></i></button></td>\n                    </tr>\n                </tbody>\n            </table>\n        </div>\n    </div>', '2026-02-06 00:35:26', NULL, NULL, NULL, NULL, 'submitted'),
+(28, 11, 5, 8, '<div class=\"custom-field-block mb-3 p-3 border rounded bg-white\">\n        <div class=\"d-flex justify-content-between align-items-center mb-2\">\n            <strong contenteditable=\"true\" class=\"field-label\" style=\"cursor: text; border: 1px dashed #dee2e6; padding: 0 5px;\">Table Title</strong>\n            <div>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableRow(\'table_1770957547056\')\" title=\"Add Row\"><i class=\"fas fa-plus\"></i> Row</button>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableCol(\'table_1770957547056\')\" title=\"Add Column\"><i class=\"fas fa-plus\"></i> Col</button>\n                <button class=\"btn btn-sm btn-outline-info\" onclick=\"addTableCheckboxCol(\'table_1770957547056\')\" title=\"Add Checkbox Column\"><i class=\"fas fa-check-square\"></i> Checkbox</button>\n                <button class=\"btn btn-sm btn-outline-danger\" onclick=\"this.closest(\'.custom-field-block\').remove()\" title=\"Delete Table\"><i class=\"fas fa-trash\"></i></button>\n            </div>\n        </div>\n        <div class=\"table-responsive\">\n            <table class=\"table table-bordered mb-0\" id=\"table_1770957547056\" style=\"background-color: white;\">\n                <thead>\n                    <tr>\n                        <th><span contenteditable=\"true\">Header 1</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th><span contenteditable=\"true\">Header 2</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th class=\"table-actions-header\" style=\"width: 1%;\" contenteditable=\"false\">Actions</th>\n                    </tr>\n                </thead>\n                <tbody>\n                    <tr>\n                        <td contenteditable=\"true\"></td>\n                        <td contenteditable=\"true\"></td>\n                        <td class=\"text-center\" contenteditable=\"false\"><button class=\"btn btn-sm btn-outline-danger\" onclick=\"deleteTableRow(this)\" title=\"Delete Row\"><i class=\"fas fa-trash-alt\"></i></button></td>\n                    </tr>\n                </tbody>\n            </table>\n        </div>\n    </div>', '2026-02-17 06:47:46', NULL, NULL, NULL, NULL, 'submitted'),
+(29, 2, 3, 8, '<div class=\"custom-field-block mb-3 p-3 border rounded bg-white\">\n        <div class=\"d-flex justify-content-between align-items-center mb-2\">\n            <strong contenteditable=\"true\" class=\"field-label\" style=\"cursor: text; border: 1px dashed #dee2e6; padding: 0 5px;\">Table Title</strong>\n            <div>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableRow(\'table_1770327000323\')\" title=\"Add Row\"><i class=\"fas fa-plus\"></i> Row</button>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableCol(\'table_1770327000323\')\" title=\"Add Column\"><i class=\"fas fa-plus\"></i> Col</button>\n                <button class=\"btn btn-sm btn-outline-info\" onclick=\"addTableCheckboxCol(\'table_1770327000323\')\" title=\"Add Checkbox Column\"><i class=\"fas fa-check-square\"></i> Checkbox</button>\n                <button class=\"btn btn-sm btn-outline-danger\" onclick=\"this.closest(\'.custom-field-block\').remove()\" title=\"Delete Table\"><i class=\"fas fa-trash\"></i></button>\n            </div>\n        </div>\n        <div class=\"table-responsive\">\n            <table class=\"table table-bordered mb-0\" id=\"table_1770327000323\" style=\"background-color: white;\">\n                <thead>\n                    <tr>\n                        <th><span contenteditable=\"true\">Header 1</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th><span contenteditable=\"true\">Header 2</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th style=\"text-align: center; width: 50px;\"><span contenteditable=\"true\">Check</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th><th style=\"text-align: center; width: 50px;\"><span contenteditable=\"true\">Check</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th><th class=\"table-actions-header\" style=\"width: 1%;\" contenteditable=\"false\">Actions</th>\n                    </tr>\n                </thead>\n                <tbody>\n                    <tr>\n                        <td contenteditable=\"true\"></td>\n                        <td contenteditable=\"true\"></td>\n                        <td contenteditable=\"false\" style=\"text-align: center;\"><input type=\"checkbox\" class=\"form-check-input\" style=\"cursor: pointer;\"></td><td contenteditable=\"false\" style=\"text-align: center;\"><input type=\"checkbox\" class=\"form-check-input\" style=\"cursor: pointer;\"></td><td class=\"text-center\" contenteditable=\"false\"><button class=\"btn btn-sm btn-outline-danger\" onclick=\"deleteTableRow(this)\" title=\"Delete Row\"><i class=\"fas fa-trash-alt\"></i></button></td>\n                    </tr>\n                </tbody>\n            </table>\n        </div>\n    </div>', '2026-02-17 06:56:50', NULL, NULL, NULL, NULL, 'submitted'),
+(30, 2, 3, 5, '<div class=\"custom-field-block mb-3 p-3 border rounded bg-white\">\n        <div class=\"d-flex justify-content-between align-items-center mb-2\">\n            <strong contenteditable=\"true\" class=\"field-label\" style=\"cursor: text; border: 1px dashed #dee2e6; padding: 0 5px;\">Table Title</strong>\n            <div>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableRow(\'table_1770327000323\')\" title=\"Add Row\"><i class=\"fas fa-plus\"></i> Row</button>\n                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addTableCol(\'table_1770327000323\')\" title=\"Add Column\"><i class=\"fas fa-plus\"></i> Col</button>\n                <button class=\"btn btn-sm btn-outline-info\" onclick=\"addTableCheckboxCol(\'table_1770327000323\')\" title=\"Add Checkbox Column\"><i class=\"fas fa-check-square\"></i> Checkbox</button>\n                <button class=\"btn btn-sm btn-outline-danger\" onclick=\"this.closest(\'.custom-field-block\').remove()\" title=\"Delete Table\"><i class=\"fas fa-trash\"></i></button>\n            </div>\n        </div>\n        <div class=\"table-responsive\">\n            <table class=\"table table-bordered mb-0\" id=\"table_1770327000323\" style=\"background-color: white;\">\n                <thead>\n                    <tr>\n                        <th><span contenteditable=\"true\">Header 1</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th><span contenteditable=\"true\">Header 2</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th>\n                        <th style=\"text-align: center; width: 50px;\"><span contenteditable=\"true\">Check</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th><th style=\"text-align: center; width: 50px;\"><span contenteditable=\"true\">Check</span> <button contenteditable=\"false\" class=\"btn btn-xs btn-outline-danger p-0 px-1 ms-2\" onclick=\"deleteTableCol(this)\" title=\"Delete Column\">×</button></th><th class=\"table-actions-header\" style=\"width: 1%;\" contenteditable=\"false\">Actions</th>\n                    </tr>\n                </thead>\n                <tbody>\n                    <tr>\n                        <td contenteditable=\"true\"></td>\n                        <td contenteditable=\"true\"></td>\n                        <td contenteditable=\"false\" style=\"text-align: center;\"><input type=\"checkbox\" class=\"form-check-input\" style=\"cursor: pointer;\"></td><td contenteditable=\"false\" style=\"text-align: center;\"><input type=\"checkbox\" class=\"form-check-input\" style=\"cursor: pointer;\"></td><td class=\"text-center\" contenteditable=\"false\"><button class=\"btn btn-sm btn-outline-danger\" onclick=\"deleteTableRow(this)\" title=\"Delete Row\"><i class=\"fas fa-trash-alt\"></i></button></td>\n                    </tr>\n                </tbody>\n            </table>\n        </div>\n    </div>', '2026-02-17 08:17:16', NULL, NULL, NULL, NULL, 'submitted');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_test`
+--
+
+CREATE TABLE `tbl_test` (
+  `test_id` int(11) NOT NULL,
+  `lesson_id` int(11) DEFAULT NULL,
+  `activity_type_id` int(11) DEFAULT NULL,
+  `score_type_id` int(11) DEFAULT NULL,
+  `max_score` decimal(10,2) DEFAULT NULL,
+  `deadline` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_test`
+--
+
+INSERT INTO `tbl_test` (`test_id`, `lesson_id`, `activity_type_id`, `score_type_id`, `max_score`, `deadline`) VALUES
+(4, 2, 1, NULL, 100.00, '2026-02-07 00:00:00'),
+(5, 6, 1, NULL, NULL, '2026-02-06 14:26:00'),
+(7, 10, 1, NULL, NULL, '2026-02-09 23:00:00'),
+(8, 11, 1, NULL, NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_trainee_dtl`
+--
+
+CREATE TABLE `tbl_trainee_dtl` (
+  `trainee_dtl_id` int(11) NOT NULL,
+  `trainee_id` int(11) NOT NULL,
+  `civil_status` varchar(50) DEFAULT NULL,
+  `birthdate` date DEFAULT NULL,
+  `age` int(3) DEFAULT NULL,
+  `birthplace_city` varchar(100) DEFAULT NULL,
+  `birthplace_province` varchar(100) DEFAULT NULL,
+  `birthplace_region` varchar(100) DEFAULT NULL,
+  `nationality` varchar(50) DEFAULT 'Filipino',
+  `house_no_street` varchar(255) DEFAULT NULL,
+  `barangay` varchar(100) DEFAULT NULL,
+  `district` varchar(100) DEFAULT NULL,
+  `city_municipality` varchar(100) DEFAULT NULL,
+  `province` varchar(100) DEFAULT NULL,
+  `region` varchar(100) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_trainee_dtl`
+--
+
+INSERT INTO `tbl_trainee_dtl` (`trainee_dtl_id`, `trainee_id`, `civil_status`, `birthdate`, `age`, `birthplace_city`, `birthplace_province`, `birthplace_region`, `nationality`, `house_no_street`, `barangay`, `district`, `city_municipality`, `province`, `region`) VALUES
+(1, 5, 'Single', '2004-12-20', 21, 'Cagayan De Oro City', 'Missamis Oriental', '10', 'Filipino', 'Zone 6', 'Baikingon', '10', 'Cagayan De Oro City', 'Misamis Oriental', '10'),
+(3, 7, 'Single', '2005-01-10', 21, 'Cagayan De Oro City', 'Missamis Oriental', '10', 'Filipino', 'Biasong-Tinib', 'Macasandig', '2nd District', 'Cagayan De Oro City', 'Misamis Oriental', '10'),
+(4, 8, 'Single', '2003-09-22', 22, 'Cagayan De Oro City', 'Missamis Oriental', '10', 'Filipino', 'Zone 4', 'Canitoan', '2', 'Cagayan De Oro City', 'Misamis Oriental', '10'),
+(6, 10, 'Single', '2000-12-16', 25, 'Bagkog', 'Manila', '10', 'Filipino', 'Zone 5 ', 'Tawil', '45', 'Dorek', 'Lorcan', '68'),
+(7, 11, 'Single', '2000-11-16', 25, 'Kwary', 'Bukidnon', '19', 'Filipino', 'Zone 4', 'Tibasak', '10', 'Kwary', 'Bukidnon', '19'),
+(8, 12, 'Single', '1996-08-17', 29, 'Davao City', 'Davao del Sur', 'Region XI', 'Filipino', '907 Street', 'Barangay Mabini', '1st District', 'Davao City', 'Davao del Sur', 'Region XI'),
+(9, 13, 'Married', '1992-05-09', 33, 'Mandaue City', 'Cebu', 'Region VII', 'Filipino', '874 Road', 'Barangay Lahug', '2nd District', 'Cebu City', 'Cebu', 'Region VII'),
+(10, 14, 'Widowed', '1997-02-12', 29, 'Davao City', 'Davao del Sur', 'Region XI', 'Filipino', '225 Drive', 'Barangay Talomo', '3rd District', 'Davao City', 'Davao del Sur', 'Region XI'),
+(11, 15, 'Single', '1987-08-13', 38, 'Mandaluyong City', 'Metro Manila', 'NCR', 'Filipino', '493 Block', 'Barangay Kapitolyo', '2nd District', 'Pasig City', 'Metro Manila', 'NCR'),
+(12, 16, 'Widowed', '2001-09-04', 24, 'Pasig City', 'Metro Manila', 'NCR', 'Filipino', '713 Street', 'Barangay Maligaya', '2nd District', 'Pasig City', 'Metro Manila', 'NCR'),
+(13, 17, 'Separated', '1988-06-18', 37, 'Cebu City', 'Cebu', 'Region VII', 'Filipino', '120 Road', 'Barangay Guadalupe', '3rd District', 'Cebu City', 'Cebu', 'Region VII'),
+(14, 18, 'Separated', '1998-09-24', 27, 'Mandaluyong City', 'Metro Manila', 'NCR', 'Filipino', '398 Drive', 'Barangay Kapitolyo', '2nd District', 'Pasig City', 'Metro Manila', 'NCR'),
+(15, 19, 'Separated', '1996-09-13', 29, 'Pasig City', 'Metro Manila', 'NCR', 'Filipino', '722 Block', 'Barangay Ugong', '1st District', 'Pasig City', 'Metro Manila', 'NCR'),
+(16, 20, 'Separated', '1992-10-15', 33, 'Davao City', 'Davao del Sur', 'Region XI', 'Filipino', '92 Avenue', 'Barangay Buhangin', '2nd District', 'Davao City', 'Davao del Sur', 'Region XI'),
+(17, 21, 'Married', '2005-09-25', 20, 'Davao City', 'Davao del Sur', 'Region XI', 'Filipino', '355 Street', 'Barangay Talomo', '3rd District', 'Davao City', 'Davao del Sur', 'Region XI'),
+(18, 22, 'Separated', '1989-11-20', 36, 'Quezon City', 'Metro Manila', 'NCR', 'Filipino', '697 Road', 'Barangay San Isidro', '1st District', 'Quezon City', 'Metro Manila', 'NCR'),
+(19, 23, 'Separated', '1992-12-11', 33, 'Quezon City', 'Metro Manila', 'NCR', 'Filipino', '399 Drive', 'Barangay Commonwealth', '3rd District', 'Quezon City', 'Metro Manila', 'NCR'),
+(20, 24, 'Single', '1985-01-06', 41, 'Davao City', 'Davao del Sur', 'Region XI', 'Filipino', '867 Street', 'Barangay Talomo', '3rd District', 'Davao City', 'Davao del Sur', 'Region XI'),
+(21, 25, 'Single', '1988-11-24', 37, 'Caloocan City', 'Metro Manila', 'NCR', 'Filipino', '672 Avenue', 'Barangay San Roque', '1st District', 'Caloocan City', 'Metro Manila', 'NCR'),
+(22, 26, 'Single', '1997-11-02', 28, 'Don Carlos', 'Bukidnon', '12', 'Filipino', 'Zone 5 ', 'Tibasak', '45', 'Don Carlos', 'Bukidnon', '12'),
+(24, 28, 'Separated', '2001-03-28', 24, 'Cebu City', 'Cebu', 'Region VII', 'Filipino', '761 Avenue', 'Barangay Poblacion', '1st District', 'Cebu City', 'Cebu', 'Region VII'),
+(25, 29, 'Separated', '1987-06-03', 38, 'Pasig City', 'Metro Manila', 'NCR', 'Filipino', '465 Avenue', 'Barangay Maligaya', '2nd District', 'Pasig City', 'Metro Manila', 'NCR'),
+(26, 30, 'Widowed', '2002-08-05', 23, 'Mandaluyong City', 'Metro Manila', 'NCR', 'Filipino', '813 Block', 'Barangay Kapitolyo', '2nd District', 'Pasig City', 'Metro Manila', 'NCR'),
+(27, 31, 'Widowed', '1986-05-05', 39, 'Davao City', 'Davao del Sur', 'Region XI', 'Filipino', '992 Avenue', 'Barangay Mabini', '1st District', 'Davao City', 'Davao del Sur', 'Region XI'),
+(28, 32, 'Separated', '1986-07-06', 39, 'Caloocan City', 'Metro Manila', 'NCR', 'Filipino', '105 Block', 'Barangay San Roque', '1st District', 'Caloocan City', 'Metro Manila', 'NCR'),
+(29, 33, 'Widowed', '1996-01-24', 30, 'Mandaluyong City', 'Metro Manila', 'NCR', 'Filipino', '63 Block', 'Barangay Kapitolyo', '2nd District', 'Pasig City', 'Metro Manila', 'NCR'),
+(30, 34, 'Single', '2003-08-28', 22, 'Davao City', 'Davao del Sur', 'Region XI', 'Filipino', '689 Road', 'Barangay Buhangin', '2nd District', 'Davao City', 'Davao del Sur', 'Region XI'),
+(31, 35, 'Married', '2005-04-09', 20, 'Mandaue City', 'Cebu', 'Region VII', 'Filipino', '848 Block', 'Barangay Lahug', '2nd District', 'Cebu City', 'Cebu', 'Region VII'),
+(32, 36, 'Separated', '1990-05-28', 35, 'Manila', 'Metro Manila', 'NCR', 'Filipino', '847 Block', 'Barangay Bagong Silang', '2nd District', 'Caloocan City', 'Metro Manila', 'NCR'),
+(33, 37, 'Single', '2005-11-23', 20, 'Davao City', 'Davao del Sur', 'Region XI', 'Filipino', '629 Drive', 'Barangay Buhangin', '2nd District', 'Davao City', 'Davao del Sur', 'Region XI'),
+(34, 38, 'Separated', '1994-01-20', 32, 'Quezon City', 'Metro Manila', 'NCR', 'Filipino', '945 Road', 'Barangay San Isidro', '1st District', 'Quezon City', 'Metro Manila', 'NCR'),
+(35, 39, 'Single', '1998-12-16', 27, 'Caloocan City', 'Metro Manila', 'NCR', 'Filipino', '541 Street', 'Barangay San Roque', '1st District', 'Caloocan City', 'Metro Manila', 'NCR'),
+(36, 40, 'Single', '1986-08-30', 39, 'Davao City', 'Davao del Sur', 'Region XI', 'Filipino', '500 Block', 'Barangay Mabini', '1st District', 'Davao City', 'Davao del Sur', 'Region XI'),
+(37, 41, 'Separated', '1988-06-18', 37, 'Caloocan City', 'Metro Manila', 'NCR', 'Filipino', '943 Street', 'Barangay San Roque', '1st District', 'Caloocan City', 'Metro Manila', 'NCR'),
+(38, 42, 'Separated', '2002-09-12', 23, 'Cebu City', 'Cebu', 'Region VII', 'Filipino', '531 Road', 'Barangay Poblacion', '1st District', 'Cebu City', 'Cebu', 'Region VII'),
+(39, 43, 'Single', '1992-02-03', 34, 'Pasig City', 'Metro Manila', 'NCR', 'Filipino', '752 Road', 'Barangay Maligaya', '2nd District', 'Pasig City', 'Metro Manila', 'NCR'),
+(40, 44, 'Separated', '1988-06-03', 37, 'Cebu City', 'Cebu', 'Region VII', 'Filipino', '338 Road', 'Barangay Poblacion', '1st District', 'Cebu City', 'Cebu', 'Region VII'),
+(41, 45, 'Widowed', '1992-07-05', 33, 'Caloocan City', 'Metro Manila', 'NCR', 'Filipino', '55 Avenue', 'Barangay San Roque', '1st District', 'Caloocan City', 'Metro Manila', 'NCR'),
+(42, 46, 'Single', '1986-08-24', 39, 'Caloocan City', 'Metro Manila', 'NCR', 'Filipino', '80 Block', 'Barangay Camarin', '1st District', 'Caloocan City', 'Metro Manila', 'NCR'),
+(43, 47, 'Widowed', '1996-10-25', 29, 'Quezon City', 'Metro Manila', 'NCR', 'Filipino', '918 Avenue', 'Barangay Commonwealth', '3rd District', 'Quezon City', 'Metro Manila', 'NCR'),
+(44, 48, 'Married', '2026-02-20', 0, 'Cagayan De Oro', 'Misamis Oriental', '10', 'Filipino', 'Zone 5 ', 'Tibasak', '45', 'Cagayan De Oro City', 'Mis Or', '10'),
+(45, 49, 'Married', '2026-02-20', 0, 'Don Carlos', 'Bukidnon', '19', 'Filipino', 'Zone 5 ', 'Tibasak', '10', 'Don Carlos', 'Bukidnon', '19'),
+(46, 50, 'Single', '2004-12-14', 21, 'CAGAYAN DE ORO CITY', 'MISAMIS ORIENTAL', 'REGION X', 'Filipino', 'Zone 5 ', 'BAIKINGON', '10', 'CAGAYAN DE ORO CITY', 'MISAMIS ORIENTAL', 'REGION X');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_trainee_ftr`
+--
+
+CREATE TABLE `tbl_trainee_ftr` (
+  `trainee_ftr_id` int(11) NOT NULL,
+  `trainee_id` int(11) NOT NULL,
+  `educational_attainment` varchar(100) DEFAULT NULL,
+  `employment_status` varchar(50) DEFAULT NULL,
+  `employment_type` varchar(50) DEFAULT NULL,
+  `learner_classification` text DEFAULT NULL,
+  `is_pwd` tinyint(1) DEFAULT 0,
+  `disability_type` varchar(100) DEFAULT NULL,
+  `disability_cause` varchar(100) DEFAULT NULL,
+  `privacy_consent` tinyint(1) DEFAULT 0,
+  `digital_signature` varchar(150) DEFAULT NULL,
+  `date_submitted` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_trainee_ftr`
+--
+
+INSERT INTO `tbl_trainee_ftr` (`trainee_ftr_id`, `trainee_id`, `educational_attainment`, `employment_status`, `employment_type`, `learner_classification`, `is_pwd`, `disability_type`, `disability_cause`, `privacy_consent`, `digital_signature`, `date_submitted`) VALUES
+(1, 5, 'Senior High (K-12)', 'Unemployed', NULL, 'Student', 0, '', '', 1, 'Christian Dave Boncales', NULL),
+(3, 7, 'Senior High (K-12)', 'Unemployed', NULL, 'Student', 0, '', '', 1, 'Lore Lindell Tamayo', NULL),
+(4, 8, 'Senior High (K-12)', 'Unemployed', NULL, 'Student', 0, '', '', 1, 'sig_1770298422.png', NULL),
+(6, 10, 'No Grade Completed', 'Unemployed', NULL, 'Student', 0, '', '', 1, 'sig_1771252735.png', NULL),
+(7, 11, 'Senior High (K-12)', 'Unemployed', NULL, 'Student', 0, '', '', 1, 'sig_1771253584.png', NULL),
+(8, 12, 'Elementary Graduate', 'Wage-Employed', 'Contractual', 'Worker', 0, NULL, NULL, 1, NULL, NULL),
+(9, 13, 'College Graduate', 'Self-Employed', NULL, 'Student', 0, NULL, NULL, 1, NULL, NULL),
+(10, 14, 'Elementary Graduate', 'Wage-Employed', 'Casual', 'Student', 0, NULL, NULL, 1, NULL, NULL),
+(11, 15, 'High School Graduate', 'Unemployed', NULL, 'Worker', 0, NULL, NULL, 1, NULL, NULL),
+(12, 16, 'Elementary Graduate', 'Unemployed', NULL, 'Worker', 0, NULL, NULL, 1, NULL, NULL),
+(13, 17, 'Vocational Graduate', 'Unemployed', NULL, 'Worker', 0, NULL, NULL, 1, NULL, NULL),
+(14, 18, 'Elementary Graduate', 'Self-Employed', NULL, 'Student', 1, 'Hearing Impairment', 'Illness', 1, NULL, NULL),
+(15, 19, 'High School Graduate', 'Unemployed', NULL, 'Worker', 0, NULL, NULL, 1, NULL, NULL),
+(16, 20, 'College Level', 'Self-Employed', NULL, 'Student', 0, NULL, NULL, 1, NULL, NULL),
+(17, 21, 'Elementary Graduate', 'Self-Employed', NULL, 'Student', 0, NULL, NULL, 1, NULL, NULL),
+(18, 22, 'Vocational Graduate', 'Wage-Employed', 'Contractual', 'Out-of-School Youth', 0, NULL, NULL, 1, NULL, NULL),
+(19, 23, 'College Level', 'Self-Employed', NULL, 'Out-of-School Youth', 0, NULL, NULL, 1, NULL, NULL),
+(20, 24, 'College Graduate', 'Unemployed', NULL, 'Out-of-School Youth', 0, NULL, NULL, 1, NULL, NULL),
+(21, 25, 'College Graduate', 'Self-Employed', NULL, 'Out-of-School Youth', 1, 'Visual Impairment', 'Congenital', 1, NULL, NULL),
+(22, 26, 'Senior High (K-12)', 'Unemployed', NULL, 'Student', 0, '', '', 1, 'sig_1771314550.png', NULL),
+(24, 28, 'Vocational Graduate', 'Unemployed', NULL, 'Student', 1, 'Physical Disability', 'Illness', 1, NULL, NULL),
+(25, 29, 'High School Graduate', 'Unemployed', NULL, 'Worker', 0, NULL, NULL, 1, NULL, NULL),
+(26, 30, 'Vocational Graduate', 'Self-Employed', NULL, 'Worker', 0, NULL, NULL, 1, NULL, NULL),
+(27, 31, 'High School Graduate', 'Self-Employed', NULL, 'Out-of-School Youth', 0, NULL, NULL, 1, NULL, NULL),
+(28, 32, 'Vocational Graduate', 'Wage-Employed', 'Contractual', 'Student', 0, NULL, NULL, 1, NULL, NULL),
+(29, 33, 'Vocational Graduate', 'Self-Employed', NULL, 'Worker', 0, NULL, NULL, 1, NULL, NULL),
+(30, 34, 'High School Graduate', 'Self-Employed', NULL, 'Worker', 0, NULL, NULL, 1, NULL, NULL),
+(31, 35, 'College Graduate', 'Self-Employed', NULL, 'Student', 0, NULL, NULL, 1, NULL, NULL),
+(32, 36, 'College Graduate', 'Self-Employed', NULL, 'Out-of-School Youth', 1, 'Physical Disability', 'Congenital', 1, NULL, NULL),
+(33, 37, 'Elementary Graduate', 'Unemployed', NULL, 'Out-of-School Youth', 0, NULL, NULL, 1, NULL, NULL),
+(34, 38, 'College Graduate', 'Unemployed', NULL, 'Worker', 0, NULL, NULL, 1, NULL, NULL),
+(35, 39, 'College Graduate', 'Wage-Employed', 'Regular', 'Student', 0, NULL, NULL, 1, NULL, NULL),
+(36, 40, 'Vocational Graduate', 'Unemployed', NULL, 'Out-of-School Youth', 0, NULL, NULL, 1, NULL, NULL),
+(37, 41, 'College Level', 'Unemployed', NULL, 'Out-of-School Youth', 0, NULL, NULL, 1, NULL, NULL),
+(38, 42, 'College Level', 'Self-Employed', NULL, 'Out-of-School Youth', 0, NULL, NULL, 1, NULL, NULL),
+(39, 43, 'College Level', 'Self-Employed', NULL, 'Worker', 0, NULL, NULL, 1, NULL, NULL),
+(40, 44, 'Elementary Graduate', 'Self-Employed', NULL, 'Worker', 0, NULL, NULL, 1, NULL, NULL),
+(41, 45, 'Vocational Graduate', 'Self-Employed', NULL, 'Out-of-School Youth', 0, NULL, NULL, 1, NULL, NULL),
+(42, 46, 'Elementary Graduate', 'Wage-Employed', 'Self-Employed', 'Out-of-School Youth', 0, NULL, NULL, 1, NULL, NULL),
+(43, 47, 'Vocational Graduate', 'Self-Employed', NULL, 'Out-of-School Youth', 0, NULL, NULL, 1, NULL, NULL),
+(44, 48, 'Senior High (K-12)', 'Unemployed', NULL, 'Student', 1, 'Learning', 'Illness', 1, 'sig_1771567375.png', NULL),
+(45, 49, 'Junior High (K-12)', 'Unemployed', NULL, 'Student,Out-of-School Youth,Industry Worker', 0, '', '', 1, 'sig_1771567791.png', NULL),
+(46, 50, 'No Grade Completed', 'Unemployed', NULL, 'Student', 0, '', '', 1, 'sig_1771644913.png', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_trainee_hdr`
+--
+
+CREATE TABLE `tbl_trainee_hdr` (
+  `trainee_id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `trainee_school_id` varchar(50) DEFAULT NULL,
+  `first_name` varchar(100) DEFAULT NULL,
+  `middle_name` varchar(100) DEFAULT NULL,
+  `last_name` varchar(100) DEFAULT NULL,
+  `extension_name` varchar(10) DEFAULT NULL,
+  `sex` enum('Male','Female') DEFAULT NULL,
+  `birth_certificate_no` varchar(100) DEFAULT NULL,
+  `email` varchar(150) DEFAULT NULL,
+  `facebook_account` varchar(150) DEFAULT NULL,
+  `phone_number` varchar(20) DEFAULT NULL,
+  `address` varchar(255) DEFAULT NULL,
+  `status` enum('active','inactive') DEFAULT 'active',
+  `valid_id_file` varchar(255) DEFAULT NULL,
+  `birth_cert_file` varchar(255) DEFAULT NULL,
+  `photo_file` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_trainee_hdr`
+--
+
+INSERT INTO `tbl_trainee_hdr` (`trainee_id`, `user_id`, `trainee_school_id`, `first_name`, `middle_name`, `last_name`, `extension_name`, `sex`, `birth_certificate_no`, `email`, `facebook_account`, `phone_number`, `address`, `status`, `valid_id_file`, `birth_cert_file`, `photo_file`) VALUES
+(5, 12, '2-2026-0001', 'Christian Dave', 'Balamad', 'Boncales', '', 'Male', NULL, 'dawdd2523@gmail.com', 'Christian Dave Boncales', '09678715483', 'Zone 6, Baikingon, Cagayan De Oro City, Misamis Oriental', 'active', 'valid_id_1769496636_Untitled design (1).png', 'birth_1769496636_228a2415-a38e-4f27-b762-37d2ae1aec3a.png', 'photo_1769496636_64563a22-b1b4-487a-b7a0-9627907c3c5e.png'),
+(7, 15, '3-2026-0003', 'Lore Lindell', 'Becoy', 'Tamayo ', '', 'Male', NULL, 'vincelerky45@gmail.com', 'Lore Tamayo', '09627641720', 'Biasong-Tinib, Macasandig, Cagayan De Oro City, Misamis Oriental', 'active', 'valid_id_1769670785_dawdaw-attack.png', 'birth_1769670785_dead0c4a-6e19-4006-96fd-0ff604520395.jfif', 'photo_1769670785_download.jfif'),
+(8, 16, '2-2026-0002', 'Apple Jane', 'Memoracion', 'Edrolin', '', 'Female', NULL, 'apple@gmail.com', 'Apple Edrolin', '09987654321', 'Zone 4, Canitoan, Cagayan De Oro City, Misamis Oriental', 'active', 'valid_id_1770298422_450594508_122093386142417045_264060929535796894_n.jpg', 'birth_1770298422_Untitled diagram-2026-02-05-092208.png', 'photo_1770298422_450594508_122093386142417045_264060929535796894_n.jpg'),
+(10, 25, '5-2026-0004', 'dawd', 'dad', 'dd', '', 'Female', NULL, 'ayamonante@gmail.com', 'dawdaw', '09721312331', 'Zone 5 , Tawil, Dorek, Lorcan', 'active', 'valid_id_1771252735_tesda1.jfif', 'birth_1771252735_tesda1.jfif', 'photo_1771252735_ChatGPT Image Jan 30, 2026, 06_38_44 PM.png'),
+(11, 26, '4-2026-0005', 'Loren', 'Brig', 'Gaso', '', 'Female', NULL, 'tayamonante@gmail.com', 'LorenGas', '09832133213', 'Zone 4, Tibasak, Kwary, Bukidnon', 'active', 'valid_id_1771253584_tesda.jfif', 'birth_1771253584_tesda_logo_transparent.png', 'photo_1771253584_e08f66db-9d9b-422f-85d7-b81bcd21d383.jfif'),
+(12, NULL, '5-2026-0006', 'Angela', 'F.', 'Garcia', '', 'Female', 'BC756280281', 'angela.garcia@example.com', 'facebook_angela', '09433866075', '907 Street, Barangay Mabini, Davao City, Davao del Sur', 'active', NULL, NULL, NULL),
+(13, NULL, '5-2026-0007', 'Antonio', 'G.', 'Castro', '', 'Male', 'BC211935230', 'antonio.castro@example.com', 'facebook_antonio', '09909157774', '874 Road, Barangay Lahug, Cebu City, Cebu', 'active', NULL, NULL, NULL),
+(14, NULL, '5-2026-0008', 'Joshua', 'Mendoza', 'Aquino', '', 'Male', 'BC540011935', 'joshua.aquino@example.com', 'facebook_joshua', '09258692102', '225 Drive, Barangay Talomo, Davao City, Davao del Sur', 'active', NULL, NULL, NULL),
+(15, NULL, '5-2026-0009', 'Ricardo', 'S.', 'Flores', '', 'Male', 'BC102635580', 'ricardo.flores@example.com', 'facebook_ricardo', '09964039892', '493 Block, Barangay Kapitolyo, Pasig City, Metro Manila', 'active', NULL, NULL, NULL),
+(16, NULL, '5-2026-0010', 'Nicole', 'T.', 'Gonzales', '', 'Female', 'BC342882992', 'nicole.gonzales@example.com', 'facebook_nicole', '09866347321', '713 Street, Barangay Maligaya, Pasig City, Metro Manila', 'active', NULL, NULL, NULL),
+(17, NULL, '5-2026-0011', 'Christian', 'Gonzales', 'Cruz', '', 'Male', 'BC511645179', 'christian.cruz@example.com', 'facebook_christian', '09352761921', '120 Road, Barangay Guadalupe, Cebu City, Cebu', 'active', NULL, NULL, NULL),
+(18, NULL, '5-2026-0012', 'Daniel', 'R.', 'Soriano', '', 'Male', 'BC617738166', 'daniel.soriano@example.com', 'facebook_daniel', '09938354858', '398 Drive, Barangay Kapitolyo, Pasig City, Metro Manila', 'active', NULL, NULL, NULL),
+(19, NULL, '5-2026-0013', 'Elena', 'Torres', 'Aquino', '', 'Female', 'BC914488690', 'elena.aquino@example.com', 'facebook_elena', '09630328953', '722 Block, Barangay Ugong, Pasig City, Metro Manila', 'active', NULL, NULL, NULL),
+(20, NULL, '5-2026-0014', 'Rosa', 'F.', 'Flores', '', 'Female', 'BC606365363', 'rosa.flores@example.com', 'facebook_rosa', '09712602367', '92 Avenue, Barangay Buhangin, Davao City, Davao del Sur', 'active', NULL, NULL, NULL),
+(21, NULL, '5-2026-0015', 'Daniel', 'Mendoza', 'Aquino', '', 'Male', 'BC620986189', 'daniel.aquino@example.com', 'facebook_daniel', '09160012078', '355 Street, Barangay Talomo, Davao City, Davao del Sur', 'active', NULL, NULL, NULL),
+(22, NULL, '5-2026-0016', 'Angelo', 'Reyes', 'Pascual', '', 'Male', 'BC876863902', 'angelo.pascual@example.com', 'facebook_angelo', '09410125151', '697 Road, Barangay San Isidro, Quezon City, Metro Manila', 'active', NULL, NULL, NULL),
+(23, NULL, '5-2026-0017', 'Isabella', 'S.', 'Torres', '', 'Female', 'BC319252208', 'isabella.torres@example.com', 'facebook_isabella', '09751226120', '399 Drive, Barangay Commonwealth, Quezon City, Metro Manila', 'active', NULL, NULL, NULL),
+(24, NULL, '5-2026-0018', 'Catherine', 'Flores', 'Pascual', '', 'Female', 'BC657475593', 'catherine.pascual@example.com', 'facebook_catherine', '09294876080', '867 Street, Barangay Talomo, Davao City, Davao del Sur', 'active', NULL, NULL, NULL),
+(25, NULL, '5-2026-0019', 'Ramon', 'Ramos', 'Castro', '', 'Male', 'BC444386908', 'ramon.castro@example.com', 'facebook_ramon', '09948643369', '672 Avenue, Barangay San Roque, Caloocan City, Metro Manila', 'active', NULL, NULL, NULL),
+(26, 27, '4-2026-0020', 'Clark', 'V.', 'Luzon', 'Jr.', 'Male', '109212', 'Luzon@gmail.com', 'Luzon Clark', '09432682945', 'Zone 5 , Tibasak, Don Carlos, Bukidnon', 'active', 'valid_id_1771314550_tesda1.jfif', 'birth_1771314550_tesda1.jfif', 'photo_1771314550_Crocs-croc_claw_rend.png'),
+(28, NULL, '4-2026-0021', 'Anne', 'R.', 'Torres', '', 'Female', 'BC208622971', 'anne.torres@example.com', 'facebook_anne', '09497342402', '761 Avenue, Barangay Poblacion, Cebu City, Cebu', 'active', NULL, NULL, NULL),
+(29, NULL, '4-2026-0022', 'Andrea', 'Ramos', 'Bautista', '', 'Female', 'BC772103612', 'andrea.bautista@example.com', 'facebook_andrea', '09540605583', '465 Avenue, Barangay Maligaya, Pasig City, Metro Manila', 'active', NULL, NULL, NULL),
+(30, NULL, '4-2026-0023', 'Carlo', 'T.', 'Flores', 'Jr.', 'Male', 'BC280515779', 'carlo.flores@example.com', 'facebook_carlo', '09257167621', '813 Block, Barangay Kapitolyo, Pasig City, Metro Manila', 'active', NULL, NULL, NULL),
+(31, NULL, '4-2026-0024', 'Teresa', 'Reyes', 'Bautista', 'III', 'Female', 'BC948674954', 'teresa.bautista@example.com', 'facebook_teresa', '09766878516', '992 Avenue, Barangay Mabini, Davao City, Davao del Sur', 'active', NULL, NULL, NULL),
+(32, NULL, '4-2026-0025', 'Paolo', 'Rivera', 'Rivera', '', 'Male', 'BC633994708', 'paolo.rivera@example.com', 'facebook_paolo', '09931120071', '105 Block, Barangay San Roque, Caloocan City, Metro Manila', 'active', NULL, NULL, NULL),
+(33, NULL, '4-2026-0026', 'Elena', 'Castillo', 'Lopez', '', 'Female', 'BC740909745', 'elena.lopez@example.com', 'facebook_elena', '09732715709', '63 Block, Barangay Kapitolyo, Pasig City, Metro Manila', 'active', NULL, NULL, NULL),
+(34, NULL, '4-2026-0027', 'Christine', 'Mendoza', 'Soriano', '', 'Female', 'BC240249737', 'christine.soriano@example.com', 'facebook_christine', '09225664131', '689 Road, Barangay Buhangin, Davao City, Davao del Sur', 'active', NULL, NULL, NULL),
+(35, NULL, '4-2026-0028', 'Kristine', 'Santos', 'Rodriguez', '', 'Female', 'BC231819044', 'kristine.rodriguez@example.com', 'facebook_kristine', '09347247225', '848 Block, Barangay Lahug, Cebu City, Cebu', 'active', NULL, NULL, NULL),
+(36, NULL, '4-2026-0029', 'Nicole', 'R.', 'Torres', '', 'Female', 'BC738398098', 'nicole.torres@example.com', 'facebook_nicole', '09326764584', '847 Block, Barangay Bagong Silang, Caloocan City, Metro Manila', 'active', NULL, NULL, NULL),
+(37, NULL, '4-2026-0030', 'Juan', 'Mendoza', 'Castro', '', 'Male', 'BC230248781', 'juan.castro@example.com', 'facebook_juan', '09481213911', '629 Drive, Barangay Buhangin, Davao City, Davao del Sur', 'active', NULL, NULL, NULL),
+(38, NULL, '4-2026-0031', 'Sophia', 'Castillo', 'Villanueva', 'Jr.', 'Female', 'BC389066544', 'sophia.villanueva@example.com', 'facebook_sophia', '09592932313', '945 Road, Barangay San Isidro, Quezon City, Metro Manila', 'active', NULL, NULL, NULL),
+(39, NULL, '4-2026-0032', 'Christine', 'M.', 'Castro', '', 'Female', 'BC162129276', 'christine.castro@example.com', 'facebook_christine', '09806914953', '541 Street, Barangay San Roque, Caloocan City, Metro Manila', 'active', NULL, NULL, NULL),
+(40, NULL, '4-2026-0033', 'Angela', 'T.', 'Reyes', '', 'Female', 'BC373993132', 'angela.reyes@example.com', 'facebook_angela', '09744401341', '500 Block, Barangay Mabini, Davao City, Davao del Sur', 'active', NULL, NULL, NULL),
+(41, NULL, '4-2026-0034', 'Daniel', 'D.', 'Reyes', '', 'Male', 'BC740680255', 'daniel.reyes@example.com', 'facebook_daniel', '09284107281', '943 Street, Barangay San Roque, Caloocan City, Metro Manila', 'active', NULL, NULL, NULL),
+(42, NULL, '4-2026-0035', 'Jose', 'Rivera', 'Reyes', '', 'Male', 'BC445823728', 'jose.reyes@example.com', 'facebook_jose', '09372652092', '531 Road, Barangay Poblacion, Cebu City, Cebu', 'active', NULL, NULL, NULL),
+(43, NULL, '4-2026-0036', 'Michelle', 'M.', 'Soriano', '', 'Female', 'BC780333196', 'michelle.soriano@example.com', 'facebook_michelle', '09719576193', '752 Road, Barangay Maligaya, Pasig City, Metro Manila', 'active', NULL, NULL, NULL),
+(44, NULL, '4-2026-0037', 'Jose', 'Flores', 'Mendoza', '', 'Male', 'BC785744594', 'jose.mendoza@example.com', 'facebook_jose', '09573269819', '338 Road, Barangay Poblacion, Cebu City, Cebu', 'active', NULL, NULL, NULL),
+(45, NULL, '4-2026-0038', 'Michelle', 'Mendoza', 'Ocampo', '', 'Female', 'BC691984665', 'michelle.ocampo@example.com', 'facebook_michelle', '09331663412', '55 Avenue, Barangay San Roque, Caloocan City, Metro Manila', 'active', NULL, NULL, NULL),
+(46, NULL, '4-2026-0039', 'Maria', 'Mendoza', 'Marquez', '', 'Female', 'BC750071224', 'maria.marquez@example.com', 'facebook_maria', '09103045126', '80 Block, Barangay Camarin, Caloocan City, Metro Manila', 'active', NULL, NULL, NULL),
+(47, NULL, '4-2026-0040', 'Anne', 'F.', 'Santos', '', 'Female', 'BC240999750', 'anne.santos@example.com', 'facebook_anne', '09756633228', '918 Avenue, Barangay Commonwealth, Quezon City, Metro Manila', 'active', NULL, NULL, NULL),
+(48, NULL, '11-2026-0042', 'Cyrus', '', 'Tadoy', '', 'Male', '109212', 'chba.boncales.coc@phinmaed.com', 'Cyrus Tadoy', '09832133213', 'Zone 5 , Tibasak, Cagayan De Oro City, Mis Or', 'active', 'valid_id_1771567375_ChatGPT Image Feb 19, 2026, 06_26_58 PM.png', 'birth_1771567375_download (4).png', 'photo_1771567375_r2 (1).jpg'),
+(49, 38, '12-2026-0041', 'Brian', '', 'Ragasi', '', 'Male', '3252351', 'dawdd2523@gmail.com', 'Brian Ragasi', '09678715483', 'Zone 5 , Tibasak, Don Carlos, Bukidnon', 'active', 'valid_id_1771567791_ChatGPT Image Feb 19, 2026, 06_26_58 PM.png', 'birth_1771567791_download (4).png', 'photo_1771567791_r2 (1).jpg'),
+(50, NULL, '11-2026-0043', 'France', 'M.', 'Luzon', '', 'Male', '52453424', 'dawdd2523@gmail.com', 'France Luzon', '09987654321', 'Zone 5 , BAIKINGON, CAGAYAN DE ORO CITY, MISAMIS ORIENTAL', 'active', 'valid_id_1771644913_pngtree-open-elevator-door-panel-mirror-architecture-vector-png-image_3375411.jpg', 'birth_1771644913_opened-lift-pixel-art-style_475147-1234.avif', 'photo_1771644913_pngtree-open-elevator-door-panel-mirror-architecture-vector-png-image_3375411.jpg');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_trainer`
+--
+
+CREATE TABLE `tbl_trainer` (
+  `trainer_id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `first_name` varchar(100) DEFAULT NULL,
+  `last_name` varchar(100) DEFAULT NULL,
+  `email` varchar(150) DEFAULT NULL,
+  `phone_number` varchar(20) DEFAULT NULL,
+  `qualification_id` int(11) DEFAULT NULL,
+  `address` varchar(255) DEFAULT NULL,
+  `nttc_no` varchar(100) DEFAULT NULL,
+  `nttc_file` varchar(255) DEFAULT NULL,
+  `tm_file` varchar(255) DEFAULT NULL,
+  `nc_level` varchar(100) DEFAULT NULL,
+  `nc_file` varchar(255) DEFAULT NULL,
+  `experience_file` varchar(255) DEFAULT NULL,
+  `status` enum('active','inactive') DEFAULT 'active'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_trainer`
+--
+
+INSERT INTO `tbl_trainer` (`trainer_id`, `user_id`, `first_name`, `last_name`, `email`, `phone_number`, `qualification_id`, `address`, `nttc_no`, `nttc_file`, `tm_file`, `nc_level`, `nc_file`, `experience_file`, `status`) VALUES
+(1, 10, 'Juan', 'Dela cruz', 'juan@gmail.com', '09123456789', 1, 'Zone 3 balani', 'NTTC-2023-045678', 'nttc_1768116930_Screenshot (2).png', 'tm_1768116930_Screenshot (5).png', 'NC II', 'nc_1768116930_Screenshot (6).png', 'exp_1768116930_Screenshot (5).png', 'active'),
+(2, 14, 'Vincent', 'Micabalo', 'vins@gmail.com', '09424819849', 3, 'Zone 5 calaanan Cebu', '81289', '1769666441_dawdaw-attack.png', NULL, NULL, NULL, NULL, 'active'),
+(5, 20, 'Andrei', 'Davinci', 'tayamonante@gmail.com', '09798741828', 4, 'dadv', '123234', 'nttc_file_20_1771303700.png', 'tm_file_20_1771148288.jpg', 'NC II', 'nc_file_20_1771148288.jpg', 'experience_file_20_1771148288.jpg', 'active'),
+(6, 21, 'Lorenzo', 'Mactabish', 'lorenzo@gmail.com', '093231128212', 6, 'Kazhakstan', '233255', 'nttc_file_21_1771227379.png', 'tm_file_21_1771227379.png', 'NC II', 'nc_file_21_1771227379.png', 'experience_file_21_1771227379.jpg', 'active'),
+(8, 37, 'Clinton', 'Bons', 'clintonplaza@gmail.com', '093231128212', 12, 'Zone 5', '233255', 'nttc_file_37_1771566273.png', 'tm_file_37_1771566273.png', 'NC II', 'nc_file_37_1771566273.png', 'experience_file_37_1771566273.png', 'active');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_trainer_qualifications`
+--
+
+CREATE TABLE `tbl_trainer_qualifications` (
+  `trainer_qualification_id` int(11) NOT NULL,
+  `trainer_id` int(11) NOT NULL,
+  `qualification_id` int(11) NOT NULL,
+  `nc_level` varchar(100) DEFAULT NULL,
+  `nc_file` varchar(255) DEFAULT NULL,
+  `experience_file` varchar(255) DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_trainer_qualifications`
+--
+
+INSERT INTO `tbl_trainer_qualifications` (`trainer_qualification_id`, `trainer_id`, `qualification_id`, `nc_level`, `nc_file`, `experience_file`) VALUES
+(1, 1, 1, 'NC II', 'nc_1768116930_Screenshot (6).png', 'exp_1768116930_Screenshot (5).png'),
+(2, 2, 3, NULL, NULL, NULL),
+(3, 5, 4, 'NC II', 'nc_file_20_1771148288.jpg', 'experience_file_20_1771148288.jpg'),
+(4, 6, 6, 'NC II', 'nc_file_21_1771227379.png', 'experience_file_21_1771227379.jpg'),
+(5, 8, 12, 'NC II', 'nc_file_37_1771566273.png', 'experience_file_37_1771566273.png');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_training`
+--
+
+CREATE TABLE `tbl_training` (
+  `training_id` int(11) NOT NULL,
+  `trainee_id` int(11) DEFAULT NULL,
+  `trainer_id` int(11) DEFAULT NULL,
+  `qualification_id` int(11) DEFAULT NULL,
+  `start_date` date DEFAULT NULL,
+  `end_date` date DEFAULT NULL,
+  `status` enum('ongoing','completed','dropped') DEFAULT 'ongoing'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_users`
+--
+
+CREATE TABLE `tbl_users` (
+  `user_id` int(11) NOT NULL,
+  `role_id` int(11) NOT NULL,
+  `username` varchar(100) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `email` varchar(150) DEFAULT NULL,
+  `status` enum('active','inactive') DEFAULT 'active',
+  `is_archived` tinyint(1) DEFAULT 0,
+  `date_created` datetime DEFAULT current_timestamp(),
+  `archived_at` datetime DEFAULT NULL,
+  `archived_by` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_users`
+--
+
+INSERT INTO `tbl_users` (`user_id`, `role_id`, `username`, `password`, `email`, `status`, `is_archived`, `date_created`, `archived_at`, `archived_by`) VALUES
+(1, 1, 'admin', '$2y$10$E/bu7wq4cpXXZz0Vu3vEYObwc.cMpdGpU3JvMbZBvOiD8D6qtLybG', 'christiandaveboncales@gmail.com', 'active', 0, '2025-12-22 11:20:13', NULL, NULL),
+(10, 2, 'Juan', '$2y$10$pVNvO.T.Ealmtuc6buthQO8/Vy1IRUKqKcpNXwWkgTYus4EM3Obuu', 'christianboncales09@gmail.com', 'active', 0, '2026-01-11 19:21:40', NULL, NULL),
+(12, 3, 'christian', '$2y$10$sBKhB8oyhEK/aQCsjOJ9sOkWRgLdNO5wXG9qaq44I3FuBpHAsIxby', 'dawdd2523@gmail.com', 'active', 0, '2026-01-27 23:41:57', NULL, NULL),
+(13, 4, 'John', '$2y$10$tPBRgYwLmD7yw5NPGEkHx.cCGF0kAGui0oO9gSaWQqnDTzf1a9TEy', 'gargamishss@gmail.com', 'active', 0, '2026-01-27 23:50:16', NULL, NULL),
+(14, 2, 'vince', '$2y$10$TBxHNXPJ2a1o4CMCmSgW9eROBNX5CD6unMX3gYZuiG5DIiSZDi5em', 'vins@gmail.com', 'active', 0, '2026-01-29 15:04:42', NULL, NULL),
+(15, 3, 'lore', '$2y$10$u24K498elTzakgLBb9ofJumOM29BmyTSknBxH7KZLZekcihdZGyuW', 'vincelerky45@gmail.com', 'active', 0, '2026-01-29 15:15:10', NULL, NULL),
+(16, 3, 'apple', '$2y$10$C2nm/V6rAh8aR6ntsPaMeunhPDox9n34Fv0kTri4jWGMBeOUOAdfa', 'apple@gmail.com', 'active', 0, '2026-02-05 21:51:46', NULL, NULL),
+(17, 4, 'Dodo', '$2y$10$b0/nxH4TeJXz9t/9ahYro.jGI4ZnNaIjUQkfw.ZXgXDR4mywCCmUK', 'dodo@gmail.com', 'active', 1, '2026-02-14 19:29:36', '2026-02-17 13:02:45', NULL),
+(20, 2, 'Andrei', '$2y$10$J1lqX25qOwX/G.yLJswhs.TR2IVj45uK3Yhgol0m3JhQyfIZOjrHC', 'ayamonante@gmail.com', 'active', 0, '2026-02-15 17:38:08', NULL, NULL),
+(21, 2, 'Lorenzo', '$2y$10$Md6PKCE0xKulD.vX9OyklOhj1xzpiFlJUMZ/ih1xnLS7LK4eH2t1W', 'lorenzo@gmail.com', 'active', 0, '2026-02-16 15:36:19', NULL, NULL),
+(25, 3, 'dd', '$2y$10$Tn5wvesDXWRoTY7wr4Ml6eU/dWKHjVBG2ftec473RKXqpFCypS89G', 'yamonante@gmail.com', 'active', 0, '2026-02-16 23:00:31', NULL, NULL),
+(26, 3, 'gaso', '$2y$10$c0MzZNLUND10sD5i2pQL2ezzNRdPNTfXbd5yuV6yhlC1wHbWklyQK', 'tayamonante@gmail.com', 'active', 0, '2026-02-16 23:01:43', NULL, NULL),
+(27, 3, 'Luzon', '$2y$10$C2yww5uWymhqlBl2OHKbmu4OAjNoWlO7c872ooL5YxLXq8MarwZkq', 'Luzon@gmail.com', 'active', 0, '2026-02-17 16:04:00', NULL, NULL),
+(35, 3, 'Clint', '$2y$10$51V82vSpyjPKF3SnctqJqOFiDwgN14pczmebxkbB/bmu6V9iZIis.', 'clint@gmail.com', 'active', 1, '2026-02-20 10:10:05', '2026-02-20 10:11:44', NULL),
+(36, 2, 'Colt', '$2y$10$ry7pZQA9G2gqePoP4MxGQuSNia6kuDTVDZCpn6tbmVdP29uTAeXL2', 'cole@gmail.com', 'active', 1, '2026-02-20 10:44:44', '2026-02-20 10:45:10', NULL),
+(37, 2, 'Clinton', '$2y$10$YRo3DZuGikEpdAj9ZcwvG..BRQ732OqJjlpOX0F/J.gwzduF/TX6G', 'clintonplaza@gmail.com', 'active', 0, '2026-02-20 13:44:33', NULL, NULL),
+(38, 3, 'Brian', '$2y$10$v5XBcBWvA6lcxqptUPYdS.J7eEm.409U73MhTrwF9WtQS79ESGB0q', 'dawdd2523@gmail.com', 'active', 0, '2026-02-21 12:05:47', NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_user_roles`
+--
+
+CREATE TABLE `tbl_user_roles` (
+  `user_id` int(11) NOT NULL,
+  `role_id` int(11) NOT NULL,
+  `assigned_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `tbl_activities_type`
+--
+ALTER TABLE `tbl_activities_type`
+  ADD PRIMARY KEY (`activity_type_id`);
+
+--
+-- Indexes for table `tbl_activity_logs`
+--
+ALTER TABLE `tbl_activity_logs`
+  ADD PRIMARY KEY (`activity_log_id`),
+  ADD KEY `idx_user_id` (`user_id`),
+  ADD KEY `idx_action` (`action`);
+
+--
+-- Indexes for table `tbl_attendance`
+--
+ALTER TABLE `tbl_attendance`
+  ADD PRIMARY KEY (`attendance_id`),
+  ADD KEY `batch_id` (`batch_id`),
+  ADD KEY `trainee_id` (`trainee_id`);
+
+--
+-- Indexes for table `tbl_batch`
+--
+ALTER TABLE `tbl_batch`
+  ADD PRIMARY KEY (`batch_id`),
+  ADD KEY `fk_batch_trainer` (`trainer_id`),
+  ADD KEY `fk_batch_scholarship` (`scholarship_type_id`),
+  ADD KEY `fk_batch_qualification` (`qualification_id`);
+
+--
+-- Indexes for table `tbl_certificate`
+--
+ALTER TABLE `tbl_certificate`
+  ADD PRIMARY KEY (`certificate_id`),
+  ADD KEY `trainee_id` (`trainee_id`),
+  ADD KEY `course_id` (`qualification_id`);
+
+--
+-- Indexes for table `tbl_email_templates`
+--
+ALTER TABLE `tbl_email_templates`
+  ADD PRIMARY KEY (`template_id`),
+  ADD UNIQUE KEY `template_name` (`template_name`);
+
+--
+-- Indexes for table `tbl_enrolled_trainee`
+--
+ALTER TABLE `tbl_enrolled_trainee`
+  ADD PRIMARY KEY (`enrolled_id`),
+  ADD KEY `enrollment_id` (`enrollment_id`),
+  ADD KEY `trainee_id` (`trainee_id`);
+
+--
+-- Indexes for table `tbl_enrollment`
+--
+ALTER TABLE `tbl_enrollment`
+  ADD PRIMARY KEY (`enrollment_id`),
+  ADD KEY `trainee_id` (`trainee_id`),
+  ADD KEY `offered_id` (`offered_qualification_id`),
+  ADD KEY `batch_id` (`batch_id`),
+  ADD KEY `fk_enrollment_scholarship` (`scholarship_type_id`),
+  ADD KEY `idx_trainee_archive` (`trainee_id`,`is_archived`),
+  ADD KEY `idx_trainee_status` (`trainee_id`,`status`);
+
+--
+-- Indexes for table `tbl_feedback`
+--
+ALTER TABLE `tbl_feedback`
+  ADD PRIMARY KEY (`feedback_id`),
+  ADD KEY `trainee_id` (`trainee_id`),
+  ADD KEY `trainer_id` (`trainer_id`);
+
+--
+-- Indexes for table `tbl_grades`
+--
+ALTER TABLE `tbl_grades`
+  ADD PRIMARY KEY (`grade_id`),
+  ADD KEY `trainee_id` (`trainee_id`),
+  ADD KEY `course_id` (`qualification_id`),
+  ADD KEY `test_id` (`test_id`);
+
+--
+-- Indexes for table `tbl_holidays`
+--
+ALTER TABLE `tbl_holidays`
+  ADD PRIMARY KEY (`holiday_id`);
+
+--
+-- Indexes for table `tbl_lessons`
+--
+ALTER TABLE `tbl_lessons`
+  ADD PRIMARY KEY (`lesson_id`),
+  ADD KEY `module_id` (`module_id`);
+
+--
+-- Indexes for table `tbl_lesson_contents`
+--
+ALTER TABLE `tbl_lesson_contents`
+  ADD PRIMARY KEY (`content_id`),
+  ADD KEY `lesson_id` (`lesson_id`);
+
+--
+-- Indexes for table `tbl_module`
+--
+ALTER TABLE `tbl_module`
+  ADD PRIMARY KEY (`module_id`),
+  ADD KEY `course_id` (`qualification_id`);
+
+--
+-- Indexes for table `tbl_notifications`
+--
+ALTER TABLE `tbl_notifications`
+  ADD PRIMARY KEY (`notification_id`),
+  ADD KEY `idx_user_id` (`user_id`);
+
+--
+-- Indexes for table `tbl_offered_qualifications`
+--
+ALTER TABLE `tbl_offered_qualifications`
+  ADD PRIMARY KEY (`offered_qualification_id`),
+  ADD KEY `course_id` (`qualification_id`),
+  ADD KEY `trainer_id` (`trainer_id`);
+
+--
+-- Indexes for table `tbl_permissions`
+--
+ALTER TABLE `tbl_permissions`
+  ADD PRIMARY KEY (`permission_id`),
+  ADD UNIQUE KEY `permission_name` (`permission_name`);
+
+--
+-- Indexes for table `tbl_progress_charts`
+--
+ALTER TABLE `tbl_progress_charts`
+  ADD PRIMARY KEY (`chart_id`),
+  ADD KEY `trainer_id` (`trainer_id`);
+
+--
+-- Indexes for table `tbl_qualifications`
+--
+ALTER TABLE `tbl_qualifications`
+  ADD PRIMARY KEY (`qualification_id`);
+
+--
+-- Indexes for table `tbl_quiz_options`
+--
+ALTER TABLE `tbl_quiz_options`
+  ADD PRIMARY KEY (`option_id`),
+  ADD KEY `question_id` (`question_id`);
+
+--
+-- Indexes for table `tbl_quiz_questions`
+--
+ALTER TABLE `tbl_quiz_questions`
+  ADD PRIMARY KEY (`question_id`),
+  ADD KEY `test_id` (`test_id`);
+
+--
+-- Indexes for table `tbl_role`
+--
+ALTER TABLE `tbl_role`
+  ADD PRIMARY KEY (`role_id`);
+
+--
+-- Indexes for table `tbl_roles`
+--
+ALTER TABLE `tbl_roles`
+  ADD PRIMARY KEY (`role_id`),
+  ADD UNIQUE KEY `role_name` (`role_name`);
+
+--
+-- Indexes for table `tbl_role_permissions`
+--
+ALTER TABLE `tbl_role_permissions`
+  ADD PRIMARY KEY (`role_id`,`permission_id`),
+  ADD KEY `permission_id` (`permission_id`);
+
+--
+-- Indexes for table `tbl_schedule`
+--
+ALTER TABLE `tbl_schedule`
+  ADD PRIMARY KEY (`schedule_id`),
+  ADD UNIQUE KEY `unique_batch_schedule` (`batch_id`);
+
+--
+-- Indexes for table `tbl_scholarship`
+--
+ALTER TABLE `tbl_scholarship`
+  ADD PRIMARY KEY (`scholarship_id`),
+  ADD KEY `trainee_id` (`trainee_id`),
+  ADD KEY `fk_scholarship_type` (`scholarship_type_id`);
+
+--
+-- Indexes for table `tbl_scholarship_type`
+--
+ALTER TABLE `tbl_scholarship_type`
+  ADD PRIMARY KEY (`scholarship_type_id`);
+
+--
+-- Indexes for table `tbl_score_type`
+--
+ALTER TABLE `tbl_score_type`
+  ADD PRIMARY KEY (`score_type_id`);
+
+--
+-- Indexes for table `tbl_system_settings`
+--
+ALTER TABLE `tbl_system_settings`
+  ADD PRIMARY KEY (`setting_id`),
+  ADD UNIQUE KEY `setting_key` (`setting_key`);
+
+--
+-- Indexes for table `tbl_task_sheets`
+--
+ALTER TABLE `tbl_task_sheets`
+  ADD PRIMARY KEY (`task_sheet_id`),
+  ADD KEY `lesson_id` (`lesson_id`);
+
+--
+-- Indexes for table `tbl_task_sheet_submissions`
+--
+ALTER TABLE `tbl_task_sheet_submissions`
+  ADD PRIMARY KEY (`submission_id`),
+  ADD UNIQUE KEY `unique_submission` (`task_sheet_id`,`trainee_id`),
+  ADD KEY `fk_submission_lesson` (`lesson_id`),
+  ADD KEY `fk_submission_trainee` (`trainee_id`),
+  ADD KEY `fk_submission_grader` (`graded_by`);
+
+--
+-- Indexes for table `tbl_test`
+--
+ALTER TABLE `tbl_test`
+  ADD PRIMARY KEY (`test_id`),
+  ADD KEY `lesson_id` (`lesson_id`),
+  ADD KEY `activity_type_id` (`activity_type_id`),
+  ADD KEY `score_type_id` (`score_type_id`);
+
+--
+-- Indexes for table `tbl_trainee_dtl`
+--
+ALTER TABLE `tbl_trainee_dtl`
+  ADD PRIMARY KEY (`trainee_dtl_id`),
+  ADD KEY `trainee_id` (`trainee_id`);
+
+--
+-- Indexes for table `tbl_trainee_ftr`
+--
+ALTER TABLE `tbl_trainee_ftr`
+  ADD PRIMARY KEY (`trainee_ftr_id`),
+  ADD KEY `trainee_id` (`trainee_id`);
+
+--
+-- Indexes for table `tbl_trainee_hdr`
+--
+ALTER TABLE `tbl_trainee_hdr`
+  ADD PRIMARY KEY (`trainee_id`),
+  ADD UNIQUE KEY `trainee_school_id` (`trainee_school_id`),
+  ADD KEY `user_id` (`user_id`);
+
+--
+-- Indexes for table `tbl_trainer`
+--
+ALTER TABLE `tbl_trainer`
+  ADD PRIMARY KEY (`trainer_id`),
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `fk_trainer_qualification` (`qualification_id`);
+
+--
+-- Indexes for table `tbl_trainer_qualifications`
+--
+ALTER TABLE `tbl_trainer_qualifications`
+  ADD PRIMARY KEY (`trainer_qualification_id`),
+  ADD UNIQUE KEY `uq_trainer_qualification` (`trainer_id`,`qualification_id`),
+  ADD KEY `trainer_id` (`trainer_id`),
+  ADD KEY `qualification_id` (`qualification_id`);
+
+--
+-- Indexes for table `tbl_training`
+--
+ALTER TABLE `tbl_training`
+  ADD PRIMARY KEY (`training_id`),
+  ADD KEY `trainee_id` (`trainee_id`),
+  ADD KEY `trainer_id` (`trainer_id`),
+  ADD KEY `course_id` (`qualification_id`);
+
+--
+-- Indexes for table `tbl_users`
+--
+ALTER TABLE `tbl_users`
+  ADD PRIMARY KEY (`user_id`),
+  ADD UNIQUE KEY `username` (`username`),
+  ADD KEY `role_id` (`role_id`),
+  ADD KEY `fk_archived_by` (`archived_by`),
+  ADD KEY `idx_status_archived` (`status`,`archived_at`);
+
+--
+-- Indexes for table `tbl_user_roles`
+--
+ALTER TABLE `tbl_user_roles`
+  ADD PRIMARY KEY (`user_id`,`role_id`),
+  ADD KEY `role_id` (`role_id`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `tbl_activities_type`
+--
+ALTER TABLE `tbl_activities_type`
+  MODIFY `activity_type_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `tbl_activity_logs`
+--
+ALTER TABLE `tbl_activity_logs`
+  MODIFY `activity_log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=116;
+
+--
+-- AUTO_INCREMENT for table `tbl_attendance`
+--
+ALTER TABLE `tbl_attendance`
+  MODIFY `attendance_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbl_batch`
+--
+ALTER TABLE `tbl_batch`
+  MODIFY `batch_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+
+--
+-- AUTO_INCREMENT for table `tbl_certificate`
+--
+ALTER TABLE `tbl_certificate`
+  MODIFY `certificate_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `tbl_email_templates`
+--
+ALTER TABLE `tbl_email_templates`
+  MODIFY `template_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `tbl_enrolled_trainee`
+--
+ALTER TABLE `tbl_enrolled_trainee`
+  MODIFY `enrolled_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=49;
+
+--
+-- AUTO_INCREMENT for table `tbl_enrollment`
+--
+ALTER TABLE `tbl_enrollment`
+  MODIFY `enrollment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=50;
+
+--
+-- AUTO_INCREMENT for table `tbl_feedback`
+--
+ALTER TABLE `tbl_feedback`
+  MODIFY `feedback_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbl_grades`
+--
+ALTER TABLE `tbl_grades`
+  MODIFY `grade_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT for table `tbl_holidays`
+--
+ALTER TABLE `tbl_holidays`
+  MODIFY `holiday_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `tbl_lessons`
+--
+ALTER TABLE `tbl_lessons`
+  MODIFY `lesson_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+
+--
+-- AUTO_INCREMENT for table `tbl_lesson_contents`
+--
+ALTER TABLE `tbl_lesson_contents`
+  MODIFY `content_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT for table `tbl_module`
+--
+ALTER TABLE `tbl_module`
+  MODIFY `module_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+
+--
+-- AUTO_INCREMENT for table `tbl_notifications`
+--
+ALTER TABLE `tbl_notifications`
+  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=44;
+
+--
+-- AUTO_INCREMENT for table `tbl_offered_qualifications`
+--
+ALTER TABLE `tbl_offered_qualifications`
+  MODIFY `offered_qualification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT for table `tbl_permissions`
+--
+ALTER TABLE `tbl_permissions`
+  MODIFY `permission_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbl_progress_charts`
+--
+ALTER TABLE `tbl_progress_charts`
+  MODIFY `chart_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT for table `tbl_qualifications`
+--
+ALTER TABLE `tbl_qualifications`
+  MODIFY `qualification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+
+--
+-- AUTO_INCREMENT for table `tbl_quiz_options`
+--
+ALTER TABLE `tbl_quiz_options`
+  MODIFY `option_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=726;
+
+--
+-- AUTO_INCREMENT for table `tbl_quiz_questions`
+--
+ALTER TABLE `tbl_quiz_questions`
+  MODIFY `question_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=248;
+
+--
+-- AUTO_INCREMENT for table `tbl_role`
+--
+ALTER TABLE `tbl_role`
+  MODIFY `role_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `tbl_roles`
+--
+ALTER TABLE `tbl_roles`
+  MODIFY `role_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbl_schedule`
+--
+ALTER TABLE `tbl_schedule`
+  MODIFY `schedule_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT for table `tbl_scholarship`
+--
+ALTER TABLE `tbl_scholarship`
+  MODIFY `scholarship_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
+
+--
+-- AUTO_INCREMENT for table `tbl_scholarship_type`
+--
+ALTER TABLE `tbl_scholarship_type`
+  MODIFY `scholarship_type_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- AUTO_INCREMENT for table `tbl_score_type`
+--
+ALTER TABLE `tbl_score_type`
+  MODIFY `score_type_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbl_system_settings`
+--
+ALTER TABLE `tbl_system_settings`
+  MODIFY `setting_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT for table `tbl_task_sheets`
+--
+ALTER TABLE `tbl_task_sheets`
+  MODIFY `task_sheet_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT for table `tbl_task_sheet_submissions`
+--
+ALTER TABLE `tbl_task_sheet_submissions`
+  MODIFY `submission_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+
+--
+-- AUTO_INCREMENT for table `tbl_test`
+--
+ALTER TABLE `tbl_test`
+  MODIFY `test_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT for table `tbl_trainee_dtl`
+--
+ALTER TABLE `tbl_trainee_dtl`
+  MODIFY `trainee_dtl_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=47;
+
+--
+-- AUTO_INCREMENT for table `tbl_trainee_ftr`
+--
+ALTER TABLE `tbl_trainee_ftr`
+  MODIFY `trainee_ftr_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=47;
+
+--
+-- AUTO_INCREMENT for table `tbl_trainee_hdr`
+--
+ALTER TABLE `tbl_trainee_hdr`
+  MODIFY `trainee_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
+
+--
+-- AUTO_INCREMENT for table `tbl_trainer`
+--
+ALTER TABLE `tbl_trainer`
+  MODIFY `trainer_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT for table `tbl_trainer_qualifications`
+--
+ALTER TABLE `tbl_trainer_qualifications`
+  MODIFY `trainer_qualification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT for table `tbl_training`
+--
+ALTER TABLE `tbl_training`
+  MODIFY `training_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbl_users`
+--
+ALTER TABLE `tbl_users`
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `tbl_activity_logs`
+--
+ALTER TABLE `tbl_activity_logs`
+  ADD CONSTRAINT `fk_activity_logs_user` FOREIGN KEY (`user_id`) REFERENCES `tbl_users` (`user_id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Constraints for table `tbl_attendance`
+--
+ALTER TABLE `tbl_attendance`
+  ADD CONSTRAINT `fk_attendance_batch` FOREIGN KEY (`batch_id`) REFERENCES `tbl_batch` (`batch_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_attendance_trainee` FOREIGN KEY (`trainee_id`) REFERENCES `tbl_trainee_hdr` (`trainee_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `tbl_batch`
+--
+ALTER TABLE `tbl_batch`
+  ADD CONSTRAINT `fk_batch_qualification` FOREIGN KEY (`qualification_id`) REFERENCES `tbl_qualifications` (`qualification_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_batch_scholarship` FOREIGN KEY (`scholarship_type_id`) REFERENCES `tbl_scholarship_type` (`scholarship_type_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_batch_trainer` FOREIGN KEY (`trainer_id`) REFERENCES `tbl_trainer` (`trainer_id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Constraints for table `tbl_certificate`
+--
+ALTER TABLE `tbl_certificate`
+  ADD CONSTRAINT `fk_certificate_qualification` FOREIGN KEY (`qualification_id`) REFERENCES `tbl_qualifications` (`qualification_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `tbl_certificate_ibfk_1` FOREIGN KEY (`trainee_id`) REFERENCES `tbl_trainee_hdr` (`trainee_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `tbl_enrolled_trainee`
+--
+ALTER TABLE `tbl_enrolled_trainee`
+  ADD CONSTRAINT `tbl_enrolled_trainee_ibfk_1` FOREIGN KEY (`enrollment_id`) REFERENCES `tbl_enrollment` (`enrollment_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `tbl_enrolled_trainee_ibfk_2` FOREIGN KEY (`trainee_id`) REFERENCES `tbl_trainee_hdr` (`trainee_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `tbl_enrollment`
+--
+ALTER TABLE `tbl_enrollment`
+  ADD CONSTRAINT `fk_enrollment_offered_qualification` FOREIGN KEY (`offered_qualification_id`) REFERENCES `tbl_offered_qualifications` (`offered_qualification_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_enrollment_scholarship` FOREIGN KEY (`scholarship_type_id`) REFERENCES `tbl_scholarship_type` (`scholarship_type_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `tbl_enrollment_ibfk_1` FOREIGN KEY (`trainee_id`) REFERENCES `tbl_trainee_hdr` (`trainee_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `tbl_enrollment_ibfk_3` FOREIGN KEY (`batch_id`) REFERENCES `tbl_batch` (`batch_id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Constraints for table `tbl_feedback`
+--
+ALTER TABLE `tbl_feedback`
+  ADD CONSTRAINT `tbl_feedback_ibfk_1` FOREIGN KEY (`trainee_id`) REFERENCES `tbl_trainee_hdr` (`trainee_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `tbl_feedback_ibfk_2` FOREIGN KEY (`trainer_id`) REFERENCES `tbl_trainer` (`trainer_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `tbl_grades`
+--
+ALTER TABLE `tbl_grades`
+  ADD CONSTRAINT `fk_grades_qualification` FOREIGN KEY (`qualification_id`) REFERENCES `tbl_qualifications` (`qualification_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_grades_test` FOREIGN KEY (`test_id`) REFERENCES `tbl_test` (`test_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_grades_trainee` FOREIGN KEY (`trainee_id`) REFERENCES `tbl_trainee_hdr` (`trainee_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `tbl_lessons`
+--
+ALTER TABLE `tbl_lessons`
+  ADD CONSTRAINT `tbl_lessons_ibfk_1` FOREIGN KEY (`module_id`) REFERENCES `tbl_module` (`module_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `tbl_lesson_contents`
+--
+ALTER TABLE `tbl_lesson_contents`
+  ADD CONSTRAINT `fk_content_lesson` FOREIGN KEY (`lesson_id`) REFERENCES `tbl_lessons` (`lesson_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `tbl_module`
+--
+ALTER TABLE `tbl_module`
+  ADD CONSTRAINT `fk_module_qualification` FOREIGN KEY (`qualification_id`) REFERENCES `tbl_qualifications` (`qualification_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `tbl_notifications`
+--
+ALTER TABLE `tbl_notifications`
+  ADD CONSTRAINT `fk_notifications_user` FOREIGN KEY (`user_id`) REFERENCES `tbl_users` (`user_id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `tbl_offered_qualifications`
+--
+ALTER TABLE `tbl_offered_qualifications`
+  ADD CONSTRAINT `fk_offered_qualification_qualification` FOREIGN KEY (`qualification_id`) REFERENCES `tbl_qualifications` (`qualification_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `tbl_offered_qualifications_ibfk_2` FOREIGN KEY (`trainer_id`) REFERENCES `tbl_trainer` (`trainer_id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Constraints for table `tbl_progress_charts`
+--
+ALTER TABLE `tbl_progress_charts`
+  ADD CONSTRAINT `fk_progress_charts_trainer` FOREIGN KEY (`trainer_id`) REFERENCES `tbl_trainer` (`trainer_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `tbl_quiz_options`
+--
+ALTER TABLE `tbl_quiz_options`
+  ADD CONSTRAINT `tbl_quiz_options_ibfk_1` FOREIGN KEY (`question_id`) REFERENCES `tbl_quiz_questions` (`question_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `tbl_quiz_questions`
+--
+ALTER TABLE `tbl_quiz_questions`
+  ADD CONSTRAINT `tbl_quiz_questions_ibfk_1` FOREIGN KEY (`test_id`) REFERENCES `tbl_test` (`test_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `tbl_role_permissions`
+--
+ALTER TABLE `tbl_role_permissions`
+  ADD CONSTRAINT `tbl_role_permissions_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `tbl_roles` (`role_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `tbl_role_permissions_ibfk_2` FOREIGN KEY (`permission_id`) REFERENCES `tbl_permissions` (`permission_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `tbl_schedule`
+--
+ALTER TABLE `tbl_schedule`
+  ADD CONSTRAINT `fk_schedule_batch` FOREIGN KEY (`batch_id`) REFERENCES `tbl_batch` (`batch_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `tbl_scholarship`
+--
+ALTER TABLE `tbl_scholarship`
+  ADD CONSTRAINT `fk_scholarship_type` FOREIGN KEY (`scholarship_type_id`) REFERENCES `tbl_scholarship_type` (`scholarship_type_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `tbl_scholarship_ibfk_1` FOREIGN KEY (`trainee_id`) REFERENCES `tbl_trainee_hdr` (`trainee_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `tbl_task_sheets`
+--
+ALTER TABLE `tbl_task_sheets`
+  ADD CONSTRAINT `fk_task_sheet_lesson` FOREIGN KEY (`lesson_id`) REFERENCES `tbl_lessons` (`lesson_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `tbl_task_sheet_submissions`
+--
+ALTER TABLE `tbl_task_sheet_submissions`
+  ADD CONSTRAINT `fk_submission_grader` FOREIGN KEY (`graded_by`) REFERENCES `tbl_users` (`user_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_submission_lesson` FOREIGN KEY (`lesson_id`) REFERENCES `tbl_lessons` (`lesson_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_submission_trainee` FOREIGN KEY (`trainee_id`) REFERENCES `tbl_trainee_hdr` (`trainee_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `tbl_test`
+--
+ALTER TABLE `tbl_test`
+  ADD CONSTRAINT `tbl_test_ibfk_1` FOREIGN KEY (`lesson_id`) REFERENCES `tbl_lessons` (`lesson_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `tbl_test_ibfk_2` FOREIGN KEY (`activity_type_id`) REFERENCES `tbl_activities_type` (`activity_type_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `tbl_test_ibfk_3` FOREIGN KEY (`score_type_id`) REFERENCES `tbl_score_type` (`score_type_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `tbl_trainee_dtl`
+--
+ALTER TABLE `tbl_trainee_dtl`
+  ADD CONSTRAINT `fk_trainee_dtl` FOREIGN KEY (`trainee_id`) REFERENCES `tbl_trainee_hdr` (`trainee_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `tbl_trainee_ftr`
+--
+ALTER TABLE `tbl_trainee_ftr`
+  ADD CONSTRAINT `fk_trainee_ftr` FOREIGN KEY (`trainee_id`) REFERENCES `tbl_trainee_hdr` (`trainee_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `tbl_trainee_hdr`
+--
+ALTER TABLE `tbl_trainee_hdr`
+  ADD CONSTRAINT `tbl_trainee_hdr_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `tbl_users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `tbl_trainer`
+--
+ALTER TABLE `tbl_trainer`
+  ADD CONSTRAINT `fk_trainer_qualification` FOREIGN KEY (`qualification_id`) REFERENCES `tbl_qualifications` (`qualification_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `tbl_trainer_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `tbl_users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `tbl_trainer_qualifications`
+--
+ALTER TABLE `tbl_trainer_qualifications`
+  ADD CONSTRAINT `tbl_trainer_qualifications_ibfk_1` FOREIGN KEY (`trainer_id`) REFERENCES `tbl_trainer` (`trainer_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `tbl_trainer_qualifications_ibfk_2` FOREIGN KEY (`qualification_id`) REFERENCES `tbl_qualifications` (`qualification_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `tbl_training`
+--
+ALTER TABLE `tbl_training`
+  ADD CONSTRAINT `fk_training_qualification` FOREIGN KEY (`qualification_id`) REFERENCES `tbl_qualifications` (`qualification_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `tbl_training_ibfk_1` FOREIGN KEY (`trainee_id`) REFERENCES `tbl_trainee_hdr` (`trainee_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `tbl_training_ibfk_2` FOREIGN KEY (`trainer_id`) REFERENCES `tbl_trainer` (`trainer_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `tbl_users`
+--
+ALTER TABLE `tbl_users`
+  ADD CONSTRAINT `fk_archived_by` FOREIGN KEY (`archived_by`) REFERENCES `tbl_users` (`user_id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `tbl_users_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `tbl_role` (`role_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `tbl_user_roles`
+--
+ALTER TABLE `tbl_user_roles`
+  ADD CONSTRAINT `tbl_user_roles_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `tbl_roles` (`role_id`) ON DELETE CASCADE;
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

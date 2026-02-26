@@ -52,6 +52,14 @@ function clearModalFocus() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+        // Logout
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                localStorage.clear();
+                window.location.href = '/hohoo-ville/frontend/login.html';
+            });
+        }
     if (typeof Swal === 'undefined') {
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
@@ -250,13 +258,22 @@ function renderQueueTable(data) {
     tbody.innerHTML = '';
     
     if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No pending enrollments</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center">No pending enrollments</td></tr>';
         return;
     }
 
     data.forEach(item => {
         const row = document.createElement('tr');
-        const courseOrBatch = item.course_name || item.batch_name || 'N/A';
+        const courseName = item.course_name || '';
+        const batchName = item.batch_name || '';
+        let courseOrBatch = 'N/A';
+        if (courseName && batchName) {
+            courseOrBatch = `${courseName} / ${batchName}`;
+        } else if (courseName) {
+            courseOrBatch = courseName;
+        } else if (batchName) {
+            courseOrBatch = batchName;
+        }
         const photoHtml = item.photo_file 
             ? `<img src="${UPLOADS_URL}${encodeURIComponent(item.photo_file)}" class="rounded-circle border" width="40" height="40" style="object-fit: cover;">` 
             : `<div class="rounded-circle bg-light text-secondary border d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;"><i class="fas fa-user"></i></div>`;
@@ -266,7 +283,6 @@ function renderQueueTable(data) {
             <td>${item.first_name} ${item.last_name}</td>
             <td>${courseOrBatch}</td>
             <td>${item.enrollment_date}</td>
-            <td><span class="badge bg-warning text-dark">${item.status}</span></td>
             <td>
                 <button class="btn btn-primary btn-sm review-btn" data-id="${item.enrollment_id}">
                     <i class="fas fa-search"></i> Review
@@ -284,12 +300,22 @@ function renderReservedTable(data) {
     tbody.innerHTML = '';
     
     if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No reserved trainees</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center">No reserved trainees</td></tr>';
         return;
     }
 
     data.forEach(item => {
         const row = document.createElement('tr');
+        const courseName = item.course_name || '';
+        const batchName = item.batch_name || '';
+        let courseOrBatch = 'N/A';
+        if (courseName && batchName) {
+            courseOrBatch = `${courseName} / ${batchName}`;
+        } else if (courseName) {
+            courseOrBatch = courseName;
+        } else if (batchName) {
+            courseOrBatch = batchName;
+        }
         const photoHtml = item.photo_file 
             ? `<img src="${UPLOADS_URL}${encodeURIComponent(item.photo_file)}" class="rounded-circle border" width="40" height="40" style="object-fit: cover;">` 
             : `<div class="rounded-circle bg-light text-secondary border d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;"><i class="fas fa-user"></i></div>`;
@@ -297,9 +323,8 @@ function renderReservedTable(data) {
         row.innerHTML = `
             <td>${photoHtml}</td>
             <td>${item.first_name} ${item.last_name}</td>
-            <td>${item.course_name || 'N/A'}</td>
+            <td>${courseOrBatch}</td>
             <td>${item.enrollment_date}</td>
-            <td><span class="badge bg-info text-dark">${item.status}</span></td>
             <td>
                 <button class="btn btn-success btn-sm" onclick="openReassignModal(${item.enrollment_id}, ${item.qualification_id}, '${item.first_name} ${item.last_name}', '${item.course_name}')">
                     <i class="fas fa-random"></i> Assign Batch
@@ -411,11 +436,18 @@ async function approveEnrollment(id) {
     if (!result.isConfirmed) return;
     
     try {
+        Swal.fire({
+            title: 'Please wait',
+            text: 'Sending email...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
         const response = await apiClient.post('/role/admin/approval_queue.php?action=approve', { 
             enrollment_id: id,
             scholarship_type: scholarship
         });
         
+        Swal.close();
         if (response.data.success) {
             Swal.fire('Approved!', 'Enrollment approved successfully', 'success');
             reviewModal.hide();
@@ -426,6 +458,7 @@ async function approveEnrollment(id) {
         }
     } catch (error) {
         console.error('Error approving enrollment:', error);
+        Swal.close();
         const errorMsg = error.response?.data?.message || error.message || 'Error approving enrollment';
         showAlert('Error: ' + errorMsg, 'danger');
     }
@@ -480,7 +513,14 @@ async function reserveEnrollment(id) {
     if (!reason) return;
 
     try {
+        Swal.fire({
+            title: 'Please wait',
+            text: 'Sending email...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
         const response = await apiClient.post('/role/admin/approval_queue.php?action=reserve', { enrollment_id: id, rejection_reason: reason });
+        Swal.close();
         if (response.data.success) {
             Swal.fire('Reserved', 'Application has been moved to the reserved list.', 'info');
             reviewModal.hide();
@@ -491,6 +531,7 @@ async function reserveEnrollment(id) {
         }
     } catch (error) {
         console.error('Error reserving enrollment:', error);
+        Swal.close();
         showAlert('Error: ' + (error.response?.data?.message || 'Action failed'), 'danger');
     }
 }
@@ -545,7 +586,14 @@ async function rejectEnrollment(id) {
     if (!reason) return;
     
     try {
+        Swal.fire({
+            title: 'Please wait',
+            text: 'Sending email...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
         const response = await apiClient.post('/role/admin/approval_queue.php?action=reject', { enrollment_id: id, rejection_reason: reason });
+        Swal.close();
         if (response.data.success) {
             Swal.fire('Rejected', 'Enrollment rejected successfully', 'info');
             reviewModal.hide();
@@ -556,6 +604,7 @@ async function rejectEnrollment(id) {
         }
     } catch (error) {
         console.error('Error rejecting enrollment:', error);
+        Swal.close();
         const errorMsg = error.response?.data?.message || error.message || 'Error rejecting enrollment';
         showAlert('Error: ' + errorMsg, 'danger');
     }
@@ -622,11 +671,18 @@ async function submitReassignment(enrollmentId, newBatchId) {
     if (!result.isConfirmed) return;
 
     try {
+        Swal.fire({
+            title: 'Please wait',
+            text: 'Sending email...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
         const response = await apiClient.post('/role/admin/approval_queue.php?action=reassign', {
             enrollment_id: enrollmentId,
             new_batch_id: newBatchId
         });
 
+        Swal.close();
         if (response.data.success) {
             Swal.fire('Success!', 'Trainee has been assigned and approved.', 'success');
             reassignBatchModal.hide();
@@ -637,6 +693,7 @@ async function submitReassignment(enrollmentId, newBatchId) {
         }
     } catch (error) {
         console.error('Error reassigning batch:', error);
+        Swal.close();
         Swal.fire('Error', error.response?.data?.message || 'Failed to reassign batch.', 'error');
     }
 }

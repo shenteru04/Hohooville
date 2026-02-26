@@ -5,6 +5,8 @@ const UPLOADS_URL = window.location.origin + '/hohoo-ville/uploads/trainees/';
 let viewModal;
 let currentQueueData = [];
 let unqualifiedData = [];
+let currentViewItem = null;
+let currentViewCanReview = false;
 
 // Axios Instance Configuration
 const apiClient = axios.create({
@@ -31,8 +33,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // Refresh unqualified list when tab is clicked
     document.getElementById('unqualified-tab').addEventListener('click', loadUnqualifiedQueue);
 
-    document.getElementById('searchInput').addEventListener('keyup', filterQueue);
-    document.getElementById('qualificationFilter').addEventListener('change', filterQueue);
+    const modalQualifyBtn = document.getElementById('modalQualifyBtn');
+    const modalUnqualifyBtn = document.getElementById('modalUnqualifyBtn');
+    if (modalQualifyBtn) {
+        modalQualifyBtn.addEventListener('click', () => {
+            if (currentViewItem) qualifyApplication(currentViewItem.enrollment_id);
+        });
+    }
+    if (modalUnqualifyBtn) {
+        modalUnqualifyBtn.addEventListener('click', () => {
+            if (currentViewItem) unqualifyApplication(currentViewItem.enrollment_id);
+        });
+    }
 
     // Inject Sidebar CSS (W3.CSS Reference Style)
     const ms = document.createElement('style');
@@ -116,8 +128,7 @@ async function loadApprovalQueue() {
         const response = await apiClient.get('/role/registrar/trainee_application.php?action=list');
         if (response.data.success) {
             currentQueueData = response.data.data;
-            populateQualificationFilter(currentQueueData);
-            filterQueue();
+            renderQueueTable(currentQueueData, 'approvalQueueBody', true);
         }
     } catch (error) {
         console.error('Error loading approval queue:', error);
@@ -138,34 +149,6 @@ async function loadUnqualifiedQueue() {
     }
 }
 
-function populateQualificationFilter(data) {
-    const select = document.getElementById('qualificationFilter');
-    const uniqueQuals = [...new Set(data.map(item => item.course_name).filter(Boolean))];
-    
-    // Keep the first option (All Qualifications)
-    select.innerHTML = '<option value="">All Qualifications</option>';
-    
-    uniqueQuals.sort().forEach(qual => {
-        const option = document.createElement('option');
-        option.value = qual;
-        option.textContent = qual;
-        select.appendChild(option);
-    });
-}
-
-function filterQueue() {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    const qualFilter = document.getElementById('qualificationFilter').value;
-
-    const filteredData = currentQueueData.filter(item => {
-        const nameMatch = (item.first_name + ' ' + item.last_name).toLowerCase().includes(searchTerm);
-        const qualMatch = qualFilter === '' || item.course_name === qualFilter;
-        return nameMatch && qualMatch;
-    });
-
-    renderQueueTable(filteredData, 'approvalQueueBody', true);
-}
-
 function renderQueueTable(data, elementId, showActions) {
     const tbody = document.getElementById(elementId);
     if (!tbody) return;
@@ -173,45 +156,66 @@ function renderQueueTable(data, elementId, showActions) {
     tbody.innerHTML = '';
     
     if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No pending enrollments</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center">No pending enrollments</td></tr>';
         return;
     }
 
     data.forEach(item => {
         const row = document.createElement('tr');
-        const courseOrBatch = item.course_name || item.batch_name || 'N/A';
+        const courseName = item.course_name || '';
+        const batchName = item.batch_name || '';
+        let courseOrBatch = 'N/A';
+        if (courseName && batchName) {
+            courseOrBatch = `${courseName} / ${batchName}`;
+        } else if (courseName) {
+            courseOrBatch = courseName;
+        } else if (batchName) {
+            courseOrBatch = batchName;
+        }
         const photoHtml = item.photo_file 
             ? `<img src="${UPLOADS_URL}${encodeURIComponent(item.photo_file)}" class="rounded-circle border" width="40" height="40" style="object-fit: cover;">` 
             : `<div class="rounded-circle bg-light text-secondary border d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;"><i class="fas fa-user"></i></div>`;
-        
+        const actionButtons = `
+            <button class="btn btn-sm btn-outline-primary" type="button" onclick="viewApplication(${item.enrollment_id}, ${showActions ? 'true' : 'false'})" title="View Details">
+                <i class="fas fa-eye"></i>
+            </button>
+        `;
+        const appliedAt = formatDateTime(item.enrollment_date);
         row.innerHTML = `
             <td>${photoHtml}</td>
             <td>${item.first_name} ${item.last_name}</td>
             <td>${courseOrBatch}</td>
-            <td>${item.enrollment_date}</td>
-            <td><span class="badge bg-${item.status === 'pending' ? 'warning' : 'danger'} text-dark">${item.status}</span></td>
+            <td>${appliedAt}</td>
             <td>
-                <button class="btn btn-info btn-sm text-white" onclick="viewApplication(${item.enrollment_id})" title="View Details">
-                    <i class="fas fa-eye"></i>
-                </button>
-                ${showActions ? `
-                <button class="btn btn-success btn-sm" onclick="qualifyApplication(${item.enrollment_id})" title="Mark as Qualified">
-                    <i class="fas fa-check"></i>
-                </button>
-                <button class="btn btn-danger btn-sm" onclick="unqualifyApplication(${item.enrollment_id})" title="Mark as Unqualified">
-                    <i class="fas fa-times"></i>
-                </button>
-                ` : ''}
+                <div class="d-flex justify-content-center align-items-center flex-nowrap">
+                    ${actionButtons}
+                </div>
             </td>
         `;
         tbody.appendChild(row);
     });
 }
 
-window.viewApplication = function(id) {
+function formatDateTime(value) {
+    if (!value) return '-';
+    const normalized = String(value).replace(' ', 'T');
+    const date = new Date(normalized);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+window.viewApplication = function(id, canReview = false) {
     // Search in both lists
     const item = currentQueueData.find(i => i.enrollment_id == id) || unqualifiedData.find(i => i.enrollment_id == id);
     if (!item) return;
+    currentViewItem = item;
+    currentViewCanReview = !!canReview;
 
     // Personal Info
     document.getElementById('appName').textContent = `${item.first_name} ${item.middle_name || ''} ${item.last_name} ${item.extension_name || ''}`;
@@ -260,6 +264,11 @@ window.viewApplication = function(id) {
     photo.style.display = item.photo_file ? 'block' : 'none';
     noPhoto.style.display = item.photo_file ? 'none' : 'block';
 
+    const modalQualifyBtn = document.getElementById('modalQualifyBtn');
+    const modalUnqualifyBtn = document.getElementById('modalUnqualifyBtn');
+    if (modalQualifyBtn) modalQualifyBtn.style.display = currentViewCanReview ? 'inline-block' : 'none';
+    if (modalUnqualifyBtn) modalUnqualifyBtn.style.display = currentViewCanReview ? 'inline-block' : 'none';
+
     viewModal.show();
 }
 
@@ -275,18 +284,27 @@ window.qualifyApplication = async function(id) {
     if (!result.isConfirmed) return;
     
     try {
+        Swal.fire({
+            title: 'Please wait',
+            text: 'Sending email...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
         const response = await apiClient.post('/role/registrar/trainee_application.php?action=qualify', { 
             enrollment_id: id
         });
         
+        Swal.close();
         if (response.data.success) {
             Swal.fire({title: 'Success', text: 'Application marked as Qualified.', icon: 'success'});
+            if (viewModal) viewModal.hide();
             loadApprovalQueue(); // Reload to refresh list and filters
         } else {
             Swal.fire({title: 'Error', text: 'Error: ' + response.data.message, icon: 'error'});
         }
     } catch (error) {
         console.error('Error:', error);
+        Swal.close();
         Swal.fire({title: 'Error', text: 'Action failed', icon: 'error'});
     }
 }
@@ -303,15 +321,24 @@ window.unqualifyApplication = async function(id) {
     if (!result.isConfirmed) return;
     
     try {
+        Swal.fire({
+            title: 'Please wait',
+            text: 'Sending email...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
         const response = await apiClient.post('/role/registrar/trainee_application.php?action=unqualify', { enrollment_id: id });
+        Swal.close();
         if (response.data.success) {
             Swal.fire({title: 'Info', text: 'Application marked as Unqualified.', icon: 'info'});
+            if (viewModal) viewModal.hide();
             loadApprovalQueue(); // Reload to refresh list and filters
         } else {
             Swal.fire({title: 'Error', text: 'Error: ' + response.data.message, icon: 'error'});
         }
     } catch (error) {
         console.error('Error:', error);
+        Swal.close();
         Swal.fire({title: 'Error', text: 'Action failed', icon: 'error'});
     }
 }

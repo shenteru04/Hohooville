@@ -39,21 +39,8 @@ class TraineeDashboard {
 
             $qualificationId = $activeCourse ? $activeCourse['course_id'] : null;
 
-            // 2. Get Attendance Rate
-            // Assuming 'present' is the target status. Adjust if 'late' counts as present.
-            $attQuery = "SELECT 
-                            COUNT(*) as total_days,
-                            SUM(CASE WHEN status = 'present' THEN 1 WHEN status = 'late' THEN 1 ELSE 0 END) as present_days
-                         FROM tbl_attendance 
-                         WHERE trainee_id = ?";
-            $stmt = $this->conn->prepare($attQuery);
-            $stmt->execute([$traineeId]);
-            $attendance = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            $attendanceRate = 0;
-            if ($attendance && $attendance['total_days'] > 0) {
-                $attendanceRate = round(($attendance['present_days'] / $attendance['total_days']) * 100, 1);
-            }
+            // 2. Get Progress Rate (quiz + task sheet completion)
+            $progressRate = $this->calculateProgressRate($traineeId, $qualificationId);
 
             // 3. Get Average Grade (Current Course)
             $gradeQuery = "SELECT AVG(score) as total_grade,
@@ -97,7 +84,7 @@ class TraineeDashboard {
 
             echo json_encode(['success' => true, 'data' => [
                 'active_course' => $activeCourse,
-                'attendance_rate' => $attendanceRate,
+                'progress_rate' => $progressRate,
                 'current_grade' => $grade['total_grade'] ?? 'N/A',
                 'competency_status' => $grade['remarks'] ?? 'Pending',
                 'schedule' => $schedule,
@@ -122,6 +109,75 @@ class TraineeDashboard {
         } catch (Exception $e) {
             // Log error but don't throw - auto-archive is non-critical
             error_log("Auto-archive failed for enrollment $enrollmentId: " . $e->getMessage());
+        }
+    }
+
+    private function calculateProgressRate($traineeId, $qualificationId) {
+        if (!$qualificationId) return 0;
+
+        try {
+            $lessonQuery = "SELECT 
+                                l.lesson_id,
+                                IF(t.test_id IS NULL, 0, 1) as has_quiz,
+                                (SELECT COUNT(*) FROM tbl_task_sheets ts WHERE ts.lesson_id = l.lesson_id) as task_sheet_count
+                            FROM tbl_module m
+                            JOIN tbl_lessons l ON m.module_id = l.module_id
+                            LEFT JOIN tbl_test t ON l.lesson_id = t.lesson_id AND t.activity_type_id = 1
+                            WHERE m.qualification_id = ? AND (l.posting_date IS NULL OR l.posting_date <= NOW())
+                            ORDER BY m.module_id, l.lesson_id";
+            $stmt = $this->conn->prepare($lessonQuery);
+            $stmt->execute([$qualificationId]);
+            $lessons = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if (empty($lessons)) return 0;
+
+            $lessonIds = array_column($lessons, 'lesson_id');
+            $in = implode(',', array_fill(0, count($lessonIds), '?'));
+
+            // Quiz completions (per lesson)
+            $quizStmt = $this->conn->prepare(
+                "SELECT DISTINCT tt.lesson_id
+                 FROM tbl_grades g
+                 JOIN tbl_test tt ON g.test_id = tt.test_id
+                 WHERE g.trainee_id = ? AND tt.activity_type_id = 1 AND tt.lesson_id IN ($in)"
+            );
+            $quizStmt->execute(array_merge([$traineeId], $lessonIds));
+            $quizDone = $quizStmt->fetchAll(PDO::FETCH_COLUMN);
+            $quizDoneSet = array_flip($quizDone);
+
+            // Task sheet submissions (per lesson)
+            $taskStmt = $this->conn->prepare(
+                "SELECT lesson_id, COUNT(DISTINCT task_sheet_id) as submitted_count
+                 FROM tbl_task_sheet_submissions
+                 WHERE trainee_id = ? AND status IN ('submitted', 'approved') AND lesson_id IN ($in)
+                 GROUP BY lesson_id"
+            );
+            $taskStmt->execute(array_merge([$traineeId], $lessonIds));
+            $submittedCounts = $taskStmt->fetchAll(PDO::FETCH_KEY_PAIR);
+
+            $totalUnits = 0;
+            $completedUnits = 0;
+
+            foreach ($lessons as $lesson) {
+                $hasQuiz = (int)$lesson['has_quiz'] === 1;
+                $taskCount = (int)$lesson['task_sheet_count'];
+
+                if ($hasQuiz) {
+                    $totalUnits++;
+                    if (isset($quizDoneSet[$lesson['lesson_id']])) $completedUnits++;
+                }
+
+                if ($taskCount > 0) {
+                    $totalUnits++;
+                    $submitted = (int)($submittedCounts[$lesson['lesson_id']] ?? 0);
+                    if ($submitted >= $taskCount) $completedUnits++;
+                }
+            }
+
+            if ($totalUnits === 0) return 0;
+            return round(($completedUnits / $totalUnits) * 100, 1);
+        } catch (Exception $e) {
+            return 0;
         }
     }
 }

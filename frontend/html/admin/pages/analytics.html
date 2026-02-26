@@ -7,16 +7,15 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Sidebar CSS -->
     <link rel="stylesheet" href="../../../css/admin/sidebar.css">
     <style>
         :root {
             --primary-color: #4e73df;
             --secondary-color: #858796;
-            --bg-color: #f8f9fc;
+            --bg-color: #f4f6fb;
             --text-color: #5a5c69;
+            --card-shadow: 0 0.6rem 1.6rem rgba(20, 33, 61, 0.08);
         }
         body {
             font-family: 'Nunito', sans-serif;
@@ -50,31 +49,177 @@
             background-color: var(--primary-color);
             color: #fff;
         }
+        .page-header {
+            background: linear-gradient(120deg, rgba(78, 115, 223, 0.95), rgba(28, 200, 138, 0.95));
+            border-radius: 18px;
+            color: #fff;
+            padding: 20px 24px;
+            box-shadow: var(--card-shadow);
+            position: relative;
+            overflow: hidden;
+        }
+        .page-header::after {
+            content: "";
+            position: absolute;
+            width: 220px;
+            height: 220px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            top: -90px;
+            right: -80px;
+        }
+        .page-eyebrow {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            opacity: 0.8;
+            margin-bottom: 6px;
+        }
+        .page-header h2 {
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .page-header p {
+            margin-bottom: 0;
+            opacity: 0.9;
+        }
+        .page-header .header-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        .page-header .last-updated {
+            font-size: 0.85rem;
+            padding: 6px 10px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 999px;
+        }
+        .page-header .btn {
+            border-radius: 999px;
+        }
+        .stat-card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            padding: 16px;
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            background: #fff;
+            height: 100%;
+        }
+        .stat-icon {
+            width: 46px;
+            height: 46px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        .stat-card.primary .stat-icon {
+            background: rgba(78, 115, 223, 0.15);
+            color: #4e73df;
+        }
+        .stat-card.success .stat-icon {
+            background: rgba(28, 200, 138, 0.15);
+            color: #1cc88a;
+        }
+        .stat-card.warning .stat-icon {
+            background: rgba(246, 194, 62, 0.2);
+            color: #f6c23e;
+        }
+        .stat-card.secondary .stat-icon {
+            background: rgba(108, 117, 125, 0.15);
+            color: #6c757d;
+        }
+        .stat-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #6c757d;
+            font-weight: 700;
+        }
+        .stat-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #1f2d3d;
+            line-height: 1.2;
+        }
+        .stat-meta {
+            font-size: 0.85rem;
+            color: #8a94a6;
+        }
         .card {
             border: none;
-            border-radius: 0.35rem;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
         }
         .card-header {
-            background-color: #f8f9fc;
-            border-bottom: 1px solid #e3e6f0;
+            background-color: transparent;
+            border-bottom: 1px solid #eef1f6;
             padding: 1rem 1.25rem;
             font-weight: 700;
-            color: var(--primary-color);
+            color: #2f365f;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
-        .stat-card { border-left: 4px solid #007bff; }
-        .stat-card.success { border-left-color: #28a745; }
-        .stat-card.warning { border-left-color: #ffc107; }
-        .chart-container { position: relative; height: 300px; }
+        .card-header h6 {
+            margin-bottom: 0;
+            font-weight: 700;
+        }
+        .card-header .header-note {
+            font-size: 0.82rem;
+            color: #8a94a6;
+            font-weight: 600;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+        .chart-container.compact {
+            height: 240px;
+        }
+        .chart-overlay {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #7a8699;
+            background: rgba(255, 255, 255, 0.82);
+            border-radius: 12px;
+            font-weight: 600;
+            padding: 12px;
+        }
+        .table thead th {
+            background: #f8f9fc;
+            color: #4e73df;
+            font-weight: 700;
+            border-bottom: 1px solid #e3e6f0;
+        }
+        .table tbody tr:hover {
+            background: #f3f6ff;
+        }
+        @media (max-width: 991px) {
+            .page-header {
+                padding: 18px;
+            }
+            .page-header .header-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+        }
     </style>
 </head>
 <body>
-    <!-- Sidebar Container - Content will be loaded here via JavaScript -->
     <div id="sidebar-container"></div>
 
-    <!-- Main Content Area -->
     <div class="main-content" id="content">
-        <!-- Top Navigation -->
         <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
             <div class="container-fluid">
                 <button type="button" id="sidebarCollapse" class="btn btn-outline-primary me-2 d-lg-none">
@@ -89,183 +234,201 @@
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
                             <li><a class="dropdown-item" href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
-                            </ul>
-                        </div>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                        </ul>
                     </div>
                 </div>
-            </nav>
+            </div>
+        </nav>
 
-            <div class="container-fluid mt-4">
-                <h2 class="mb-4"><i class="fas fa-chart-line me-2"></i> Analytics Dashboard</h2>
+        <div class="container-fluid mt-4">
+            <h2 class="mb-4"><i class="fas fa-chart-line me-2"></i> Analytics Dashboard</h2>
 
-            <!-- Overview Metrics -->
-            <div class="row mb-4">
-                <div class="col-md-3 mb-3">
-                    <div class="card stat-card">
-                        <div class="card-body">
-                            <h6 class="card-title text-muted">Total Trainees</h6>
-                            <h3 id="totalTrainees" class="mb-0">-</h3>
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="stat-card primary">
+                        <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
+                        <div>
+                            <div class="stat-label">Total Trainees</div>
+                            <div class="stat-value" id="totalTrainees">-</div>
+                            <div class="stat-meta">Active enrollments</div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3 mb-3">
-                    <div class="card stat-card success">
-                        <div class="card-body">
-                            <h6 class="card-title text-muted">Completed</h6>
-                            <h3 id="completedTrainees" class="mb-0">-</h3>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="stat-card success">
+                        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                        <div>
+                            <div class="stat-label">Completed</div>
+                            <div class="stat-value" id="completedTrainees">-</div>
+                            <div class="stat-meta">Total completions</div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3 mb-3">
-                    <div class="card stat-card warning">
-                        <div class="card-body">
-                            <h6 class="card-title text-muted">Pass Rate</h6>
-                            <h3 id="avgPassRate" class="mb-0">-</h3>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="stat-card warning">
+                        <div class="stat-icon"><i class="fas fa-award"></i></div>
+                        <div>
+                            <div class="stat-label">Pass Rate</div>
+                            <div class="stat-value" id="avgPassRate">-</div>
+                            <div class="stat-meta">Based on test scores</div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3 mb-3">
-                    <div class="card stat-card" style="border-left-color: #6c757d;">
-                        <div class="card-body">
-                            <h6 class="card-title text-muted">Active Batches</h6>
-                            <h3 id="activeBatches" class="mb-0">-</h3>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="stat-card secondary">
+                        <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
+                        <div>
+                            <div class="stat-label">Active Batches</div>
+                            <div class="stat-value" id="activeBatches">-</div>
+                            <div class="stat-meta">Open training batches</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="row">
-                <!-- Completion Rates -->
-                <div class="col-lg-6 mb-4">
-                    <div class="card">
+            <div class="row g-4 mb-4">
+                <div class="col-lg-6">
+                    <div class="card h-100">
                         <div class="card-header">
-                            <h6 class="mb-0">Completion Rates by Course</h6>
+                            <h6>Completion Rates by Course</h6>
+                            <span class="header-note">Completion % per qualification</span>
                         </div>
                         <div class="card-body">
                             <div class="chart-container">
                                 <canvas id="completionChart"></canvas>
+                                <div class="chart-overlay">No completion data yet.</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Module Performance -->
-                <div class="col-lg-6 mb-4">
-                    <div class="card">
+                <div class="col-lg-6">
+                    <div class="card h-100">
                         <div class="card-header">
-                            <h6 class="mb-0">Module Performance</h6>
+                            <h6>Module Performance</h6>
+                            <span class="header-note">Competency rate per module</span>
                         </div>
                         <div class="card-body">
                             <div class="chart-container">
                                 <canvas id="moduleChart"></canvas>
+                                <div class="chart-overlay">No module performance data yet.</div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="row">
-                <!-- Enrollment Trends -->
-                <div class="col-lg-12 mb-4">
+            <div class="row g-4 mb-4">
+                <div class="col-12">
                     <div class="card">
                         <div class="card-header">
-                            <h6 class="mb-0">Enrollment Trends (Last 12 Months)</h6>
+                            <h6>Enrollment Trends (Last 12 Months)</h6>
+                            <span class="header-note">Approved, pending, and completed enrollments</span>
                         </div>
                         <div class="card-body">
-                            <div class="chart-container" style="height: 250px;">
+                            <div class="chart-container compact">
                                 <canvas id="trendChart"></canvas>
+                                <div class="chart-overlay">No enrollment trend data yet.</div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="row">
-                <!-- Dropout Analysis -->
-                <div class="col-lg-6 mb-4">
-                    <div class="card">
+            <div class="row g-4 mb-4">
+                <div class="col-lg-6">
+                    <div class="card h-100">
                         <div class="card-header">
-                            <h6 class="mb-0">Dropout Analysis</h6>
+                            <h6>Dropout Analysis</h6>
+                            <span class="header-note">Monthly dropouts and completions</span>
                         </div>
                         <div class="card-body">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Month</th>
-                                        <th>Enrolled</th>
-                                        <th>Dropout Rate</th>
-                                        <th>Completed</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="dropoutTable">
-                                    <tr><td colspan="4" class="text-center text-muted">Loading...</td></tr>
-                                </tbody>
-                            </table>
+                            <div class="table-responsive">
+                                <table class="table table-sm" id="dropoutTableMain" data-table-manager="true" data-filters="Month:0" data-filter-auto-options="true">
+                                    <thead>
+                                        <tr>
+                                            <th>Month</th>
+                                            <th>Enrolled</th>
+                                            <th>Dropout Rate</th>
+                                            <th>Completed</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dropoutTable">
+                                        <tr><td colspan="4" class="text-center text-muted">Loading...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Trainer Performance -->
-                <div class="col-lg-6 mb-4">
-                    <div class="card">
+                <div class="col-lg-6">
+                    <div class="card h-100">
                         <div class="card-header">
-                            <h6 class="mb-0">Top Trainers</h6>
+                            <h6>Trainer Performance</h6>
+                            <span class="header-note">Top trainers by trainees and scores</span>
                         </div>
                         <div class="card-body">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Trainer</th>
-                                        <th>Trainees</th>
-                                        <th>Avg Score</th>
-                                        <th>Competency</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="trainerTable">
-                                    <tr><td colspan="4" class="text-center text-muted">Loading...</td></tr>
-                                </tbody>
-                            </table>
+                            <div class="table-responsive">
+                                <table class="table table-sm" id="trainerPerformanceTable" data-table-manager="true" data-filters="Competency:3" data-filter-auto-options="true">
+                                    <thead>
+                                        <tr>
+                                            <th>Trainer</th>
+                                            <th>Trainees</th>
+                                            <th>Avg Score</th>
+                                            <th>Competency</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="trainerTable">
+                                        <tr><td colspan="4" class="text-center text-muted">Loading...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="row">
-                <!-- Demographic Analysis -->
-                <div class="col-lg-6 mb-4">
-                    <div class="card">
+            <div class="row g-4 mb-4">
+                <div class="col-lg-6">
+                    <div class="card h-100">
                         <div class="card-header">
-                            <h6 class="mb-0">Gender Distribution</h6>
+                            <h6>Gender Distribution</h6>
+                            <span class="header-note">Active trainees by gender</span>
                         </div>
                         <div class="card-body">
                             <div class="chart-container">
                                 <canvas id="genderChart"></canvas>
+                                <div class="chart-overlay">No gender data yet.</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Batch Distribution -->
-                <div class="col-lg-6 mb-4">
-                    <div class="card">
+                <div class="col-lg-6">
+                    <div class="card h-100">
                         <div class="card-header">
-                            <h6 class="mb-0">Batch Distribution</h6>
+                            <h6>Batch Distribution</h6>
+                            <span class="header-note">Trainees per batch</span>
                         </div>
                         <div class="card-body">
                             <div class="chart-container">
                                 <canvas id="batchChart"></canvas>
+                                <div class="chart-overlay">No batch distribution data yet.</div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
-    <!-- Sidebar Loader -->
     <script src="../../../js/sidebar.js"></script>
+    <script src="../../../js/table_manager.js"></script>
     <script src="../../../js/admin/pages/analytics.js"></script>
 </body>
 </html>

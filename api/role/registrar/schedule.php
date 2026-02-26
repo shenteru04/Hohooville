@@ -32,7 +32,18 @@ switch ($action) {
 function getData($conn) {
     try {
         // Get Active Trainers
-        $trainers_query = "SELECT trainer_id, first_name, last_name FROM tbl_trainer WHERE status = 'active'";
+        $trainers_query = "SELECT
+                                t.trainer_id,
+                                t.first_name,
+                                t.last_name,
+                                COALESCE(
+                                    GROUP_CONCAT(DISTINCT tq.qualification_id ORDER BY tq.qualification_id SEPARATOR ','),
+                                    IFNULL(t.qualification_id, '')
+                                ) AS qualification_ids
+                           FROM tbl_trainer t
+                           LEFT JOIN tbl_trainer_qualifications tq ON t.trainer_id = tq.trainer_id
+                           WHERE t.status = 'active'
+                           GROUP BY t.trainer_id";
         $trainers_stmt = $conn->prepare($trainers_query);
         $trainers_stmt->execute();
         $trainers = $trainers_stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -41,6 +52,7 @@ function getData($conn) {
         $batches_query = "SELECT 
                             b.batch_id, 
                             b.batch_name, 
+                            b.qualification_id,
                             c.qualification_name as course_name, 
                             b.trainer_id, 
                             CONCAT_WS(' ', t.first_name, t.last_name) as trainer_name,
