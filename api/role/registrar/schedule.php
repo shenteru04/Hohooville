@@ -49,21 +49,22 @@ function getData($conn) {
         $trainers = $trainers_stmt->fetchAll(PDO::FETCH_ASSOC);
         
         // Get open batches with their course, trainer, and schedule info
-        $batches_query = "SELECT 
-                            b.batch_id, 
-                            b.batch_name, 
-                            b.qualification_id,
-                            c.qualification_name as course_name, 
-                            b.trainer_id, 
-                            CONCAT_WS(' ', t.first_name, t.last_name) as trainer_name,
-                            s.schedule,
-                            s.room
-                          FROM tbl_batch b
-                          LEFT JOIN tbl_qualifications c ON b.qualification_id = c.qualification_id
-                          LEFT JOIN tbl_trainer t ON b.trainer_id = t.trainer_id
-                          LEFT JOIN tbl_schedule s ON b.batch_id = s.batch_id
-                          WHERE b.status = 'open'
-                          ORDER BY b.batch_id DESC";
+                $batches_query = "SELECT 
+                                                        b.batch_id, 
+                                                        b.batch_name, 
+                                                        b.qualification_id,
+                                                        c.qualification_name as course_name, 
+                                                        b.trainer_id, 
+                                                        CONCAT_WS(' ', t.first_name, t.last_name) as trainer_name,
+                                                        s.schedule,
+                                                        r.room_name as room
+                                                    FROM tbl_batch b
+                                                    LEFT JOIN tbl_qualifications c ON b.qualification_id = c.qualification_id
+                                                    LEFT JOIN tbl_trainer t ON b.trainer_id = t.trainer_id
+                                                    LEFT JOIN tbl_schedule s ON b.batch_id = s.batch_id
+                                                    LEFT JOIN tbl_rooms r ON s.room_id = r.room_id
+                                                    WHERE b.status = 'open'
+                                                    ORDER BY b.batch_id DESC";
         
         $batches_stmt = $conn->prepare($batches_query);
         $batches_stmt->execute();
@@ -104,11 +105,11 @@ function assignSchedule($conn) {
         $exists = $stmtCheck->fetchColumn();
 
         if ($exists) {
-            $stmtSchedule = $conn->prepare("UPDATE tbl_schedule SET schedule = ?, room = ?, updated_at = NOW() WHERE batch_id = ?");
-            $stmtSchedule->execute([$data['schedule'] ?: null, $data['room'] ?: null, $batchId]);
+            $stmtSchedule = $conn->prepare("UPDATE tbl_schedule SET schedule = ?, room_id = ?, updated_at = NOW() WHERE batch_id = ?");
+                $stmtSchedule->execute([$data['schedule'] ?: null, $data['room_id'] ?: null, $batchId]);
         } else {
-            $stmtSchedule = $conn->prepare("INSERT INTO tbl_schedule (batch_id, schedule, room, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())");
-            $stmtSchedule->execute([$batchId, $data['schedule'] ?: null, $data['room'] ?: null]);
+            $stmtSchedule = $conn->prepare("INSERT INTO tbl_schedule (batch_id, schedule, room_id, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())");
+            $stmtSchedule->execute([$batchId, $data['schedule'] ?: null, $data['room_id'] ?: null]);
         }
         
         $conn->commit();

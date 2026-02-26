@@ -154,7 +154,7 @@ class TrainerDashboard {
                 b.batch_name, 
                 q.qualification_name as course_name, 
                 s.schedule, 
-                s.room
+                    s.room_id
             FROM tbl_batch b
             LEFT JOIN tbl_qualifications q ON b.qualification_id = q.qualification_id
             LEFT JOIN tbl_schedule s ON b.batch_id = s.batch_id

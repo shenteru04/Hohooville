@@ -24,7 +24,7 @@ class TrainerBatches {
 
     private function getBatches($trainerId) {
         try {
-            $query = "SELECT b.batch_id, b.batch_name, b.qualification_id, c.qualification_name as course_name, c.duration, s.schedule, s.room, b.status, b.start_date, b.end_date
+            $query = "SELECT b.batch_id, b.batch_name, b.qualification_id, c.qualification_name as course_name, c.duration, s.schedule, s.room_id, b.status, b.start_date, b.end_date
                       FROM tbl_batch b
                       LEFT JOIN tbl_qualifications c ON b.qualification_id = c.qualification_id
                       LEFT JOIN tbl_schedule s ON b.batch_id = s.batch_id

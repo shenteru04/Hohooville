@@ -96,13 +96,19 @@ async function loadDashboardData(traineeId) {
     try {
         const response = await axios.get(`${API_BASE_URL}/role/trainee/trainee_dashboard.php?trainee_id=${traineeId}`);
         
+        // Check if response is valid JSON object
+        if (typeof response.data !== 'object') {
+            console.error('Invalid server response:', response.data);
+            throw new Error('Invalid server response format');
+        }
+
         if (response.data.success) {
             const data = response.data.data;
             const course = data.active_course || {};
 
             // Determine Schedule and Room with fallback
             let displaySchedule = course.schedule;
-            let displayRoom = course.room;
+            let displayRoom = course.room_name;
 
             // Helper to check if value is effectively empty/placeholder
             const isPlaceholder = (val) => !val || val === '-' || val === 'N/A' || val === 'TBA' || val === 'Not Set' || val === 'null';
@@ -114,9 +120,11 @@ async function loadDashboardData(traineeId) {
                 } else if (typeof data.schedule === 'string') {
                     displaySchedule = data.schedule;
                 }
-                
+                // Prefer room_name from schedule object if available
                 if (data.schedule.room) {
                     displayRoom = data.schedule.room;
+                } else if (data.schedule.room_name) {
+                    displayRoom = data.schedule.room_name;
                 }
             }
 

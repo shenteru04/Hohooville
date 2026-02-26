@@ -155,7 +155,7 @@ window.openAssignModal = function(batchId, batchName, trainerId, schedule, room,
     document.getElementById('assignBatchName').textContent = batchName;
     populateTrainerSelect(qualificationId, trainerId);
     document.getElementById('assignScheduleSelect').value = schedule;
-    document.getElementById('assignRoomInput').value = room;
+    window.populateRoomDropdown(room);
     scheduleModal.show();
 }
 
@@ -165,7 +165,7 @@ async function saveSchedule(e) {
         batch_id: document.getElementById('assignBatchId').value,
         trainer_id: document.getElementById('assignTrainerSelect').value,
         schedule: document.getElementById('assignScheduleSelect').value,
-        room: document.getElementById('assignRoomInput').value
+        room_id: document.getElementById('assignRoomSelect').value
     };
 
     try {
@@ -192,6 +192,25 @@ async function saveSchedule(e) {
             text: 'An error occurred while saving the schedule.',
             icon: 'error'
         });
+    }
+}
+
+window.populateRoomDropdown = async function(selectedRoom = '') {
+    const roomSelect = document.getElementById('assignRoomSelect');
+    roomSelect.innerHTML = '<option value="">Select Room</option>';
+    try {
+        const response = await axios.get(`${API_BASE_URL}/admin/rooms.php?action=list`);
+        if (response.data.success && response.data.data) {
+            response.data.data.forEach(room => {
+                const option = document.createElement('option');
+                option.value = room.room_id;
+                option.textContent = room.room_name;
+                if (String(room.room_id) === String(selectedRoom)) option.selected = true;
+                roomSelect.appendChild(option);
+            });
+        }
+    } catch (error) {
+        roomSelect.innerHTML = '<option value="">Error loading rooms</option>';
     }
 }
 

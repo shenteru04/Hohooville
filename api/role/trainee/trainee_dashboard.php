@@ -21,13 +21,15 @@ class TraineeDashboard {
         try {
             // 1. Get Active Course/Batch (not archived and batch is open)
             $courseQuery = "SELECT th.trainee_school_id, c.qualification_id AS course_id, c.qualification_name AS course_name, 
-                                   b.batch_name, b.start_date, b.end_date, 
-                                   COALESCE(s.schedule, oc.schedule) as schedule, 
-                                   COALESCE(s.room, oc.room) as room, 
-                                   e.enrollment_id, e.status as enrollment_status
+                                b.batch_name, b.start_date, b.end_date, 
+                                COALESCE(s.schedule, oc.schedule) as schedule, 
+                                s.room_id as room_id, 
+                                COALESCE(r.room_name, oc.room) as room_name, 
+                                e.enrollment_id, e.status as enrollment_status
                             FROM tbl_enrollment e
                             JOIN tbl_batch b ON e.batch_id = b.batch_id
                             LEFT JOIN tbl_schedule s ON b.batch_id = s.batch_id
+                            LEFT JOIN tbl_rooms r ON s.room_id = r.room_id
                             JOIN tbl_trainee_hdr th ON e.trainee_id = th.trainee_id
                             JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
                             JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id
@@ -36,6 +38,8 @@ class TraineeDashboard {
             $stmt = $this->conn->prepare($courseQuery);
             $stmt->execute([$traineeId]);
             $activeCourse = $stmt->fetch(PDO::FETCH_ASSOC);
+            // DEBUG OUTPUT
+            file_put_contents(__DIR__ . '/debug_active_course.log', print_r($activeCourse, true));
 
             $qualificationId = $activeCourse ? $activeCourse['course_id'] : null;
 
@@ -65,7 +69,7 @@ class TraineeDashboard {
             $schedule = [
                 'course' => $activeCourse ? ($activeCourse['course_name'] ?? 'No Active Course') : 'No Active Course',
                 'time' => $activeCourse ? ($activeCourse['schedule'] ?? 'N/A') : 'N/A',
-                'room' => $activeCourse ? ($activeCourse['room'] ?? 'N/A') : 'N/A'
+                'room' => $activeCourse ? ($activeCourse['room_name'] ?? 'N/A') : 'N/A'
             ];
 
             // 5. Get Archived Courses
