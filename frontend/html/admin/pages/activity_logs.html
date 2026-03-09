@@ -4,193 +4,140 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Activity Logs - Admin Dashboard</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Sidebar CSS -->
-    <link rel="stylesheet" href="../../../css/admin/sidebar.css">
     <style>
-        :root {
-            --primary-color: #4e73df;
-            --secondary-color: #858796;
-            --bg-color: #f8f9fc;
-            --text-color: #5a5c69;
+        body { font-family: 'Nunito', sans-serif; }
+        a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
         }
-        body {
-            font-family: 'Nunito', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-        }
-        #sidebar {
-            background: #fff;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-            z-index: 1000;
-        }
-        #sidebar .sidebar-header {
-            padding: 1.5rem 1rem;
-            text-align: center;
-            color: var(--primary-color);
-            font-weight: 800;
-        }
-        #sidebar .nav-link {
-            color: var(--text-color);
-            padding: 0.5rem 1rem;
-            margin: 0.1rem 0.5rem;
-            border-radius: 0.35rem;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        #sidebar .nav-link:hover {
-            background-color: #eaecf4;
-            color: var(--primary-color);
-        }
-        #sidebar .nav-link.active {
-            background-color: var(--primary-color);
-            color: #fff;
-        }
-        .card {
-            border: none;
-            border-radius: 0.35rem;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-        }
-        .card-header {
-            background-color: #f8f9fc;
-            border-bottom: 1px solid #e3e6f0;
-            padding: 1rem 1.25rem;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-        .table-hover tbody tr:hover { background-color: #f5f5f5; }
-        .badge-action { font-size: 11px; padding: 4px 8px; }
     </style>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-700">
     <div id="sidebar-container"></div>
 
-    <div class="main-content">
-        <!-- Top Navigation -->
-        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
-                <div class="container-fluid">
-                    <button type="button" id="sidebarCollapse" class="btn btn-outline-primary me-2 d-lg-none">
-                        <i class="fas fa-bars"></i>
+    <div class="main-content min-h-screen lg:ml-72">
+        <header class="border-b border-blue-100 bg-white/85 shadow-sm backdrop-blur">
+            <div class="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center gap-3">
+                    <button type="button" id="sidebarCollapse" class="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 lg:hidden">
+                        <i class="fas fa-bars text-lg"></i>
                     </button>
-
-                    <div class="ms-auto d-flex align-items-center">
-                        <div class="dropdown">
-                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
-                                <i class="fas fa-user-circle"></i> <span id="userName">Admin</span>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
-                                <li><a class="dropdown-item" href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
-                            </ul>
-                        </div>
-                    </div>
+                    <h1 class="text-xl font-semibold text-slate-800">Activity Logs</h1>
                 </div>
-            </nav>
 
-            <!-- Filters -->
-            <div class="card mb-4">
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Action Type</label>
-                            <select class="form-select" id="filterAction" onchange="loadLogs()">
-                                <option value="">All Actions</option>
-                                <option value="create">Create</option>
-                                <option value="update">Update</option>
-                                <option value="delete">Delete</option>
-                                <option value="login">Login</option>
-                                <option value="logout">Logout</option>
-                                <option value="export">Export</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Date</label>
-                            <input type="date" class="form-control" id="filterDate" onchange="loadLogs()">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">User</label>
-                            <select class="form-select" id="filterUser" onchange="loadLogs()">
-                                <option value="">All Users</option>
-                            </select>
+                <div class="header-actions flex items-center gap-3" data-header-actions>
+                    <div class="relative">
+                        <button id="userDropdown" class="flex items-center gap-2 rounded-full border border-blue-100 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-700 hover:bg-blue-50">
+                            <i class="fas fa-user-circle text-xl text-blue-500"></i>
+                            <span id="userName" class="hidden md:block">Admin</span>
+                            <i class="fas fa-chevron-down text-xs text-slate-400"></i>
+                        </button>
+                        <div id="userDropdownMenu" class="absolute right-0 top-full z-40 mt-2 hidden w-48 rounded-xl border border-blue-100 bg-white py-1 shadow-xl shadow-blue-100/40">
+                            <a href="profile.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-user mr-2"></i> Profile</a>
+                            <a href="settings.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-cog mr-2"></i> Settings</a>
+                            <div class="border-t border-blue-100"></div>
+                            <a href="#" id="logoutBtn" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-sign-out-alt mr-2"></i> Logout</a>
                         </div>
                     </div>
                 </div>
             </div>
+        </header>
 
-            <!-- Logs Table -->
-            <div class="card">
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover table-sm" data-table-manager="true" data-disable-pagination="true">
-                            <thead>
-                                <tr>
-                                    <th>Timestamp</th>
-                                    <th>User</th>
-                                    <th>Action</th>
-                                    <th>Entity Type</th>
-                                    <th>Entity ID</th>
-                                    <th>IP Address</th>
-                                    <th>Details</th>
-                                </tr>
-                            </thead>
-                            <tbody id="logsTableBody">
-                                <tr><td colspan="7" class="text-center text-muted">Loading...</td></tr>
-                            </tbody>
-                        </table>
+        <main class="space-y-6 p-4 sm:p-6 lg:p-8">
+            <section class="rounded-2xl border border-blue-100 bg-white p-4 shadow-sm sm:p-6">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700">Action Type</label>
+                        <select id="filterAction" onchange="loadLogs()" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                            <option value="">All Actions</option>
+                            <option value="create">Create</option>
+                            <option value="update">Update</option>
+                            <option value="delete">Delete</option>
+                            <option value="login">Login</option>
+                            <option value="logout">Logout</option>
+                            <option value="export">Export</option>
+                        </select>
                     </div>
-
-                    <!-- Pagination -->
-                    <nav aria-label="Page navigation" class="mt-4">
-                        <ul class="pagination justify-content-center" id="paginationContainer"></ul>
-                    </nav>
-                </div>
-            </div>
-
-            <!-- Clear Old Logs -->
-            <div class="card mt-4">
-                <div class="card-header bg-warning text-dark">
-                    <h6 class="mb-0"><i class="fas fa-trash me-2"></i> Maintenance</h6>
-                </div>
-                <div class="card-body">
-                    <p>Delete activity logs older than a specified number of days to free up database space.</p>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <label class="form-label">Days to Keep</label>
-                            <input type="number" class="form-control" id="daysToKeep" value="90" min="1">
-                        </div>
-                        <div class="col-md-8">
-                            <label class="form-label">&nbsp;</label>
-                            <button class="btn btn-danger w-100" onclick="clearOldLogs()">
-                                <i class="fas fa-trash me-2"></i> Clear Logs Older Than Selected Days
-                            </button>
-                        </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700">Date</label>
+                        <input type="date" id="filterDate" onchange="loadLogs()" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700">User</label>
+                        <select id="filterUser" onchange="loadLogs()" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                            <option value="">All Users</option>
+                        </select>
                     </div>
                 </div>
-            </div>
-    </div> <!-- End main-content -->
+            </section>
 
-    <!-- Statistics Modal -->
-    <div class="modal fade" id="detailsModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Activity Details</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <section class="rounded-2xl border border-blue-100 bg-white p-4 shadow-sm sm:p-6">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200" data-table-manager="true" data-disable-pagination="true">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Timestamp</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">User</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Action</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Entity Type</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Entity ID</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">IP Address</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsTableBody" class="divide-y divide-slate-100 bg-white">
+                            <tr><td colspan="7" class="px-4 py-6 text-center text-sm text-slate-500">Loading...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
-                <div class="modal-body">
-                    <div id="detailsContent"></div>
+
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="flex items-center justify-center gap-2" id="paginationContainer"></ul>
+                </nav>
+            </section>
+
+            <section class="rounded-2xl border border-amber-200 bg-amber-50/40 p-4 shadow-sm sm:p-6">
+                <div class="mb-3 flex items-center gap-2 text-amber-800">
+                    <i class="fas fa-trash"></i>
+                    <h2 class="text-base font-semibold">Maintenance</h2>
                 </div>
+                <p class="mb-4 text-sm text-slate-700">Delete activity logs older than a specified number of days to free up database space.</p>
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700">Days to Keep</label>
+                        <input type="number" id="daysToKeep" value="90" min="1" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="mb-1 block text-sm font-medium text-transparent">Action</label>
+                        <button class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500" onclick="clearOldLogs()">
+                            <i class="fas fa-trash"></i> Clear Logs Older Than Selected Days
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div class="modal-root fixed inset-0 z-50 hidden items-center justify-center p-4" id="detailsModal" tabindex="-1" aria-hidden="true">
+        <div class="absolute inset-0 bg-slate-900/50" data-modal-hide="detailsModal"></div>
+        <div class="relative z-10 w-full max-w-3xl overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-2xl">
+            <div class="flex items-center justify-between border-b border-blue-100 px-5 py-4">
+                <h5 class="text-lg font-semibold text-slate-900">Activity Details</h5>
+                <button type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800" data-modal-hide="detailsModal" aria-label="Close modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="max-h-[70vh] overflow-y-auto p-5">
+                <div id="detailsContent"></div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script src="../../../js/session_timeout.js"></script>
     <script src="../../../js/sidebar.js"></script>
     <script src="../../../js/table_manager.js"></script>
     <script src="../../../js/admin/pages/activity_logs.js"></script>

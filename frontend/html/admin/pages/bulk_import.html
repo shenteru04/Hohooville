@@ -4,187 +4,130 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bulk User Import - Admin Panel</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Sidebar CSS -->
-    <link rel="stylesheet" href="../../../css/admin/sidebar.css">
     <style>
-        :root {
-            --primary-color: #4e73df;
-            --secondary-color: #858796;
-            --bg-color: #f8f9fc;
-            --text-color: #5a5c69;
+        body { font-family: 'Nunito', sans-serif; }
+        a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
         }
-        body {
-            font-family: 'Nunito', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-        }
-        #sidebar {
-            background: #fff;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-            z-index: 1000;
-        }
-        #sidebar .sidebar-header {
-            padding: 1.5rem 1rem;
-            text-align: center;
-            color: var(--primary-color);
-            font-weight: 800;
-        }
-        #sidebar .nav-link {
-            color: var(--text-color);
-            padding: 0.5rem 1rem;
-            margin: 0.1rem 0.5rem;
-            border-radius: 0.35rem;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        #sidebar .nav-link:hover {
-            background-color: #eaecf4;
-            color: var(--primary-color);
-        }
-        #sidebar .nav-link.active {
-            background-color: var(--primary-color);
-            color: #fff;
-        }
-        .card {
-            border: none;
-            border-radius: 0.35rem;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-        }
-        .card-header {
-            background-color: #f8f9fc;
-            border-bottom: 1px solid #e3e6f0;
-            padding: 1rem 1.25rem;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-        .drop-zone { border: 2px dashed #007bff; border-radius: 8px; padding: 30px; text-align: center; cursor: pointer; transition: all 0.3s; }
-        .drop-zone.dragover { background-color: #e7f1ff; border-color: #0056b3; }
-        .progress-container { margin-top: 20px; }
+        .drop-zone { border: 2px dashed #3b82f6; border-radius: 12px; padding: 2rem; text-align: center; cursor: pointer; transition: all .2s ease; }
+        .drop-zone.dragover { border-color: #1d4ed8; background-color: #eff6ff; }
     </style>
 </head>
-<body> 
+<body class="bg-slate-50 text-slate-700">
+    <div id="sidebar-container"></div>
 
-     <div id="sidebar-container"></div>
-     <div class="main-content">
-     
-            <!-- Top Navigation -->
-            <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
-                <div class="container-fluid">
-                    <button type="button" id="sidebarCollapse" class="btn btn-outline-primary me-2 d-lg-none">
-                        <i class="fas fa-bars"></i>
+    <div class="main-content min-h-screen lg:ml-72">
+        <header class="border-b border-blue-100 bg-white/85 shadow-sm backdrop-blur">
+            <div class="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center gap-3">
+                    <button type="button" id="sidebarCollapse" class="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 lg:hidden">
+                        <i class="fas fa-bars text-lg"></i>
                     </button>
+                    <h1 class="text-xl font-semibold text-slate-800">Bulk User Import</h1>
+                </div>
 
-                    <div class="ms-auto d-flex align-items-center">
-                        <div class="dropdown">
-                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
-                                <i class="fas fa-user-circle"></i> <span id="userName">Admin</span>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
-                                <li><a class="dropdown-item" href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
-                            </ul>
+                <div class="header-actions flex items-center gap-3" data-header-actions>
+                    <div class="relative">
+                        <button id="userDropdown" class="flex items-center gap-2 rounded-full border border-blue-100 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-700 hover:bg-blue-50">
+                            <i class="fas fa-user-circle text-xl text-blue-500"></i>
+                            <span id="userName" class="hidden md:block">Admin</span>
+                            <i class="fas fa-chevron-down text-xs text-slate-400"></i>
+                        </button>
+                        <div id="userDropdownMenu" class="absolute right-0 top-full z-40 mt-2 hidden w-48 rounded-xl border border-blue-100 bg-white py-1 shadow-xl shadow-blue-100/40">
+                            <a href="profile.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-user mr-2"></i> Profile</a>
+                            <a href="settings.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-cog mr-2"></i> Settings</a>
+                            <div class="border-t border-blue-100"></div>
+                            <a href="#" id="logoutBtn" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-sign-out-alt mr-2"></i> Logout</a>
                         </div>
                     </div>
-                </div>
-            </nav>
-
-            <div class="container-fluid mt-4">
-                <h2 class="mb-4"><i class="fas fa-upload me-2"></i> Bulk User Import</h2>
-
-            <!-- Step 1: Select User Type -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h6 class="mb-0">Step 1: Select User Type</h6>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="userType" id="traineeType" value="trainee" checked onchange="updateTemplate()">
-                                <label class="form-check-label" for="traineeType">
-                                    <strong>Trainee</strong> - Import trainee records in bulk
-                                </label>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="userType" id="trainerType" value="trainer" onchange="updateTemplate()">
-                                <label class="form-check-label" for="trainerType">
-                                    <strong>Trainer</strong> - Import trainer records in bulk
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    <button class="btn btn-info btn-sm mt-3" onclick="downloadTemplate()">
-                        <i class="fas fa-download me-2"></i> Download CSV Template
-                    </button>
                 </div>
             </div>
+        </header>
 
-            <!-- Step 2: Upload File -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h6 class="mb-0">Step 2: Upload CSV File</h6>
+        <main class="space-y-6 p-4 sm:p-6 lg:p-8">
+            <article class="rounded-2xl border border-blue-100 bg-white shadow-sm">
+                <div class="border-b border-blue-100 px-5 py-4">
+                    <h2 class="text-base font-semibold text-slate-900">Step 1: Select User Type</h2>
                 </div>
-                <div class="card-body">
+                <div class="space-y-4 p-5">
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <label for="traineeType" class="inline-flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 px-4 py-3 text-sm text-slate-700">
+                            <input class="mt-0.5 h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500" type="radio" name="userType" id="traineeType" value="trainee" checked onchange="updateTemplate()">
+                            <span><strong class="text-slate-900">Trainee</strong> - Import trainee records in bulk</span>
+                        </label>
+                        <label for="trainerType" class="inline-flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 px-4 py-3 text-sm text-slate-700">
+                            <input class="mt-0.5 h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500" type="radio" name="userType" id="trainerType" value="trainer" onchange="updateTemplate()">
+                            <span><strong class="text-slate-900">Trainer</strong> - Import trainer records in bulk</span>
+                        </label>
+                    </div>
+                    <button class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700" onclick="downloadTemplate()">
+                        <i class="fas fa-download"></i> Download CSV Template
+                    </button>
+                </div>
+            </article>
+
+            <article class="rounded-2xl border border-blue-100 bg-white shadow-sm">
+                <div class="border-b border-blue-100 px-5 py-4">
+                    <h2 class="text-base font-semibold text-slate-900">Step 2: Upload CSV File</h2>
+                </div>
+                <div class="p-5">
                     <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
-                        <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
-                        <p class="mb-0"><strong>Drag & drop your CSV file here or click to browse</strong></p>
-                        <small class="text-muted">Max file size: 10MB</small>
+                        <i class="fas fa-cloud-upload-alt mb-3 text-4xl text-blue-600"></i>
+                        <p class="mb-1 text-sm font-semibold text-slate-900">Drag & drop your CSV file here or click to browse</p>
+                        <p class="text-xs text-slate-500">Max file size: 10MB</p>
                     </div>
-                    <input type="file" id="fileInput" accept=".csv" style="display:none;" onchange="handleFileSelect(event)">
+                    <input type="file" id="fileInput" accept=".csv" class="hidden" onchange="handleFileSelect(event)">
                 </div>
-            </div>
+            </article>
 
-            <!-- Step 3: Preview -->
-            <div class="card mb-4" id="previewCard" style="display:none;">
-                <div class="card-header">
-                    <h6 class="mb-0">Step 3: Preview Data</h6>
+            <article class="hidden rounded-2xl border border-blue-100 bg-white shadow-sm" id="previewCard">
+                <div class="border-b border-blue-100 px-5 py-4">
+                    <h2 class="text-base font-semibold text-slate-900">Step 3: Preview Data</h2>
                 </div>
-                <div class="card-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
+                <div class="space-y-4 p-5">
+                    <div class="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+                        <i class="fas fa-info-circle mr-2"></i>
                         <span id="previewInfo"></span>
                     </div>
-                    <div class="table-responsive">
-                        <table class="table table-sm" id="previewTable" data-table-manager="true" data-filters="Column 1:0" data-filter-auto-options="true">
-                            <thead></thead>
-                            <tbody></tbody>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-slate-200" id="previewTable" data-table-manager="true" data-filters="Column 1:0" data-filter-auto-options="true">
+                            <thead class="bg-slate-50"></thead>
+                            <tbody class="divide-y divide-slate-100 bg-white"></tbody>
                         </table>
                     </div>
-                    <button class="btn btn-success" onclick="confirmImport()">
-                        <i class="fas fa-check me-2"></i> Confirm & Import
-                    </button>
-                    <button class="btn btn-secondary" onclick="resetImport()">
-                        <i class="fas fa-times me-2"></i> Cancel
-                    </button>
+                    <div class="flex flex-wrap gap-2">
+                        <button class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700" onclick="confirmImport()">
+                            <i class="fas fa-check"></i> Confirm & Import
+                        </button>
+                        <button class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" onclick="resetImport()">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
                 </div>
-            </div>
+            </article>
 
-            <!-- Step 4: Import Progress -->
-            <div class="card" id="progressCard" style="display:none;">
-                <div class="card-header">
-                    <h6 class="mb-0">Step 4: Import Progress</h6>
+            <article class="hidden rounded-2xl border border-blue-100 bg-white shadow-sm" id="progressCard">
+                <div class="border-b border-blue-100 px-5 py-4">
+                    <h2 class="text-base font-semibold text-slate-900">Step 4: Import Progress</h2>
                 </div>
-                <div class="card-body">
-                    <div class="progress mb-3">
-                        <div class="progress-bar progress-bar-striped progress-bar-animated" id="progressBar" role="progressbar" style="width: 0%"></div>
+                <div class="space-y-4 p-5">
+                    <div class="h-3 w-full overflow-hidden rounded-full bg-slate-200">
+                        <div id="progressBar" class="h-3 w-0 rounded-full bg-blue-600 transition-all duration-300"></div>
                     </div>
                     <div id="importResults"></div>
                 </div>
-            </div>
-    </div> <!-- End main-content -->
+            </article>
+        </main>
+    </div>
 
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
-        <script src="../../../js/sidebar.js"></script>
-        <script src="../../../js/table_manager.js"></script>
-        <script src="../../../js/admin/pages/bulk_import.js"></script>
-    </body>
-    </html>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script src="../../../js/session_timeout.js"></script>
+    <script src="../../../js/sidebar.js"></script>
+    <script src="../../../js/table_manager.js"></script>
+    <script src="../../../js/admin/pages/bulk_import.js"></script>
+</body>
+</html>

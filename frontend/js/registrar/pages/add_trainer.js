@@ -1,26 +1,50 @@
-const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
-const UPLOADS_URL = window.location.origin + '/hohoo-ville/uploads/trainers/';
+const API_BASE_URL = window.location.origin + '/Hohoo-ville/api';
+const UPLOADS_URL = window.location.origin + '/Hohoo-ville/uploads/trainers/';
 let trainerModal;
 let viewModal;
 let phLocationData = {};
 let currentAddressValue = '';
+let pendingAddressValue = '';
 let qualificationOptions = [];
 let qualificationSectionCount = 0;
 
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof Swal === 'undefined') {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
-        document.head.appendChild(script);
+class SimpleModal {
+    constructor(element) {
+        this.element = element;
     }
 
-    trainerModal = new bootstrap.Modal(document.getElementById('trainerModal'));
-    viewModal = new bootstrap.Modal(document.getElementById('viewTrainerModal'));
+    show() {
+        if (!this.element) return;
+        this.element.classList.remove('hidden');
+        this.element.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+    }
+
+    hide() {
+        if (!this.element) return;
+        this.element.classList.add('hidden');
+        this.element.classList.remove('flex');
+        if (!document.querySelector('.modal-root.flex:not(.hidden)')) {
+            document.body.classList.remove('overflow-hidden');
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async function() {
+    await ensureSwal();
+    initSidebar();
+    initUserDropdown();
+    initLogout();
+    initModalDismissers();
+    hydrateHeaderUser();
+
+    trainerModal = new SimpleModal(document.getElementById('trainerModal'));
+    viewModal = new SimpleModal(document.getElementById('viewTrainerModal'));
 
     loadTrainers();
     loadSpecializations();
     loadPhAddressData();
-    
+
     const form = document.getElementById('trainerForm');
     if (form) {
         form.addEventListener('submit', async function(e) {
@@ -28,72 +52,15 @@ document.addEventListener('DOMContentLoaded', function() {
             await saveTrainer();
         });
     }
-    function setupEmailValidation() {
-        const emailInput = document.getElementById('email');
-        if (emailInput) {
-            // Remove previous listeners to avoid duplicates
-            emailInput.oninput = null;
-            emailInput.onblur = null;
-            emailInput.addEventListener('input', function() {
-                const val = this.value.trim();
-                // Use a more robust regex for email validation
-                const emailPattern = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-                if (val.length === 0) {
-                    this.classList.remove('is-invalid');
-                    this.setCustomValidity('');
-                    return;
-                }
-                if (emailPattern.test(val)) {
-                    this.classList.remove('is-invalid');
-                    this.setCustomValidity('');
-                } else {
-                    this.classList.add('is-invalid');
-                    this.setCustomValidity('Please enter a valid email address (e.g., name@example.com).');
-                }
-            });
-            emailInput.addEventListener('blur', function() {
-                const val = this.value.trim();
-                const emailPattern = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-                if (val.length === 0) return;
-                if (!emailPattern.test(val)) {
-                    this.classList.add('is-invalid');
-                }
-            });
-        }
-    }
-    setupEmailValidation();
-    const phoneInput = document.getElementById('phone');
-    if (phoneInput) {
-        const errorMessage = document.createElement('div');
-        errorMessage.style.display = 'none';
-        errorMessage.style.color = '#dc3545';
-        errorMessage.style.fontSize = '0.875rem';
-        errorMessage.style.marginTop = '0.25rem';
-        errorMessage.textContent = 'Numbers only';
-        phoneInput.parentElement.appendChild(errorMessage);
 
-        let errorTimeout;
-        phoneInput.addEventListener('keypress', function(e) {
-            const char = String.fromCharCode(e.which);
-            if (!/[0-9]/.test(char)) {
-                e.preventDefault();
-                this.classList.add('is-invalid');
-                errorMessage.style.display = 'block';
-                clearTimeout(errorTimeout);
-                errorTimeout = setTimeout(() => {
-                    this.classList.remove('is-invalid');
-                    errorMessage.style.display = 'none';
-                }, 2000);
-            }
-        });
-        phoneInput.addEventListener('input', function() {
-            this.value = this.value.replace(/[^0-9]/g, '');
-        });
-    }
+    setupEmailValidation();
+    setupPhoneValidation();
+
     const addQualificationBtn = document.getElementById('addQualificationBtn');
     if (addQualificationBtn) {
         addQualificationBtn.addEventListener('click', () => addQualificationSection());
     }
+
     const qualificationsContainer = document.getElementById('qualificationsContainer');
     if (qualificationsContainer) {
         qualificationsContainer.addEventListener('click', (e) => {
@@ -107,83 +74,165 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-
-    // Inject Sidebar CSS (W3.CSS Reference Style)
-    const ms = document.createElement('style');
-    ms.innerHTML = `
-        #sidebar {
-            width: 200px;
-            position: fixed;
-            z-index: 1050;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            overflow-y: auto;
-            background-color: #fff;
-            box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16), 0 2px 10px 0 rgba(0,0,0,0.12);
-            display: block;
-        }
-        .main-content, #content, .content-wrapper {
-            margin-left: 200px !important;
-            transition: margin-left .4s;
-        }
-        #sidebarCloseBtn {
-            display: none;
-            width: 100%;
-            text-align: left;
-            padding: 8px 16px;
-            background: none;
-            border: none;
-            font-size: 18px;
-        }
-        #sidebarCloseBtn:hover { background-color: #ccc; }
-        
-        @media (max-width: 991.98px) {
-            #sidebar { display: none; }
-            .main-content, #content, .content-wrapper { margin-left: 0 !important; }
-            #sidebarCloseBtn { display: block; }
-        }
-        .table-responsive, table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    `;
-    document.head.appendChild(ms);
-
-    // Sidebar Logic
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) {
-        if (!document.getElementById('sidebarCloseBtn')) {
-            const closeBtn = document.createElement('button');
-            closeBtn.id = 'sidebarCloseBtn';
-            closeBtn.innerHTML = 'Close &times;';
-            closeBtn.addEventListener('click', () => {
-                sidebar.style.display = 'none';
-            });
-            sidebar.insertBefore(closeBtn, sidebar.firstChild);
-        }
-    }
-
-    // Open Button Logic
-    let sc = document.getElementById('sidebarCollapse');
-    if (!sc) {
-        const nb = document.querySelector('.navbar');
-        if (nb) {
-            const c = nb.querySelector('.container-fluid') || nb;
-            const b = document.createElement('button');
-            b.id = 'sidebarCollapse';
-            b.className = 'btn btn-outline-primary me-2 d-lg-none';
-            b.type = 'button';
-            b.innerHTML = '&#9776;';
-            c.insertBefore(b, c.firstChild);
-            sc = b;
-        }
-    }
-    if (sc) {
-        const nb = sc.cloneNode(true);
-        if(sc.parentNode) sc.parentNode.replaceChild(nb, sc);
-        nb.addEventListener('click', () => {
-            if (sidebar) sidebar.style.display = 'block';
-        });
-    }
 });
+
+async function ensureSwal() {
+    if (typeof window.Swal !== 'undefined') return;
+    await new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        script.onload = resolve;
+        script.onerror = resolve;
+        document.head.appendChild(script);
+    });
+}
+
+function hydrateHeaderUser() {
+    try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const userName = document.getElementById('userName');
+        if (!userName) return;
+        const displayName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.full_name || user.name || user.username || 'Registrar';
+        userName.textContent = displayName;
+    } catch (error) {
+        console.warn('Unable to parse user in localStorage:', error);
+    }
+}
+
+function initSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const sidebarCollapse = document.getElementById('sidebarCollapse');
+    const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+    if (!sidebar) return;
+
+    function openSidebar() {
+        sidebar.classList.remove('-translate-x-full');
+        if (sidebarOverlay) {
+            sidebarOverlay.classList.remove('hidden');
+            requestAnimationFrame(() => sidebarOverlay.classList.remove('opacity-0'));
+        }
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function closeSidebar() {
+        sidebar.classList.add('-translate-x-full');
+        if (sidebarOverlay) {
+            sidebarOverlay.classList.add('opacity-0');
+            setTimeout(() => sidebarOverlay.classList.add('hidden'), 300);
+        }
+        if (!document.querySelector('.modal-root.flex:not(.hidden)')) {
+            document.body.classList.remove('overflow-hidden');
+        }
+    }
+
+    if (sidebarCollapse) sidebarCollapse.addEventListener('click', openSidebar);
+    if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', closeSidebar);
+    if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+}
+
+function initUserDropdown() {
+    const button = document.getElementById('userDropdown');
+    const menu = document.getElementById('userDropdownMenu');
+    if (!button || !menu) return;
+
+    button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        menu.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('#userDropdown') && !event.target.closest('#userDropdownMenu')) {
+            menu.classList.add('hidden');
+        }
+    });
+}
+
+function initLogout() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (!logoutBtn) return;
+    logoutBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '../../../login.html';
+    });
+}
+
+function initModalDismissers() {
+    document.querySelectorAll('[data-modal-hide]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const modalId = button.getAttribute('data-modal-hide');
+            if (modalId === 'trainerModal' && trainerModal) return trainerModal.hide();
+            if (modalId === 'viewTrainerModal' && viewModal) return viewModal.hide();
+        });
+    });
+}
+
+function setupEmailValidation() {
+    const emailInput = document.getElementById('email');
+    if (!emailInput) return;
+
+    emailInput.oninput = null;
+    emailInput.onblur = null;
+    emailInput.addEventListener('input', function() {
+        const val = this.value.trim();
+        const emailPattern = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+        if (val.length === 0) {
+            this.classList.remove('is-invalid');
+            this.setCustomValidity('');
+            return;
+        }
+        if (emailPattern.test(val)) {
+            this.classList.remove('is-invalid');
+            this.setCustomValidity('');
+        } else {
+            this.classList.add('is-invalid');
+            this.setCustomValidity('Please enter a valid email address (e.g., name@example.com).');
+        }
+    });
+    emailInput.addEventListener('blur', function() {
+        const val = this.value.trim();
+        const emailPattern = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+        if (val.length === 0) return;
+        if (!emailPattern.test(val)) {
+            this.classList.add('is-invalid');
+        }
+    });
+}
+
+function setupPhoneValidation() {
+    const phoneInput = document.getElementById('phone');
+    if (!phoneInput) return;
+
+    let errorMessage = phoneInput.parentElement.querySelector('.phone-error');
+    if (!errorMessage) {
+        errorMessage = document.createElement('div');
+        errorMessage.className = 'phone-error mt-1 text-xs text-red-600';
+        errorMessage.style.display = 'none';
+        errorMessage.textContent = 'Numbers only';
+        phoneInput.parentElement.appendChild(errorMessage);
+    }
+
+    let errorTimeout;
+    phoneInput.addEventListener('keypress', function(event) {
+        const char = String.fromCharCode(event.which);
+        if (!/[0-9]/.test(char)) {
+            event.preventDefault();
+            this.classList.add('is-invalid');
+            errorMessage.style.display = 'block';
+            clearTimeout(errorTimeout);
+            errorTimeout = setTimeout(() => {
+                this.classList.remove('is-invalid');
+                errorMessage.style.display = 'none';
+            }, 2000);
+        }
+    });
+
+    phoneInput.addEventListener('input', function() {
+        this.value = this.value.replace(/[^0-9]/g, '');
+    });
+}
 
 async function loadSpecializations() {
     try {
@@ -216,6 +265,11 @@ async function loadPhAddressData() {
         const response = await axios.get('https://raw.githubusercontent.com/flores-jacob/philippine-regions-provinces-cities-municipalities-barangays/master/philippine_provinces_cities_municipalities_and_barangays_2019v2.json');
         phLocationData = response.data || {};
         populateAddressDropdowns();
+        if (pendingAddressValue) {
+            const addressToApply = pendingAddressValue;
+            pendingAddressValue = '';
+            setAddressFromString(addressToApply);
+        }
     } catch (error) {
         console.error('Error loading PH location data:', error);
     }
@@ -312,7 +366,7 @@ function addQualificationSection(data = {}, opts = {}) {
     if (!container) return;
 
     const section = document.createElement('div');
-    section.className = 'qualification-section border rounded p-3 mb-3';
+    section.className = 'qualification-section mb-3 rounded-lg border border-slate-200 p-3';
     section.dataset.index = qualificationSectionCount++;
 
     const ncRequired = opts.requiredNcFile !== false;
@@ -320,43 +374,45 @@ function addQualificationSection(data = {}, opts = {}) {
     const showRemove = opts.allowRemove !== false;
 
     const ncExistingLink = data.nc_file
-        ? `<div class="form-text existing-nc">Current: <a href="${UPLOADS_URL}${encodeURIComponent(data.nc_file)}" target="_blank">${data.nc_file}</a></div>`
+        ? `<div class="existing-nc mt-1 text-xs text-slate-500">Current: <a class="text-blue-600 underline" href="${UPLOADS_URL}${encodeURIComponent(data.nc_file)}" target="_blank">${data.nc_file}</a></div>`
         : '';
     const expExistingLink = data.experience_file
-        ? `<div class="form-text existing-exp">Current: <a href="${UPLOADS_URL}${encodeURIComponent(data.experience_file)}" target="_blank">${data.experience_file}</a></div>`
+        ? `<div class="existing-exp mt-1 text-xs text-slate-500">Current: <a class="text-blue-600 underline" href="${UPLOADS_URL}${encodeURIComponent(data.experience_file)}" target="_blank">${data.experience_file}</a></div>`
         : '';
 
     section.dataset.existingNc = data.nc_file ? '1' : '0';
     section.dataset.existingExp = data.experience_file ? '1' : '0';
 
     section.innerHTML = `
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <strong class="qualification-title">Qualification</strong>
-            ${showRemove ? '<button type="button" class="btn btn-outline-danger btn-sm remove-qualification"><i class="fas fa-trash me-1"></i>Remove</button>' : ''}
+        <div class="mb-2 flex items-center justify-between">
+            <strong class="qualification-title text-sm text-slate-900">Qualification</strong>
+            ${showRemove ? '<button type="button" class="remove-qualification inline-flex items-center gap-1 rounded-md border border-red-200 bg-white px-2.5 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"><i class="fas fa-trash"></i>Remove</button>' : ''}
         </div>
-        <div class="row g-2">
-            <div class="col-md-6">
-                <label class="form-label">Qualification <span class="text-danger">*</span></label>
-                <select class="form-select qualification-select" required></select>
+        <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
+            <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">Qualification <span class="text-red-600">*</span></label>
+                <select class="qualification-select w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" required></select>
             </div>
-            <div class="col-md-6">
-                <label class="form-label">NC Level <span class="text-danger">*</span></label>
-                <select class="form-select nc-level" required>
+            <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">NC Level <span class="text-red-600">*</span></label>
+                <select class="nc-level w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" required>
                     <option value="">Select NC Level</option>
-                    <option value="NC I">NC I</option>
-                    <option value="NC II">NC II</option>
+                    <option value="1">NC I</option>
+                    <option value="2">NC II</option>
+                    <option value="3">NC III</option>
+                    <option value="4">NC IV</option>
                 </select>
             </div>
         </div>
-        <div class="row g-2 mt-1">
-            <div class="col-md-6">
-                <label class="form-label">NC Certificate <span class="text-danger">*</span></label>
-                <input type="file" class="form-control nc-file" accept=".pdf,.jpg,.png" ${shouldRequireNc ? 'required' : ''}>
+        <div class="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
+            <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">NC Certificate <span class="text-red-600">*</span></label>
+                <input type="file" class="nc-file w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 file:mr-3 file:rounded-md file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" accept=".pdf,.jpg,.png" ${shouldRequireNc ? 'required' : ''}>
                 ${ncExistingLink}
             </div>
-            <div class="col-md-6">
-                <label class="form-label">Work Experience Documents</label>
-                <input type="file" class="form-control exp-file" accept=".pdf,.jpg,.png">
+            <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">Work Experience Documents</label>
+                <input type="file" class="exp-file w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 file:mr-3 file:rounded-md file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" accept=".pdf,.jpg,.png">
                 ${expExistingLink}
             </div>
         </div>
@@ -367,7 +423,7 @@ function addQualificationSection(data = {}, opts = {}) {
     const select = section.querySelector('.qualification-select');
     select.innerHTML = buildQualificationOptions();
     if (data.qualification_id) select.value = String(data.qualification_id);
-    if (data.nc_level) section.querySelector('.nc-level').value = data.nc_level;
+    if (data.nc_level_id) section.querySelector('.nc-level').value = String(data.nc_level_id);
     if (!shouldRequireNc) {
         section.querySelector('.nc-file').required = false;
     }
@@ -387,29 +443,33 @@ function renderTrainersTable(trainers) {
     const tbody = document.getElementById('trainersTableBody');
     tbody.innerHTML = '';
     if (!trainers || trainers.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center">No trainers found.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-sm text-slate-500">No trainers found.</td></tr>';
         return;
     }
 
     trainers.forEach(trainer => {
         const row = document.createElement('tr');
         const qualificationLabel = trainer.qualification_names || trainer.qualification_name || 'N/A';
+        const statusClass = trainer.status === 'active'
+            ? 'bg-emerald-100 text-emerald-700'
+            : 'bg-slate-200 text-slate-700';
+        row.className = 'hover:bg-slate-50';
         row.innerHTML = `
-            <td>${trainer.first_name} ${trainer.last_name}</td>
-            <td>${trainer.email}</td>
-            <td>${qualificationLabel}</td>
-            <td><span class="badge bg-${trainer.status === 'active' ? 'success' : 'secondary'}">${trainer.status}</span></td>
-            <td>
-                <div class="dropdown d-flex justify-content-center">
-                  <button class="btn btn-sm px-2 py-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Actions">
-                    <i class="fas fa-ellipsis-v"></i>
-                  </button>
-                  <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="#" onclick="viewTrainerDetails(${trainer.trainer_id})"><i class="fas fa-eye me-2"></i>View</a></li>
-                    <li><a class="dropdown-item" href="#" onclick="editTrainer(${trainer.trainer_id})"><i class="fas fa-edit me-2"></i>Edit</a></li>
-                    <li><a class="dropdown-item text-danger" href="#" onclick="deleteTrainer(${trainer.trainer_id})"><i class="fas fa-trash me-2"></i>Delete</a></li>
-                  </ul>
-                </div>
+            <td class="px-4 py-3 text-sm font-medium text-slate-800">${trainer.first_name} ${trainer.last_name}</td>
+            <td class="px-4 py-3 text-sm text-slate-700">${trainer.email}</td>
+            <td class="px-4 py-3 text-sm text-slate-700">${qualificationLabel}</td>
+            <td class="px-4 py-3">
+                <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${statusClass}">${trainer.status}</span>
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex flex-wrap items-center justify-center gap-1">
+                <button class="inline-flex items-center rounded-md border border-blue-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" type="button" onclick="viewTrainerDetails(${trainer.trainer_id})" title="View">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="inline-flex items-center rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" type="button" onclick="editTrainer(${trainer.trainer_id})" title="Edit">
+                  <i class="fas fa-edit"></i>
+                </button>
+              </div>
             </td>
         `;
         tbody.appendChild(row);
@@ -420,11 +480,28 @@ window.openAddModal = function() {
     document.getElementById('trainerForm').reset();
     document.getElementById('trainerId').value = '';
     currentAddressValue = '';
+    pendingAddressValue = '';
     document.getElementById('trainerModalLabel').textContent = 'Add New Trainer';
     setRequiredState(true);
     clearQualificationSections();
     addQualificationSection({}, { allowRemove: false, requiredNcFile: true });
+    setCurrentTrainerFileLinks({});
     trainerModal.show();
+}
+
+function renderCurrentFileLink(containerId, fileName) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    if (!fileName) {
+        container.innerHTML = '';
+        return;
+    }
+    container.innerHTML = `Current: <a class="text-blue-600 underline" href="${UPLOADS_URL}${encodeURIComponent(fileName)}" target="_blank">${fileName}</a>`;
+}
+
+function setCurrentTrainerFileLinks(trainer) {
+    renderCurrentFileLink('nttcFileCurrent', trainer?.nttc_file);
+    renderCurrentFileLink('tmFileCurrent', trainer?.tm_file);
 }
 
 async function saveTrainer() {
@@ -451,7 +528,7 @@ async function saveTrainer() {
         const expFileInput = section.querySelector('.exp-file');
 
         const qualificationId = qualSelect?.value?.trim();
-        const ncLevel = ncLevelSelect?.value?.trim();
+        const ncLevelId = ncLevelSelect?.value?.trim();
         const hasExistingNc = section.dataset.existingNc === '1';
 
         if (!qualificationId) {
@@ -466,7 +543,7 @@ async function saveTrainer() {
         }
         seenQualifications.add(qualificationId);
 
-        if (!ncLevel) {
+        if (!ncLevelId) {
             Swal.fire('Required', `Please select an NC Level for Qualification ${i + 1}.`, 'warning');
             ncLevelSelect?.focus();
             return;
@@ -480,7 +557,7 @@ async function saveTrainer() {
 
         qualificationPayload.push({
             qualificationId,
-            ncLevel,
+            ncLevelId,
             ncFile: ncFileInput?.files?.[0] || null,
             expFile: expFileInput?.files?.[0] || null,
             hasExistingNc
@@ -502,11 +579,17 @@ async function saveTrainer() {
     formData.append('phone', document.getElementById('phone').value);
     qualificationPayload.forEach((q, idx) => {
         formData.append(`qualification_ids[${idx}]`, q.qualificationId);
-        formData.append(`nc_levels[${idx}]`, q.ncLevel);
+        formData.append(`nc_level_ids[${idx}]`, q.ncLevelId);
         if (q.ncFile) formData.append(`nc_files[${idx}]`, q.ncFile);
         if (q.expFile) formData.append(`experience_files[${idx}]`, q.expFile);
     });
     formData.append('address', addressValue);
+    formData.append('address_house', document.getElementById('addrHouse')?.value?.trim() || '');
+    formData.append('address_barangay', document.getElementById('addrBarangay')?.value?.trim() || '');
+    formData.append('address_district', document.getElementById('addrDistrict')?.value?.trim() || '');
+    formData.append('address_city', document.getElementById('addrCity')?.value?.trim() || '');
+    formData.append('address_province', document.getElementById('addrProvince')?.value?.trim() || '');
+    formData.append('address_region', document.getElementById('addrRegion')?.value?.trim() || '');
     formData.append('nttc_no', document.getElementById('nttcNo').value);
     
     if(document.getElementById('nttcFile').files[0]) formData.append('nttc_file', document.getElementById('nttcFile').files[0]);
@@ -538,6 +621,9 @@ window.editTrainer = async function(id) {
         const response = await axios.get(`${API_BASE_URL}/role/registrar/trainers.php?action=get&id=${id}`);
         if (response.data.success) {
             const trainer = response.data.data;
+            if (!qualificationOptions.length) {
+                await loadSpecializations();
+            }
             document.getElementById('trainerId').value = trainer.trainer_id;
             document.getElementById('firstName').value = trainer.first_name;
             document.getElementById('lastName').value = trainer.last_name;
@@ -548,13 +634,15 @@ window.editTrainer = async function(id) {
             currentAddressValue = trainer.address || '';
             setAddressFromString(currentAddressValue);
             document.getElementById('nttcNo').value = trainer.nttc_no;
+            setCurrentTrainerFileLinks(trainer);
 
             clearQualificationSections();
             const qualifications = (trainer.qualifications && trainer.qualifications.length)
                 ? trainer.qualifications
                 : [{
                     qualification_id: trainer.qualification_id,
-                    nc_level: trainer.nc_level,
+                    nc_level_id: trainer.trainer_nc_level_id,
+                    nc_level_name: trainer.nc_level_name,
                     nc_file: trainer.nc_file,
                     experience_file: trainer.experience_file
                 }].filter(q => q.qualification_id);
@@ -586,42 +674,45 @@ window.viewTrainerDetails = async function(id) {
             const body = document.getElementById('viewTrainerBody');
             
             const createFileLink = (file, label) => {
-                if (!file) return `<p class="mb-1"><strong class="text-muted">${label}:</strong> N/A</p>`;
-                return `<p class="mb-1"><strong class="text-muted">${label}:</strong> <a href="${UPLOADS_URL}${encodeURIComponent(file)}" target="_blank">${file}</a></p>`;
+                if (!file) return `<p class="mb-1 text-sm text-slate-700"><strong class="text-slate-500">${label}:</strong> N/A</p>`;
+                return `<p class="mb-1 text-sm text-slate-700"><strong class="text-slate-500">${label}:</strong> <a class="text-blue-600 underline" href="${UPLOADS_URL}${encodeURIComponent(file)}" target="_blank">${file}</a></p>`;
             };
 
             const qualifications = (trainer.qualifications && trainer.qualifications.length)
                 ? trainer.qualifications
                 : [{
                     qualification_name: trainer.qualification_name || 'N/A',
-                    nc_level: trainer.nc_level || 'N/A',
+                    nc_level_name: trainer.nc_level_name || 'N/A',
                     nc_file: trainer.nc_file || null,
                     experience_file: trainer.experience_file || null
                 }];
 
             const qualificationsHtml = qualifications.map(q => `
-                <div class="mb-3">
-                    <p class="mb-1"><strong>${q.qualification_name || 'Qualification'}</strong></p>
-                    <p class="mb-1"><strong class="text-muted">NC Level:</strong> ${q.nc_level || 'N/A'}</p>
+                <div class="mb-3 rounded-lg border border-slate-200 p-3">
+                    <p class="mb-1 text-sm font-semibold text-slate-900">${q.qualification_name || 'Qualification'}</p>
+                    <p class="mb-1 text-sm text-slate-700"><strong class="text-slate-500">NC Level:</strong> ${q.nc_level_name || 'N/A'}</p>
                     ${createFileLink(q.nc_file, 'NC Certificate')}
                     ${createFileLink(q.experience_file, 'Experience Docs')}
                 </div>
             `).join('');
 
+            const statusClass = trainer.status === 'active'
+                ? 'bg-emerald-100 text-emerald-700'
+                : 'bg-slate-200 text-slate-700';
             body.innerHTML = `
-                <h5>${trainer.first_name} ${trainer.last_name}</h5>
-                <p><strong>Email:</strong> ${trainer.email}</p>
-                <p><strong>Phone:</strong> ${trainer.phone_number || 'N/A'}</p>
-                <p><strong>Address:</strong> ${trainer.address || 'N/A'}</p>
-                <p><strong>Qualification(s):</strong> ${trainer.qualification_names || trainer.qualification_name || 'N/A'}</p>
-                <p><strong>Status:</strong> <span class="badge bg-${trainer.status === 'active' ? 'success' : 'secondary'}">${trainer.status}</span></p>
-                <hr>
-                <h6>Certifications</h6>
-                <p><strong>NTTC No:</strong> ${trainer.nttc_no || 'N/A'}</p>
+                <h5 class="mb-2 text-lg font-semibold text-slate-900">${trainer.first_name} ${trainer.last_name}</h5>
+                <p class="mb-1 text-sm text-slate-700"><strong class="text-slate-500">Email:</strong> ${trainer.email}</p>
+                <p class="mb-1 text-sm text-slate-700"><strong class="text-slate-500">Phone:</strong> ${trainer.phone_number || 'N/A'}</p>
+                <p class="mb-1 text-sm text-slate-700"><strong class="text-slate-500">Address:</strong> ${trainer.address || 'N/A'}</p>
+                <p class="mb-1 text-sm text-slate-700"><strong class="text-slate-500">Qualification(s):</strong> ${trainer.qualification_names || trainer.qualification_name || 'N/A'}</p>
+                <p class="mb-3 text-sm text-slate-700"><strong class="text-slate-500">Status:</strong> <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${statusClass}">${trainer.status}</span></p>
+                <hr class="my-4 border-slate-200">
+                <h6 class="mb-2 text-sm font-semibold uppercase tracking-wide text-blue-700">Certifications</h6>
+                <p class="mb-1 text-sm text-slate-700"><strong class="text-slate-500">NTTC No:</strong> ${trainer.nttc_no || 'N/A'}</p>
                 ${createFileLink(trainer.nttc_file, 'NTTC Certificate')}
                 ${createFileLink(trainer.tm_file, 'TM Certificate')}
-                <hr>
-                <h6>Qualifications</h6>
+                <hr class="my-4 border-slate-200">
+                <h6 class="mb-2 text-sm font-semibold uppercase tracking-wide text-blue-700">Qualifications</h6>
                 ${qualificationsHtml}
             `;
             viewModal.show();
@@ -633,37 +724,12 @@ window.viewTrainerDetails = async function(id) {
     }
 }
 
-window.deleteTrainer = async function(id) {
-    const result = await Swal.fire({
-        title: 'Are you sure?',
-        text: "You won't be able to revert this!",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        confirmButtonText: 'Yes, delete it!'
-    });
-
-    if (!result.isConfirmed) return;
-
-    try {
-        const response = await axios.delete(`${API_BASE_URL}/role/registrar/trainers.php?action=delete&id=${id}`);
-        if (response.data.success) {
-            Swal.fire('Deleted!', 'Trainer deleted successfully!', 'success');
-            loadTrainers();
-        } else {
-            Swal.fire('Error', 'Error: ' + response.data.message, 'error');
-        }
-    } catch (error) {
-        console.error('Error deleting trainer:', error);
-    }
-}
-
 function setRequiredState(isRequired) {
-    const fileIds = ['nttcFile', 'tmFile'];
-    fileIds.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.required = isRequired;
-    });
+    const nttcFile = document.getElementById('nttcFile');
+    if (nttcFile) nttcFile.required = false;
+
+    const tmFile = document.getElementById('tmFile');
+    if (tmFile) tmFile.required = isRequired;
 
     const addressIds = ['addrProvince', 'addrCity', 'addrRegion', 'addrBarangay', 'addrDistrict', 'addrHouse'];
     addressIds.forEach(id => {
@@ -710,14 +776,24 @@ function setAddressFromString(address) {
     const provinceSelect = document.getElementById('addrProvince');
     const citySelect = document.getElementById('addrCity');
     const barangaySelect = document.getElementById('addrBarangay');
+    const regionInput = document.getElementById('addrRegion');
     const districtInput = document.getElementById('addrDistrict');
     const houseInput = document.getElementById('addrHouse');
 
     if (!provinceSelect || !citySelect || !barangaySelect) return;
-    if (!phLocationData || Object.keys(phLocationData).length === 0) return;
+    if (!phLocationData || Object.keys(phLocationData).length === 0) {
+        pendingAddressValue = address;
+        return;
+    }
 
-    const parts = address.split(',').map(p => p.trim()).filter(Boolean);
+    const parts = address.split(',').map((p) => p.trim()).filter(Boolean);
     if (parts.length < 3) return;
+
+    let region = '';
+    const lastPart = parts[parts.length - 1] || '';
+    if (/^region\b/i.test(lastPart)) {
+        region = parts.pop();
+    }
 
     let house = '';
     let barangay = '';
@@ -727,26 +803,43 @@ function setAddressFromString(address) {
 
     if (parts.length >= 5) {
         [house, barangay, district, city, province] = parts;
-    } else {
+    } else if (parts.length === 4) {
         [house, barangay, city, province] = parts;
+    } else {
+        [barangay, city, province] = parts;
     }
 
     if (houseInput && house) houseInput.value = house;
-    if (districtInput && district) districtInput.value = district;
+    const resolvedDistrict = district || city || '';
+    if (regionInput && region) regionInput.value = region;
 
-    if (province) {
-        provinceSelect.value = province;
+    const setSelectValue = (select, value) => {
+        if (!select || !value) return false;
+        const needle = String(value).trim().toLowerCase();
+        const match = Array.from(select.options).find((option) => option.value.trim().toLowerCase() === needle);
+        if (!match) return false;
+        select.value = match.value;
+        return true;
+    };
+
+    if (province && setSelectValue(provinceSelect, province)) {
         provinceSelect.dispatchEvent(new Event('change'));
         setTimeout(() => {
-            if (city) {
-                citySelect.value = city;
+            if (city && setSelectValue(citySelect, city)) {
                 citySelect.dispatchEvent(new Event('change'));
                 setTimeout(() => {
                     if (barangay) {
-                        barangaySelect.value = barangay;
+                        setSelectValue(barangaySelect, barangay);
+                    }
+                    if (districtInput) {
+                        districtInput.value = resolvedDistrict;
                     }
                 }, 0);
+            } else if (districtInput) {
+                districtInput.value = resolvedDistrict;
             }
         }, 0);
+    } else if (districtInput) {
+        districtInput.value = resolvedDistrict;
     }
 }

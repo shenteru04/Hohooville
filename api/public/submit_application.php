@@ -27,6 +27,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 function getOptions($conn) {
     try {
+        // Close batches that have passed their enrollment deadline (start_date)
+        closeExpiredBatches($conn);
+        
         $courses = $conn->query("SELECT qualification_id, qualification_name AS course_name FROM tbl_qualifications WHERE status = 'active' ORDER BY qualification_name ASC")->fetchAll(PDO::FETCH_ASSOC);
         // Include scholarship type for auto-population on batch selection
         $batches = $conn->query("
@@ -339,6 +342,22 @@ function updateApplicationStatus($conn) {
         echo json_encode(['success' => true, 'message' => 'Status updated and notification sent.']);
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    }
+}
+
+/**
+ * Closes batches that have passed their enrollment deadline (start_date)
+ */
+function closeExpiredBatches($conn) {
+    try {
+        $query = "UPDATE tbl_batch 
+                  SET status = 'closed' 
+                  WHERE status = 'open' 
+                  AND start_date <= CURDATE()";
+        $stmt = $conn->prepare($query);
+        $stmt->execute();
+    } catch (Exception $e) {
+        error_log("Error closing expired batches: " . $e->getMessage());
     }
 }
 ?>

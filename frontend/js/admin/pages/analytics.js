@@ -1,13 +1,18 @@
-const API_BASE = 'http://localhost/Hohoo-ville/api/role/admin';
+const API_BASE = `${window.location.origin}/Hohoo-ville/api/role/admin`;
 const chartStore = {};
 
 document.addEventListener('DOMContentLoaded', () => {
+    initUserDropdown();
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', (event) => {
             event.preventDefault();
+            if (typeof window.logout === 'function') {
+                window.logout();
+                return;
+            }
             localStorage.clear();
-            window.location.href = '/hohoo-ville/frontend/login.html';
+            window.location.href = '/Hohoo-ville/frontend/login.html';
         });
     }
 
@@ -18,6 +23,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     refreshAnalytics(false);
 });
+
+function initUserDropdown() {
+    const button = document.getElementById('userDropdown');
+    const menu = document.getElementById('userDropdownMenu');
+    if (!button || !menu) return;
+
+    button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        menu.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('#userDropdown') && !event.target.closest('#userDropdownMenu')) {
+            menu.classList.add('hidden');
+        }
+    });
+}
 
 async function refreshAnalytics(isManual) {
     const refreshBtn = document.getElementById('refreshAnalytics');
@@ -131,7 +153,7 @@ function setTableBody(tbodyId, rowsHtml, emptyMessage) {
     const table = tbody.closest('table');
     const colCount = table && table.tHead && table.tHead.rows[0] ? table.tHead.rows[0].cells.length : 1;
     if (!rowsHtml) {
-        tbody.innerHTML = `<tr><td colspan="${colCount}" class="text-center text-muted">${emptyMessage}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${colCount}" class="px-4 py-6 text-center text-sm text-slate-500">${emptyMessage}</td></tr>`;
         return;
     }
     tbody.innerHTML = rowsHtml;
@@ -171,7 +193,7 @@ async function loadCompletionRates() {
             return;
         }
         setChartOverlay('completionChart', false, '');
-        const labels = data.map(d => d.qualification_name);
+        const labels = data.map(d => d.abbreviated || d.qualification_name);
         const values = data.map(d => Number(d.completion_rate || 0));
         renderChart('completionChart', {
             type: 'bar',
@@ -309,10 +331,10 @@ async function loadDropoutAnalysis() {
         }
         const rows = data.map(d => `
             <tr>
-                <td>${formatMonthLabel(d.month)}</td>
-                <td>${formatNumber(d.enrolled)}</td>
-                <td>${formatPercent(d.dropout_rate, 1)}</td>
-                <td>${formatNumber(d.completed)}</td>
+                <td class="px-3 py-3 text-sm text-slate-700">${formatMonthLabel(d.month)}</td>
+                <td class="px-3 py-3 text-sm text-slate-700">${formatNumber(d.enrolled)}</td>
+                <td class="px-3 py-3 text-sm text-slate-700">${formatPercent(d.dropout_rate, 1)}</td>
+                <td class="px-3 py-3 text-sm text-slate-700">${formatNumber(d.completed)}</td>
             </tr>
         `).join('');
         setTableBody('dropoutTable', rows, 'No dropout data available.');
@@ -332,10 +354,10 @@ async function loadTrainerPerformance() {
         }
         const rows = data.map(d => `
             <tr>
-                <td>${d.trainer_name || 'Unknown'}</td>
-                <td>${formatNumber(d.total_trainees)}</td>
-                <td>${formatScore(d.avg_trainee_score)}</td>
-                <td>${formatPercent(d.competency_rate || 0, 1)}</td>
+                <td class="px-3 py-3 text-sm text-slate-800">${d.trainer_name || 'Unknown'}</td>
+                <td class="px-3 py-3 text-sm text-slate-700">${formatNumber(d.total_trainees)}</td>
+                <td class="px-3 py-3 text-sm text-slate-700">${formatScore(d.avg_trainee_score)}</td>
+                <td class="px-3 py-3 text-sm text-slate-700">${formatPercent(d.competency_rate || 0, 1)}</td>
             </tr>
         `).join('');
         setTableBody('trainerTable', rows, 'No trainer performance data available.');

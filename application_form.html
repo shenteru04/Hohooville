@@ -4,27 +4,318 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trainee Application - Hohoo-Ville Technical School</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { background-color: #f8f9fa; }
-        .application-container { max-width: 900px; margin: 50px auto; }
-        .step-indicator { font-weight: bold; color: #0d6efd; }
+        body {
+            background: #f8fafc;
+            color: #334155;
+            font-family: "Inter", "Segoe UI", Tahoma, sans-serif;
+        }
+        .application-container { max-width: 960px; margin: 2.25rem auto; }
+        .card {
+            border: 1px solid #dbeafe;
+            border-radius: 1rem;
+            background: #ffffff;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+            overflow: hidden;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: #ffffff;
+            text-align: center;
+            padding: 1.25rem 1rem;
+        }
+        .card-body { padding: 1.25rem; }
+        @media (min-width: 640px) {
+            .card-body { padding: 1.5rem; }
+        }
+        .step-indicator { font-weight: 700; color: #1d4ed8; }
+        #applicationForm h5 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1e40af;
+            margin-bottom: 0.85rem;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: repeat(12, minmax(0, 1fr));
+            gap: 1rem;
+        }
+        .col-md-3, .col-md-4, .col-md-6, .col-md-12 {
+            grid-column: span 12 / span 12;
+        }
+        @media (min-width: 768px) {
+            .col-md-3 { grid-column: span 3 / span 3; }
+            .col-md-4 { grid-column: span 4 / span 4; }
+            .col-md-6 { grid-column: span 6 / span 6; }
+            .col-md-12 { grid-column: span 12 / span 12; }
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.35rem;
+            color: #334155;
+            font-size: 0.92rem;
+            font-weight: 600;
+        }
+        .form-control,
+        .form-select {
+            width: 100%;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.65rem;
+            background: #fff;
+            padding: 0.6rem 0.75rem;
+            font-size: 0.92rem;
+            color: #1e293b;
+            transition: border-color .2s ease, box-shadow .2s ease;
+        }
+        .form-control:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        .form-control[readonly] {
+            background: #f8fafc;
+        }
+        .form-check {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.4rem;
+        }
+        .form-check-inline {
+            display: inline-flex;
+            margin-right: 1rem;
+            margin-bottom: 0;
+        }
+        .form-check-input {
+            width: 1rem;
+            height: 1rem;
+            border: 1px solid #94a3b8;
+            accent-color: #2563eb;
+        }
+        .form-check-label {
+            font-size: 0.9rem;
+            color: #334155;
+            line-height: 1.35;
+        }
+        .option-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+        .option-col {
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            background: #f8fafc;
+            padding: 0.75rem;
+        }
+        .option-item {
+            align-items: flex-start;
+            margin-bottom: 0.45rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.65rem;
+            background: #ffffff;
+            padding: 0.45rem 0.55rem;
+            transition: border-color .2s ease, background-color .2s ease;
+        }
+        .option-item:hover {
+            border-color: #bfdbfe;
+            background: #eff6ff;
+        }
+        .is-invalid {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+        }
+        .alert {
+            padding: 0.875rem 1rem;
+            border-radius: 0.75rem;
+            border: 1px solid;
+        }
+        .alert-info {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+            color: #1e40af;
+        }
+
+        .btn {
+            border: 1px solid transparent;
+            border-radius: 0.65rem;
+            padding: 0.58rem 0.95rem;
+            font-size: 0.92rem;
+            font-weight: 600;
+            line-height: 1.2;
+            cursor: pointer;
+            transition: all .2s ease;
+        }
+        .btn:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+        }
+        .btn-lg { padding: 0.72rem 1.15rem; font-size: 0.95rem; }
+        .btn-sm { padding: 0.4rem 0.7rem; font-size: 0.82rem; }
+        .btn-primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+        .btn-primary:hover { background: #1d4ed8; border-color: #1d4ed8; }
+        .btn-success { background: #059669; border-color: #059669; color: #fff; }
+        .btn-success:hover { background: #047857; border-color: #047857; }
+        .btn-secondary { background: #64748b; border-color: #64748b; color: #fff; }
+        .btn-secondary:hover { background: #475569; border-color: #475569; }
+        .btn-outline-secondary { background: #fff; border-color: #cbd5e1; color: #334155; }
+        .btn-outline-secondary:hover { background: #f8fafc; }
+
+        .text-primary { color: #2563eb; }
+        .text-danger { color: #dc2626; }
+        .text-white { color: #fff; }
+        .text-muted { color: #64748b; }
+        .bg-light { background: #f8fafc; }
+        .bg-white { background: #fff; }
+        .bg-primary { background: #2563eb; }
+        .border-bottom { border-bottom: 1px solid #e2e8f0; }
+        .border { border: 1px solid #e2e8f0; }
+        .rounded { border-radius: 0.5rem; }
+        .shadow { box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08); }
+
+        .d-flex { display: flex; }
+        .d-block { display: block; }
+        .text-center { text-align: center; }
+        .justify-content-between { justify-content: space-between; }
+        .justify-content-end { justify-content: flex-end; }
+
+        .p-2 { padding: 0.5rem; }
+        .p-4 { padding: 1rem; }
+        .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+        .pb-2 { padding-bottom: 0.5rem; }
+        .mb-0 { margin-bottom: 0; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-3 { margin-bottom: 1rem; }
+        .mb-4 { margin-bottom: 1.5rem; }
+        .mt-2 { margin-top: 0.5rem; }
+        .mt-3 { margin-top: 1rem; }
+        .mt-4 { margin-top: 1.5rem; }
+        .me-1 { margin-right: 0.25rem; }
+        .me-2 { margin-right: 0.5rem; }
+        .ms-2 { margin-left: 0.5rem; }
+
+        .spinner-border {
+            display: inline-block;
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 0.2em solid rgba(37, 99, 235, 0.25);
+            border-right-color: #2563eb;
+            border-radius: 50%;
+            animation: spinner .75s linear infinite;
+        }
+        @keyframes spinner { to { transform: rotate(360deg); } }
+        .visually-hidden {
+            position: absolute !important;
+            width: 1px !important;
+            height: 1px !important;
+            padding: 0 !important;
+            margin: -1px !important;
+            overflow: hidden !important;
+            clip: rect(0, 0, 0, 0) !important;
+            white-space: nowrap !important;
+            border: 0 !important;
+        }
+
         .birthplace-row {
             display: flex;
-            gap: 16px; /* Adjust spacing as needed */
-            margin-bottom: 24px;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
         }
         .birthplace-row .form-group {
             flex: 1 1 0;
             min-width: 0;
         }
-        @media (max-width: 768px) {
+        .form-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+        @media (max-width: 767.98px) {
             .birthplace-row { flex-direction: column; }
+            .form-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .form-actions .btn {
+                width: 100%;
+            }
+        }
+        @media (min-width: 768px) {
+            .option-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 1rem;
+            }
+        }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            z-index: 70;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.55);
+        }
+        .modal.show { display: flex; }
+        .modal-dialog {
+            width: 100%;
+            max-width: 32rem;
+        }
+        .modal-content {
+            background: #fff;
+            border-radius: 1rem;
+            border: 1px solid #dbeafe;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.25);
+        }
+        .modal-header,
+        .modal-footer {
+            padding: 1rem 1.25rem;
+            border-color: #e2e8f0;
+        }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .modal-body {
+            padding: 1rem 1.25rem;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            border-top: 1px solid #e2e8f0;
+        }
+        .modal-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .btn-close {
+            border: 0;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 0.5rem;
+            background: transparent;
+            color: #64748b;
+            cursor: pointer;
+        }
+        .btn-close:hover {
+            background: #f1f5f9;
+            color: #334155;
         }
     </style>
 </head>
-<body>
+<body class="px-3 sm:px-4">
     <!-- Step 1: Pre-Check Section -->
     <div class="container application-container" id="preCheckSection">
         <div class="card shadow">
@@ -39,7 +330,7 @@
                         <input type="text" id="check_school_id" class="form-control" required placeholder="Enter your School ID">
                     </div>
                 </div>
-                <div class="d-flex justify-content-between mt-4">
+                <div class="d-flex justify-content-between mt-4 form-actions">
                     <button type="button" class="btn btn-outline-secondary" id="skipCheckBtn">New Applicant? Skip Check</button>
                     <button type="button" class="btn btn-primary" id="continueBtn">Check ID <i class="fas fa-arrow-right ms-2"></i></button>
                 </div>
@@ -206,22 +497,22 @@
                         <h5 class="mb-3 mt-4 text-primary border-bottom pb-2">3. Education Background</h5>
                         <div class="mb-3">
                             <label class="form-label d-block">Educational Attainment (Before Training) <span class="text-danger">*</span></label>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-check"><input class="form-check-input" type="radio" name="educational_attainment" value="No Grade Completed" required> <label class="form-check-label">No Grade Completed</label></div>
-                                    <div class="form-check"><input class="form-check-input" type="radio" name="educational_attainment" value="Elementary Undergraduate"> <label class="form-check-label">Elementary Undergraduate</label></div>
-                                    <div class="form-check"><input class="form-check-input" type="radio" name="educational_attainment" value="Elementary Graduate"> <label class="form-check-label">Elementary Graduate</label></div>
-                                    <div class="form-check"><input class="form-check-input" type="radio" name="educational_attainment" value="Junior High (K-12)"> <label class="form-check-label">Junior High (K-12)</label></div>
-                                    <div class="form-check"><input class="form-check-input" type="radio" name="educational_attainment" value="Senior High (K-12)"> <label class="form-check-label">Senior High (K-12)</label></div>
-                                    <div class="form-check"><input class="form-check-input" type="radio" name="educational_attainment" value="High School Graduate"> <label class="form-check-label">High School Graduate</label></div>
+                            <div class="row option-grid">
+                                <div class="col-md-6 option-col">
+                                    <div class="form-check option-item"><input class="form-check-input" type="radio" name="educational_attainment" value="No Grade Completed" required> <label class="form-check-label">No Grade Completed</label></div>
+                                    <div class="form-check option-item"><input class="form-check-input" type="radio" name="educational_attainment" value="Elementary Undergraduate"> <label class="form-check-label">Elementary Undergraduate</label></div>
+                                    <div class="form-check option-item"><input class="form-check-input" type="radio" name="educational_attainment" value="Elementary Graduate"> <label class="form-check-label">Elementary Graduate</label></div>
+                                    <div class="form-check option-item"><input class="form-check-input" type="radio" name="educational_attainment" value="Junior High (K-12)"> <label class="form-check-label">Junior High (K-12)</label></div>
+                                    <div class="form-check option-item"><input class="form-check-input" type="radio" name="educational_attainment" value="Senior High (K-12)"> <label class="form-check-label">Senior High (K-12)</label></div>
+                                    <div class="form-check option-item"><input class="form-check-input" type="radio" name="educational_attainment" value="High School Graduate"> <label class="form-check-label">High School Graduate</label></div>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="form-check"><input class="form-check-input" type="radio" name="educational_attainment" value="Post-Secondary Non-Tertiary Undergraduate"> <label class="form-check-label">Post-Secondary Non-Tertiary Undergraduate</label></div>
-                                    <div class="form-check"><input class="form-check-input" type="radio" name="educational_attainment" value="Post-Secondary Non-Tertiary Graduate"> <label class="form-check-label">Post-Secondary Non-Tertiary Graduate</label></div>
-                                    <div class="form-check"><input class="form-check-input" type="radio" name="educational_attainment" value="College Undergraduate"> <label class="form-check-label">College Undergraduate</label></div>
-                                    <div class="form-check"><input class="form-check-input" type="radio" name="educational_attainment" value="College Graduate"> <label class="form-check-label">College Graduate</label></div>
-                                    <div class="form-check"><input class="form-check-input" type="radio" name="educational_attainment" value="Masteral"> <label class="form-check-label">Masteral</label></div>
-                                    <div class="form-check"><input class="form-check-input" type="radio" name="educational_attainment" value="Doctorate"> <label class="form-check-label">Doctorate</label></div>
+                                <div class="col-md-6 option-col">
+                                    <div class="form-check option-item"><input class="form-check-input" type="radio" name="educational_attainment" value="Post-Secondary Non-Tertiary Undergraduate"> <label class="form-check-label">Post-Secondary Non-Tertiary Undergraduate</label></div>
+                                    <div class="form-check option-item"><input class="form-check-input" type="radio" name="educational_attainment" value="Post-Secondary Non-Tertiary Graduate"> <label class="form-check-label">Post-Secondary Non-Tertiary Graduate</label></div>
+                                    <div class="form-check option-item"><input class="form-check-input" type="radio" name="educational_attainment" value="College Undergraduate"> <label class="form-check-label">College Undergraduate</label></div>
+                                    <div class="form-check option-item"><input class="form-check-input" type="radio" name="educational_attainment" value="College Graduate"> <label class="form-check-label">College Graduate</label></div>
+                                    <div class="form-check option-item"><input class="form-check-input" type="radio" name="educational_attainment" value="Masteral"> <label class="form-check-label">Masteral</label></div>
+                                    <div class="form-check option-item"><input class="form-check-input" type="radio" name="educational_attainment" value="Doctorate"> <label class="form-check-label">Doctorate</label></div>
                                 </div>
                             </div>
                         </div>
@@ -254,25 +545,25 @@
 
                         <!-- 5. Learner Classification -->
                         <h5 class="mb-3 mt-4 text-primary border-bottom pb-2">5. Learner / Trainee Classification</h5>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Student"> <label class="form-check-label">Student</label></div>
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Out-of-School Youth"> <label class="form-check-label">Out-of-School Youth</label></div>
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Industry Worker"> <label class="form-check-label">Industry Worker</label></div>
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Farmers and Fishermen"> <label class="form-check-label">Farmers and Fishermen</label></div>
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Displaced Worker"> <label class="form-check-label">Displaced Worker</label></div>
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="OFW"> <label class="form-check-label">Overseas Filipino Worker (OFW)</label></div>
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Repatriated OFW"> <label class="form-check-label">Returned / Repatriated OFW</label></div>
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="TESDA Alumni"> <label class="form-check-label">TESDA Alumni</label></div>
+                        <div class="row mb-3 option-grid">
+                            <div class="col-md-6 option-col">
+                                <div class="form-check option-item"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Student"> <label class="form-check-label">Student</label></div>
+                                <div class="form-check option-item"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Out-of-School Youth"> <label class="form-check-label">Out-of-School Youth</label></div>
+                                <div class="form-check option-item"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Industry Worker"> <label class="form-check-label">Industry Worker</label></div>
+                                <div class="form-check option-item"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Farmers and Fishermen"> <label class="form-check-label">Farmers and Fishermen</label></div>
+                                <div class="form-check option-item"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Displaced Worker"> <label class="form-check-label">Displaced Worker</label></div>
+                                <div class="form-check option-item"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="OFW"> <label class="form-check-label">Overseas Filipino Worker (OFW)</label></div>
+                                <div class="form-check option-item"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Repatriated OFW"> <label class="form-check-label">Returned / Repatriated OFW</label></div>
+                                <div class="form-check option-item"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="TESDA Alumni"> <label class="form-check-label">TESDA Alumni</label></div>
                             </div>
-                            <div class="col-md-6">
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Victim of Natural Disasters"> <label class="form-check-label">Victim of Natural Disasters</label></div>
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="IP"> <label class="form-check-label">Indigenous People</label></div>
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Inmates"> <label class="form-check-label">Inmates / Detainees</label></div>
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Rebel Returnees"> <label class="form-check-label">Rebel Returnees</label></div>
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="AFP/PNP Wounded"> <label class="form-check-label">Family Members of AFP/PNP Wounded/KIA</label></div>
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Balik Probinsya"> <label class="form-check-label">Balik Probinsya</label></div>
-                                <div class="form-check"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Others"> <label class="form-check-label">Others</label></div>
+                            <div class="col-md-6 option-col">
+                                <div class="form-check option-item"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Victim of Natural Disasters"> <label class="form-check-label">Victim of Natural Disasters</label></div>
+                                <div class="form-check option-item"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="IP"> <label class="form-check-label">Indigenous People</label></div>
+                                <div class="form-check option-item"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Inmates"> <label class="form-check-label">Inmates / Detainees</label></div>
+                                <div class="form-check option-item"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Rebel Returnees"> <label class="form-check-label">Rebel Returnees</label></div>
+                                <div class="form-check option-item"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="AFP/PNP Wounded"> <label class="form-check-label">Family Members of AFP/PNP Wounded/KIA</label></div>
+                                <div class="form-check option-item"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Balik Probinsya"> <label class="form-check-label">Balik Probinsya</label></div>
+                                <div class="form-check option-item"><input class="form-check-input" type="checkbox" name="learner_classification[]" value="Others"> <label class="form-check-label">Others</label></div>
                             </div>
                         </div>
 
@@ -317,7 +608,7 @@
                             </div>
                         </div>
 
-                        <div class="d-flex justify-content-end mt-4">
+                        <div class="d-flex justify-content-end mt-4 form-actions">
                             <button type="button" class="btn btn-primary btn-lg" onclick="nextPage()">Next Page <i class="fas fa-arrow-right ms-2"></i></button>
                         </div>
                     </div>
@@ -377,7 +668,7 @@
 
                         <!-- 10. Privacy Consent -->
                         <h5 class="mb-3 mt-4 text-primary border-bottom pb-2">10. Privacy Consent & Declaration</h5>
-                        <div class="form-check mb-3">
+                        <div class="form-check option-item mb-3">
                             <input class="form-check-input" type="checkbox" id="privacyConsent" name="privacy_consent" required>
                             <label class="form-check-label" for="privacyConsent" required>
                                 I hereby certify that I have read and understood the TESDA Privacy Notice and agree to the processing of my personal information. I declare that all information provided is true and correct.
@@ -427,7 +718,7 @@
                             </div>
                         </div>
 
-                        <div class="d-flex justify-content-between mt-4">
+                        <div class="d-flex justify-content-between mt-4 form-actions">
                             <button type="button" class="btn btn-secondary btn-lg" onclick="prevPage()"><i class="fas fa-arrow-left me-2"></i> Previous</button>
                             <button type="submit" class="btn btn-success btn-lg" id="submitBtn" disabled>Submit Application</button>
                         </div>
@@ -444,7 +735,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="signatureModalLabel">Provide Your Signature</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-modal-close="signatureModal" aria-label="Close"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="modal-body">
                     <div class="border rounded bg-white">
@@ -459,7 +750,6 @@
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
     <script src="api/database/application_form.js"></script>
     <script>

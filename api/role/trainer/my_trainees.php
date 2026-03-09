@@ -29,6 +29,7 @@ class MyTrainees {
             $query = "SELECT 
                         t.trainee_id, 
                         t.status as enrollment_status,
+                        t.enrollment_date, DATE_FORMAT(t.enrollment_date, '%Y-%m-%d %H:%i:%s') as formatted_enrollment_date,
                         h.first_name, 
                         h.last_name, 
                         h.email, 

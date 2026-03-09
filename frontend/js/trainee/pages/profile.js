@@ -15,79 +15,43 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
-    // Inject Sidebar CSS (W3.CSS Reference Style)
-    const ms = document.createElement('style');
-    ms.innerHTML = `
-        #sidebar {
-            width: 200px;
-            position: fixed;
-            z-index: 1050;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            overflow-y: auto;
-            background-color: #fff;
-            box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16), 0 2px 10px 0 rgba(0,0,0,0.12);
-            display: block;
-        }
-        .main-content, #content, .content-wrapper {
-            margin-left: 200px !important;
-            transition: margin-left .4s;
-        }
-        #sidebarCloseBtn {
-            display: none;
-            width: 100%;
-            text-align: left;
-            padding: 8px 16px;
-            background: none;
-            border: none;
-            font-size: 18px;
-        }
-        #sidebarCloseBtn:hover { background-color: #ccc; }
-        
-        @media (max-width: 991.98px) {
-            #sidebar { display: none; }
-            .main-content, #content, .content-wrapper { margin-left: 0 !important; }
-            #sidebarCloseBtn { display: block; }
-        }
-        .table-responsive, table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    `;
-    document.head.appendChild(ms);
-
-    // Sidebar Logic
+    // Sidebar Logic (Tailwind)
     const sidebar = document.getElementById('sidebar');
-    if (sidebar) {
-        if (!document.getElementById('sidebarCloseBtn')) {
-            const closeBtn = document.createElement('button');
-            closeBtn.id = 'sidebarCloseBtn';
-            closeBtn.innerHTML = 'Close &times;';
-            closeBtn.addEventListener('click', () => {
-                sidebar.style.display = 'none';
-            });
-            sidebar.insertBefore(closeBtn, sidebar.firstChild);
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const sidebarCollapse = document.getElementById('sidebarCollapse');
+    const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+
+    function toggleSidebar() {
+        const isClosed = sidebar.classList.contains('-translate-x-full');
+        if (isClosed) {
+            sidebar.classList.remove('-translate-x-full');
+            sidebarOverlay.classList.remove('hidden');
+            setTimeout(() => sidebarOverlay.classList.remove('opacity-0'), 10);
+        } else {
+            sidebar.classList.add('-translate-x-full');
+            sidebarOverlay.classList.add('opacity-0');
+            setTimeout(() => sidebarOverlay.classList.add('hidden'), 300);
         }
     }
 
-    // Open Button Logic
-    let sc = document.getElementById('sidebarCollapse');
-    if (!sc) {
-        const nb = document.querySelector('.navbar');
-        if (nb) {
-            const c = nb.querySelector('.container-fluid') || nb;
-            const b = document.createElement('button');
-            b.id = 'sidebarCollapse';
-            b.className = 'btn btn-outline-primary me-2 d-lg-none';
-            b.type = 'button';
-            b.innerHTML = '&#9776;';
-            c.insertBefore(b, c.firstChild);
-            sc = b;
-        }
-    }
-    if (sc) {
-        const nb = sc.cloneNode(true);
-        if(sc.parentNode) sc.parentNode.replaceChild(nb, sc);
-        nb.addEventListener('click', () => {
-            if (sidebar) sidebar.style.display = 'block';
+    if (sidebarCollapse) sidebarCollapse.addEventListener('click', toggleSidebar);
+    if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', toggleSidebar);
+    if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+
+    // User Dropdown Logic
+    const userMenuBtn = document.getElementById('userMenuButton');
+    const userDropdown = document.getElementById('userDropdown');
+
+    if (userMenuBtn && userDropdown) {
+        userMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            userDropdown.classList.toggle('hidden');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!userMenuBtn.contains(e.target) && !userDropdown.contains(e.target)) {
+                userDropdown.classList.add('hidden');
+            }
         });
     }
 
@@ -149,7 +113,8 @@ async function loadProfileData(traineeId) {
             document.getElementById('profileSchoolId').textContent = profile.trainee_school_id || 'N/A';
             document.getElementById('profileUsername').textContent = profile.username || 'N/A';
             document.getElementById('profileBatch').textContent = profile.batch_name || 'N/A';
-            document.getElementById('profileScholarship').textContent = profile.scholarship_type || 'N/A';
+            document.getElementById('profileScholarship').textContent = profile.scholarship_type || 'No Scholarship';
+            document.getElementById('profileEnrollmentDate').textContent = profile.formatted_enrollment_date || profile.enrollment_date || 'N/A';
 
             document.getElementById('firstName').value = profile.first_name || '';
             document.getElementById('lastName').value = profile.last_name || '';
@@ -173,7 +138,7 @@ async function loadProfileData(traineeId) {
 async function saveProfileData(traineeId) {
     const saveBtn = document.getElementById('saveProfileBtn');
     saveBtn.disabled = true;
-    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    saveBtn.innerHTML = '<i class="animate-spin fas fa-spinner mr-2"></i> Saving...';
 
     const payload = {
         trainee_id: traineeId,
@@ -203,6 +168,6 @@ async function saveProfileData(traineeId) {
         Swal.fire('Error', 'An error occurred while saving your profile.', 'error');
     } finally {
         saveBtn.disabled = false;
-        saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Save Changes';
+        saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Save Changes';
     }
 }

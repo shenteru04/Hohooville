@@ -20,6 +20,9 @@ switch ($action) {
     case 'list':
         getQualifications($conn);
         break;
+    case 'list-archived':
+        getArchivedQualifications($conn);
+        break;
     case 'add':
         addQualification($conn);
         break;
@@ -28,6 +31,12 @@ switch ($action) {
         break;
     case 'update-status':
         updateQualificationStatus($conn);
+        break;
+    case 'archive':
+        archiveQualification($conn);
+        break;
+    case 'unarchive':
+        unarchiveQualification($conn);
         break;
     case 'delete':
         deleteQualification($conn);
@@ -41,7 +50,18 @@ switch ($action) {
 function getQualifications($conn) {
     try {
         autoActivatePendingQualifications($conn);
-        $stmt = $conn->query("SELECT * FROM tbl_qualifications ORDER BY FIELD(status, 'active', 'inactive', 'rejected', 'pending'), qualification_id DESC");
+        $stmt = $conn->query("SELECT q.*, nc.nc_level_code, nc.nc_level_name FROM tbl_qualifications q LEFT JOIN tbl_nc_levels nc ON q.nc_level_id = nc.nc_level_id WHERE q.is_archived = 0 ORDER BY FIELD(q.status, 'active', 'inactive', 'rejected', 'pending'), q.qualification_id DESC");
+        $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(['success' => true, 'data' => $data]);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    }
+}
+
+function getArchivedQualifications($conn) {
+    try {
+        $stmt = $conn->query("SELECT q.*, nc.nc_level_code, nc.nc_level_name FROM tbl_qualifications q LEFT JOIN tbl_nc_levels nc ON q.nc_level_id = nc.nc_level_id WHERE q.is_archived = 1 ORDER BY q.qualification_id DESC");
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(['success' => true, 'data' => $data]);
     } catch (Exception $e) {
@@ -75,9 +95,10 @@ function addQualification($conn) {
         
         $conn->beginTransaction();
 
-        $stmt = $conn->prepare("INSERT INTO tbl_qualifications (qualification_name, ctpr_number, training_cost, description, duration, status) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO tbl_qualifications (qualification_name, nc_level_id, ctpr_number, training_cost, description, duration, status) VALUES (?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $data['qualification_name'],
+            $data['nc_level_id'] ?? null,
             $data['ctpr_number'] ?? null,
             $data['training_cost'] ?? 0,
             $data['description'] ?? null, 
@@ -108,9 +129,10 @@ function updateQualification($conn) {
         
         if (!$id) throw new Exception('ID required');
         
-        $stmt = $conn->prepare("UPDATE tbl_qualifications SET qualification_name = ?, ctpr_number = ?, training_cost = ?, description = ?, duration = ?, status = ? WHERE qualification_id = ?");
+        $stmt = $conn->prepare("UPDATE tbl_qualifications SET qualification_name = ?, nc_level_id = ?, ctpr_number = ?, training_cost = ?, description = ?, duration = ?, status = ? WHERE qualification_id = ?");
         $stmt->execute([
             $data['qualification_name'], 
+            $data['nc_level_id'] ?? null,
             $data['ctpr_number'] ?? null,
             $data['training_cost'] ?? 0,
             $data['description'] ?? null, 
@@ -165,6 +187,54 @@ function updateQualificationStatus($conn) {
         }
 
         echo json_encode(['success' => true, 'message' => 'Status updated']);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    }
+}
+
+function archiveQualification($conn) {
+    try {
+        $id = $_GET['id'] ?? null;
+        if (!$id) throw new Exception('ID required');
+        
+        // Check if any trainees are enrolled in this qualification
+        $checkStmt = $conn->prepare("
+            SELECT COUNT(*) FROM tbl_enrollment e
+            JOIN tbl_offered_qualifications oq ON e.offered_qualification_id = oq.offered_qualification_id
+            WHERE oq.qualification_id = ? AND e.status IN ('pending', 'approved')
+        ");
+        $checkStmt->execute([$id]);
+        $enrollmentCount = $checkStmt->fetchColumn();
+        
+        if ($enrollmentCount > 0) {
+            http_response_code(409);
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Cannot archive this qualification. There are ' . $enrollmentCount . ' trainee(s) currently enrolled in it. Please unenroll or complete their training first.'
+            ]);
+            return;
+        }
+        
+        $stmt = $conn->prepare("UPDATE tbl_qualifications SET is_archived = 1 WHERE qualification_id = ?");
+        $stmt->execute([$id]);
+        
+        echo json_encode(['success' => true, 'message' => 'Qualification archived successfully']);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    }
+}
+
+function unarchiveQualification($conn) {
+    try {
+        $id = $_GET['id'] ?? null;
+        if (!$id) throw new Exception('ID required');
+        
+        $stmt = $conn->prepare("UPDATE tbl_qualifications SET is_archived = 0 WHERE qualification_id = ?");
+        $stmt->execute([$id]);
+        
+        echo json_encode(['success' => true, 'message' => 'Qualification restored successfully']);
     } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);

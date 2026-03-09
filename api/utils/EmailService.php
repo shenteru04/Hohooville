@@ -306,33 +306,148 @@ This is an automated email. Please do not reply to this message.
     }
 
     /**
-     * Plain text template for trainer credentials
+     * Send learning material notification email to trainee
      */
-    private function getTrainerCredentialsPlainText($trainerName, $username, $password) {
-        $loginUrl = 'http://localhost/Hohoo-ville/frontend/login.html';
+    public function sendLearningMaterialNotification($traineeEmail, $traineeName, $contentType, $contentTitle, $lessonTitle) {
+        try {
+            $this->mailer->addAddress($traineeEmail);
+            $this->mailer->Subject = "New $contentType Posted - Hohoo-ville Training";
+
+            $htmlBody = $this->getLearningMaterialTemplate($traineeName, $contentType, $contentTitle, $lessonTitle);
+            $this->mailer->isHTML(true);
+            $this->mailer->Body = $htmlBody;
+            $this->mailer->AltBody = $this->getLearningMaterialPlainText($traineeName, $contentType, $contentTitle, $lessonTitle);
+
+            $this->mailer->send();
+            
+            return [
+                'success' => true,
+                'message' => 'Email sent successfully'
+            ];
+        } catch (Exception $e) {
+            error_log('Learning Material Email Error: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Email could not be sent. Reason: ' . $this->mailer->ErrorInfo
+            ];
+        } finally {
+            $this->mailer->clearAddresses();
+        }
+    }
+
+    /**
+     * HTML template for learning material notification
+     */
+    private function getLearningMaterialTemplate($traineeName, $contentType, $contentTitle, $lessonTitle) {
+        $portalUrl = 'http://localhost/Hohoo-ville/frontend/html/trainee/pages/my_training.html';
+        
+        $contentDisplay = !empty($contentTitle) ? "<strong>$contentTitle</strong>" : "your lesson materials";
+        if (!empty($lessonTitle)) {
+            $contentDisplay .= " in <strong>$lessonTitle</strong>";
+        }
         
         return "
-Welcome to Hohoo-ville! - Trainer Portal
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='UTF-8'>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+                .header { background-color: #2196F3; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+                .header h1 { margin: 0; font-size: 24px; }
+                .content { padding: 20px; background-color: #f9f9f9; }
+                .material-box { background-color: white; border-left: 4px solid #2196F3; padding: 15px; margin: 20px 0; border-radius: 3px; }
+                .material-type { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+                .material-name { font-size: 18px; font-weight: bold; color: #2196F3; margin: 10px 0; }
+                .material-description { color: #555; margin: 10px 0; }
+                .button { display: inline-block; background-color: #2196F3; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin-top: 20px; }
+                .footer { background-color: #f0f0f0; padding: 15px; text-align: center; font-size: 12px; color: #666; }
+                .icon { font-size: 48px; text-align: center; margin: 20px 0; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h1>📚 New Learning Material Posted</h1>
+                    <p>Hohoo-ville Training System</p>
+                </div>
+                
+                <div class='content'>
+                    <p>Hello <strong>{$traineeName}</strong>,</p>
+                    
+                    <p>Your trainer has uploaded new learning material for your course:</p>
+                    
+                    <div class='material-box'>
+                        <div class='material-type'>📄 {$contentType}</div>
+                        <div class='material-name'>{$contentDisplay}</div>
+                        <div class='material-description'>
+                            This material is now available for you to view and study. 
+                            Please log in to the training portal to access it.
+                        </div>
+                    </div>
+                    
+                    <p><strong>What to do next:</strong></p>
+                    <ul>
+                        <li>Log in to your trainee portal</li>
+                        <li>Navigate to \"My Training\" section</li>
+                        <li>Review the newly posted $contentType</li>
+                        <li>Complete any associated tasks or quizzes as instructed</li>
+                    </ul>
+                    
+                    <p style='text-align: center;'>
+                        <a href='{$portalUrl}' class='button'>View in Training Portal</a>
+                    </p>
+                    
+                    <p>If you have any questions or need assistance, please contact your trainer or the support team.</p>
+                </div>
+                
+                <div class='footer'>
+                    <p>&copy; 2026 Hohoo-ville Training System. All rights reserved.</p>
+                    <p>This is an automated notification email. Please do not reply to this message.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        ";
+    }
 
-Hello {$trainerName},
+    /**
+     * Plain text template for learning material notification
+     */
+    private function getLearningMaterialPlainText($traineeName, $contentType, $contentTitle, $lessonTitle) {
+        $portalUrl = 'http://localhost/Hohoo-ville/frontend/html/trainee/pages/my_training.html';
+        
+        $contentDisplay = !empty($contentTitle) ? "'{$contentTitle}'" : "your lesson materials";
+        if (!empty($lessonTitle)) {
+            $contentDisplay .= " in '{$lessonTitle}'";
+        }
+        
+        return "
+NEW LEARNING MATERIAL POSTED - Hohoo-ville Training System
 
-Your trainer account has been created by the administrator. Below are your login credentials:
+Hello {$traineeName},
 
-Username: {$username}
-Password: {$password}
+Your trainer has uploaded new learning material for your course:
 
-IMPORTANT SECURITY NOTES:
-- Keep your credentials confidential and do not share them with anyone
-- We recommend changing your password on your first login
-- If you did not request this account, please contact the administrator immediately
+MATERIAL TYPE: {$contentType}
+MATERIAL: {$contentDisplay}
 
-Login to your account: {$loginUrl}
+This material is now available for you to view and study. Please log in to the training portal to access it.
 
-If you have any issues logging in or need assistance, please contact the administrator.
+What to do next:
+- Log in to your trainee portal
+- Navigate to \"My Training\" section
+- Review the newly posted {$contentType}
+- Complete any associated tasks or quizzes as instructed
+
+View in Training Portal: {$portalUrl}
+
+If you have any questions or need assistance, please contact your trainer or the support team.
 
 ---
 © 2026 Hohoo-ville Training System. All rights reserved.
-This is an automated email. Please do not reply to this message.
+This is an automated notification email. Please do not reply to this message.
         ";
     }
 }

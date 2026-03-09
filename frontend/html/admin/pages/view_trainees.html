@@ -4,257 +4,202 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>View Trainees - Hohoo-Ville Technical School</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Sidebar CSS -->
-    <link rel="stylesheet" href="../../../css/admin/sidebar.css">
     <style>
-        :root {
-            --primary-color: #4e73df;
-            --secondary-color: #858796;
-            --bg-color: #f8f9fc;
-            --text-color: #5a5c69;
-        }
-        body {
-            font-family: 'Nunito', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-        }
-        #sidebar {
-            background: #fff;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-            z-index: 1000;
-        }
-        #sidebar .sidebar-header {
-            padding: 1.5rem 1rem;
-            text-align: center;
-            color: var(--primary-color);
-            font-weight: 800;
-        }
-        #sidebar .nav-link {
-            color: var(--text-color);
-            padding: 0.5rem 1rem;
-            margin: 0.1rem 0.5rem;
-            border-radius: 0.35rem;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        #sidebar .nav-link:hover {
-            background-color: #eaecf4;
-            color: var(--primary-color);
-        }
-        #sidebar .nav-link.active {
-            background-color: var(--primary-color);
-            color: #fff;
-        }
-        .card {
-            border: none;
-            border-radius: 0.35rem;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-        }
-        .card-header {
-            background-color: #f8f9fc;
-            border-bottom: 1px solid #e3e6f0;
-            padding: 1rem 1.25rem;
-            font-weight: 700;
-            color: var(--primary-color);
+        body { font-family: 'Nunito', sans-serif; }
+        a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
         }
     </style>
 </head>
-<body>
-    <!-- Sidebar Container -->
+<body class="bg-slate-50 text-slate-700">
     <div id="sidebar-container"></div>
 
-    <!-- Main Content -->
-    <div class="main-content" id="content">
-        <!-- Top Navigation -->
-        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
-            <div class="container-fluid">
-                    <button type="button" id="sidebarCollapse" class="btn btn-outline-primary me-2 d-lg-none">
-                        <i class="fas fa-bars"></i>
+    <div class="main-content min-h-screen lg:ml-72" id="content">
+        <header class="border-b border-blue-100 bg-white/85 shadow-sm backdrop-blur">
+            <div class="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center gap-3">
+                    <button type="button" id="sidebarCollapse" class="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 lg:hidden">
+                        <i class="fas fa-bars text-lg"></i>
                     </button>
+                    <h1 class="text-xl font-semibold text-slate-800">Trainee Management</h1>
+                </div>
 
-                    <div class="ms-auto d-flex align-items-center">
-                        <div class="dropdown">
-                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
-                                <i class="fas fa-user-circle"></i> <span id="userName">Admin</span>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
-                                <li><a class="dropdown-item" href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
-                            </ul>
+                <div class="header-actions flex items-center gap-3" data-header-actions>
+                    <div class="relative">
+                        <button id="userDropdown" class="flex items-center gap-2 rounded-full border border-blue-100 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-700 hover:bg-blue-50">
+                            <i class="fas fa-user-circle text-xl text-blue-500"></i>
+                            <span id="userName" class="hidden md:block">Admin</span>
+                            <i class="fas fa-chevron-down text-xs text-slate-400"></i>
+                        </button>
+                        <div id="userDropdownMenu" class="absolute right-0 top-full z-40 mt-2 hidden w-48 rounded-xl border border-blue-100 bg-white py-1 shadow-xl shadow-blue-100/40">
+                            <a href="profile.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-user mr-2"></i> Profile</a>
+                            <a href="settings.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-cog mr-2"></i> Settings</a>
+                            <div class="border-t border-blue-100"></div>
+                            <a href="#" id="logoutBtn" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-sign-out-alt mr-2"></i> Logout</a>
                         </div>
                     </div>
                 </div>
-            </nav>
+            </div>
+        </header>
 
-            <!-- Main Content -->
-            <div class="container-fluid mt-4">
-                <h2 class="mb-4 text-gray-800">Trainee Management</h2>
-
-                <!-- Search and Filters -->
-                <div class="row mb-4">
-                    <div class="col-md-4">
-                        <input type="text" class="form-control" id="searchInput" placeholder="Search trainees...">
+        <main class="space-y-6 p-4 sm:p-6 lg:p-8">
+            <section class="rounded-2xl border border-blue-100 bg-white p-4 shadow-sm">
+                <div class="flex flex-col gap-3 md:flex-row md:items-end md:gap-3">
+                    <!-- Search Input -->
+                    <div class="flex-1 md:flex-initial">
+                        <label for="searchInput" class="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wider">Search</label>
+                        <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="searchInput" placeholder="Name, School ID, Email...">
                     </div>
-                    <div class="col-md-3">
-                        <select class="form-select" id="statusFilter">
+                    
+                    <!-- Batch Filter -->
+                    <div class="flex-1 md:flex-initial md:min-w-[180px]">
+                        <label for="batchFilter" class="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wider">Batch</label>
+                        <select class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="batchFilter">
+                            <option value="">All Batches</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Qualification Filter -->
+                    <div class="flex-1 md:flex-initial md:min-w-[180px]">
+                        <label for="qualificationFilter" class="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wider">Qualification</label>
+                        <select class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="qualificationFilter">
+                            <option value="">All Programs</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Status Filter -->
+                    <div class="flex-1 md:flex-initial md:min-w-[150px]">
+                        <label for="statusFilter" class="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</label>
+                        <select class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="statusFilter">
                             <option value="">All Status</option>
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
                         </select>
                     </div>
-                    <div class="col-md-3">
-                        <select class="form-select" id="batchFilter">
-                            <option value="">All Batches</option>
-                            <!-- Options populated by JS -->
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <button class="btn btn-primary w-100" id="searchBtn">Search</button>
-                    </div>
+                    
+                    <!-- Clear Filters Button -->
+                    <button type="button" id="clearFiltersBtn" class="hidden rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 md:inline-flex items-center gap-2" title="Clear all filters">
+                        <i class="fas fa-redo-alt text-xs"></i> Reset
+                    </button>
                 </div>
+                <div class="mt-2 text-xs text-slate-500">
+                    <span id="filterStatus"></span>
+                </div>
+            </section>
 
-                <!-- Trainees Table -->
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title">Trainees List</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover" id="traineesTable" data-table-manager="true" data-search-input="searchInput" data-search-button="searchBtn" data-filter-controls="statusFilter:5:Status|batchFilter:4:Batch">
-                                <thead>
-                                    <tr>
-                                        <th>School ID</th>
-                                        <th>Name</th>
-                                        <th>Email</th>
-                                        <th>Phone</th>
-                                        <th>Batch</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="traineesTableBody">
-                                    <!-- Data populated by JS -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+            <article class="rounded-2xl border border-blue-100 bg-white shadow-sm">
+                <div class="border-b border-blue-100 px-5 py-4">
+                    <h2 class="text-base font-semibold text-slate-900">Trainees List</h2>
                 </div>
+                <div class="overflow-x-auto p-5">
+                    <table class="min-w-full divide-y divide-slate-200" id="traineesTable" data-table-manager="true" data-search-input="searchInput" data-filter-controls="batchFilter:4:Batch|qualificationFilter:5:Qualification|statusFilter:7:Status">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">School ID</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Name</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Email</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Phone</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Batch</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Qualification</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Enrolled Date</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="traineesTableBody" class="divide-y divide-slate-100 bg-white"></tbody>
+                    </table>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <div class="fixed inset-0 z-50 hidden items-center justify-center p-4" id="createAccountModal" aria-hidden="true">
+        <div class="absolute inset-0 bg-slate-900/50" data-modal-hide="createAccountModal"></div>
+        <div class="relative z-10 w-full max-w-md rounded-2xl border border-blue-100 bg-white shadow-2xl">
+            <div class="flex items-center justify-between border-b border-blue-100 px-5 py-4">
+                <h3 class="text-lg font-semibold text-slate-900">Create Trainee Account</h3>
+                <button type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800" data-modal-hide="createAccountModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-5">
+                <form id="createAccountForm" class="space-y-4">
+                    <input type="hidden" id="accountTraineeId">
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700">Username</label>
+                        <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="accountUsername" required autocomplete="username">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700">Password</label>
+                        <input type="password" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="accountPassword" required autocomplete="new-password">
+                    </div>
+                    <button type="submit" class="inline-flex w-full items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Create Account</button>
+                </form>
             </div>
         </div>
     </div>
 
-    <!-- Create Account Modal -->
-    <div class="modal fade" id="createAccountModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Create Trainee Account</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="createAccountForm">
-                        <input type="hidden" id="accountTraineeId">
-                        <div class="mb-3">
-                            <label class="form-label">Username</label>
-                            <input type="text" class="form-control" id="accountUsername" required autocomplete="username">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Password</label>
-                            <input type="password" class="form-control" id="accountPassword" required autocomplete="new-password">
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Create Account</button>
-                    </form>
-                </div>
+    <div class="fixed inset-0 z-50 hidden items-center justify-center p-4" id="viewProfileModal" aria-hidden="true">
+        <div class="absolute inset-0 bg-slate-900/50" data-modal-hide="viewProfileModal"></div>
+        <div class="relative z-10 w-full max-w-4xl overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-2xl">
+            <div class="flex items-center justify-between border-b border-blue-100 px-5 py-4">
+                <h3 class="text-lg font-semibold text-slate-900">Trainee Profile</h3>
+                <button type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800" data-modal-hide="viewProfileModal">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
-        </div>
-    </div>
-
-    <!-- View Profile Modal -->
-    <div class="modal fade" id="viewProfileModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Trainee Profile</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-4 text-center mb-3">
-                            <img id="viewPhoto" src="" class="img-fluid rounded mb-2" style="max-height: 200px; object-fit: cover;" alt="Trainee Photo">
-                            <div id="noPhoto" class="text-muted p-4 border bg-light mb-2">No Photo</div>
-                            <h5 id="viewName" class="mb-1"></h5>
-                            <span id="viewStatus" class="badge"></span>
-                        </div>
-                        <div class="col-md-8">
-                            <h6 class="border-bottom pb-2">Personal Information</h6>
-                            <p class="mb-2"><strong>School ID:</strong> <span id="viewSchoolId"></span></p>
-                            <p class="mb-2"><strong>Email:</strong> <span id="viewEmail"></span></p>
-                            <p class="mb-2"><strong>Phone:</strong> <span id="viewPhone"></span></p>
-                            <p class="mb-2"><strong>Address:</strong> <span id="viewAddress"></span></p>
-                            <p class="mb-2"><strong>Current Batch:</strong> <span id="viewBatch"></span></p>
-                            
-                            <h6 class="border-bottom pb-2 mt-4">Documents</h6>
-                            <div class="list-group">
-                                <a href="#" id="viewValidId" target="_blank" class="list-group-item list-group-item-action">
-                                    <i class="fas fa-id-card me-2"></i> Valid ID
+            <div class="max-h-[70vh] overflow-y-auto p-5">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
+                    <div class="md:col-span-4">
+                        <img id="viewPhoto" src="" class="hidden h-52 w-full rounded-lg border border-slate-200 object-cover" alt="Trainee Photo">
+                        <div id="noPhoto" class="mb-2 flex h-52 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-500">No Photo</div>
+                        <h4 id="viewName" class="mb-1 text-lg font-semibold text-slate-900"></h4>
+                        <span id="viewStatus" class="inline-flex rounded-full px-2 py-1 text-xs font-semibold"></span>
+                    </div>
+                    <div class="space-y-4 md:col-span-8">
+                        <section>
+                            <h5 class="border-b border-slate-200 pb-2 text-sm font-semibold uppercase tracking-wider text-slate-700">Personal Information</h5>
+                            <div class="mt-2 space-y-2 text-sm text-slate-700">
+                                <p><strong>School ID:</strong> <span id="viewSchoolId"></span></p>
+                                <p><strong>Email:</strong> <span id="viewEmail"></span></p>
+                                <p><strong>Phone:</strong> <span id="viewPhone"></span></p>
+                                <p><strong>Address:</strong> <span id="viewAddress"></span></p>
+                                <p><strong>Current Batch:</strong> <span id="viewBatch"></span></p>
+                            </div>
+                        </section>
+                        <section>
+                            <h5 class="border-b border-slate-200 pb-2 text-sm font-semibold uppercase tracking-wider text-slate-700">Documents</h5>
+                            <div class="mt-2 space-y-2">
+                                <a href="#" id="viewValidId" target="_blank" class="block rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                                    <i class="fas fa-id-card mr-2"></i> Valid ID
                                 </a>
-                                <a href="#" id="viewBirthCert" target="_blank" class="list-group-item list-group-item-action">
-                                    <i class="fas fa-file-alt me-2"></i> Birth Certificate
+                                <a href="#" id="viewBirthCert" target="_blank" class="block rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                                    <i class="fas fa-file-alt mr-2"></i> Birth Certificate
                                 </a>
                             </div>
-                        </div>
+                        </section>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Sending Credentials Modal -->
-    <div class="modal fade" id="sendingEmailModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog modal-sm modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-body text-center py-4">
-                    <div class="spinner-border text-primary mb-3" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <h6 class="mb-1">Sending Account Credentials</h6>
-                    <p class="text-muted mb-0">Please wait while we email the trainee.</p>
-                </div>
-            </div>
+    <div class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-900/50 p-4" id="sendingEmailModal" aria-hidden="true">
+        <div class="w-full max-w-sm rounded-2xl border border-blue-100 bg-white p-6 text-center shadow-2xl">
+            <div class="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600"></div>
+            <h4 class="mb-1 text-sm font-semibold text-slate-900">Sending Account Credentials</h4>
+            <p class="text-sm text-slate-500">Please wait while we email the trainee.</p>
         </div>
     </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <!-- Axios -->
-    <!-- Axios -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
-    <!-- Sidebar Loader -->
+    <script src="../../../js/session_timeout.js"></script>
     <script src="../../../js/sidebar.js"></script>
-    <!-- Custom JS -->
     <script src="../../../js/table_manager.js"></script>
     <script src="../../../js/admin/pages/view_trainees.js"></script>
-    
-    <script>
-        // Logout functionality (handled in sidebar.js)
-        document.addEventListener('DOMContentLoaded', function() {
-            const logoutBtn = document.getElementById('logoutBtn');
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    logout();
-                });
-            }
-        });
-    </script>
 </body>
 </html>

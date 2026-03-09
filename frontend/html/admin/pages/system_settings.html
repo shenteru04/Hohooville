@@ -4,414 +4,200 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>System Settings - Admin Panel</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Sidebar CSS -->
-    <link rel="stylesheet" href="../../../css/admin/sidebar.css">
     <style>
-        :root {
-            --primary-color: #4e73df;
-            --secondary-color: #858796;
-            --bg-color: #f8f9fc;
-            --text-color: #5a5c69;
+        body { font-family: 'Nunito', sans-serif; }
+        a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
         }
-        body {
-            font-family: 'Nunito', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-        }
-        #sidebar {
-            background: #fff;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-            z-index: 1000;
-        }
-        #sidebar .sidebar-header {
-            padding: 1.5rem 1rem;
-            text-align: center;
-            color: var(--primary-color);
-            font-weight: 800;
-        }
-        #sidebar .nav-link {
-            color: var(--text-color);
-            padding: 0.5rem 1rem;
-            margin: 0.1rem 0.5rem;
-            border-radius: 0.35rem;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        #sidebar .nav-link:hover {
-            background-color: #eaecf4;
-            color: var(--primary-color);
-        }
-        #sidebar .nav-link.active {
-            background-color: var(--primary-color);
-            color: #fff;
-        }
-        .card {
-            border: none;
-            border-radius: 0.35rem;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-        }
-        .card-header {
-            background-color: #f8f9fc;
-            border-bottom: 1px solid #e3e6f0;
-            padding: 1rem 1.25rem;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-        .nav-tabs .nav-link { color: #666; }
-        .nav-tabs .nav-link.active { color: #007bff; }
     </style>
 </head>
-<body>
-    <!-- Sidebar Container -->
+<body class="bg-slate-50 text-slate-700">
     <div id="sidebar-container"></div>
 
-    <!-- Main Content -->
-    <div class="main-content" id="content">
-        <!-- Top Navigation -->
-        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
-                <div class="container-fluid">
-                    <button type="button" id="sidebarCollapse" class="btn btn-outline-primary me-2 d-lg-none">
-                        <i class="fas fa-bars"></i>
+    <div class="main-content min-h-screen lg:ml-72" id="content">
+        <header class="border-b border-blue-100 bg-white/85 shadow-sm backdrop-blur">
+            <div class="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center gap-3">
+                    <button type="button" id="sidebarCollapse" class="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 lg:hidden">
+                        <i class="fas fa-bars text-lg"></i>
                     </button>
-
-                    <div class="ms-auto d-flex align-items-center">
-                        <div class="dropdown">
-                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
-                                <i class="fas fa-user-circle"></i> <span id="userName">Admin</span>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
-                                <li><a class="dropdown-item" href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
-                            </ul>
+                    <h1 class="text-xl font-semibold text-slate-800">System Settings</h1>
+                </div>
+                <div class="header-actions flex items-center gap-3" data-header-actions>
+                    <div class="relative">
+                        <button id="userDropdown" class="flex items-center gap-2 rounded-full border border-blue-100 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-700 hover:bg-blue-50">
+                            <i class="fas fa-user-circle text-xl text-blue-500"></i>
+                            <span id="userName" class="hidden md:block">Admin</span>
+                            <i class="fas fa-chevron-down text-xs text-slate-400"></i>
+                        </button>
+                        <div id="userDropdownMenu" class="absolute right-0 top-full z-40 mt-2 hidden w-48 rounded-xl border border-blue-100 bg-white py-1 shadow-xl shadow-blue-100/40">
+                            <a href="profile.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-user mr-2"></i> Profile</a>
+                            <a href="settings.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-cog mr-2"></i> Settings</a>
+                            <div class="border-t border-blue-100"></div>
+                            <a href="#" id="logoutBtn" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-sign-out-alt mr-2"></i> Logout</a>
                         </div>
                     </div>
                 </div>
-            </nav>
+            </div>
+        </header>
 
-            <div class="container-fluid mt-4">
-                <h2 class="mb-4"><i class="fas fa-cog me-2"></i> System Settings</h2>
+        <main class="space-y-6 p-4 sm:p-6 lg:p-8">
+            <section class="flex flex-wrap gap-2 rounded-2xl border border-blue-100 bg-white p-3 shadow-sm">
+                <button type="button" class="tab-btn-main active inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white" id="holidays-tab" data-tab-group="main" data-tab-target="#holidays"><i class="fas fa-calendar"></i> Holidays & Calendar</button>
+                <button type="button" class="tab-btn-main inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" id="templates-tab" data-tab-group="main" data-tab-target="#templates"><i class="fas fa-envelope"></i> Email Templates</button>
+                <button type="button" class="tab-btn-main inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" id="certificates-tab" data-tab-group="main" data-tab-target="#certificates"><i class="fas fa-certificate"></i> Certificates</button>
+                <button type="button" class="tab-btn-main inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" id="archival-tab" data-tab-group="main" data-tab-target="#archival"><i class="fas fa-archive"></i> User Archival</button>
+            </section>
 
-            <!-- Navigation Tabs -->
-            <ul class="nav nav-tabs mb-4" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="holidays-tab" data-bs-toggle="tab" data-bs-target="#holidays">
-                        <i class="fas fa-calendar me-2"></i> Holidays & Calendar
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="templates-tab" data-bs-toggle="tab" data-bs-target="#templates">
-                        <i class="fas fa-envelope me-2"></i> Email Templates
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="certificates-tab" data-bs-toggle="tab" data-bs-target="#certificates">
-                        <i class="fas fa-certificate me-2"></i> Certificates
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="archival-tab" data-bs-toggle="tab" data-bs-target="#archival">
-                        <i class="fas fa-archive me-2"></i> User Archival
-                    </button>
-                </li>
-            </ul>
+            <section class="tab-pane-main" id="holidays">
+                <article class="rounded-2xl border border-blue-100 bg-white shadow-sm">
+                    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-blue-100 px-5 py-4">
+                        <h2 class="text-base font-semibold text-slate-900">Academic Calendar & Holidays</h2>
+                        <button type="button" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" onclick="openHolidayModal()"><i class="fas fa-plus"></i> Add Holiday</button>
+                    </div>
+                    <div class="p-5 overflow-x-auto">
+                        <table class="min-w-full divide-y divide-slate-200" id="holidaysTable" data-table-manager="true" data-filters="Type:2" data-filter-auto-options="true">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Date</th>
+                                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Holiday Name</th>
+                                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Type</th>
+                                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Description</th>
+                                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="holidaysBody" class="divide-y divide-slate-100 bg-white">
+                                <tr><td colspan="5" class="px-4 py-6 text-center text-sm text-slate-500">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+            </section>
 
-            <!-- Tab Content -->
-            <div class="tab-content">
-                <!-- HOLIDAYS & CALENDAR -->
-                <div class="tab-pane show active" id="holidays" role="tabpanel">
-                    <div class="card">
-                        <div class="card-header d-flex justify-content-between">
-                            <h6 class="mb-0">Academic Calendar & Holidays</h6>
-                            <button class="btn btn-sm btn-primary" onclick="openHolidayModal()">
-                                <i class="fas fa-plus me-1"></i> Add Holiday
-                            </button>
+            <section class="tab-pane-main hidden" id="templates">
+                <article class="rounded-2xl border border-blue-100 bg-white shadow-sm">
+                    <div class="border-b border-blue-100 px-5 py-4"><h2 class="text-base font-semibold text-slate-900">Email Templates</h2></div>
+                    <div class="p-5">
+                        <div class="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200" id="templatesList">
+                            <a href="#" class="block px-4 py-3 text-sm text-slate-500">Loading...</a>
                         </div>
-                        <div class="card-body">
-                            <table class="table table-hover" id="holidaysTable" data-table-manager="true" data-filters="Type:2" data-filter-auto-options="true">
-                                <thead>
+                    </div>
+                </article>
+            </section>
+
+            <section class="tab-pane-main hidden space-y-6" id="certificates">
+                <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    <article class="rounded-2xl border border-blue-100 bg-white shadow-sm">
+                        <div class="border-b border-blue-100 px-5 py-4"><h2 class="text-base font-semibold text-slate-900">Generate Certificates</h2></div>
+                        <div class="space-y-4 p-5">
+                            <p class="text-sm text-slate-600">Generate certificates for eligible trainees who have completed their courses with a passing score.</p>
+                            <button type="button" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700" onclick="loadEligibleTrainees()"><i class="fas fa-paperclip"></i> View Eligible Trainees</button>
+                        </div>
+                    </article>
+                    <article class="rounded-2xl border border-blue-100 bg-white shadow-sm">
+                        <div class="border-b border-blue-100 px-5 py-4"><h2 class="text-base font-semibold text-slate-900">Issued Certificates</h2></div>
+                        <div class="p-5" id="certificateStats"><p class="text-sm text-slate-500">Loading...</p></div>
+                    </article>
+                </div>
+                <article class="hidden rounded-2xl border border-blue-100 bg-white shadow-sm" id="eligibleCard">
+                    <div class="border-b border-blue-100 px-5 py-4"><h2 class="text-base font-semibold text-slate-900">Select Trainees to Generate Certificates</h2></div>
+                    <div class="space-y-4 p-5">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-slate-200" id="eligibleTable" data-table-manager="true" data-filters="Course:2" data-filter-auto-options="true">
+                                <thead class="bg-slate-50">
                                     <tr>
-                                        <th>Date</th>
-                                        <th>Holiday Name</th>
-                                        <th>Type</th>
-                                        <th>Description</th>
-                                        <th>Actions</th>
+                                        <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600"><input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" onclick="toggleAllCheckboxes(this)"></th>
+                                        <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Trainee</th>
+                                        <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Course</th>
+                                        <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Score</th>
                                     </tr>
                                 </thead>
-                                <tbody id="holidaysBody">
-                                    <tr><td colspan="5" class="text-center text-muted">Loading...</td></tr>
-                                </tbody>
+                                <tbody id="eligibleBody" class="divide-y divide-slate-100 bg-white"></tbody>
                             </table>
                         </div>
+                        <button type="button" class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700" onclick="generateCertificates()"><i class="fas fa-award"></i> Generate Selected Certificates</button>
                     </div>
+                </article>
+            </section>
+
+            <section class="tab-pane-main hidden space-y-6" id="archival">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <article class="rounded-2xl border border-blue-100 bg-white p-5 text-center shadow-sm"><p id="archivedTraineesCount" class="text-3xl font-bold text-slate-900">-</p><p class="mt-1 text-sm text-slate-500">Archived Trainees</p></article>
+                    <article class="rounded-2xl border border-blue-100 bg-white p-5 text-center shadow-sm"><p id="archivedTrainersCount" class="text-3xl font-bold text-slate-900">-</p><p class="mt-1 text-sm text-slate-500">Archived Trainers</p></article>
+                    <article class="rounded-2xl border border-blue-100 bg-white p-5 text-center shadow-sm"><p id="inactiveUsersCount" class="text-3xl font-bold text-slate-900">-</p><p class="mt-1 text-sm text-slate-500">Inactive Users</p></article>
                 </div>
 
-                <!-- EMAIL TEMPLATES -->
-                <div class="tab-pane" id="templates" role="tabpanel">
-                    <div class="card">
-                        <div class="card-header">
-                            <h6 class="mb-0">Email Templates</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="list-group" id="templatesList">
-                                <a href="#" class="list-group-item list-group-item-action">Loading...</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <section class="flex flex-wrap gap-2 rounded-2xl border border-blue-100 bg-white p-3 shadow-sm">
+                    <button type="button" class="tab-btn-archival active inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white" id="inactive-users-tab" data-tab-group="archival" data-tab-target="#inactive-users"><i class="fas fa-user-slash"></i> Inactive Users</button>
+                    <button type="button" class="tab-btn-archival inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" id="archived-trainees-tab" data-tab-group="archival" data-tab-target="#archived-trainees">Archived Trainees</button>
+                    <button type="button" class="tab-btn-archival inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" id="archived-trainers-tab" data-tab-group="archival" data-tab-target="#archived-trainers">Archived Trainers</button>
+                </section>
 
-                <!-- BULK CERTIFICATE GENERATION -->
-                <div class="tab-pane" id="certificates" role="tabpanel">
-                    <div class="row">
-                        <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h6 class="mb-0">Generate Certificates</h6>
-                                </div>
-                                <div class="card-body">
-                                    <p>Generate certificates for eligible trainees who have completed their courses with a passing score.</p>
-                                    <button class="btn btn-success w-100" onclick="loadEligibleTrainees()">
-                                        <i class="fas fa-paperclip me-2"></i> View Eligible Trainees
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h6 class="mb-0">Issued Certificates</h6>
-                                </div>
-                                <div class="card-body">
-                                    <div id="certificateStats">
-                                        <p class="text-muted">Loading...</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Eligible Trainees -->
-                    <div class="card mt-4" id="eligibleCard" style="display:none;">
-                        <div class="card-header">
-                            <h6 class="mb-0">Select Trainees to Generate Certificates</h6>
-                        </div>
-                        <div class="card-body">
-                            <table class="table table-sm" id="eligibleTable" data-table-manager="true" data-filters="Course:2" data-filter-auto-options="true">
-                                <thead>
-                                    <tr>
-                                        <th><input type="checkbox" onclick="toggleAllCheckboxes(this)"></th>
-                                        <th>Trainee</th>
-                                        <th>Course</th>
-                                        <th>Score</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="eligibleBody"></tbody>
+                <section class="tab-pane-archival" id="inactive-users">
+                    <article class="rounded-2xl border border-blue-100 bg-white shadow-sm">
+                        <div class="border-b border-blue-100 px-5 py-4"><h2 class="text-base font-semibold text-slate-900">Inactive Users (Still Manageable in User Management)</h2></div>
+                        <div class="p-5 overflow-x-auto">
+                            <table class="min-w-full divide-y divide-slate-200" id="inactiveUsersTable" data-table-manager="true" data-filters="Role:2|Status:3" data-filter-auto-options="true">
+                                <thead class="bg-slate-50"><tr><th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Username</th><th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Email</th><th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Role</th><th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th><th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Actions</th></tr></thead>
+                                <tbody id="inactiveUsersBody" class="divide-y divide-slate-100 bg-white"><tr><td colspan="5" class="px-4 py-6 text-center text-sm text-slate-500">Loading...</td></tr></tbody>
                             </table>
-                            <button class="btn btn-success" onclick="generateCertificates()">
-                                <i class="fas fa-award me-2"></i> Generate Selected Certificates
-                            </button>
                         </div>
-                    </div>
-                </div>
+                    </article>
+                </section>
+                <section class="tab-pane-archival hidden" id="archived-trainees">
+                    <article class="rounded-2xl border border-blue-100 bg-white shadow-sm"><div class="p-5 overflow-x-auto">
+                        <table class="min-w-full divide-y divide-slate-200" id="archivedTraineesTable" data-table-manager="true" data-filters="Role:2" data-filter-auto-options="true">
+                            <thead class="bg-slate-50"><tr><th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Username</th><th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Email</th><th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Role</th><th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Archived Date</th><th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Actions</th></tr></thead>
+                            <tbody id="archivedTraineesBody" class="divide-y divide-slate-100 bg-white"><tr><td colspan="5" class="px-4 py-6 text-center text-sm text-slate-500">Loading...</td></tr></tbody>
+                        </table>
+                    </div></article>
+                </section>
+                <section class="tab-pane-archival hidden" id="archived-trainers">
+                    <article class="rounded-2xl border border-blue-100 bg-white shadow-sm"><div class="p-5 overflow-x-auto">
+                        <table class="min-w-full divide-y divide-slate-200" id="archivedTrainersTable" data-table-manager="true" data-filters="Role:2" data-filter-auto-options="true">
+                            <thead class="bg-slate-50"><tr><th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Username</th><th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Email</th><th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Role</th><th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Archived Date</th><th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Actions</th></tr></thead>
+                            <tbody id="archivedTrainersBody" class="divide-y divide-slate-100 bg-white"><tr><td colspan="5" class="px-4 py-6 text-center text-sm text-slate-500">Loading...</td></tr></tbody>
+                        </table>
+                    </div></article>
+                </section>
+            </section>
+        </main>
+    </div>
 
-                <!-- USER ARCHIVAL -->
-                <div class="tab-pane" id="archival" role="tabpanel">
-                    <div class="row mb-4">
-                        <div class="col-md-3">
-                            <div class="card text-center">
-                                <div class="card-body">
-                                    <h3 id="archivedTraineesCount" class="mb-0">-</h3>
-                                    <small class="text-muted">Archived Trainees</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card text-center">
-                                <div class="card-body">
-                                    <h3 id="archivedTrainersCount" class="mb-0">-</h3>
-                                    <small class="text-muted">Archived Trainers</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card text-center">
-                                <div class="card-body">
-                                    <h3 id="inactiveUsersCount" class="mb-0">-</h3>
-                                    <small class="text-muted">Inactive Users</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <ul class="nav nav-tabs mb-3" role="tablist">
-                        <li class="nav-item">
-                            <button class="nav-link active" id="inactive-users-tab" data-bs-toggle="tab" data-bs-target="#inactive-users">
-                                <i class="fas fa-user-slash me-2"></i>Inactive Users
-                            </button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" id="archived-trainees-tab" data-bs-toggle="tab" data-bs-target="#archived-trainees">
-                                Archived Trainees
-                            </button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" id="archived-trainers-tab" data-bs-toggle="tab" data-bs-target="#archived-trainers">
-                                Archived Trainers
-                            </button>
-                        </li>
-                    </ul>
-
-                    <div class="tab-content">
-                        <div class="tab-pane show active" id="inactive-users" role="tabpanel">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h6 class="mb-0">Inactive Users (Still Manageable in User Management)</h6>
-                                </div>
-                                <div class="card-body">
-                                    <table class="table table-hover" id="inactiveUsersTable" data-table-manager="true" data-filters="Role:2|Status:3" data-filter-auto-options="true">
-                                        <thead>
-                                            <tr>
-                                                <th>Username</th>
-                                                <th>Email</th>
-                                                <th>Role</th>
-                                                <th>Status</th>
-                                                <th style="width: 120px;">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="inactiveUsersBody">
-                                            <tr><td colspan="5" class="text-center text-muted">Loading...</td></tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="tab-pane" id="archived-trainees" role="tabpanel">
-                            <div class="card">
-                                <div class="card-body">
-                                    <table class="table table-hover" id="archivedTraineesTable" data-table-manager="true" data-filters="Role:2" data-filter-auto-options="true">
-                                        <thead>
-                                            <tr>
-                                                <th>Username</th>
-                                                <th>Email</th>
-                                                <th>Role</th>
-                                                <th>Archived Date</th>
-                                                <th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="archivedTraineesBody">
-                                            <tr><td colspan="5" class="text-center text-muted">Loading...</td></tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="tab-pane" id="archived-trainers" role="tabpanel">
-                            <div class="card">
-                                <div class="card-body">
-                                    <table class="table table-hover" id="archivedTrainersTable" data-table-manager="true" data-filters="Role:2" data-filter-auto-options="true">
-                                        <thead>
-                                            <tr>
-                                                <th>Username</th>
-                                                <th>Email</th>
-                                                <th>Role</th>
-                                                <th>Archived Date</th>
-                                                <th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="archivedTrainersBody">
-                                            <tr><td colspan="5" class="text-center text-muted">Loading...</td></tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    <div class="fixed inset-0 z-50 hidden items-center justify-center p-4" id="holidayModal" aria-hidden="true">
+        <div class="absolute inset-0 bg-slate-900/50" data-modal-hide="holidayModal"></div>
+        <div class="relative z-10 w-full max-w-lg rounded-2xl border border-blue-100 bg-white shadow-2xl">
+            <div class="flex items-center justify-between border-b border-blue-100 px-5 py-4"><h3 class="text-lg font-semibold text-slate-900">Add Holiday</h3><button type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800" data-modal-hide="holidayModal"><i class="fas fa-times"></i></button></div>
+            <div class="space-y-4 p-5">
+                <div><label class="mb-1 block text-sm font-medium text-slate-700">Holiday Name</label><input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800" id="holidayName"></div>
+                <div><label class="mb-1 block text-sm font-medium text-slate-700">Date</label><input type="date" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800" id="holidayDate"></div>
+                <div><label class="mb-1 block text-sm font-medium text-slate-700">Type</label><select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800" id="holidayType"><option value="national">National Holiday</option><option value="local">Local Holiday</option><option value="special">Special Event</option><option value="maintenance">System Maintenance</option></select></div>
+                <div><label class="mb-1 block text-sm font-medium text-slate-700">Description (Optional)</label><textarea class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800" id="holidayDesc" rows="2"></textarea></div>
             </div>
+            <div class="flex items-center justify-end gap-2 border-t border-blue-100 px-5 py-4"><button type="button" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" data-modal-hide="holidayModal">Cancel</button><button type="button" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" onclick="saveHoliday()">Save Holiday</button></div>
         </div>
     </div>
 
-    <!-- Holiday Modal -->
-    <div class="modal fade" id="holidayModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Add Holiday</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Holiday Name</label>
-                        <input type="text" class="form-control" id="holidayName">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Date</label>
-                        <input type="date" class="form-control" id="holidayDate">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Type</label>
-                        <select class="form-select" id="holidayType">
-                            <option value="national">National Holiday</option>
-                            <option value="local">Local Holiday</option>
-                            <option value="special">Special Event</option>
-                            <option value="maintenance">System Maintenance</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Description (Optional)</label>
-                        <textarea class="form-control" id="holidayDesc" rows="2"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="saveHoliday()">Save Holiday</button>
-                </div>
+    <div class="fixed inset-0 z-50 hidden items-center justify-center p-4" id="emailTemplateModal" aria-hidden="true">
+        <div class="absolute inset-0 bg-slate-900/50" data-modal-hide="emailTemplateModal"></div>
+        <div class="relative z-10 w-full max-w-4xl rounded-2xl border border-blue-100 bg-white shadow-2xl">
+            <div class="flex items-center justify-between border-b border-blue-100 px-5 py-4"><h3 class="text-lg font-semibold text-slate-900">Edit Email Template</h3><button type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800" data-modal-hide="emailTemplateModal"><i class="fas fa-times"></i></button></div>
+            <div class="space-y-4 p-5">
+                <input type="hidden" id="templateId">
+                <div><label class="mb-1 block text-sm font-semibold text-slate-700">Template Name</label><input type="text" class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700" id="templateName" readonly></div>
+                <div><label class="mb-1 block text-sm font-medium text-slate-700">Subject</label><input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800" id="templateSubject"></div>
+                <div><label class="mb-1 block text-sm font-medium text-slate-700">Body (HTML)</label><textarea class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800" id="templateBody" rows="10" style="font-family: monospace;"></textarea><div class="mt-2 text-sm text-slate-600"><strong>Available Variables:</strong> <span id="templateVariables" class="text-blue-700"></span></div></div>
             </div>
+            <div class="flex items-center justify-end gap-2 border-t border-blue-100 px-5 py-4"><button type="button" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" data-modal-hide="emailTemplateModal">Close</button><button type="button" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" onclick="saveTemplate()">Save Changes</button></div>
         </div>
     </div>
 
-    <!-- Email Template Modal -->
-    <div class="modal fade" id="emailTemplateModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Edit Email Template</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" id="templateId">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Template Name</label>
-                        <input type="text" class="form-control-plaintext" id="templateName" readonly>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Subject</label>
-                        <input type="text" class="form-control" id="templateSubject">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Body (HTML)</label>
-                        <textarea class="form-control" id="templateBody" rows="10" style="font-family: monospace;"></textarea>
-                        <div class="form-text mt-2">
-                            <strong>Available Variables:</strong> <span id="templateVariables" class="text-primary"></span>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" onclick="saveTemplate()">Save Changes</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
-    <!-- Sidebar Loader -->
+    <script src="../../../js/session_timeout.js"></script>
     <script src="../../../js/sidebar.js"></script>
     <script src="../../../js/table_manager.js"></script>
     <script src="../../../js/admin/pages/system_settings.js"></script>

@@ -214,7 +214,8 @@ function getProfile($conn) {
                     u.username,
                     b.batch_name,
                     c.qualification_name as course_name,
-                    st.scholarship_name as scholarship_type
+                    st.scholarship_name as scholarship_type,
+                    e.enrollment_date, DATE_FORMAT(e.enrollment_date, '%Y-%m-%d %H:%i:%s') as formatted_enrollment_date
                   FROM tbl_trainee_hdr AS th
                   JOIN tbl_trainee_dtl td ON th.trainee_id = td.trainee_id
                   LEFT JOIN tbl_trainee_ftr tf ON th.trainee_id = tf.trainee_id

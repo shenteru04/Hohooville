@@ -11,6 +11,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once '../database/db.php';
 
+/**
+ * Extract abbreviation from qualification name
+ * Examples:
+ * "Electrical Installation and Maintenance NC II" -> "EIM NC II"
+ * "Electronic Products Assembly and Servicing (EPAS) NC II" -> "EPAS NC II"
+ * "Cookery NC II" -> "Cook NC II"
+ * "Sheet Metal Arc Welding (SMAW) NC II" -> "SMAW NC II"
+ */
+function getAbbreviatedQualificationName($fullName) {
+    // Extract NC level (NC I, NC II, NC III, etc.)
+    $ncPattern = '/\b(NC\s+[IVX]+)\b/i';
+    $ncLevel = '';
+    if (preg_match($ncPattern, $fullName, $matches)) {
+        $ncLevel = $matches[1];
+        $qualName = preg_replace($ncPattern, '', $fullName);
+    } else {
+        $qualName = $fullName;
+    }
+    
+    $qualName = trim($qualName);
+    
+    // Check if there's already an abbreviation in parentheses like (EPAS)
+    if (preg_match('/\(([A-Z]+)\)/', $qualName, $matches)) {
+        $abbr = $matches[1];
+    } else {
+        // Generate abbreviation from qualification name
+        $words = preg_split('/\s+/', $qualName);
+        
+        // For single word names, use first 4 letters
+        if (count($words) === 1) {
+            $abbr = strtoupper(substr($words[0], 0, 4));
+        } else {
+            // For multi-word names, take first letter of major words
+            $abbr = '';
+            foreach ($words as $word) {
+                // Skip small words and special characters
+                if (strlen($word) > 2 && !in_array(strtolower($word), ['and', 'the', 'for', 'with', 'in', 'at', 'to', 'of'])) {
+                    $abbr .= strtoupper($word[0]);
+                }
+            }
+            
+            // If we couldn't generate proper abbreviation, use first 4 letters
+            if (empty($abbr)) {
+                $abbr = strtoupper(substr(str_replace(' ', '', $qualName), 0, 4));
+            }
+        }
+    }
+    
+    // Return abbreviation with NC level (only add space if NC level exists)
+    return !empty($ncLevel) ? $abbr . ' ' . $ncLevel : $abbr;
+}
+
 class AdminDashboard {
     private $conn;
 
@@ -132,6 +184,12 @@ class AdminDashboard {
             $stmt3 = $this->conn->prepare($query3);
             $stmt3->execute();
             $byBatch = $stmt3->fetchAll(PDO::FETCH_ASSOC);
+
+            // Add abbreviated names to by_qualification
+            foreach ($byQualification as &$qualification) {
+                $qualification['abbreviated'] = getAbbreviatedQualificationName($qualification['title']);
+            }
+            unset($qualification);
 
             $data = [
                 'by_qualification' => $byQualification,
@@ -286,13 +344,17 @@ class AdminDashboard {
 
             // Prepare chart data
             $labels = array_column($byQualification, 'title');
+            $abbreviations = [];
+            foreach ($labels as $label) {
+                $abbreviations[] = getAbbreviatedQualificationName($label);
+            }
             $scores = array_column($byQualification, 'rate');
 
             $data = [
                 'overall' => $overall,
                 'by_qualification' => $byQualification,
                 'results' => $results,
-                'overview' => ['labels' => $labels, 'scores' => $scores]
+                'overview' => ['labels' => $labels, 'abbreviations' => $abbreviations, 'scores' => $scores]
             ];
 
             $this->sendResponse(200, true, 'Competency results retrieved successfully', $data);

@@ -17,10 +17,11 @@ if ($action == 'getActive') {
         // Fetch active qualifications from the database.
         // The 'status' column in tbl_qualifications determines if it's offered.
         $stmt = $conn->prepare("
-            SELECT qualification_id, qualification_name, duration 
-            FROM tbl_qualifications 
-            WHERE status = 'active' 
-            ORDER BY qualification_name ASC
+            SELECT q.qualification_id, q.qualification_name, q.duration, q.nc_level_id, nc.nc_level_code, nc.nc_level_name
+            FROM tbl_qualifications q
+            LEFT JOIN tbl_nc_levels nc ON q.nc_level_id = nc.nc_level_id
+            WHERE q.status = 'active' 
+            ORDER BY q.qualification_name ASC
         ");
         $stmt->execute();
         $qualifications = $stmt->fetchAll(PDO::FETCH_ASSOC);

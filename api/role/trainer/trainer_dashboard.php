@@ -124,17 +124,32 @@ class TrainerDashboard {
     }
 
     private function getModulePerformance($trainerId) {
-        // Average score per module for this trainer's trainees
+        // Average score per module (normalized to % when max score or item count exists)
         $query = "
-            SELECT m.module_title, AVG(g.score) as avg_score
+            SELECT 
+                m.module_title,
+                ROUND(AVG(
+                    CASE
+                        WHEN COALESCE(NULLIF(t.max_score, 0), qc.question_count, 0) > 0
+                            THEN (g.score / COALESCE(NULLIF(t.max_score, 0), qc.question_count)) * 100
+                        ELSE g.score
+                    END
+                ), 2) as avg_score
             FROM tbl_grades g
             JOIN tbl_test t ON g.test_id = t.test_id
             JOIN tbl_lessons l ON t.lesson_id = l.lesson_id
             JOIN tbl_module m ON l.module_id = m.module_id
             JOIN tbl_enrollment e ON g.trainee_id = e.trainee_id
             JOIN tbl_batch b ON e.batch_id = b.batch_id
+            LEFT JOIN (
+                SELECT test_id, COUNT(*) AS question_count
+                FROM tbl_quiz_questions
+                GROUP BY test_id
+            ) qc ON qc.test_id = t.test_id
             WHERE b.trainer_id = ?
-            GROUP BY m.module_id
+              AND t.activity_type_id = 1
+            GROUP BY m.module_id, m.module_title
+            ORDER BY avg_score DESC, m.module_title
         ";
         $stmt = $this->conn->prepare($query);
         $stmt->execute([$trainerId]);
@@ -148,24 +163,56 @@ class TrainerDashboard {
     }
 
     private function getScheduleData($trainerId) {
+        $scheduleHasRoomId = $this->columnExists('tbl_schedule', 'room_id');
+        $scheduleHasRoomText = $this->columnExists('tbl_schedule', 'room');
+        $hasRoomsTable = $this->tableExists('tbl_rooms');
+
+        if ($scheduleHasRoomId && $hasRoomsTable) {
+            $roomSelect = "COALESCE(r.room_name, 'TBA') AS room";
+            $roomJoin = "LEFT JOIN tbl_rooms r ON s.room_id = r.room_id";
+        } elseif ($scheduleHasRoomText) {
+            $roomSelect = "COALESCE(NULLIF(TRIM(s.room), ''), 'TBA') AS room";
+            $roomJoin = "";
+        } elseif ($scheduleHasRoomId) {
+            $roomSelect = "COALESCE(CAST(s.room_id AS CHAR), 'TBA') AS room";
+            $roomJoin = "";
+        } else {
+            $roomSelect = "'TBA' AS room";
+            $roomJoin = "";
+        }
+
         $query = "
             SELECT 
                 b.batch_id,
                 b.batch_name, 
                 q.qualification_name as course_name, 
                 s.schedule, 
-                    s.room_id
+                $roomSelect
             FROM tbl_batch b
             LEFT JOIN tbl_qualifications q ON b.qualification_id = q.qualification_id
             LEFT JOIN tbl_schedule s ON b.batch_id = s.batch_id
+            $roomJoin
             WHERE b.trainer_id = ? AND b.status = 'open'
-            GROUP BY b.batch_id
+            ORDER BY b.batch_id DESC
         ";
         $stmt = $this->conn->prepare($query);
         $stmt->execute([$trainerId]);
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         return $data;
+    }
+
+    private function tableExists(string $table): bool {
+        $stmt = $this->conn->prepare("SHOW TABLES LIKE ?");
+        $stmt->execute([$table]);
+        return (bool)$stmt->fetchColumn();
+    }
+
+    private function columnExists(string $table, string $column): bool {
+        if (!$this->tableExists($table)) return false;
+        $stmt = $this->conn->prepare("SHOW COLUMNS FROM `$table` LIKE ?");
+        $stmt->execute([$column]);
+        return (bool)$stmt->fetchColumn();
     }
 }
 

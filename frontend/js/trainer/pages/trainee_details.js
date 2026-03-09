@@ -1,371 +1,509 @@
-const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
-const UPLOADS_URL = window.location.origin + '/hohoo-ville/uploads/trainees/';
-let contentModal;
+const API_BASE_URL = window.location.origin + '/Hohoo-ville/api';
+const UPLOADS_URL = window.location.origin + '/Hohoo-ville/uploads/trainees/';
+let contentModal = null;
+let documentModal = null;
+let documentZoom = 1;
+let activeDocumentUrl = '';
 
-document.addEventListener('DOMContentLoaded', function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const traineeId = urlParams.get('id') || urlParams.get('trainee_id'); // Support both 'id' and 'trainee_id'
-    const tabParam = urlParams.get('tab'); // Get tab parameter (e.g., 'profile', 'attendance', 'progress')
+class SimpleModal {
+    constructor(element) {
+        this.element = element;
+        this.backdrop = element.querySelector('[data-modal-backdrop]');
+        this.closeButtons = Array.from(element.querySelectorAll('[data-modal-close]'));
+        this.bindEvents();
+    }
+
+    bindEvents() {
+        if (this.backdrop) {
+            this.backdrop.addEventListener('click', () => this.hide());
+        }
+        this.closeButtons.forEach((btn) => btn.addEventListener('click', () => this.hide()));
+        this.element.addEventListener('click', (event) => {
+            if (event.target === this.element) this.hide();
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && !this.element.classList.contains('hidden')) {
+                this.hide();
+            }
+        });
+    }
+
+    show() {
+        this.element.classList.remove('hidden');
+        this.element.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+    }
+
+    hide() {
+        this.element.classList.add('hidden');
+        this.element.classList.remove('flex');
+        document.body.classList.remove('overflow-hidden');
+        if (this.element.id === 'documentModal') {
+            resetDocumentPreview();
+            activeDocumentUrl = '';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) {
+        window.location.href = '/Hohoo-ville/frontend/login.html';
+        return;
+    }
+
+    initSidebar();
+    initUserMenu();
+    initLogout();
+    initTopTabs();
+    initCompetencyTabs();
+
+    const trainerNameEl = document.getElementById('trainerName');
+    if (trainerNameEl) trainerNameEl.textContent = user.username || 'Trainer';
 
     const contentModalEl = document.getElementById('contentModal');
-    if (contentModalEl) {
-        contentModal = new bootstrap.Modal(contentModalEl);
-    }
+    if (contentModalEl) contentModal = new SimpleModal(contentModalEl);
+    const documentModalEl = document.getElementById('documentModal');
+    if (documentModalEl) documentModal = new SimpleModal(documentModalEl);
+
+    initDocumentZoomControls();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const traineeId = urlParams.get('id') || urlParams.get('trainee_id');
+    const tabParam = urlParams.get('tab');
 
     if (traineeId) {
         loadTraineeDetails(traineeId);
     } else {
-        document.getElementById('profile-content').innerHTML = '<div class="alert alert-danger">No trainee ID provided.</div>';
-    }
-
-    // Switch to specified tab after page loads
-    if (tabParam) {
-        // Wait a bit to ensure DOM is ready, then activate tab
-        setTimeout(() => {
-            const tabButton = document.getElementById(`pills-${tabParam}-tab`);
-            if (tabButton) {
-                const tab = new bootstrap.Tab(tabButton);
-                tab.show();
-            }
-        }, 100);
-    }
-
-    // Inject Sidebar CSS (W3.CSS Reference Style)
-    const ms = document.createElement('style');
-    ms.innerHTML = `
-        #sidebar {
-            width: 200px;
-            position: fixed;
-            z-index: 1050;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            overflow-y: auto;
-            background-color: #fff;
-            box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16), 0 2px 10px 0 rgba(0,0,0,0.12);
-            display: block;
-        }
-        .main-content, #content, .content-wrapper {
-            margin-left: 200px !important;
-            transition: margin-left .4s;
-        }
-        #sidebarCloseBtn {
-            display: none;
-            width: 100%;
-            text-align: left;
-            padding: 8px 16px;
-            background: none;
-            border: none;
-            font-size: 18px;
-        }
-        #sidebarCloseBtn:hover { background-color: #ccc; }
-        
-        @media (max-width: 991.98px) {
-            #sidebar { display: none; }
-            .main-content, #content, .content-wrapper { margin-left: 0 !important; }
-            #sidebarCloseBtn { display: block; }
-        }
-        .table-responsive, table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    `;
-    document.head.appendChild(ms);
-
-    // Sidebar Logic
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) {
-        if (!document.getElementById('sidebarCloseBtn')) {
-            const closeBtn = document.createElement('button');
-            closeBtn.id = 'sidebarCloseBtn';
-            closeBtn.innerHTML = 'Close &times;';
-            closeBtn.addEventListener('click', () => {
-                sidebar.style.display = 'none';
-            });
-            sidebar.insertBefore(closeBtn, sidebar.firstChild);
+        const container = document.getElementById('profile-content');
+        if (container) {
+            container.innerHTML = '<div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">No trainee ID provided.</div>';
         }
     }
 
-    // Open Button Logic
-    let sc = document.getElementById('sidebarCollapse');
-    if (!sc) {
-        const nb = document.querySelector('.navbar');
-        if (nb) {
-            const c = nb.querySelector('.container-fluid') || nb;
-            const b = document.createElement('button');
-            b.id = 'sidebarCollapse';
-            b.className = 'btn btn-outline-primary me-2 d-lg-none';
-            b.type = 'button';
-            b.innerHTML = '&#9776;';
-            c.insertBefore(b, c.firstChild);
-            sc = b;
-        }
-    }
-    if (sc) {
-        const nb = sc.cloneNode(true);
-        if(sc.parentNode) sc.parentNode.replaceChild(nb, sc);
-        nb.addEventListener('click', () => {
-            if (sidebar) sidebar.style.display = 'block';
-        });
-    }
-
-    // Remove Attendance and Grading pages from sidebar
-    if (sidebar) {
-        const ul = sidebar.querySelector('ul');
-        if (ul) {
-            ul.innerHTML = '';
-            const menuItems = [
-                { href: '/Hohoo-ville/frontend/html/trainer/trainer_dashboard.html', icon: 'fas fa-home', text: 'Dashboard' },
-                { href: 'my_batches.html', icon: 'fas fa-users', text: 'My Batches' },
-                { href: 'modules.html', icon: 'fas fa-book', text: 'Modules' },
-                { href: 'progress_chart.html', icon: 'fas fa-chart-line', text: 'Progress Chart' },
-                { href: 'achievement_chart.html', icon: 'fas fa-trophy', text: 'Achievement Chart' },
-                { href: 'reports.html', icon: 'fas fa-file-alt', text: 'Reports' }
-            ];
-            const currentPage = window.location.pathname.split('/').pop();
-            menuItems.forEach(item => {
-                const li = document.createElement('li');
-                li.className = 'nav-item mb-1';
-                const isActive = currentPage === item.href ? 'active' : '';
-                li.innerHTML = `<a class="nav-link ${isActive}" href="${item.href}"><i class="${item.icon} me-2"></i> ${item.text}</a>`;
-                ul.appendChild(li);
-            });
-        }
-    }
-
-    // Logout functionality
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            localStorage.clear();
-            window.location.href = '../../../login.html';
-        });
-    }
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (user) {
-        document.getElementById('trainerName').textContent = user.username || 'Trainer';
-    }
+    if (tabParam) setActiveTopTab(tabParam);
 });
+
+function initSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const sidebarCollapse = document.getElementById('sidebarCollapse');
+    const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+    if (!sidebar) return;
+
+    function openSidebar() {
+        sidebar.classList.remove('-translate-x-full');
+        if (sidebarOverlay) {
+            sidebarOverlay.classList.remove('hidden');
+            requestAnimationFrame(() => sidebarOverlay.classList.remove('opacity-0'));
+        }
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function closeSidebar() {
+        sidebar.classList.add('-translate-x-full');
+        if (sidebarOverlay) {
+            sidebarOverlay.classList.add('opacity-0');
+            setTimeout(() => sidebarOverlay.classList.add('hidden'), 300);
+        }
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    function toggleSidebar() {
+        if (sidebar.classList.contains('-translate-x-full')) openSidebar();
+        else closeSidebar();
+    }
+
+    if (sidebarCollapse) sidebarCollapse.addEventListener('click', toggleSidebar);
+    if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', closeSidebar);
+    if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+
+    window.addEventListener('resize', () => {
+        if (window.innerWidth >= 1024) {
+            document.body.classList.remove('overflow-hidden');
+            if (sidebarOverlay) sidebarOverlay.classList.add('hidden', 'opacity-0');
+        }
+    });
+}
+
+function initUserMenu() {
+    const userMenuButton = document.getElementById('userMenuButton');
+    const userMenuDropdown = document.getElementById('userMenuDropdown');
+    if (!userMenuButton || !userMenuDropdown) return;
+
+    userMenuButton.addEventListener('click', function (event) {
+        event.stopPropagation();
+        userMenuDropdown.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', function (event) {
+        if (!event.target.closest('#userMenuDropdown')) {
+            userMenuDropdown.classList.add('hidden');
+        }
+    });
+}
+
+function initLogout() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (!logoutBtn) return;
+    logoutBtn.addEventListener('click', function (event) {
+        event.preventDefault();
+        localStorage.clear();
+        window.location.href = '/Hohoo-ville/frontend/login.html';
+    });
+}
+
+function initTopTabs() {
+    document.querySelectorAll('.top-tab-btn').forEach(button => {
+        button.addEventListener('click', () => setActiveTopTab(button.dataset.topTab));
+    });
+    setActiveTopTab('profile');
+}
+
+function initCompetencyTabs() {
+    document.querySelectorAll('.competency-tab-btn').forEach(button => {
+        button.addEventListener('click', () => setActiveCompetencyTab(button.dataset.competencyTab));
+    });
+    setActiveCompetencyTab('core');
+}
+
+function setActiveTopTab(tabName) {
+    const target = tabName === 'attendance' || tabName === 'progress' ? tabName : 'profile';
+
+    document.querySelectorAll('.top-tab-btn').forEach(button => {
+        const active = button.dataset.topTab === target;
+        if (active) {
+            button.classList.add('border-blue-200', 'bg-white', 'text-blue-700', 'font-semibold');
+            button.classList.remove('border-transparent', 'bg-transparent', 'text-slate-600', 'font-medium');
+        } else {
+            button.classList.remove('border-blue-200', 'bg-white', 'text-blue-700', 'font-semibold');
+            button.classList.add('border-transparent', 'bg-transparent', 'text-slate-600', 'font-medium');
+        }
+    });
+
+    document.querySelectorAll('.top-pane').forEach(pane => {
+        const active = pane.dataset.topPane === target;
+        pane.classList.toggle('hidden', !active);
+        pane.classList.toggle('block', active);
+    });
+}
+
+function setActiveCompetencyTab(tabName) {
+    const target = tabName === 'common' || tabName === 'basic' ? tabName : 'core';
+
+    document.querySelectorAll('.competency-tab-btn').forEach(button => {
+        const active = button.dataset.competencyTab === target;
+        if (active) {
+            button.classList.add('border-blue-200', 'bg-white', 'text-blue-700', 'font-semibold');
+            button.classList.remove('border-transparent', 'bg-transparent', 'text-slate-600', 'font-medium');
+        } else {
+            button.classList.remove('border-blue-200', 'bg-white', 'text-blue-700', 'font-semibold');
+            button.classList.add('border-transparent', 'bg-transparent', 'text-slate-600', 'font-medium');
+        }
+    });
+
+    document.querySelectorAll('.competency-pane').forEach(pane => {
+        const active = pane.dataset.competencyPane === target;
+        pane.classList.toggle('hidden', !active);
+        pane.classList.toggle('block', active);
+    });
+}
+
+function initDocumentZoomControls() {
+    const zoomInBtn = document.getElementById('docZoomInBtn');
+    const zoomOutBtn = document.getElementById('docZoomOutBtn');
+    const zoomResetBtn = document.getElementById('docZoomResetBtn');
+
+    if (zoomInBtn) zoomInBtn.addEventListener('click', () => setDocumentZoom(documentZoom + 0.1));
+    if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => setDocumentZoom(documentZoom - 0.1));
+    if (zoomResetBtn) zoomResetBtn.addEventListener('click', () => setDocumentZoom(1));
+}
+
+function setDocumentZoom(value) {
+    const zoomLayer = document.getElementById('documentZoomLayer');
+    const zoomLabel = document.getElementById('docZoomLabel');
+    if (!zoomLayer) return;
+
+    documentZoom = Math.max(0.5, Math.min(3, Number(value.toFixed(2))));
+    zoomLayer.style.transform = `scale(${documentZoom})`;
+    if (zoomLabel) zoomLabel.textContent = `${Math.round(documentZoom * 100)}%`;
+}
+
+function resetDocumentPreview() {
+    const imageEl = document.getElementById('documentPreviewImage');
+    const frameEl = document.getElementById('documentPreviewFrame');
+    const fallbackEl = document.getElementById('documentPreviewFallback');
+    const downloadLink = document.getElementById('documentPreviewDownloadLink');
+
+    if (imageEl) {
+        imageEl.classList.add('hidden');
+        imageEl.removeAttribute('src');
+    }
+    if (frameEl) {
+        frameEl.classList.add('hidden');
+        frameEl.removeAttribute('src');
+    }
+    if (fallbackEl) fallbackEl.classList.add('hidden');
+    if (downloadLink) downloadLink.setAttribute('href', '#');
+
+    setDocumentZoom(1);
+}
+
+function openDocumentModal(url, title) {
+    if (!documentModal || !url) return;
+
+    const modalTitle = document.getElementById('documentModalTitle');
+    const openBtn = document.getElementById('docOpenNewTabBtn');
+    const imageEl = document.getElementById('documentPreviewImage');
+    const frameEl = document.getElementById('documentPreviewFrame');
+    const fallbackEl = document.getElementById('documentPreviewFallback');
+    const downloadLink = document.getElementById('documentPreviewDownloadLink');
+
+    resetDocumentPreview();
+    activeDocumentUrl = url;
+    if (modalTitle) modalTitle.textContent = title || 'Submitted Document';
+    if (openBtn) openBtn.href = url;
+    if (downloadLink) downloadLink.href = url;
+
+    const cleanUrl = url.split('?')[0].toLowerCase();
+    const isImage = /\.(png|jpg|jpeg|gif|webp|bmp|svg|avif)$/i.test(cleanUrl);
+    const isPdf = /\.pdf$/i.test(cleanUrl);
+    const likelyUnsupportedInline = /\.(doc|docx|ppt|pptx|xls|xlsx|csv)$/i.test(cleanUrl);
+
+    if (isImage && imageEl) {
+        imageEl.src = url;
+        imageEl.classList.remove('hidden');
+    } else if (isPdf && frameEl) {
+        frameEl.src = url;
+        frameEl.classList.remove('hidden');
+    } else if (likelyUnsupportedInline) {
+        if (fallbackEl) fallbackEl.classList.remove('hidden');
+    } else if (frameEl) {
+        // Try iframe preview for any browser-supported file.
+        frameEl.src = url;
+        frameEl.classList.remove('hidden');
+        frameEl.onerror = () => {
+            frameEl.classList.add('hidden');
+            if (fallbackEl) fallbackEl.classList.remove('hidden');
+        };
+    } else if (fallbackEl) {
+        fallbackEl.classList.remove('hidden');
+    }
+
+    documentModal.show();
+}
+
+function setDocumentLink(linkEl, fileName, title) {
+    if (!linkEl) return;
+    const hasFile = Boolean(fileName);
+
+    if (!hasFile) {
+        linkEl.href = '#';
+        linkEl.classList.add('pointer-events-none', 'opacity-50');
+        linkEl.onclick = null;
+        return;
+    }
+
+    const fileUrl = UPLOADS_URL + encodeURIComponent(fileName);
+    linkEl.href = fileUrl;
+    linkEl.classList.remove('pointer-events-none', 'opacity-50');
+    linkEl.onclick = (event) => {
+        event.preventDefault();
+        openDocumentModal(fileUrl, title);
+    };
+}
 
 async function loadTraineeDetails(traineeId) {
     try {
         const response = await axios.get(`${API_BASE_URL}/role/trainer/trainee_details.php?trainee_id=${traineeId}`);
         if (response.data.success) {
-            const details = response.data.data;
-            populateTraineeData(details);
+            populateTraineeData(response.data.data);
         } else {
-            document.getElementById('profile-content').innerHTML = `<div class="alert alert-warning">${response.data.message}</div>`;
+            const container = document.getElementById('profile-content');
+            if (container) container.innerHTML = `<div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">${response.data.message}</div>`;
         }
     } catch (error) {
         console.error('Error loading trainee details:', error);
-        document.getElementById('profile-content').innerHTML = '<div class="alert alert-danger">Failed to load trainee details.</div>';
+        const container = document.getElementById('profile-content');
+        if (container) container.innerHTML = '<div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">Failed to load trainee details.</div>';
     }
 }
 
 function populateTraineeData(details) {
-    const t = details.profile;
-    if (!t) {
-        document.getElementById('profile-content').innerHTML = '<div class="alert alert-warning">Trainee profile data not found.</div>';
+    const profile = details.profile;
+    if (!profile) {
+        const container = document.getElementById('profile-content');
+        if (container) container.innerHTML = '<div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">Trainee profile data not found.</div>';
         return;
     }
 
-    // Helper to safely set text content
     const setText = (id, text) => {
         const el = document.getElementById(id);
         if (el) el.textContent = text || 'N/A';
     };
 
-    // Header
-    const fullName = `${t.first_name || ''} ${t.middle_name || ''} ${t.last_name || ''} ${t.extension_name || ''}`.replace(/\s+/g, ' ').trim();
+    const fullName = `${profile.first_name || ''} ${profile.middle_name || ''} ${profile.last_name || ''} ${profile.extension_name || ''}`
+        .replace(/\s+/g, ' ')
+        .trim();
+
     setText('headerTraineeName', fullName);
-    setText('headerTraineeCourse', t.course_name);
+    setText('headerTraineeCourse', profile.course_name);
+
     const photoEl = document.getElementById('headerTraineePhoto');
     if (photoEl) {
-        if (t.photo_file) {
-            photoEl.src = UPLOADS_URL + encodeURIComponent(t.photo_file);
+        if (profile.photo_file) {
+            photoEl.src = UPLOADS_URL + encodeURIComponent(profile.photo_file);
         } else {
             photoEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=random`;
         }
     }
 
-    // Profile Tab
     setText('profileFullName', fullName);
-    setText('profileEmail', t.email);
-    setText('profilePhone', t.phone_number);
-    setText('profileFacebook', t.facebook_account);
-    setText('profileAddress', [t.house_no_street, t.barangay, t.city_municipality, t.province].filter(Boolean).join(', '));
-    
-    setText('profileSex', t.sex);
-    setText('profileCivilStatus', t.civil_status);
-    setText('profileBirthdate', t.birthdate);
-    setText('profileAge', t.age);
-    setText('profileBirthplace', [t.birthplace_city, t.birthplace_province].filter(Boolean).join(', '));
-    setText('profileNationality', t.nationality);
+    setText('profileEmail', profile.email);
+    setText('profilePhone', profile.phone_number);
+    setText('profileFacebook', profile.facebook_account);
+    setText('profileAddress', [profile.house_no_street, profile.barangay, profile.city_municipality, profile.province].filter(Boolean).join(', '));
 
-    setText('profileEducation', t.educational_attainment);
-    setText('profileEmployment', t.employment_status);
-    
-    // Training Info
-    setText('profileSchoolId', t.trainee_school_id);
-    setText('profileBatch', t.batch_name);
-    setText('profileScholarship', t.scholarship_type);
-    setText('profileEnrollStatus', t.enrollment_status);
-    
-    // Document Links
+    setText('profileSex', profile.sex);
+    setText('profileCivilStatus', profile.civil_status);
+    setText('profileBirthdate', profile.birthdate);
+    setText('profileAge', profile.age);
+    setText('profileBirthplace', [profile.birthplace_city, profile.birthplace_province].filter(Boolean).join(', '));
+    setText('profileNationality', profile.nationality);
+
+    setText('profileEducation', profile.educational_attainment);
+    setText('profileEmployment', profile.employment_status);
+    setText('profileSchoolId', profile.trainee_school_id);
+    setText('profileBatch', profile.batch_name);
+    setText('profileScholarship', profile.scholarship_type);
+    setText('profileEnrollStatus', profile.enrollment_status);
+
     const linkId = document.getElementById('linkValidId');
     const linkCert = document.getElementById('linkBirthCert');
-    if(linkId) {
-        if (t.valid_id_file) {
-            linkId.href = UPLOADS_URL + encodeURIComponent(t.valid_id_file);
-            linkId.classList.remove('disabled');
-        } else {
-            linkId.classList.add('disabled');
-        }
-    }
-    if(linkCert) {
-        if (t.birth_cert_file) {
-            linkCert.href = UPLOADS_URL + encodeURIComponent(t.birth_cert_file);
-            linkCert.classList.remove('disabled');
-        } else {
-            linkCert.classList.add('disabled');
-        }
-    }
 
-    // Attendance Tab
-    const attendance = details.attendance_summary;
-    if (attendance) {
-        setText('attPresent', attendance.present || 0);
-        setText('attAbsent', attendance.absent || 0);
-        setText('attLate', attendance.late || 0);
-    }
+    setDocumentLink(linkId, profile.valid_id_file, 'Valid ID');
+    setDocumentLink(linkCert, profile.birth_cert_file, 'Birth Certificate');
 
-    // Progress Tab
-    const progressData = details.training_progress;
-    const coreModules = progressData.filter(m => m.competency_type === 'core');
-    const commonModules = progressData.filter(m => m.competency_type === 'common');
-    const basicModules = progressData.filter(m => m.competency_type === 'basic');
+    const attendance = details.attendance_summary || {};
+    setText('attPresent', attendance.present || 0);
+    setText('attAbsent', attendance.absent || 0);
+    setText('attLate', attendance.late || 0);
 
-    renderProgressAccordion('progressAccordionCore', coreModules, 'Core');
-    renderProgressAccordion('progressAccordionCommon', commonModules, 'Common');
-    renderProgressAccordion('progressAccordionBasic', basicModules, 'Basic');
+    const progressData = details.training_progress || [];
+    renderProgressAccordion('progressAccordionCore', progressData.filter(module => module.competency_type === 'core'), 'Core');
+    renderProgressAccordion('progressAccordionCommon', progressData.filter(module => module.competency_type === 'common'), 'Common');
+    renderProgressAccordion('progressAccordionBasic', progressData.filter(module => module.competency_type === 'basic'), 'Basic');
 }
 
 function renderProgressAccordion(containerId, modules, competencyName) {
-    const accordionContainer = document.getElementById(containerId);
-    if (!accordionContainer) return;
+    const container = document.getElementById(containerId);
+    if (!container) return;
 
-    if (modules && modules.length > 0) {
-        accordionContainer.innerHTML = '';
-        modules.forEach(module => {
-            let lessonsHtml = '';
-            if (module.lessons && module.lessons.length > 0) {
-                module.lessons.forEach(lesson => {
-                    // --- Quiz Info ---
-                    let quizHtml = '<span class="text-muted">Not taken</span>';
-                    if (lesson.quiz) {
-                        const score = lesson.quiz.score;
-                        const maxScore = lesson.quiz.max_score || 'N/A';
-                        const percentage = (maxScore > 0) ? (score / maxScore) * 100 : 0;
-                        const badgeClass = percentage >= 75 ? 'bg-success' : 'bg-warning text-dark';
-                        quizHtml = `Score: <span class="badge ${badgeClass}">${score}/${maxScore}</span> on ${new Date(lesson.quiz.date_recorded).toLocaleDateString()}`;
-                    }
+    if (!modules || modules.length === 0) {
+        container.innerHTML = `<div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">No ${competencyName} competency progress found.</div>`;
+        return;
+    }
 
-                    // --- Task Sheets Info ---
-                    let tasksHtml = '<p class="mb-0 small text-muted">No task sheets submitted.</p>';
-                    if (lesson.task_sheets && lesson.task_sheets.length > 0) {
-                        tasksHtml = '<ul class="list-unstyled mb-0">';
-                        lesson.task_sheets.forEach(task => {
-                            const content = task.submitted_content ? btoa(unescape(encodeURIComponent(task.submitted_content))) : '';
-                            
-                            let statusBadge;
-                            switch(task.status) {
-                                case 'submitted': statusBadge = 'bg-primary'; break;
-                                case 'approved': statusBadge = 'bg-success'; break;
-                                case 'rejected': statusBadge = 'bg-danger'; break;
-                                default: statusBadge = 'bg-secondary';
-                            }
-                            const grade = task.grade ? ` | Grade: <strong>${task.grade}</strong>` : '';
+    container.innerHTML = '';
 
-                            tasksHtml += `
-                                <li class="mb-1">
-                                    <a href="#" class="text-decoration-none" onclick="showTaskSheetContent(event, '${content}', '${task.title}')">
-                                        <i class="fas fa-file-alt me-1 text-secondary"></i>${task.title}
-                                    </a> 
-                                    <span class="ms-2 small">
-                                        <span class="badge ${statusBadge}">${task.status}</span>
-                                        <span class="text-muted">${grade}</span>
-                                    </span>
-                                </li>`;
-                        });
-                        tasksHtml += '</ul>';
-                    }
+    modules.forEach(module => {
+        let lessonsHtml = '';
+        if (module.lessons && module.lessons.length > 0) {
+            module.lessons.forEach(lesson => {
+                let quizHtml = '<span class="text-slate-500">Not taken</span>';
+                if (lesson.quiz) {
+                    const score = Number(lesson.quiz.score || 0);
+                    const maxScore = Number(lesson.quiz.max_score || 0);
+                    const percentage = maxScore > 0 ? (score / maxScore) * 100 : 0;
+                    const badgeClass = percentage >= 75
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-amber-100 text-amber-700';
 
-                    lessonsHtml += `
-                        <div class="list-group-item">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1">${lesson.lesson_title}</h6>
+                    quizHtml = `Score: <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${badgeClass}">${score}/${maxScore || 'N/A'}</span> on ${new Date(lesson.quiz.date_recorded).toLocaleDateString()}`;
+                }
+
+                let tasksHtml = '<p class="text-sm text-slate-500">No task sheets submitted.</p>';
+                if (lesson.task_sheets && lesson.task_sheets.length > 0) {
+                    tasksHtml = '<ul class="space-y-2">';
+                    lesson.task_sheets.forEach(task => {
+                        const content = task.submitted_content ? btoa(unescape(encodeURIComponent(task.submitted_content))) : '';
+                        let statusClass = 'bg-slate-100 text-slate-700';
+                        if (task.status === 'submitted') statusClass = 'bg-blue-100 text-blue-700';
+                        if (task.status === 'approved') statusClass = 'bg-emerald-100 text-emerald-700';
+                        if (task.status === 'rejected') statusClass = 'bg-red-100 text-red-700';
+                        const grade = task.grade ? ` | Grade: <strong>${task.grade}</strong>` : '';
+
+                        tasksHtml += `
+                            <li class="text-sm text-slate-700">
+                                <a href="#" class="text-blue-700 hover:underline" onclick="showTaskSheetContent(event, '${content}', '${escapeSingleQuote(task.title || '')}')">
+                                    <i class="fas fa-file-alt mr-1 text-slate-500"></i>${task.title || 'Task Sheet'}
+                                </a>
+                                <span class="ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${statusClass}">${task.status || 'N/A'}</span>
+                                <span class="text-slate-500">${grade}</span>
+                            </li>
+                        `;
+                    });
+                    tasksHtml += '</ul>';
+                }
+
+                lessonsHtml += `
+                    <div class="border-t border-slate-200 p-4">
+                        <h6 class="text-sm font-semibold text-slate-900 mb-2">${lesson.lesson_title || 'Untitled Lesson'}</h6>
+                        <div class="space-y-3">
+                            <div class="text-sm text-slate-700">
+                                <i class="fas fa-question-circle mr-2 text-blue-600"></i><strong>Quiz:</strong> ${quizHtml}
                             </div>
-                            <div class="mt-2 ps-3 border-start">
-                                <!-- Quiz Info -->
-                                <div class="d-flex align-items-center mb-2">
-                                    <i class="fas fa-question-circle fa-fw me-2 text-primary"></i>
-                                    <div class="flex-grow-1 small">
-                                        <strong>Quiz:</strong> ${quizHtml}
-                                    </div>
+                            <div>
+                                <div class="text-sm text-slate-700 mb-1">
+                                    <i class="fas fa-tasks mr-2 text-blue-600"></i><strong>Task Sheets:</strong>
                                 </div>
-                                <!-- Task Sheets Info -->
-                                <div class="d-flex align-items-start">
-                                    <i class="fas fa-tasks fa-fw me-2 text-info"></i>
-                                    <div class="flex-grow-1">
-                                        ${tasksHtml}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                });
-            } else {
-                lessonsHtml = '<div class="list-group-item text-muted">No lessons in this module.</div>';
-            }
-
-            accordionContainer.innerHTML += `
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="module-header-${module.module_id}">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#module-collapse-${module.module_id}" data-bs-parent="#${containerId}">
-                            ${module.module_title}
-                        </button>
-                    </h2>
-                    <div id="module-collapse-${module.module_id}" class="accordion-collapse collapse">
-                        <div class="accordion-body p-0">
-                            <div class="list-group list-group-flush">
-                                ${lessonsHtml}
+                                <div class="pl-6">${tasksHtml}</div>
                             </div>
                         </div>
                     </div>
-                </div>
-            `;
-        });
-    } else {
-        accordionContainer.innerHTML = `<div class="alert alert-light text-center border">No ${competencyName} competency progress found.</div>`;
-    }
+                `;
+            });
+        } else {
+            lessonsHtml = '<div class="border-t border-slate-200 p-4 text-sm text-slate-500">No lessons in this module.</div>';
+        }
+
+        container.innerHTML += `
+            <details class="group rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                <summary class="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
+                    <span class="font-semibold text-slate-900">${module.module_title || 'Untitled Module'}</span>
+                    <i class="fas fa-chevron-down text-slate-400 transition-transform group-open:rotate-180"></i>
+                </summary>
+                <div class="bg-slate-50">${lessonsHtml}</div>
+            </details>
+        `;
+    });
 }
 
 function showTaskSheetContent(event, contentBase64, title) {
     event.preventDefault();
+
     const modalTitle = document.getElementById('contentModalTitle');
     const modalBody = document.getElementById('contentModalBody');
-    
-    if (modalTitle && modalBody && contentModal) {
-        modalTitle.textContent = title;
-        try {
-            if (contentBase64) {
-                const decodedContent = decodeURIComponent(escape(atob(contentBase64)));
-                modalBody.innerHTML = decodedContent;
-            } else {
-                modalBody.innerHTML = '<div class="alert alert-warning">No content submitted.</div>';
-            }
-        } catch (e) {
-            console.error("Error decoding base64 content", e);
-            modalBody.innerHTML = '<div class="alert alert-danger">Could not display content. It might be corrupted.</div>';
+    if (!modalTitle || !modalBody || !contentModal) return;
+
+    modalTitle.textContent = title || 'Task Sheet';
+    try {
+        if (contentBase64) {
+            const decodedContent = decodeURIComponent(escape(atob(contentBase64)));
+            modalBody.innerHTML = decodedContent;
+        } else {
+            modalBody.innerHTML = '<div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">No content submitted.</div>';
         }
-        contentModal.show();
+    } catch (error) {
+        console.error('Error decoding base64 content', error);
+        modalBody.innerHTML = '<div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">Could not display content. It might be corrupted.</div>';
     }
+
+    contentModal.show();
 }
+
+function escapeSingleQuote(text) {
+    return String(text || '').replace(/'/g, "\\'");
+}
+
+window.showTaskSheetContent = showTaskSheetContent;

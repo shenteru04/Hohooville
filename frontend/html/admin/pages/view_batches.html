@@ -4,189 +4,224 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Batch Management - Hohoo-Ville Technical School</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Sidebar CSS -->
-    <link rel="stylesheet" href="../../../css/admin/sidebar.css">
-   <style>
-        :root {
-            --primary-color: #4e73df;
-            --secondary-color: #858796;
-            --bg-color: #f8f9fc;
-            --text-color: #5a5c69;
-        }
-        body {
-            font-family: 'Nunito', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-        }
-        #sidebar {
-            background: #fff;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-            z-index: 1000;
-        }
-        #sidebar .sidebar-header {
-            padding: 1.5rem 1rem;
-            text-align: center;
-            color: var(--primary-color);
-            font-weight: 800;
-        }
-        #sidebar .nav-link {
-            color: var(--text-color);
-            padding: 0.5rem 1rem;
-            margin: 0.1rem 0.5rem;
-            border-radius: 0.35rem;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        #sidebar .nav-link:hover {
-            background-color: #eaecf4;
-            color: var(--primary-color);
-        }
-        #sidebar .nav-link.active {
-            background-color: var(--primary-color);
-            color: #fff;
-        }
-        .card {
-            border: none;
-            border-radius: 0.35rem;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-        }
-        .card-header {
-            background-color: #f8f9fc;
-            border-bottom: 1px solid #e3e6f0;
-            padding: 1rem 1.25rem;
-            font-weight: 700;
-            color: var(--primary-color);
+    <style>
+        body { font-family: 'Nunito', sans-serif; }
+        a:focus-visible, button:focus-visible, input:focus-visible {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
         }
     </style>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-700">
     <div id="sidebar-container"></div>
-    <div class="main-content" id="content">
-        <!-- Top Navigation -->
-        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
-            <div class="container-fluid">
-                <button type="button" id="sidebarCollapse" class="btn btn-outline-primary me-2 d-lg-none"><i class="fas fa-bars"></i></button>
-                <div class="ms-auto d-flex align-items-center">
-                    <div class="dropdown">
-                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown"><i class="fas fa-user-circle"></i> <span id="userName">Admin</span></button>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
-                        </ul>
+
+    <div class="main-content min-h-screen lg:ml-72" id="content">
+        <header class="border-b border-blue-100 bg-white/85 shadow-sm backdrop-blur">
+            <div class="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center gap-3">
+                    <button type="button" id="sidebarCollapse" class="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 lg:hidden">
+                        <i class="fas fa-bars text-lg"></i>
+                    </button>
+                    <h1 class="text-xl font-semibold text-slate-800">Batch Management</h1>
+                </div>
+
+                <div class="header-actions flex items-center gap-3" data-header-actions>
+                    <div class="relative">
+                        <button id="userDropdown" class="flex items-center gap-2 rounded-full border border-blue-100 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-700 hover:bg-blue-50">
+                            <i class="fas fa-user-circle text-xl text-blue-500"></i>
+                            <span id="userName" class="hidden md:block">Admin</span>
+                            <i class="fas fa-chevron-down text-xs text-slate-400"></i>
+                        </button>
+                        <div id="userDropdownMenu" class="absolute right-0 top-full z-40 mt-2 hidden w-48 rounded-xl border border-blue-100 bg-white py-1 shadow-xl shadow-blue-100/40">
+                            <a href="profile.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-user mr-2"></i> Profile</a>
+                            <a href="settings.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-cog mr-2"></i> Settings</a>
+                            <div class="border-t border-blue-100"></div>
+                            <a href="#" id="logoutBtn" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-sign-out-alt mr-2"></i> Logout</a>
+                        </div>
                     </div>
                 </div>
             </div>
-        </nav>
+        </header>
 
-        <!-- Main Content -->
-        <div class="container-fluid mt-4">
-            <h2 class="mb-4 text-gray-800">Batch Management</h2>
+        <main class="space-y-6 p-4 sm:p-6 lg:p-8">
+            <article class="rounded-2xl border border-blue-100 bg-white shadow-sm">
+                <div class="flex items-center justify-between border-b border-blue-100 px-5 py-4">
+                    <h2 class="text-base font-semibold text-slate-900">Open Batches</h2>
+                    <div class="flex items-center gap-2">
+                        <button class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-700" id="createBatchBtn">
+                            <i class="fas fa-plus"></i> Create New Batch
+                        </button>
+                        <button class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50" id="openClosedBatches">
+                            <i class="fas fa-eye"></i> View Closed Batches
+                        </button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto p-5">
+                    <table class="min-w-full divide-y divide-slate-200" id="batchesTable" data-table-manager="true" data-filters="Status:1" data-filter-auto-options="true">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Batch Name</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Enrolled Trainees</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">View</th>
+                                <th class="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-600">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="batchesTableBody" class="divide-y divide-slate-100 bg-white"></tbody>
+                    </table>
+                </div>
+            </article>
+        </main>
+    </div>
 
-            <!-- Batches Table -->
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">Open Batches</h5>
-                    <button class="btn btn-outline-secondary btn-sm" id="openClosedBatches">
-                        <i class="fas fa-eye me-1"></i>View Closed Batches
+    <div class="fixed inset-0 z-50 hidden items-center justify-center p-4" id="closedBatchesModal" aria-hidden="true">
+        <div class="absolute inset-0 bg-slate-900/50" data-modal-hide="closedBatchesModal"></div>
+        <div class="relative z-10 w-full max-w-4xl overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-2xl">
+            <div class="flex items-center justify-between border-b border-blue-100 px-5 py-4">
+                <h3 class="text-lg font-semibold text-slate-900">Closed Batches</h3>
+                <button type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800" data-modal-hide="closedBatchesModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="max-h-[70vh] overflow-y-auto p-5">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200" id="closedBatchesTable" data-table-manager="true" data-filters="Status:1" data-filter-auto-options="true">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Batch Name</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Enrolled Trainees</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">View</th>
+                                <th class="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-600">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="closedBatchesTableBody" class="divide-y divide-slate-100 bg-white"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="flex justify-end border-t border-blue-100 px-5 py-4">
+                <button type="button" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" data-modal-hide="closedBatchesModal">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="fixed inset-0 z-50 hidden items-center justify-center p-4" id="viewTraineesModal" aria-hidden="true">
+        <div class="absolute inset-0 bg-slate-900/50" data-modal-hide="viewTraineesModal"></div>
+        <div class="relative z-10 w-full max-w-4xl overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-2xl">
+            <div class="flex items-start justify-between border-b border-blue-100 bg-slate-50 px-5 py-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-900">Trainees List</h3>
+                    <p class="text-sm text-slate-500">Batch: <span id="modalBatchName" class="font-semibold text-slate-700"></span></p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="inline-flex rounded-full bg-blue-100 px-3 py-1 text-sm font-semibold text-blue-700" id="modalTraineeCount">0</span>
+                    <button type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800" data-modal-hide="viewTraineesModal">
+                        <i class="fas fa-times"></i>
                     </button>
                 </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover" id="batchesTable" data-table-manager="true" data-filters="Status:1" data-filter-auto-options="true">
-                            <thead>
-                                <tr>
-                                    <th>Batch Name</th>
-                                    <th>Status</th>
-                                    <th>Enrolled Trainees</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="batchesTableBody"></tbody>
-                        </table>
-                    </div>
+            </div>
+            <div class="max-h-[70vh] overflow-y-auto p-5">
+                <div class="mb-3 flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2">
+                    <i class="fas fa-search text-slate-400"></i>
+                    <input type="text" class="w-full border-0 bg-transparent p-0 text-sm text-slate-700 placeholder-slate-400 focus:outline-none" id="modalSearchInput" placeholder="Search by name, email, or ID...">
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200" id="modalTraineesTable" data-table-manager="true" data-search-input="modalSearchInput" data-filters="Status:4" data-filter-auto-options="true">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">School ID</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Name</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Email</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Enrolled Date</th>
+                                <th class="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalTraineesBody" class="divide-y divide-slate-100 bg-white"></tbody>
+                    </table>
                 </div>
             </div>
-
-        </div>
-    </div>
-
-    <!-- Closed Batches Modal -->
-    <div class="modal fade" id="closedBatchesModal" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Closed Batches</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover" id="closedBatchesTable" data-table-manager="true" data-filters="Status:1" data-filter-auto-options="true">
-                            <thead>
-                                <tr>
-                                    <th>Batch Name</th>
-                                    <th>Status</th>
-                                    <th>Enrolled Trainees</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="closedBatchesTableBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
+            <div class="flex justify-end border-t border-blue-100 px-5 py-4">
+                <button type="button" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" data-modal-hide="viewTraineesModal">Close</button>
             </div>
         </div>
     </div>
 
-    <!-- View Trainees Modal -->
-    <div class="modal fade" id="viewTraineesModal" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header bg-light">
-                    <div>
-                        <h5 class="modal-title fw-bold">Trainees List</h5>
-                        <small class="text-muted">Batch: <span id="modalBatchName" class="fw-semibold"></span></small>
+    <div class="fixed inset-0 z-50 hidden items-center justify-center p-4" id="createBatchModal" aria-hidden="true">
+        <div class="absolute inset-0 bg-slate-900/50" data-modal-hide="createBatchModal"></div>
+        <div class="relative z-10 w-full max-w-2xl overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-2xl">
+            <div class="flex items-center justify-between border-b border-blue-100 px-5 py-4">
+                <h3 class="text-lg font-semibold text-slate-900">Create New Batch</h3>
+                <button type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800" data-modal-hide="createBatchModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="max-h-[80vh] overflow-y-auto p-5">
+                <form id="createBatchForm" class="space-y-4">
+                    <input type="hidden" id="newBatchId" value="">
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700">Qualification <span class="text-rose-600">*</span></label>
+                            <select class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="newBatchQualificationId" required>
+                                <option value="">Select Qualification</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700">Batch Name</label>
+                            <input type="text" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="newBatchName" placeholder="e.g. Batch 1 - 2024" readonly>
+                        </div>
                     </div>
-                    <div class="d-flex align-items-center">
-                        <span class="badge bg-primary rounded-pill me-3" id="modalTraineeCount">0</span>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700">Trainer <span class="text-rose-600">*</span></label>
+                            <select class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="newBatchTrainerId" required>
+                                <option value="">Select Trainer</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700">Scholarship Type</label>
+                            <select class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="newBatchScholarshipType">
+                                <option value="">None</option>
+                            </select>
+                        </div>
                     </div>
-                </div>
-                <div class="modal-body">
-                    <div class="input-group mb-3">
-                        <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
-                        <input type="text" class="form-control border-start-0 ps-0" id="modalSearchInput" placeholder="Search by name, email, or ID...">
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700">Start Date <span class="text-rose-600">*</span></label>
+                            <input type="date" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="newBatchStartDate" required>
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700">End Date <span class="text-rose-600">*</span></label>
+                            <input type="date" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="newBatchEndDate" required>
+                        </div>
                     </div>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle" id="modalTraineesTable" data-table-manager="true" data-search-input="modalSearchInput" data-filters="Status:3" data-filter-auto-options="true">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>School ID</th>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th class="text-center">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="modalTraineesBody"></tbody>
-                        </table>
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700">Max Trainees</label>
+                            <input type="number" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="newBatchMaxTrainees" min="1" placeholder="e.g. 25">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700">Status <span class="text-rose-600">*</span></label>
+                            <select class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="newBatchStatus" required>
+                                <option value="open">Open</option>
+                                <option value="closed">Closed</option>
+                            </select>
+                        </div>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
+                </form>
+            </div>
+
+            <div class="flex justify-end gap-2 border-t border-blue-100 px-5 py-4">
+                <button type="button" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" data-modal-hide="createBatchModal">Close</button>
+                <button type="submit" form="createBatchForm" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Create Batch</button>
             </div>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script src="../../../js/session_timeout.js"></script>
     <script src="../../../js/table_manager.js"></script>
     <script src="../../../js/admin/pages/view_batches.js"></script>
     <script src="../../../js/sidebar.js"></script>

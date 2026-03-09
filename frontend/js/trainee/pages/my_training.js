@@ -2,6 +2,95 @@ const API_BASE_URL = window.location.origin + '/Hohoo-ville/api';
 const UPLOADS_URL = window.location.origin + '/Hohoo-ville/uploads/';
 let lessonItemsModal, lessonContentModal, quizModal, quizResultModal;
 
+// Simple Modal replacement for Tailwind (toggles hidden/flex classes)
+class SimpleModal {
+    constructor(element) {
+        this.element = element;
+        this.backdrop = null;
+    }
+    show() {
+        if(!this.element) return;
+        this.element.classList.remove('hidden');
+        this.element.classList.add('flex');
+        // Add backdrop
+        this.backdrop = document.createElement('div');
+        this.backdrop.className = 'fixed inset-0 bg-gray-900 bg-opacity-50 z-40 transition-opacity';
+        document.body.appendChild(this.backdrop);
+        document.body.classList.add('overflow-hidden');
+    }
+    hide() {
+        if(!this.element) return;
+        this.element.classList.add('hidden');
+        this.element.classList.remove('flex');
+        if(this.backdrop) this.backdrop.remove();
+        document.body.classList.remove('overflow-hidden');
+        this.element.dispatchEvent(new Event('hidden.bs.modal'));
+    }
+}
+
+function sanitizeLessonMaterialContent(rawHtml, options = {}) {
+    const { allowTaskCheckboxes = false } = options;
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = rawHtml || '';
+
+    // Remove active/unsafe nodes that are not needed in trainee view.
+    wrapper.querySelectorAll('script, iframe, object, embed, template').forEach(node => node.remove());
+
+    // Remove trainer action buttons and any inline event handlers.
+    wrapper.querySelectorAll('button').forEach(btn => btn.remove());
+    wrapper.querySelectorAll('*').forEach(el => {
+        Array.from(el.attributes).forEach(attr => {
+            if (attr.name.toLowerCase().startsWith('on')) {
+                el.removeAttribute(attr.name);
+            }
+        });
+
+        // Materials should be view-only (except allowed task-sheet checkboxes).
+        if (el.hasAttribute('contenteditable')) {
+            el.setAttribute('contenteditable', 'false');
+        }
+    });
+
+    // Remove table "Actions" column if present.
+    wrapper.querySelectorAll('table').forEach(table => {
+        const headers = Array.from(table.querySelectorAll('thead tr:first-child th'));
+        let actionIndex = -1;
+        headers.forEach((th, idx) => {
+            const text = (th.textContent || '').trim().toLowerCase();
+            if (text === 'actions' || th.classList.contains('table-actions-header')) {
+                actionIndex = idx;
+            }
+        });
+
+        if (actionIndex >= 0) {
+            table.querySelectorAll('tr').forEach(row => {
+                const cells = row.children;
+                if (cells[actionIndex]) cells[actionIndex].remove();
+            });
+        }
+    });
+
+    // Disable all form controls except task-sheet checkboxes (when allowed).
+    wrapper.querySelectorAll('input, textarea, select').forEach(control => {
+        const tag = control.tagName.toLowerCase();
+        const type = (control.getAttribute('type') || '').toLowerCase();
+        const isCheckbox = tag === 'input' && type === 'checkbox';
+
+        if (isCheckbox && allowTaskCheckboxes) {
+            control.disabled = false;
+            control.classList.add('h-4', 'w-4', 'accent-blue-600', 'cursor-pointer');
+        } else {
+            control.disabled = true;
+            if (tag === 'input' || tag === 'textarea') {
+                control.readOnly = true;
+            }
+            control.classList.add('cursor-not-allowed', 'opacity-90');
+        }
+    });
+
+    return wrapper.innerHTML;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
@@ -11,89 +100,56 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('traineeName').textContent = user.username || 'Trainee';
 
-    // Inject Sidebar CSS (W3.CSS Reference Style)
-    const ms = document.createElement('style');
-    ms.innerHTML = `
-        #sidebar {
-            width: 200px;
-            position: fixed;
-            z-index: 1050;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            overflow-y: auto;
-            background-color: #fff;
-            box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16), 0 2px 10px 0 rgba(0,0,0,0.12);
-            display: block;
-        }
-        .main-content, #content, .content-wrapper {
-            margin-left: 200px !important;
-            transition: margin-left .4s;
-        }
-        #sidebarCloseBtn {
-            display: none;
-            width: 100%;
-            text-align: left;
-            padding: 8px 16px;
-            background: none;
-            border: none;
-            font-size: 18px;
-            cursor: pointer;
-        }
-        #sidebarCloseBtn:hover { background-color: #ccc; }
-        
-        @media (max-width: 991.98px) {
-            #sidebar { display: none; }
-            .main-content, #content, .content-wrapper { margin-left: 0 !important; }
-            #sidebarCloseBtn { display: block; }
-        }
-        .table-responsive, table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    `;
-    document.head.appendChild(ms);
-
-    // Sidebar Logic
+    // Sidebar Logic (Tailwind)
     const sidebar = document.getElementById('sidebar');
-    if (sidebar) {
-        if (!document.getElementById('sidebarCloseBtn')) {
-            const closeBtn = document.createElement('button');
-            closeBtn.id = 'sidebarCloseBtn';
-            closeBtn.innerHTML = 'Close &times;';
-            closeBtn.addEventListener('click', () => {
-                sidebar.style.display = 'none';
-            });
-            sidebar.insertBefore(closeBtn, sidebar.firstChild);
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const sidebarCollapse = document.getElementById('sidebarCollapse');
+    const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+
+    function toggleSidebar() {
+        const isClosed = sidebar.classList.contains('-translate-x-full');
+        if (isClosed) {
+            sidebar.classList.remove('-translate-x-full');
+            sidebarOverlay.classList.remove('hidden');
+            setTimeout(() => sidebarOverlay.classList.remove('opacity-0'), 10);
+        } else {
+            sidebar.classList.add('-translate-x-full');
+            sidebarOverlay.classList.add('opacity-0');
+            setTimeout(() => sidebarOverlay.classList.add('hidden'), 300);
         }
     }
 
-    // Open Button Logic
-    if (!document.getElementById('sidebarCollapse')) {
-        const navbarContainer = document.querySelector('.navbar .container-fluid');
-        if (navbarContainer) {
-            const toggleBtn = document.createElement('button');
-            toggleBtn.id = 'sidebarCollapse';
-            toggleBtn.className = 'btn btn-primary me-2 d-lg-none';
-            toggleBtn.type = 'button';
-            toggleBtn.innerHTML = '<i class="fas fa-bars"></i>';
-            
-            // Insert as first child to ensure visibility
-            navbarContainer.insertBefore(toggleBtn, navbarContainer.firstChild);
-            
-            toggleBtn.addEventListener('click', () => {
-                if (sidebar) sidebar.style.display = 'block';
-            });
-        }
-    }
+    if (sidebarCollapse) sidebarCollapse.addEventListener('click', toggleSidebar);
+    if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', toggleSidebar);
+    if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
     
-    lessonItemsModal = new bootstrap.Modal(document.getElementById('lessonItemsModal'));
-    lessonContentModal = new bootstrap.Modal(document.getElementById('lessonContentModal'));
-    quizModal = new bootstrap.Modal(document.getElementById('quizModal'));
-    quizResultModal = new bootstrap.Modal(document.getElementById('quizResultModal'));
+    // User Dropdown Logic
+    const userMenuBtn = document.getElementById('userMenuButton');
+    const userDropdown = document.getElementById('userDropdown');
+
+    if (userMenuBtn && userDropdown) {
+        userMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            userDropdown.classList.toggle('hidden');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!userMenuBtn.contains(e.target) && !userDropdown.contains(e.target)) {
+                userDropdown.classList.add('hidden');
+            }
+        });
+    }
+
+    lessonItemsModal = new SimpleModal(document.getElementById('lessonItemsModal'));
+    lessonContentModal = new SimpleModal(document.getElementById('lessonContentModal'));
+    quizModal = new SimpleModal(document.getElementById('quizModal'));
+    quizResultModal = new SimpleModal(document.getElementById('quizResultModal'));
 
     const idToLoad = user.trainee_id || user.user_id;
     if (idToLoad) {
         loadTrainingData(idToLoad);
     } else {
-        document.getElementById('accordionCore').innerHTML = `<div class="alert alert-danger">User ID not found. Please log in again.</div>`;
+        document.getElementById('accordionCore').innerHTML = `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">User ID not found. Please log in again.</div>`;
     }
 
     document.getElementById('submitQuizBtn').addEventListener('click', submitQuiz);
@@ -108,11 +164,11 @@ async function loadTrainingData(traineeId) {
         if (response.data.success) {
             renderModules(response.data.data);
         } else {
-            document.getElementById('accordionCore').innerHTML = `<div class="alert alert-warning">${response.data.message}</div>`;
+            document.getElementById('accordionCore').innerHTML = `<div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative">${response.data.message}</div>`;
         }
     } catch (error) {
         console.error('Error loading training data:', error);
-        document.getElementById('accordionCore').innerHTML = `<div class="alert alert-danger">Failed to load training modules.</div>`;
+        document.getElementById('accordionCore').innerHTML = `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">Failed to load training modules.</div>`;
     }
 }
 
@@ -126,7 +182,7 @@ function renderModules(modules) {
     basicContainer.innerHTML = '';
 
     if (modules.length === 0) {
-        coreContainer.innerHTML = '<div class="alert alert-info">No training modules are available at this time.</div>';
+        coreContainer.innerHTML = '<div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded relative">No training modules are available at this time.</div>';
         return;
     }
 
@@ -143,48 +199,45 @@ function renderModules(modules) {
                 let quizButtonHtml = '';
                 if (hasQuiz) {
                     if (score !== null) {
-                        quizButtonHtml = `<button class="btn btn-sm btn-success disabled"><i class="fas fa-check-circle me-1"></i> Quiz Taken (${score}/${totalQuestions})</button>`;
+                        quizButtonHtml = `<button class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 cursor-not-allowed opacity-75"><i class="fas fa-check-circle mr-1"></i> Quiz Taken (${score}/${totalQuestions})</button>`;
                     } else if (isDeadlinePassed) {
-                        quizButtonHtml = `<button class="btn btn-sm btn-danger disabled"><i class="fas fa-times-circle me-1"></i> Deadline Passed</button>`;
+                        quizButtonHtml = `<button class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-red-600 cursor-not-allowed opacity-75"><i class="fas fa-times-circle mr-1"></i> Deadline Passed</button>`;
                     } else {
-                        quizButtonHtml = `<button class="btn btn-sm btn-primary" onclick="startQuiz(${lesson.lesson_id})"><i class="fas fa-question-circle me-1"></i> Take Quiz</button>`;
+                        quizButtonHtml = `<button class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none transition" onclick="startQuiz(${lesson.lesson_id})"><i class="fas fa-question-circle mr-1"></i> Take Quiz</button>`;
                     }
                 }
 
                 lessonsHtml += `
-                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                        <div>
-                            <i class="fas fa-book-reader me-2 text-primary"></i>
-                            <span>${lesson.lesson_title}</span>
+                    <div class="p-4 border-b border-gray-100 last:border-0 flex justify-between items-center hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center">
+                            <i class="fas fa-book-reader mr-3 text-blue-500"></i>
+                            <span class="text-gray-700 font-medium">${lesson.lesson_title}</span>
                         </div>
-                        <div>
-                            <button class="btn btn-sm btn-outline-secondary me-2" onclick="viewLessonItems(${lesson.lesson_id}, '${lesson.lesson_title}')">
-                                <i class="fas fa-folder-open me-1"></i> View Materials
+                        <div class="flex items-center gap-2 w-96">
+                            <button class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition flex-1" onclick="viewLessonItems(${lesson.lesson_id}, '${lesson.lesson_title}')">
+                                <i class="fas fa-folder-open mr-1"></i> View Materials
                             </button>
-                            ${quizButtonHtml}
+                            <div class="flex-1">
+                                ${quizButtonHtml}
+                            </div>
                         </div>
                     </div>
                 `;
             });
         } else {
-            lessonsHtml = '<div class="list-group-item text-muted">No learning outcomes in this module yet.</div>';
+            lessonsHtml = '<div class="p-4 text-gray-500 text-sm italic">No learning outcomes in this module yet.</div>';
         }
 
         const moduleHtml = `
-            <div class="accordion-item">
-                <h2 class="accordion-header" id="heading-${module.module_id}">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-${module.module_id}">
-                        ${module.module_title}
-                    </button>
-                </h2>
-                <div id="collapse-${module.module_id}" class="accordion-collapse collapse" data-bs-parent="#accordion${module.competency_type.charAt(0).toUpperCase() + module.competency_type.slice(1)}">
-                    <div class="accordion-body p-0">
-                        <div class="list-group list-group-flush">
-                            ${lessonsHtml}
-                        </div>
-                    </div>
+            <details class="group mb-4 bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                <summary class="flex items-center justify-between w-full p-4 text-left cursor-pointer list-none bg-white hover:bg-gray-50 transition-colors focus:outline-none">
+                    <span class="font-bold text-gray-800">${module.module_title}</span>
+                    <i class="fas fa-chevron-down text-gray-400 transition-transform group-open:rotate-180"></i>
+                </summary>
+                <div class="border-t border-gray-100 bg-white">
+                    ${lessonsHtml}
                 </div>
-            </div>
+            </details>
         `;
 
         if (module.competency_type === 'core') coreContainer.innerHTML += moduleHtml;
@@ -198,8 +251,8 @@ window.viewLessonItems = async function(lessonId, lessonTitle) {
     const contentsList = document.getElementById('lessonItemsContentsList');
     const taskSheetsList = document.getElementById('lessonItemsTaskSheetsList');
     
-    contentsList.innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm"></div> Loading...</div>';
-    taskSheetsList.innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm"></div> Loading...</div>';
+    contentsList.innerHTML = '<div class="text-center py-4"><div class="animate-spin inline-block w-4 h-4 border-2 border-blue-500 rounded-full border-t-transparent"></div> Loading...</div>';
+    taskSheetsList.innerHTML = '<div class="text-center py-4"><div class="animate-spin inline-block w-4 h-4 border-2 border-blue-500 rounded-full border-t-transparent"></div> Loading...</div>';
 
     lessonItemsModal.show();
 
@@ -221,13 +274,13 @@ window.viewLessonItems = async function(lessonId, lessonTitle) {
             if (lesson) {
                 renderLessonItems(lesson);
             } else {
-                contentsList.innerHTML = '<div class="alert alert-warning">Lesson not found.</div>';
+                contentsList.innerHTML = '<div class="bg-yellow-100 text-yellow-700 p-3 rounded">Lesson not found.</div>';
                 taskSheetsList.innerHTML = '';
             }
         }
     } catch (error) {
         console.error('Error loading lesson items:', error);
-        contentsList.innerHTML = '<div class="alert alert-danger">Error loading materials.</div>';
+        contentsList.innerHTML = '<div class="bg-red-100 text-red-700 p-3 rounded">Error loading materials.</div>';
         taskSheetsList.innerHTML = '';
     }
 }
@@ -241,13 +294,13 @@ function renderLessonItems(lesson) {
     if (lesson.lesson_contents && lesson.lesson_contents.length > 0) {
         lesson.lesson_contents.forEach(item => {
             contentsList.innerHTML += `
-                <button class="list-group-item list-group-item-action" onclick="viewContent('content', ${item.content_id}, '${item.title}')">
-                    <i class="fas fa-file-alt me-2 text-primary"></i> ${item.title}
+                <button class="w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors flex items-center" onclick="viewContent('content', ${item.content_id}, '${item.title}')">
+                    <i class="fas fa-file-alt mr-3 text-blue-500"></i> <span class="text-gray-700">${item.title}</span>
                 </button>
             `;
         });
     } else {
-        contentsList.innerHTML = '<div class="text-muted small">No information sheets available.</div>';
+        contentsList.innerHTML = '<div class="text-gray-500 text-sm p-3 italic">No information sheets available.</div>';
     }
 
     // Render Task Sheets
@@ -255,22 +308,22 @@ function renderLessonItems(lesson) {
     if (lesson.task_sheets && lesson.task_sheets.length > 0) {
         lesson.task_sheets.forEach(item => {
             const isSubmitted = item.is_submitted ? true : false;
-            const statusBadge = isSubmitted ? '<span class="badge bg-success float-end">Submitted</span>' : '';
+            const statusBadge = isSubmitted ? '<span class="ml-auto inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Submitted</span>' : '';
             taskSheetsList.innerHTML += `
-                <button class="list-group-item list-group-item-action" onclick="viewContent('task', ${item.task_sheet_id}, '${item.title}', ${lesson.lesson_id}, ${isSubmitted})">
-                    <i class="fas fa-tasks me-2 ${isSubmitted ? 'text-success' : 'text-primary'}"></i> ${item.title} ${statusBadge}
+                <button class="w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors flex items-center" onclick="viewContent('task', ${item.task_sheet_id}, '${item.title}', ${lesson.lesson_id}, ${isSubmitted})">
+                    <i class="fas fa-tasks mr-3 ${isSubmitted ? 'text-green-500' : 'text-blue-500'}"></i> <span class="text-gray-700">${item.title}</span> ${statusBadge}
                 </button>
             `;
         });
     } else {
-        taskSheetsList.innerHTML = '<div class="text-muted small">No task sheets available.</div>';
+        taskSheetsList.innerHTML = '<div class="text-gray-500 text-sm p-3 italic">No task sheets available.</div>';
     }
 
     // Also show file download if available (for basic/common)
     if (lesson.lesson_file_path) {
         contentsList.innerHTML += `
-            <a href="${UPLOADS_URL}lessons/${lesson.lesson_file_path}" target="_blank" class="list-group-item list-group-item-action">
-                <i class="fas fa-download me-2 text-info"></i> Download Lesson File
+            <a href="${UPLOADS_URL}lessons/${lesson.lesson_file_path}" target="_blank" class="block w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors flex items-center">
+                <i class="fas fa-download mr-3 text-blue-400"></i> <span class="text-blue-600 hover:underline">Download Lesson File</span>
             </a>
         `;
     }
@@ -282,7 +335,7 @@ window.viewContent = async function(type, id, title, lessonId = null, isSubmitte
     const modalFooter = document.getElementById('lessonContentFooter');
     
     modalTitle.textContent = title;
-    modalBody.innerHTML = '<div class="text-center p-5"><div class="spinner-border"></div></div>';
+    modalBody.innerHTML = '<div class="text-center p-10"><div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>';
     
     // Hide footer by default (only for task sheets)
     modalFooter.style.display = 'none';
@@ -295,12 +348,8 @@ window.viewContent = async function(type, id, title, lessonId = null, isSubmitte
         const response = await axios.get(`${API_BASE_URL}/role/trainee/training.php?action=${action}&id=${id}`);
         
         if (response.data.success) {
-            modalBody.innerHTML = response.data.data.content;
-            
-            // Enable inputs for trainee interaction
-            modalBody.querySelectorAll('input, textarea, select').forEach(el => {
-                el.disabled = false;
-            });
+            const allowTaskCheckboxes = type === 'task' && !isSubmitted;
+            modalBody.innerHTML = sanitizeLessonMaterialContent(response.data.data.content, { allowTaskCheckboxes });
             
             if (type === 'task') {
                 modalFooter.style.display = 'block';
@@ -321,15 +370,15 @@ window.viewContent = async function(type, id, title, lessonId = null, isSubmitte
                 }
             }
         } else {
-            modalBody.innerHTML = `<div class="alert alert-warning">${response.data.message}</div>`;
+            modalBody.innerHTML = `<div class="bg-yellow-100 text-yellow-700 p-4 rounded">${response.data.message}</div>`;
         }
     } catch (error) {
         console.error('Error loading content:', error);
-        modalBody.innerHTML = '<div class="alert alert-danger">Failed to load content.</div>';
+        modalBody.innerHTML = '<div class="bg-red-100 text-red-700 p-4 rounded">Failed to load content.</div>';
     }
     
     // Handle back button behavior
-    lessonContentModal._element.addEventListener('hidden.bs.modal', function () {
+    lessonContentModal.element.addEventListener('hidden.bs.modal', function () {
         // When content modal closes, re-open items modal if it wasn't closed explicitly
         // This is a bit tricky with Bootstrap modals. 
         // Better to just let user reopen items from main list.
@@ -338,7 +387,7 @@ window.viewContent = async function(type, id, title, lessonId = null, isSubmitte
 
 window.startQuiz = async function(lessonId) {
     const container = document.getElementById('quizQuestionsContainer');
-    container.innerHTML = '<div class="text-center p-5"><div class="spinner-border"></div></div>';
+    container.innerHTML = '<div class="text-center p-10"><div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>';
     
     // Store lessonId for submission
     document.getElementById('quizForm').dataset.lessonId = lessonId;
@@ -353,7 +402,7 @@ window.startQuiz = async function(lessonId) {
             container.innerHTML = '';
             
             if (questions.length === 0) {
-                container.innerHTML = '<div class="alert alert-info">No questions found for this quiz.</div>';
+                container.innerHTML = '<div class="bg-blue-100 text-blue-700 p-4 rounded">No questions found for this quiz.</div>';
                 return;
             }
 
@@ -361,26 +410,26 @@ window.startQuiz = async function(lessonId) {
                 let optionsHtml = '';
                 q.options.forEach(opt => {
                     optionsHtml += `
-                        <div class="form-check mb-2">
-                            <input class="form-check-input" type="radio" name="q_${q.question_id}" id="opt_${opt.option_id}" value="${opt.option_id}">
-                            <label class="form-check-label" for="opt_${opt.option_id}">${opt.option_text}</label>
+                        <div class="flex items-center mb-2">
+                            <input class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500" type="radio" name="q_${q.question_id}" id="opt_${opt.option_id}" value="${opt.option_id}">
+                            <label class="ml-2 text-sm font-medium text-gray-900" for="opt_${opt.option_id}">${opt.option_text}</label>
                         </div>
                     `;
                 });
 
                 container.innerHTML += `
                     <div class="mb-4">
-                        <h6 class="fw-bold">${index + 1}. ${q.question_text}</h6>
-                        <div class="ms-3">${optionsHtml}</div>
+                        <h6 class="font-bold text-gray-800 mb-2">${index + 1}. ${q.question_text}</h6>
+                        <div class="ml-4">${optionsHtml}</div>
                     </div>
                 `;
             });
         } else {
-            container.innerHTML = `<div class="alert alert-warning">${response.data.message}</div>`;
+            container.innerHTML = `<div class="bg-yellow-100 text-yellow-700 p-4 rounded">${response.data.message}</div>`;
         }
     } catch (error) {
         console.error('Error loading quiz:', error);
-        container.innerHTML = '<div class="alert alert-danger">Failed to load quiz.</div>';
+        container.innerHTML = '<div class="bg-red-100 text-red-700 p-4 rounded">Failed to load quiz.</div>';
     }
 }
 
@@ -419,7 +468,7 @@ function submitQuiz() {
 async function performQuizSubmission(user, lessonId, answers) {
     const btn = document.getElementById('submitQuizBtn');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Submitting...';
+    btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white rounded-full border-t-transparent mr-2"></span> Submitting...';
 
     try {
         const response = await axios.post(`${API_BASE_URL}/role/trainee/training.php?action=submit-quiz`, {
@@ -439,11 +488,11 @@ async function performQuizSubmission(user, lessonId, answers) {
             percentageEl.textContent = `${result.percentage}%`;
             
             if (result.percentage >= 80) {
-                percentageEl.className = 'lead text-success fw-bold';
-                percentageEl.innerHTML += ' <br><span class="badge bg-success">Passed</span>';
+                percentageEl.className = 'text-xl text-green-600 font-bold';
+                percentageEl.innerHTML += ' <br><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Passed</span>';
             } else {
-                percentageEl.className = 'lead text-danger fw-bold';
-                percentageEl.innerHTML += ' <br><span class="badge bg-danger">Failed</span>';
+                percentageEl.className = 'text-xl text-red-600 font-bold';
+                percentageEl.innerHTML += ' <br><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Failed</span>';
             }
             
             quizResultModal.show();
@@ -491,7 +540,7 @@ async function submitTaskSheet() {
     const content = contentContainer.innerHTML;
 
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Submitting...';
+    btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white rounded-full border-t-transparent mr-2"></span> Submitting...';
 
     try {
         const response = await axios.post(`${API_BASE_URL}/role/trainee/training.php?action=submit-task-sheet`, {
@@ -539,7 +588,7 @@ function unsubmitTaskSheet() {
         }
 
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Unsubmitting...';
+        btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white rounded-full border-t-transparent mr-2"></span> Unsubmitting...';
 
         try {
             const payload = {

@@ -3,6 +3,53 @@ header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 require_once '../../database/db.php';
 
+/**
+ * Extract abbreviation from qualification name
+ */
+function getAbbreviatedQualificationName($fullName) {
+    // Extract NC level (NC I, NC II, NC III, etc.)
+    $ncPattern = '/\b(NC\s+[IVX]+)\b/i';
+    $ncLevel = '';
+    if (preg_match($ncPattern, $fullName, $matches)) {
+        $ncLevel = $matches[1];
+        $qualName = preg_replace($ncPattern, '', $fullName);
+    } else {
+        $qualName = $fullName;
+    }
+    
+    $qualName = trim($qualName);
+    
+    // Check if there's already an abbreviation in parentheses like (EPAS)
+    if (preg_match('/\(([A-Z]+)\)/', $qualName, $matches)) {
+        $abbr = $matches[1];
+    } else {
+        // Generate abbreviation from qualification name
+        $words = preg_split('/\s+/', $qualName);
+        
+        // For single word names, use first 4 letters
+        if (count($words) === 1) {
+            $abbr = strtoupper(substr($words[0], 0, 4));
+        } else {
+            // For multi-word names, take first letter of major words
+            $abbr = '';
+            foreach ($words as $word) {
+                // Skip small words and special characters
+                if (strlen($word) > 2 && !in_array(strtolower($word), ['and', 'the', 'for', 'with', 'in', 'at', 'to', 'of'])) {
+                    $abbr .= strtoupper($word[0]);
+                }
+            }
+            
+            // If we couldn't generate proper abbreviation, use first 4 letters
+            if (empty($abbr)) {
+                $abbr = strtoupper(substr(str_replace(' ', '', $qualName), 0, 4));
+            }
+        }
+    }
+    
+    // Return abbreviation with NC level (only add space if NC level exists)
+    return !empty($ncLevel) ? $abbr . ' ' . $ncLevel : $abbr;
+}
+
 class Analytics {
     private $conn;
 
@@ -65,6 +112,7 @@ class Analytics {
             $rate = $row['total_count'] > 0 ? round(($row['completed_count'] / $row['total_count']) * 100, 2) : 0;
             $result[] = [
                 'qualification_name' => $row['qualification_name'],
+                'abbreviated' => getAbbreviatedQualificationName($row['qualification_name']),
                 'completion_rate' => $rate
             ];
         }

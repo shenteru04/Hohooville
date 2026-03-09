@@ -4,376 +4,236 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Management - Hohoo-Ville Technical School</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Sidebar CSS -->
-    <link rel="stylesheet" href="../../../css/admin/sidebar.css">
     <style>
-        :root {
-            --primary-color: #4e73df;
-            --secondary-color: #858796;
-            --bg-color: #f8f9fc;
-            --text-color: #5a5c69;
-        }
-        body {
-            font-family: 'Nunito', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-        }
-        #sidebar {
-            background: #fff;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-            z-index: 1000;
-        }
-        #sidebar .sidebar-header {
-            padding: 1.5rem 1rem;
-            text-align: center;
-            color: var(--primary-color);
-            font-weight: 800;
-        }
-        #sidebar .nav-link {
-            color: var(--text-color);
-            padding: 0.5rem 1rem;
-            margin: 0.1rem 0.5rem;
-            border-radius: 0.35rem;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        #sidebar .nav-link:hover {
-            background-color: #eaecf4;
-            color: var(--primary-color);
-        }
-        #sidebar .nav-link.active {
-            background-color: var(--primary-color);
-            color: #fff;
-        }
-        .card {
-            border: none;
-            border-radius: 0.35rem;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-        }
-        .card-header {
-            background-color: #f8f9fc;
-            border-bottom: 1px solid #e3e6f0;
-            padding: 1rem 1.25rem;
-            font-weight: 700;
-            color: var(--primary-color);
+        body { font-family: 'Nunito', sans-serif; }
+        a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
         }
     </style>
 </head>
-<body>
-    <!-- Sidebar Container - Content will be loaded here via JavaScript -->
+<body class="bg-slate-50 text-slate-700">
     <div id="sidebar-container"></div>
 
-    <!-- Main Content Area -->
-    <div class="main-content" id="content">
-        <!-- Top Navigation -->
-        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
-                <div class="container-fluid">
-                    <button type="button" id="sidebarCollapse" class="btn btn-outline-primary me-2 d-lg-none">
-                        <i class="fas fa-bars"></i>
+    <div class="main-content min-h-screen lg:ml-72" id="content">
+        <header class="border-b border-blue-100 bg-white/85 shadow-sm backdrop-blur">
+            <div class="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center gap-3">
+                    <button type="button" id="sidebarCollapse" class="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 lg:hidden">
+                        <i class="fas fa-bars text-lg"></i>
                     </button>
-
-                    <div class="ms-auto d-flex align-items-center">
-                        <div class="dropdown">
-                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
-                                <i class="fas fa-user-circle"></i> <span id="userName">Admin</span>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
-                                <li><a class="dropdown-item" href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </nav>
-
-            <!-- Main Content -->
-            <div class="container-fluid mt-4">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2 class="text-gray-800">User Management</h2>
-                    <button class="btn btn-primary" type="button" id="addUserBtn" data-bs-toggle="modal" data-bs-target="#userModal">
-                        <i class="fas fa-plus me-2"></i>Add New User
-                    </button>
+                    <h1 class="text-xl font-semibold text-slate-800">User Management</h1>
                 </div>
 
-                <!-- Role Tabs -->
-                <div class="card shadow-sm">
-                    <div class="card-header p-0">
-                        <ul class="nav nav-tabs" role="tablist" id="userRoleTabs">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active" id="admin-tab" data-bs-toggle="tab" data-bs-target="#adminPane" type="button" role="tab">
-                                    <i class="fas fa-shield-alt me-2"></i>Admins
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="trainer-tab" data-bs-toggle="tab" data-bs-target="#trainerPane" type="button" role="tab">
-                                    <i class="fas fa-chalkboard-user me-2"></i>Trainers
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="trainee-tab" data-bs-toggle="tab" data-bs-target="#traineePane" type="button" role="tab">
-                                    <i class="fas fa-user-graduate me-2"></i>Trainees
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="registrar-tab" data-bs-toggle="tab" data-bs-target="#registrarPane" type="button" role="tab">
-                                    <i class="fas fa-clipboard-list me-2"></i>Registrars
-                                </button>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <!-- Tab Content -->
-                    <div class="tab-content" id="userRoleTabContent">
-                        <!-- Admin Tab -->
-                        <div class="tab-pane fade show active" id="adminPane" role="tabpanel">
-                            <div class="p-3 bg-light border-bottom">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <div class="input-group">
-                                            <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-                                            <input type="text" class="form-control border-start-0 ps-0 search-input" id="adminSearchInput" placeholder="Search by username or email...">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <select class="form-select status-filter" id="adminStatusFilter">
-                                            <option value="">All Status</option>
-                                            <option value="active">Active</option>
-                                            <option value="inactive">Inactive</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0 admin-table" id="adminUsersTable" data-table-manager="true" data-search-input="adminSearchInput" data-filter-controls="adminStatusFilter:1:Status" data-filter-auto-options="false">
-                                    <thead class="bg-light">
-                                        <tr>
-                                            <th class="ps-4">User</th>
-                                            <th>Status</th>
-                                            <th>Date Created</th>
-                                            <th class="text-end pe-4">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="users-table-body">
-                                        <tr><td colspan="4" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            
-                        </div>
-
-                        <!-- Trainer Tab -->
-                        <div class="tab-pane fade" id="trainerPane" role="tabpanel">
-                            <div class="p-3 bg-light border-bottom">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <div class="input-group">
-                                            <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-                                            <input type="text" class="form-control border-start-0 ps-0 search-input" id="trainerSearchInput" placeholder="Search by username or email...">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <select class="form-select status-filter" id="trainerStatusFilter">
-                                            <option value="">All Status</option>
-                                            <option value="active">Active</option>
-                                            <option value="inactive">Inactive</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0 trainer-table" id="trainerUsersTable" data-table-manager="true" data-search-input="trainerSearchInput" data-filter-controls="trainerStatusFilter:1:Status" data-filter-auto-options="false">
-                                    <thead class="bg-light">
-                                        <tr>
-                                            <th class="ps-4">User</th>
-                                            <th>Status</th>
-                                            <th>Date Created</th>
-                                            <th class="text-end pe-4">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="users-table-body">
-                                        <tr><td colspan="4" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            
-                        </div>
-
-                        <!-- Trainee Tab -->
-                        <div class="tab-pane fade" id="traineePane" role="tabpanel">
-                            <div class="p-3 bg-light border-bottom">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <div class="input-group">
-                                            <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-                                            <input type="text" class="form-control border-start-0 ps-0 search-input" id="traineeSearchInput" placeholder="Search by username or email...">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <select class="form-select status-filter" id="traineeStatusFilter">
-                                            <option value="">All Status</option>
-                                            <option value="active">Active</option>
-                                            <option value="inactive">Inactive</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0 trainee-table" id="traineeUsersTable" data-table-manager="true" data-search-input="traineeSearchInput" data-filter-controls="traineeStatusFilter:1:Status" data-filter-auto-options="false">
-                                    <thead class="bg-light">
-                                        <tr>
-                                            <th class="ps-4">User</th>
-                                            <th>Status</th>
-                                            <th>Date Created</th>
-                                            <th class="text-end pe-4">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="users-table-body">
-                                        <tr><td colspan="4" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            
-                        </div>
-
-                        <!-- Registrar Tab -->
-                        <div class="tab-pane fade" id="registrarPane" role="tabpanel">
-                            <div class="p-3 bg-light border-bottom">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <div class="input-group">
-                                            <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-                                            <input type="text" class="form-control border-start-0 ps-0 search-input" id="registrarSearchInput" placeholder="Search by username or email...">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <select class="form-select status-filter" id="registrarStatusFilter">
-                                            <option value="">All Status</option>
-                                            <option value="active">Active</option>
-                                            <option value="inactive">Inactive</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0 registrar-table" id="registrarUsersTable" data-table-manager="true" data-search-input="registrarSearchInput" data-filter-controls="registrarStatusFilter:1:Status" data-filter-auto-options="false">
-                                    <thead class="bg-light">
-                                        <tr>
-                                            <th class="ps-4">User</th>
-                                            <th>Status</th>
-                                            <th>Date Created</th>
-                                            <th class="text-end pe-4">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="users-table-body">
-                                        <tr><td colspan="4" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            
+                <div class="header-actions flex items-center gap-3" data-header-actions>
+                    <div class="relative">
+                        <button id="userDropdown" class="flex items-center gap-2 rounded-full border border-blue-100 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-700 hover:bg-blue-50">
+                            <i class="fas fa-user-circle text-xl text-blue-500"></i>
+                            <span id="userName" class="hidden md:block">Admin</span>
+                            <i class="fas fa-chevron-down text-xs text-slate-400"></i>
+                        </button>
+                        <div id="userDropdownMenu" class="absolute right-0 top-full z-40 mt-2 hidden w-48 rounded-xl border border-blue-100 bg-white py-1 shadow-xl shadow-blue-100/40">
+                            <a href="profile.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-user mr-2"></i> Profile</a>
+                            <a href="settings.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-cog mr-2"></i> Settings</a>
+                            <div class="border-t border-blue-100"></div>
+                            <a href="#" id="logoutBtn" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-sign-out-alt mr-2"></i> Logout</a>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </header>
+
+        <main class="space-y-6 p-4 sm:p-6 lg:p-8">
+            <section class="flex items-center justify-between">
+                <h2 class="text-2xl font-semibold text-slate-900">User Management</h2>
+                <button class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" type="button" id="addUserBtn">
+                    <i class="fas fa-plus"></i> Add New User
+                </button>
+            </section>
+
+            <article class="rounded-2xl border border-blue-100 bg-white shadow-sm">
+                <div class="border-b border-blue-100 px-5 py-4">
+                    <div class="flex flex-wrap gap-2" role="tablist" id="userRoleTabs">
+                        <button class="tab-role-btn active rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white" id="trainer-tab" data-tab-group="roles" data-tab-target="#trainerPane" type="button" role="tab">
+                            <i class="fas fa-chalkboard-user mr-2"></i> Trainers
+                        </button>
+                        <button class="tab-role-btn rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" id="trainee-tab" data-tab-group="roles" data-tab-target="#traineePane" type="button" role="tab">
+                            <i class="fas fa-user-graduate mr-2"></i> Trainees
+                        </button>
+                        <button class="tab-role-btn rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" id="registrar-tab" data-tab-group="roles" data-tab-target="#registrarPane" type="button" role="tab">
+                            <i class="fas fa-clipboard-list mr-2"></i> Registrars
+                        </button>
+                    </div>
+                </div>
+
+                <div id="userRoleTabContent">
+                    <section class="tab-role-pane hidden" id="trainerPane" role="tabpanel">
+                        <div class="border-b border-slate-200 bg-slate-50 p-4">
+                            <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                <div class="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2">
+                                    <i class="fas fa-search text-slate-400"></i>
+                                    <input type="text" class="w-full border-0 p-0 text-sm text-slate-700 placeholder-slate-400 focus:outline-none search-input" id="trainerSearchInput" placeholder="Search by username or email...">
+                                </div>
+                                <select class="status-filter w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="trainerStatusFilter">
+                                    <option value="">All Status</option>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="trainer-table min-w-full divide-y divide-slate-200" id="trainerUsersTable" data-table-manager="true" data-search-input="trainerSearchInput" data-filter-controls="trainerStatusFilter:1:Status" data-filter-auto-options="false">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">User</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Date Created</th>
+                                        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-600">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="users-table-body divide-y divide-slate-100 bg-white">
+                                    <tr><td colspan="4" class="px-4 py-6 text-center text-sm text-slate-500"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section class="tab-role-pane hidden" id="traineePane" role="tabpanel">
+                        <div class="border-b border-slate-200 bg-slate-50 p-4">
+                            <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                <div class="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2">
+                                    <i class="fas fa-search text-slate-400"></i>
+                                    <input type="text" class="w-full border-0 p-0 text-sm text-slate-700 placeholder-slate-400 focus:outline-none search-input" id="traineeSearchInput" placeholder="Search by username or email...">
+                                </div>
+                                <select class="status-filter w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="traineeStatusFilter">
+                                    <option value="">All Status</option>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="trainee-table min-w-full divide-y divide-slate-200" id="traineeUsersTable" data-table-manager="true" data-search-input="traineeSearchInput" data-filter-controls="traineeStatusFilter:1:Status" data-filter-auto-options="false">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">User</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Date Created</th>
+                                        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-600">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="users-table-body divide-y divide-slate-100 bg-white">
+                                    <tr><td colspan="4" class="px-4 py-6 text-center text-sm text-slate-500"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section class="tab-role-pane hidden" id="registrarPane" role="tabpanel">
+                        <div class="border-b border-slate-200 bg-slate-50 p-4">
+                            <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                <div class="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2">
+                                    <i class="fas fa-search text-slate-400"></i>
+                                    <input type="text" class="w-full border-0 p-0 text-sm text-slate-700 placeholder-slate-400 focus:outline-none search-input" id="registrarSearchInput" placeholder="Search by username or email...">
+                                </div>
+                                <select class="status-filter w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="registrarStatusFilter">
+                                    <option value="">All Status</option>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="registrar-table min-w-full divide-y divide-slate-200" id="registrarUsersTable" data-table-manager="true" data-search-input="registrarSearchInput" data-filter-controls="registrarStatusFilter:1:Status" data-filter-auto-options="false">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">User</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Date Created</th>
+                                        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-600">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="users-table-body divide-y divide-slate-100 bg-white">
+                                    <tr><td colspan="4" class="px-4 py-6 text-center text-sm text-slate-500"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            </article>
+        </main>
     </div>
 
-    <!-- User Modal -->
-    <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalTitle" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="userModalTitle">Add New User</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="addUserForm">
-                                                <!-- Status dropdown moved to bottom -->
-                        <input type="hidden" id="userId">
-                        
-                        <div class="mb-3">
-                            <label for="username" class="form-label">Username <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="username" name="username" required autocomplete="off">
-                            <div class="form-text">Username must be unique</div>
+    <div class="fixed inset-0 z-50 hidden items-center justify-center p-4" id="userModal" aria-hidden="true">
+        <div class="absolute inset-0 bg-slate-900/50" data-modal-hide="userModal"></div>
+        <div class="relative z-10 w-full max-w-lg rounded-2xl border border-blue-100 bg-white shadow-2xl">
+            <div class="flex items-center justify-between border-b border-blue-100 px-5 py-4">
+                <h3 class="text-lg font-semibold text-slate-900" id="userModalTitle">Add New User</h3>
+                <button type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800" data-modal-hide="userModal" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="space-y-4 p-5">
+                <form id="addUserForm" class="space-y-4">
+                    <input type="hidden" id="userId">
+
+                    <div>
+                        <label for="username" class="mb-1 block text-sm font-medium text-slate-700">Username <span class="text-rose-600">*</span></label>
+                        <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="username" name="username" required autocomplete="off">
+                        <p class="mt-1 text-xs text-slate-500">Username must be unique</p>
+                    </div>
+
+                    <div>
+                        <label for="email" class="mb-1 block text-sm font-medium text-slate-700">Email</label>
+                        <input type="email" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="email" name="email" autocomplete="off" pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" title="Please enter a valid email address.">
+                        <p class="mt-1 text-xs text-slate-500">Optional but must be unique if provided.</p>
+                    </div>
+
+                    <div>
+                        <label for="password" class="mb-1 block text-sm font-medium text-slate-700">Password <span class="text-rose-600">*</span></label>
+                        <div class="flex items-center rounded-lg border border-slate-300 bg-white">
+                            <input type="password" class="w-full rounded-l-lg border-0 px-3 py-2 text-sm text-slate-700 focus:outline-none" id="password" name="password" required autocomplete="new-password">
+                            <button class="inline-flex items-center px-3 py-2 text-slate-500 hover:text-slate-700" type="button" id="togglePassword">
+                                <i class="fas fa-eye"></i>
+                            </button>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" name="email" autocomplete="off" pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" title="Please enter a valid email address.">
-                            <div class="form-text">Optional but must be unique if provided. Must be a valid email address (e.g., user@example.com).</div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <input type="password" class="form-control" id="password" name="password" required autocomplete="new-password">
-                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </div>
-                            <div class="form-text">Minimum 6 characters recommended. Leave blank to keep current password when editing.</div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="roleId" class="form-label">Role <span class="text-danger">*</span></label>
-                            <select class="form-select" id="roleId" name="roleId" required>
-                                <option value="">Select Role</option>
-                                <option value="1">Admin</option>
-                                <option value="2">Trainer</option>
-                                <option value="3">Trainee</option>
-                                <option value="4">Registrar</option>
-                            </select>
-                        </div>
-                        
-                        <!-- Status is always 'active' by default, no dropdown shown for add -->
-                    </form>
-                </div>
-                <div id="editStatusContainer" style="display:none;" class="mb-3 px-3">
-                    <label for="status" class="form-label">Status</label>
-                    <select class="form-select" id="status" name="status">
+                        <p class="mt-1 text-xs text-slate-500">Minimum 6 characters recommended. Leave blank to keep current password when editing.</p>
+                    </div>
+
+                    <div>
+                        <label for="roleId" class="mb-1 block text-sm font-medium text-slate-700">Role <span class="text-rose-600">*</span></label>
+                        <select class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="roleId" name="roleId" required>
+                            <option value="">Select Role</option>
+                            <option value="1">Admin</option>
+                            <option value="2">Trainer</option>
+                            <option value="3">Trainee</option>
+                            <option value="4">Registrar</option>
+                        </select>
+                    </div>
+                </form>
+
+                <div id="editStatusContainer" class="hidden">
+                    <label for="status" class="mb-1 block text-sm font-medium text-slate-700">Status</label>
+                    <select class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="status" name="status">
                         <option value="active">Active</option>
                         <option value="inactive">Inactive</option>
                     </select>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="saveUserBtn">
-                        Save User
-                    </button>
-                </div>
+            </div>
+            <div class="flex items-center justify-end gap-2 border-t border-blue-100 px-5 py-4">
+                <button type="button" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" data-modal-hide="userModal">Cancel</button>
+                <button type="button" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" id="saveUserBtn">Save User</button>
             </div>
         </div>
     </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <!-- Axios -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
-    <!-- Sidebar Loader -->
+    <script src="../../../js/session_timeout.js"></script>
     <script src="../../../js/sidebar.js"></script>
     <script src="../../../js/table_manager.js"></script>
-    <!-- Custom JS -->
-     <script src="../../../js/admin/pages/user_management.js"></script>
-    
-    <script>
-        // Logout functionality (handled in sidebar.js)
-        document.addEventListener('DOMContentLoaded', function() {
-            const logoutBtn = document.getElementById('logoutBtn');
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    logout();
-                });
-            }
-        });
-    </script>
+    <script src="../../../js/admin/pages/user_management.js"></script>
 </body>
 </html>

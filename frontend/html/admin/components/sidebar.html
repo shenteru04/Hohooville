@@ -1,104 +1,113 @@
 <!-- Sidebar Component -->
-<aside id="sidebar" class="sidebar">
-    <!-- Sidebar Header -->
-    <div class="sidebar-header">
-        <h3><img src="/Hohoo-Ville/img/logo.jpg" alt="Logo" class="me-2" style="height: 35px; width: auto;">Hohooville</h3>
-        <p class="sidebar-subtitle">Admin Panel</p>
+<aside id="sidebar" class="sidebar fixed inset-y-0 left-0 z-40 flex w-72 -translate-x-full flex-col border-r border-blue-100 bg-white shadow-xl shadow-blue-100/40 transition-transform duration-300 ease-in-out lg:translate-x-0">
+    <div class="flex h-16 items-center justify-between gap-3 border-b border-blue-100 bg-gradient-to-r from-blue-600 to-blue-500 px-4 text-white">
+        <a href="admin_dashboard.html" class="flex items-center gap-3 text-inherit no-underline">
+            <img src="/Hohoo-ville/img/logo.jpg" alt="Hohooville Logo" class="h-8 w-8 rounded-lg bg-white/20 p-1">
+            <div class="leading-tight">
+                <p class="text-lg font-semibold">Hohooville</p>
+                <p class="text-[11px] text-blue-100">Admin Panel</p>
+            </div>
+        </a>
+        <button id="sidebar-toggle" type="button" class="hidden rounded-md p-2 text-white/90 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 lg:inline-flex" aria-label="Collapse sidebar">
+            <i class="fas fa-stream text-sm"></i>
+        </button>
     </div>
 
-    <!-- Sidebar Navigation -->
-    <nav class="sidebar-nav">
-        <ul class="nav-list">
+    <nav class="sidebar-nav flex-1 overflow-y-auto py-4">
+        <ul class="nav-list space-y-1 px-3">
+            <li class="px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-400">Menu</li>
+
             <li class="nav-item">
-                <a href="admin_dashboard.html" class="nav-link" data-page="dashboard">
-                    <span class="nav-icon">📊</span>
+                <a href="admin_dashboard.html" class="nav-link group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700" data-page="dashboard">
+                    <span class="nav-icon w-5 text-center text-slate-400 group-hover:text-blue-600"><i class="fas fa-chart-pie"></i></span>
                     <span class="nav-text">Dashboard</span>
                 </a>
             </li>
+
             <li class="nav-item">
-                <a href="manage_rooms.html" class="nav-link" data-page="manage_rooms">
-                    <span class="nav-icon">🏢</span>
+                <a href="manage_rooms.html" class="nav-link group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700" data-page="manage_rooms">
+                    <span class="nav-icon w-5 text-center text-slate-400 group-hover:text-blue-600"><i class="fas fa-building"></i></span>
                     <span class="nav-text">Manage Rooms</span>
                 </a>
             </li>
 
-            <!-- Enrollment Management -->
             <li class="nav-group">
-                <button class="nav-group-toggle" aria-expanded="false">
-                    <span class="nav-icon">🧾</span>
+                <button class="nav-group-toggle flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" aria-expanded="false">
+                    <span class="nav-icon w-5 text-center text-slate-400"><i class="fas fa-user-check"></i></span>
                     <span class="nav-text">Enrollment Management</span>
-                    <span class="nav-caret">▸</span>
+                    <span class="nav-caret ml-auto text-xs text-slate-400 transition-transform"><i class="fas fa-chevron-right"></i></span>
                 </button>
-                <ul class="nav-submenu">
-                    <li class="nav-item"><a href="view_trainees.html" class="nav-link" data-page="view_trainees"><span class="nav-text">View Trainees</span></a></li>
-                    <li class="nav-item"><a href="approval_queue.html" class="nav-link" data-page="approval_queue"><span class="nav-text">Approval Queue</span></a></li>
+                <ul class="nav-submenu hidden space-y-1 pl-9 pt-1">
+                    <li class="nav-item"><a href="view_trainees.html" class="nav-link block rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-blue-50 hover:text-blue-700" data-page="view_trainees"><span class="nav-text">View Trainees</span></a></li>
+                    <li class="nav-item"><a href="approval_queue.html" class="nav-link block rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-blue-50 hover:text-blue-700" data-page="approval_queue"><span class="nav-text">Approval Queue</span></a></li>
                 </ul>
             </li>
 
-            <!-- Trainer Management -->
             <li class="nav-group">
-                <button class="nav-group-toggle" aria-expanded="false">
-                    <span class="nav-icon">👨‍🏫</span>
+                <button class="nav-group-toggle flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" aria-expanded="false">
+                    <span class="nav-icon w-5 text-center text-slate-400"><i class="fas fa-chalkboard-teacher"></i></span>
                     <span class="nav-text">Trainer Management</span>
-                    <span class="nav-caret">▸</span>
+                    <span class="nav-caret ml-auto text-xs text-slate-400 transition-transform"><i class="fas fa-chevron-right"></i></span>
                 </button>
-                <ul class="nav-submenu">
-                    <li class="nav-item"><a href="view_trainers.html" class="nav-link" data-page="view_trainers"><span class="nav-text">View Trainers</span></a></li>
+                <ul class="nav-submenu hidden space-y-1 pl-9 pt-1">
+                    <li class="nav-item"><a href="view_trainers.html" class="nav-link block rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-blue-50 hover:text-blue-700" data-page="view_trainers"><span class="nav-text">View Trainers</span></a></li>
                 </ul>
             </li>
 
-            <!-- Qualifications -->
             <li class="nav-group">
-                <button class="nav-group-toggle" aria-expanded="false">
-                    <span class="nav-icon">🎓</span>
+                <button class="nav-group-toggle flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" aria-expanded="false">
+                    <span class="nav-icon w-5 text-center text-slate-400"><i class="fas fa-graduation-cap"></i></span>
                     <span class="nav-text">Qualifications</span>
-                    <span class="nav-caret">▸</span>
+                    <span class="nav-caret ml-auto text-xs text-slate-400 transition-transform"><i class="fas fa-chevron-right"></i></span>
                 </button>
-                <ul class="nav-submenu">
-                    <li class="nav-item"><a href="manage_qualifications.html" class="nav-link" data-page="manage_qualifications"><span class="nav-text">Qualifications</span></a></li>
-                    <li class="nav-item"><a href="view_batches.html" class="nav-link" data-page="view_batches"><span class="nav-text">Batches</span></a></li>
+                <ul class="nav-submenu hidden space-y-1 pl-9 pt-1">
+                    <li class="nav-item"><a href="manage_qualifications.html" class="nav-link block rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-blue-50 hover:text-blue-700" data-page="manage_qualifications"><span class="nav-text">Qualifications</span></a></li>
+                    <li class="nav-item"><a href="view_batches.html" class="nav-link block rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-blue-50 hover:text-blue-700" data-page="view_batches"><span class="nav-text">Batches</span></a></li>
                 </ul>
             </li>
 
-            <!-- Reports & Analytics -->
             <li class="nav-group">
-                <button class="nav-group-toggle" aria-expanded="false">
-                    <span class="nav-icon">📊</span>
+                <button class="nav-group-toggle flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" aria-expanded="false">
+                    <span class="nav-icon w-5 text-center text-slate-400"><i class="fas fa-chart-line"></i></span>
                     <span class="nav-text">Reports & Analytics</span>
-                    <span class="nav-caret">▸</span>
+                    <span class="nav-caret ml-auto text-xs text-slate-400 transition-transform"><i class="fas fa-chevron-right"></i></span>
                 </button>
-                <ul class="nav-submenu">
-                    <li class="nav-item"><a href="reports.html" class="nav-link" data-page="reports"><span class="nav-text">Reports</span></a></li>
-                    <li class="nav-item"><a href="analytics.html" class="nav-link" data-page="analytics"><span class="nav-text">Analytics Dashboard</span></a></li>
+                <ul class="nav-submenu hidden space-y-1 pl-9 pt-1">
+                    <li class="nav-item"><a href="reports.html" class="nav-link block rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-blue-50 hover:text-blue-700" data-page="reports"><span class="nav-text">Reports</span></a></li>
+                    <li class="nav-item"><a href="analytics.html" class="nav-link block rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-blue-50 hover:text-blue-700" data-page="analytics"><span class="nav-text">Analytics Dashboard</span></a></li>
                 </ul>
             </li>
 
-            <!-- User Management -->
             <li class="nav-group">
-                <button class="nav-group-toggle" aria-expanded="false">
-                    <span class="nav-icon">👥</span>
+                <button class="nav-group-toggle flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" aria-expanded="false">
+                    <span class="nav-icon w-5 text-center text-slate-400"><i class="fas fa-users-cog"></i></span>
                     <span class="nav-text">User Management</span>
-                    <span class="nav-caret">▸</span>
+                    <span class="nav-caret ml-auto text-xs text-slate-400 transition-transform"><i class="fas fa-chevron-right"></i></span>
                 </button>
-                <ul class="nav-submenu">
-                    <li class="nav-item"><a href="user_management.html" class="nav-link" data-page="user_management"><span class="nav-text">Manage Users</span></a></li>
-                    <li class="nav-item"><a href="roles_permissions.html" class="nav-link" data-page="roles_permissions"><span class="nav-text">Roles & Permissions</span></a></li>
-                    <li class="nav-item"><a href="bulk_import.html" class="nav-link" data-page="bulk_import"><span class="nav-text">Bulk Import</span></a></li>
+                <ul class="nav-submenu hidden space-y-1 pl-9 pt-1">
+                    <li class="nav-item"><a href="user_management.html" class="nav-link block rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-blue-50 hover:text-blue-700" data-page="user_management"><span class="nav-text">Manage Users</span></a></li>
+                    <li class="nav-item"><a href="roles_permissions.html" class="nav-link block rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-blue-50 hover:text-blue-700" data-page="roles_permissions"><span class="nav-text">Roles & Permissions</span></a></li>
+                    <li class="nav-item"><a href="bulk_import.html" class="nav-link block rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-blue-50 hover:text-blue-700" data-page="bulk_import"><span class="nav-text">Bulk Import</span></a></li>
                 </ul>
             </li>
 
-            <!-- System -->
             <li class="nav-group">
-                <button class="nav-group-toggle" aria-expanded="false">
-                    <span class="nav-icon">⚙️</span>
+                <button class="nav-group-toggle flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" aria-expanded="false">
+                    <span class="nav-icon w-5 text-center text-slate-400"><i class="fas fa-cogs"></i></span>
                     <span class="nav-text">System</span>
-                    <span class="nav-caret">▸</span>
+                    <span class="nav-caret ml-auto text-xs text-slate-400 transition-transform"><i class="fas fa-chevron-right"></i></span>
                 </button>
-                <ul class="nav-submenu">
-                    <li class="nav-item"><a href="system_settings.html" class="nav-link" data-page="system_settings"><span class="nav-text">System Settings</span></a></li>
-                    <li class="nav-item"><a href="activity_logs.html" class="nav-link" data-page="activity_logs"><span class="nav-text">Activity Logs</span></a></li>
+                <ul class="nav-submenu hidden space-y-1 pl-9 pt-1">
+                    <li class="nav-item"><a href="system_settings.html" class="nav-link block rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-blue-50 hover:text-blue-700" data-page="system_settings"><span class="nav-text">System Settings</span></a></li>
+                    <li class="nav-item"><a href="activity_logs.html" class="nav-link block rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-blue-50 hover:text-blue-700" data-page="activity_logs"><span class="nav-text">Activity Logs</span></a></li>
                 </ul>
             </li>
         </ul>
     </nav>
+
+    <div class="border-t border-blue-100 p-3 lg:hidden">
+        <button id="sidebarCloseBtn" class="w-full rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+            Close Menu
+        </button>
+    </div>
 </aside>

@@ -1,0 +1,276 @@
+<?php
+// Prevent HTML error output
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+set_error_handler(function($errno, $errstr, $errfile, $errline) {
+    error_log("[$errno] $errstr in $errfile:$errline");
+    return true;
+});
+
+header('Access-Control-Allow-Origin: *');
+header('Content-Type: application/json');
+header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+require_once '../../database/db.php';
+
+$database = new Database();
+$conn = $database->getConnection();
+
+$action = $_GET['action'] ?? '';
+
+switch ($action) {
+    case 'list':
+        listBatches($conn);
+        break;
+    case 'get-form-data':
+        getFormData($conn);
+        break;
+    case 'add':
+        addBatch($conn);
+        break;
+    case 'update':
+        updateBatch($conn);
+        break;
+    case 'delete':
+        deleteBatch($conn);
+        break;
+    case 'get-trainees':
+        getTraineesForBatch($conn);
+        break;
+    default:
+        echo json_encode(['success' => false, 'message' => 'Invalid action specified.']);
+        http_response_code(400);
+        break;
+}
+
+function listBatches($conn) {
+    try {
+        $query = "SELECT
+                    b.batch_id,
+                    b.batch_name,
+                    b.qualification_id,
+                    b.start_date,
+                    b.end_date,
+                    b.status,
+                    b.scholarship_type_id,
+                    st.scholarship_name as scholarship_type,
+                    b.trainer_id,
+                    b.max_trainees,
+                    c.qualification_name as course_name,
+                    CONCAT(t.first_name, ' ', t.last_name) AS trainer_name,
+                    (SELECT COUNT(*) FROM tbl_enrollment e WHERE e.batch_id = b.batch_id AND e.status = 'approved') as enrolled_count
+                FROM
+                    tbl_batch AS b
+                LEFT JOIN
+                    tbl_qualifications AS c ON b.qualification_id = c.qualification_id
+                LEFT JOIN
+                    tbl_trainer AS t ON b.trainer_id = t.trainer_id
+                LEFT JOIN
+                    tbl_scholarship_type AS st ON b.scholarship_type_id = st.scholarship_type_id
+                ORDER BY
+                    b.batch_id DESC";
+        
+        $stmt = $conn->prepare($query);
+        $stmt->execute();
+        $batches = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        echo json_encode(['success' => true, 'data' => $batches]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => 'Error fetching batches: ' . $e->getMessage()]);
+        http_response_code(500);
+    }
+}
+
+function getFormData($conn) {
+    try {
+        // Get qualifications
+        $qual_query = "SELECT qualification_id, qualification_name as course_name FROM tbl_qualifications WHERE status = 'active' ORDER BY qualification_name";
+        $qual_stmt = $conn->prepare($qual_query);
+        $qual_stmt->execute();
+        $qualifications = $qual_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Get trainers
+        $trainer_query = "SELECT
+                            t.trainer_id,
+                            t.first_name,
+                            t.last_name,
+                            COALESCE(
+                                GROUP_CONCAT(DISTINCT tq.qualification_id ORDER BY tq.qualification_id SEPARATOR ','),
+                                IFNULL(t.qualification_id, '')
+                            ) AS qualification_ids
+                          FROM tbl_trainer t
+                          LEFT JOIN tbl_trainer_qualifications tq ON t.trainer_id = tq.trainer_id
+                          WHERE t.status = 'active'
+                          GROUP BY t.trainer_id";
+        $trainer_stmt = $conn->prepare($trainer_query);
+        $trainer_stmt->execute();
+        $trainers = $trainer_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Get scholarship types
+        $scholarship_query = "SELECT scholarship_type_id, scholarship_name FROM tbl_scholarship_type WHERE status = 'active'";
+        $scholarship_stmt = $conn->prepare($scholarship_query);
+        $scholarship_stmt->execute();
+        $scholarships = $scholarship_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        echo json_encode([
+            'success' => true,
+            'data' => [
+                'qualifications' => $qualifications,
+                'trainers' => $trainers,
+                'scholarships' => $scholarships
+            ]
+        ]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => 'Error fetching form data: ' . $e->getMessage()]);
+        http_response_code(500);
+    }
+}
+
+function addBatch($conn) {
+    $data = json_decode(file_get_contents("php://input"), true);
+
+    if (empty($data['batch_name']) || empty($data['start_date']) || empty($data['end_date']) || empty($data['qualification_id'])) {
+        echo json_encode(['success' => false, 'message' => 'Missing required fields.']);
+        http_response_code(400);
+        return;
+    }
+
+    try {
+        $query = "INSERT INTO tbl_batch (qualification_id, batch_name, trainer_id, scholarship_type_id, start_date, end_date, status, max_trainees) 
+                  VALUES (:qualification_id, :batch_name, :trainer_id, :scholarship_type_id, :start_date, :end_date, :status, :max_trainees)";
+        $stmt = $conn->prepare($query);
+
+        $stmt->bindParam(':qualification_id', $data['qualification_id'], PDO::PARAM_INT);
+        $stmt->bindParam(':batch_name', $data['batch_name']);
+        $stmt->bindParam(':trainer_id', $data['trainer_id'], PDO::PARAM_INT);
+        $stmt->bindParam(':scholarship_type_id', $data['scholarship_type_id']);
+        $stmt->bindParam(':start_date', $data['start_date']);
+        $stmt->bindParam(':end_date', $data['end_date']);
+        $stmt->bindParam(':status', $data['status']);
+        $stmt->bindParam(':max_trainees', $data['max_trainees']);
+
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Batch added successfully.']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to add batch.']);
+            http_response_code(500);
+        }
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        http_response_code(500);
+    }
+}
+
+function updateBatch($conn) {
+    $data = json_decode(file_get_contents("php://input"), true);
+
+    if (empty($data['batch_id']) || empty($data['batch_name']) || empty($data['start_date']) || empty($data['end_date']) || empty($data['qualification_id'])) {
+        echo json_encode(['success' => false, 'message' => 'Missing required fields.']);
+        http_response_code(400);
+        return;
+    }
+
+    try {
+        $query = "UPDATE tbl_batch SET 
+                    qualification_id = :qualification_id, 
+                    batch_name = :batch_name, 
+                    trainer_id = :trainer_id, 
+                    scholarship_type_id = :scholarship_type_id, 
+                    start_date = :start_date, 
+                    end_date = :end_date, 
+                    status = :status,
+                    max_trainees = :max_trainees
+                  WHERE batch_id = :batch_id";
+        $stmt = $conn->prepare($query);
+
+        $stmt->bindParam(':qualification_id', $data['qualification_id'], PDO::PARAM_INT);
+        $stmt->bindParam(':batch_name', $data['batch_name']);
+        $stmt->bindParam(':trainer_id', $data['trainer_id'], PDO::PARAM_INT);
+        $stmt->bindParam(':scholarship_type_id', $data['scholarship_type_id']);
+        $stmt->bindParam(':start_date', $data['start_date']);
+        $stmt->bindParam(':end_date', $data['end_date']);
+        $stmt->bindParam(':status', $data['status']);
+        $stmt->bindParam(':max_trainees', $data['max_trainees']);
+        $stmt->bindParam(':batch_id', $data['batch_id'], PDO::PARAM_INT);
+
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Batch updated successfully.']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to update batch.']);
+            http_response_code(500);
+        }
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        http_response_code(500);
+    }
+}
+
+function deleteBatch($conn) {
+    $id = $_GET['id'] ?? 0;
+
+    if (!$id) {
+        echo json_encode(['success' => false, 'message' => 'Batch ID is required.']);
+        http_response_code(400);
+        return;
+    }
+
+    try {
+        $query = "DELETE FROM tbl_batch WHERE batch_id = :id";
+        $stmt = $conn->prepare($query);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Batch deleted successfully.']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to delete batch.']);
+            http_response_code(500);
+        }
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        http_response_code(500);
+    }
+}
+
+function getTraineesForBatch($conn) {
+    $batchId = $_GET['batch_id'] ?? 0;
+
+    if (!$batchId) {
+        echo json_encode(['success' => false, 'message' => 'Batch ID is required.']);
+        http_response_code(400);
+        return;
+    }
+
+    try {
+        $query = "SELECT 
+                    th.trainee_id,
+                    th.trainee_school_id,
+                    th.first_name,
+                    th.last_name,
+                    th.email,
+                    th.phone_number,
+                    th.status,
+                    e.status as enrollment_status,
+                    e.enrollment_date,
+                    DATE_FORMAT(e.enrollment_date, '%Y-%m-%d %H:%i:%s') as formatted_enrollment_date
+                  FROM tbl_enrollment e
+                  JOIN tbl_trainee_hdr th ON e.trainee_id = th.trainee_id
+                  WHERE e.batch_id = ?";
+        
+        $stmt = $conn->prepare($query);
+        $stmt->execute([$batchId]);
+        $trainees = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        echo json_encode(['success' => true, 'data' => $trainees]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        http_response_code(500);
+    }
+}
+?>
+

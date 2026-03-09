@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Learning Path - Hohoo-Ville Technical School</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Nunito', sans-serif; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .module-locked { opacity: 0.6; pointer-events: none; }
+        .progress-ring { transform: rotate(-90deg); transform-origin: 50% 50%; }
+        .progress-ring__circle { transition: stroke-dashoffset 0.35s; stroke-dasharray: 314; stroke-dashoffset: 314; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-700">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar Overlay -->
+        <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/40 z-20 hidden lg:hidden transition-opacity opacity-0"></div>
+
+        <!-- Sidebar -->
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-30 w-72 bg-white/95 backdrop-blur border-r border-blue-100 shadow-xl shadow-blue-100/40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col">
+            <div class="h-16 px-4 flex items-center gap-3 border-b border-blue-100 bg-gradient-to-r from-blue-600 to-blue-500 text-white">
+                <img src="../../../../img/logo.jpg" alt="Hohooville Logo" class="h-8 w-8 rounded-lg bg-white/20 p-1">
+                <div class="leading-tight">
+                    <p class="text-lg font-semibold">Hohooville</p>
+                    <p class="text-[11px] text-blue-100">Trainee Portal</p>
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto py-4">
+                <nav class="px-4 space-y-2">
+                    <p class="px-4 text-[11px] font-semibold text-blue-400 uppercase tracking-[0.2em] mb-2">Menu</p>
+                    <a href="../trainee_dashboard.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
+                        <i class="fas fa-home w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> Dashboard
+                    </a>
+                    <a href="/Hohoo-ville/frontend/html/trainee/pages/learning_path.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold text-blue-700 bg-blue-50 ring-1 ring-blue-100" aria-current="page">
+                        <i class="fas fa-graduation-cap w-5 h-5 text-blue-600"></i> Learning Path
+                    </a>
+                    <a href="/Hohoo-ville/frontend/html/trainee/pages/my_training.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
+                        <i class="fas fa-book-open w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> My Training
+                    </a>
+                    <a href="/Hohoo-ville/frontend/html/trainee/pages/my_grades.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
+                        <i class="fas fa-star w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> My Progress
+                    </a>
+                </nav>
+            </div>
+            <div class="p-4 border-t border-gray-200">
+                <button id="sidebarCloseBtn" class="lg:hidden w-full flex items-center justify-center px-4 py-2 rounded-lg border border-blue-200 text-sm font-semibold text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    Close Menu
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col lg:ml-72 min-w-0 overflow-hidden">
+            <!-- Navbar -->
+            <header class="bg-white/80 backdrop-blur border-b border-blue-100 shadow-sm z-10">
+                <div class="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
+                    <div class="flex items-center">
+                        <button id="sidebarCollapse" class="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500">
+                            <i class="fas fa-bars text-xl"></i>
+                        </button>
+                        <h1 class="text-xl font-semibold text-slate-800 ml-2 lg:ml-0">Learning Path</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div id="notificationContainer"></div>
+                        <div class="relative">
+                            <button class="flex items-center gap-2 max-w-xs rounded-full border border-blue-100 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-700 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" id="userMenuButton">
+                                <i class="fas fa-user-circle text-xl text-blue-500"></i>
+                                <span id="traineeName" class="hidden md:block">Trainee</span>
+                                <i class="fas fa-chevron-down text-xs text-slate-400"></i>
+                            </button>
+                            <div id="userDropdown" class="origin-top-right absolute right-0 mt-2 w-48 rounded-xl border border-blue-100 shadow-xl shadow-blue-100/40 py-1 bg-white hidden z-50">
+                                <a href="/Hohoo-ville/frontend/html/trainee/pages/profile.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-user mr-2"></i> Profile</a>
+                                <div class="border-t border-blue-100"></div>
+                                <a href="#" id="logoutBtn" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-sign-out-alt mr-2"></i> Logout</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content -->
+            <main class="flex-1 overflow-y-auto bg-gradient-to-b from-blue-50/60 via-white to-slate-50 p-4 sm:p-6 lg:p-8">
+                <div class="max-w-7xl mx-auto">
+                    <!-- Qualification Selector -->
+                    <div class="mb-8">
+                        <label for="qualificationSelect" class="block text-sm font-semibold text-slate-700 mb-2">Select Your Training Program</label>
+                        <select id="qualificationSelect" class="w-full max-w-sm rounded-lg border border-slate-300 px-4 py-2 text-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Choose a qualification...</option>
+                        </select>
+                    </div>
+
+                    <!-- Learning Path Overview -->
+                    <div id="learningPathContainer" class="space-y-6">
+                        <!-- Modules will be loaded here -->
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="emptyState" class="text-center py-12">
+                        <i class="fas fa-graduation-cap text-6xl text-slate-300 mb-4"></i>
+                        <h3 class="text-xl font-semibold text-slate-900 mb-2">No Learning Path Selected</h3>
+                        <p class="text-slate-600">Select a qualification above to view your learning modules</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Module Details Modal -->
+    <div id="moduleDetailsModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="absolute inset-0 bg-slate-900/50"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto flex flex-col">
+            <!-- Modal content will be loaded here -->
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
+    <script src="../../../js/session_timeout.js"></script>
+    <script>
+        fetch('/Hohoo-ville/frontend/html/trainee/components/notification.html')
+            .then(r => r.text())
+            .then(html => document.getElementById('notificationContainer').innerHTML = html);
+
+        const API_BASE_URL = `${window.location.origin}/Hohoo-ville/api`;
+        let currentTrainee = {};
+        let currentQualification = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Sidebar and User Menu Logic
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            const sidebarCollapse = document.getElementById('sidebarCollapse');
+            const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+            const userMenuButton = document.getElementById('userMenuButton');
+            const userDropdown = document.getElementById('userDropdown');
+
+            if (sidebarCollapse) {
+                sidebarCollapse.addEventListener('click', () => {
+                    sidebar.classList.remove('-translate-x-full');
+                    sidebarOverlay.classList.remove('hidden', 'opacity-0');
+                });
+            }
+
+            const closeSidebar = () => {
+                sidebar.classList.add('-translate-x-full');
+                sidebarOverlay.classList.add('hidden', 'opacity-0');
+            };
+
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+            if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', closeSidebar);
+
+            if (userMenuButton) {
+                userMenuButton.addEventListener('click', () => {
+                    userDropdown.classList.toggle('hidden');
+                });
+            }
+
+            document.addEventListener('click', (event) => {
+                if (userMenuButton && !userMenuButton.contains(event.target) && userDropdown && !userDropdown.contains(event.target)) {
+                    userDropdown.classList.add('hidden');
+                }
+            });
+
+            // Page-specific logic
+            // Check authentication
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+            if (!user.user_id || user.role !== 'trainee' || !user.trainee_id) {
+                window.location.href = '/Hohoo-ville/frontend/login.html';
+                return;
+            }
+
+            currentTrainee = user;
+            document.getElementById('traineeName').textContent = user.username || user.full_name || 'Trainee';
+
+            // Load qualifications
+            loadQualifications();
+
+            // Setup event listeners
+            document.getElementById('qualificationSelect').addEventListener('change', (e) => {
+                const qualId = e.target.value;
+                if (qualId) {
+                    loadLearningPath(qualId);
+                } else {
+                    document.getElementById('learningPathContainer').innerHTML = '';
+                    document.getElementById('emptyState').style.display = 'block';
+                }
+            });
+
+            document.getElementById('logoutBtn').addEventListener('click', (e) => {
+                e.preventDefault();
+                localStorage.clear();
+                window.location.href = '/Hohoo-ville/frontend/login.html';
+            });
+        });
+
+        async function loadQualifications() {
+            try {
+                const response = await axios.get(`${API_BASE_URL}/role/trainee/qualifications.php?action=list&trainee_id=${parseInt(currentTrainee.trainee_id)}`);
+                
+                if (response.data.success && response.data.data && response.data.data.length > 0) {
+                    const select = document.getElementById('qualificationSelect');
+                    response.data.data.forEach(qual => {
+                        const option = document.createElement('option');
+                        option.value = qual.qualification_id;
+                        option.textContent = qual.qualification_name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading qualifications:', error);
+            }
+        }
+
+        async function loadLearningPath(qualificationId) {
+            document.getElementById('emptyState').style.display = 'none';
+            const container = document.getElementById('learningPathContainer');
+            container.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-3xl text-blue-600"></i></div>';
+
+            try {
+                const response = await axios.get(
+                    `${API_BASE_URL}/role/trainer/modules.php?action=get-available-modules&trainee_id=${parseInt(currentTrainee.trainee_id)}&qualification_id=${qualificationId}`
+                );
+
+                if (response.data.success && response.data.data) {
+                    renderModules(response.data.data);
+                } else {
+                    container.innerHTML = '<div class="text-center text-slate-500">No modules available for this qualification</div>';
+                }
+            } catch (error) {
+                console.error('Error loading learning path:', error);
+                container.innerHTML = '<div class="text-center text-red-600">Error loading modules</div>';
+            }
+        }
+
+        function renderModules(modules) {
+            const container = document.getElementById('learningPathContainer');
+            container.innerHTML = '';
+
+            modules.forEach((module, index) => {
+                const isCompleted = module.is_completed;
+                const isAvailable = module.is_available;
+                const completionPercent = module.completion_percentage || 0;
+                const circumference = 314; // 2 * pi * 50
+                const strokeDashoffset = circumference - (completionPercent / 100) * circumference;
+
+                const html = `
+                    <div class="rounded-2xl border-2 ${isCompleted ? 'border-emerald-200 bg-emerald-50' : isAvailable ? 'border-blue-200 bg-blue-50' : 'border-slate-200 bg-slate-50'} p-6 ${!isAvailable ? 'module-locked' : ''}">
+                        <div class="flex items-start gap-6">
+                            <!-- Module Number & Status -->
+                            <div class="flex flex-col items-center">
+                                <div class="relative w-24 h-24 mb-3">
+                                    <svg class="progress-ring w-24 h-24" viewBox="0 0 100 100">
+                                        <circle class="progress-ring__circle" cx="50" cy="50" r="45" fill="none" 
+                                                stroke="${isCompleted ? '#10b981' : isAvailable ? '#3b82f6' : '#cbd5e1'}" 
+                                                stroke-width="6" stroke-dashoffset="${strokeDashoffset}"/>
+                                    </svg>
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <div class="text-center">
+                                            <div class="text-xl font-bold text-slate-900">${completionPercent}%</div>
+                                            <div class="text-xs text-slate-600">done</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                ${!isAvailable ? `<span class="px-2 py-1 rounded-full bg-slate-300 text-slate-700 text-xs font-semibold">Locked</span>` : 
+                                  isCompleted ? `<span class="px-2 py-1 rounded-full bg-emerald-200 text-emerald-700 text-xs font-semibold"><i class="fas fa-check mr-1"></i> Done</span>` :
+                                  `<span class="px-2 py-1 rounded-full bg-blue-200 text-blue-700 text-xs font-semibold"><i class="fas fa-play mr-1"></i> Active</span>`}
+                            </div>
+
+                            <!-- Module Details -->
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <h3 class="text-xl font-bold text-slate-900">Module ${index + 1}: ${module.module_title}</h3>
+                                    ${isCompleted ? `<i class="fas fa-check-circle text-emerald-600"></i>` : ''}
+                                </div>
+                                <p class="text-slate-600 text-sm mb-4">${module.module_description || 'No description available'}</p>
+
+                                <!-- Learning Outcomes Progress -->
+                                ${module.learning_outcomes && module.learning_outcomes.length > 0 ? `
+                                    <div class="space-y-2 mb-4">
+                                        <h4 class="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-2">Learning Outcomes</h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                            ${module.learning_outcomes.map(outcome => `
+                                                <div class="flex items-center gap-2 text-sm">
+                                                    <i class="fas fa-${outcome.outcome_completed ? 'check-circle text-emerald-600' : 'circle text-slate-400'} w-4"></i>
+                                                    <span class="text-slate-700">${outcome.lesson_title}</span>
+                                                    ${outcome.outcome_completed ? '' : `<span class="text-xs text-slate-500">(${outcome.quiz_completed && outcome.task_completed ? 'Not locked' : 'Pending'})</span>`}
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+
+                                <!-- Action Button -->
+                                <button onclick="viewModuleDetails('${module.module_id}')" 
+                                        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                                            !isAvailable ? 'bg-slate-300 text-slate-600 cursor-not-allowed' :
+                                            isCompleted ? 'bg-emerald-600 hover:bg-emerald-700 text-white' :
+                                            'bg-blue-600 hover:bg-blue-700 text-white'
+                                        }">
+                                    <i class="fas fa-${isCompleted ? 'redo' : 'arrow-right'}"></i>
+                                    ${isCompleted ? 'Review Module' : 'Start Learning'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                container.insertAdjacentHTML('beforeend', html);
+            });
+        }
+
+        async function viewModuleDetails(moduleId) {
+            const modal = document.getElementById('moduleDetailsModal');
+            const modalContent = modal.querySelector('.relative');
+            modalContent.innerHTML = '<div class="flex items-center justify-center p-10"><i class="fas fa-spinner fa-spin text-3xl text-blue-600"></i></div>';
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            try {
+                const response = await axios.get(`${API_BASE_URL}/role/trainee/training.php?action=get-lessons&trainee_id=${parseInt(currentTrainee.trainee_id)}&qualification_id=${document.getElementById('qualificationSelect').value}`);
+                
+                if (response.data.success) {
+                    const allModules = response.data.data;
+                    const module = allModules.find(m => m.module_id == moduleId);
+
+                    if (!module) throw new Error('Module not found');
+
+                    const html = `
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="text-2xl font-bold text-slate-900">${module.module_title}</h2>
+                                <button onclick="closeModuleModal()" class="p-2 hover:bg-slate-100 rounded-lg">
+                                    <i class="fas fa-times text-xl text-slate-600"></i>
+                                </button>
+                            </div>
+                            <p class="text-slate-600 mb-6">${module.module_description || ''}</p>
+
+                            <!-- Learning Outcomes -->
+                            <div class="space-y-4">
+                                ${module.lessons.map((lesson, idx) => `
+                                    <div class="border border-slate-200 rounded-lg p-4">
+                                        <h3 class="text-lg font-semibold text-slate-900 mb-2">
+                                            <i class="fas fa-book-open mr-2 text-blue-600"></i>
+                                            Learning Outcome ${idx + 1}: ${lesson.lesson_title}
+                                        </h3>
+                                        <p class="text-slate-600 text-sm mb-4">${lesson.lesson_description || ''}</p>
+
+                                        <!-- Content -->
+                                        ${lesson.lesson_contents && lesson.lesson_contents.length > 0 ? `
+                                            <div class="mb-4">
+                                                <h4 class="text-sm font-semibold text-slate-700 mb-2"><i class="fas fa-book mr-1 text-blue-600"></i>Learning Materials</h4>
+                                                <div class="space-y-3">
+                                                    ${lesson.lesson_contents.map(content => `
+                                                        <div class="flex items-center justify-between bg-slate-50 p-3 rounded border border-slate-200">
+                                                            <span class="font-medium text-sm text-slate-800">${content.title}</span>
+                                                            <button onclick="viewContent('content', ${content.content_id})" class="px-3 py-1 bg-white border border-slate-300 text-slate-700 text-xs rounded hover:bg-slate-100">View</button>
+                                                        </div>
+                                                    `).join('')}
+                                                </div>
+                                            </div>
+                                        ` : ''}
+
+                                        <!-- Task Sheets -->
+                                        ${lesson.task_sheets && lesson.task_sheets.length > 0 ? `
+                                            <div>
+                                                <h4 class="text-sm font-semibold text-slate-700 mb-2"><i class="fas fa-tasks mr-1 text-orange-600"></i>Task Sheets (${lesson.task_sheets.length})</h4>
+                                                <div class="space-y-3">
+                                                    ${lesson.task_sheets.map(task => `
+                                                        <div class="flex items-center justify-between bg-slate-50 p-3 rounded border border-slate-200">
+                                                            <span class="font-medium text-sm text-slate-800">${task.title}</span>
+                                                            <button onclick="viewContent('task', ${task.task_sheet_id})" class="px-3 py-1 bg-white border border-slate-300 text-slate-700 text-xs rounded hover:bg-slate-100">View</button>
+                                                        </div>
+                                                    `).join('')}
+                                                </div>
+                                            </div>
+                                        ` : ''}
+
+                                        <!-- Quiz -->
+                                        ${lesson.has_quiz ? `
+                                            <div class="mt-4">
+                                                <h4 class="text-sm font-semibold text-slate-700 mb-2"><i class="fas fa-question-circle mr-1 text-purple-600"></i>Quiz</h4>
+                                                <button onclick="startQuiz('${moduleId}', '${lesson.lesson_id}')" class="px-3 py-1.5 bg-purple-600 text-white text-xs rounded hover:bg-purple-700">Take Quiz</button>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+                    `;
+                    modalContent.innerHTML = `<div class="p-6">${html}</div>`;
+                }
+            } catch (error) {
+                console.error('Error loading module details:', error);
+                modalContent.innerHTML = '<div class="p-6 text-center text-red-600">Error loading module details. Please try again.</div>';
+            }
+        }
+
+        function closeModuleModal() {
+            document.getElementById('moduleDetailsModal').classList.add('hidden');
+            document.getElementById('moduleDetailsModal').classList.remove('flex');
+        }
+
+        function viewContent(type, id) {
+             Swal.fire({
+                title: 'View Content',
+                text: 'This will open the content viewer. This functionality is available on the "My Training" page.',
+                icon: 'info'
+            });
+        }
+
+        function startQuiz(moduleId, lessonId) {
+            Swal.fire({
+                title: 'Quiz',
+                text: 'Quiz functionality will be implemented soon',
+                icon: 'info'
+            });
+        }
+    </script>
+    <script src="../../../js/notifications.js"></script>
+</body>
+</html>

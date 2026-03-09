@@ -4,334 +4,293 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trainee Details - Hohoo-Ville Tech</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary-color: #4e73df;
-            --secondary-color: #858796;
-            --bg-color: #f8f9fc;
-            --text-color: #5a5c69;
-        }
-        body {
-            font-family: 'Nunito', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-        }
-        #sidebar {
-            background: #fff;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-            z-index: 1000;
-        }
-        #sidebar .sidebar-header {
-            padding: 1.5rem 1rem;
-            text-align: center;
-            color: var(--primary-color);
-            font-weight: 800;
-        }
-        #sidebar .nav-link {
-            color: var(--text-color);
-            padding: 0.5rem 1rem;
-            margin: 0.1rem 0.5rem;
-            border-radius: 0.35rem;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        #sidebar .nav-link:hover {
-            background-color: #eaecf4;
-            color: var(--primary-color);
-        }
-        #sidebar .nav-link.active {
-            background-color: var(--primary-color);
-            color: #fff;
-        }
-        .card {
-            border: none;
-            border-radius: 0.35rem;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-        }
-        .card-header {
-            background-color: #f8f9fc;
-            border-bottom: 1px solid #e3e6f0;
-            padding: 1rem 1.25rem;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
+        body { font-family: 'Nunito', sans-serif; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body>
-    <div class="d-flex">
-         <!-- Sidebar -->
-        <nav id="sidebar" class="p-3">
-            <div class="sidebar-header mb-4">
-                <h3><img src="../../../../img/logo.jpg" alt="Logo" class="me-2" style="height: 35px; width: auto;">Hohooville</h3>
-                <p class="text-muted">Trainer Portal</p>
-            </div>
-            <ul class="nav flex-column">
-                <li class="nav-item mb-1">
-                    <a class="nav-link" href="../trainer_dashboard.html">
-                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
-                    </a>
-                </li>
-                <li class="nav-item mb-1">
-                    <a class="nav-link" href="my_batches.html">
-                        <i class="fas fa-chalkboard-teacher me-2"></i> My Batches
-                    </a>
-                </li>
-                <li class="nav-item mb-1">
-                    <a class="nav-link" href="modules.html">
-                        <i class="fas fa-book me-2"></i> Modules
-                    </a>
-                </li>
-                <li class="nav-item mb-1">
-                    <a class="nav-link" href="attendance.html">
-                        <i class="fas fa-calendar-check me-2"></i> Attendance
-                    </a>
-                </li>
-                <li class="nav-item mb-1">
-                    <a class="nav-link" href="grading.html">
-                        <i class="fas fa-star me-2"></i> Grading
-                    </a>
-                </li>
-                <li class="nav-item mb-1">
-                    <a class="nav-link" href="progress_chart.html">
-                        <i class="fas fa-chart-line me-2"></i> Progress Chart
-                    </a>
-                </li>
-                <li class="nav-item mb-1">
-                    <a class="nav-link" href="reports.html">
-                        <i class="fas fa-chart-bar me-2"></i> Reports
-                    </a>
-                </li>
-                <li class="nav-item mb-1">
-                    <a class="nav-link" href="profile.html">
-                        <i class="fas fa-user me-2"></i> Profile
-                    </a>
-                </li>
-            </ul>
-        </nav>
+<body class="bg-slate-50 text-slate-700">
+    <div class="flex h-screen overflow-hidden">
+        <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/40 z-20 hidden lg:hidden transition-opacity opacity-0"></div>
 
-        <!-- Content -->
-        <div class="flex-grow-1" id="content">
-            <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
-                <div class="container-fluid">
-                    <button type="button" id="sidebarCollapse" class="btn btn-outline-primary me-2 d-lg-none">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <div class="ms-auto d-flex align-items-center">
-                        <ul class="navbar-nav flex-row me-2">
-                            <li class="nav-item dropdown no-arrow mx-1">
-                                <a class="nav-link dropdown-toggle" href="#" id="alertsDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    <i class="fas fa-bell fa-fw"></i>
-                                    <span class="badge bg-danger badge-counter" id="notificationBadge" style="display: none;"></span>
-                                </a>
-                                <div class="dropdown-menu dropdown-menu-end p-0 shadow animated--grow-in" aria-labelledby="alertsDropdown" style="min-width: 320px;">
-                                    <div class="p-2 border-bottom">
-                                        <strong class="small mb-0">Notifications</strong>
-                                    </div>
-                                    <div class="list-group list-group-flush" id="notificationList" style="max-height: 400px; overflow-y: auto;">
-                                        <div class="list-group-item text-center small text-muted">No new notifications</div>
-                                    </div>
-                                </div>
-                            </li>
-                        </ul>
-                        <div class="dropdown">
-                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
-                                <i class="fas fa-user-circle"></i> <span id="trainerName">Trainer</span>
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-30 w-72 bg-white/95 backdrop-blur border-r border-blue-100 shadow-xl shadow-blue-100/40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col">
+            <div class="h-16 px-4 flex items-center gap-3 border-b border-blue-100 bg-gradient-to-r from-blue-600 to-blue-500 text-white">
+                <img src="../../../../img/logo.jpg" alt="Hohooville Logo" class="h-8 w-8 rounded-lg bg-white/20 p-1">
+                <div class="leading-tight">
+                    <p class="text-lg font-semibold">Hohooville</p>
+                    <p class="text-[11px] text-blue-100">Trainer Portal</p>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto py-4 scrollbar-hide">
+                <nav class="px-4 space-y-2">
+                    <p class="px-4 text-[11px] font-semibold text-blue-400 uppercase tracking-[0.2em] mb-2">Menu</p>
+                    <a href="/Hohoo-ville/frontend/html/trainer/trainer_dashboard.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
+                        <i class="fas fa-home w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> Dashboard
+                    </a>
+                    <a href="/Hohoo-ville/frontend/html/trainer/pages/my_batches.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold text-blue-700 bg-blue-50 ring-1 ring-blue-100" aria-current="page">
+                        <i class="fas fa-users w-5 h-5 text-blue-600"></i> My Batches
+                    </a>
+                    <a href="/Hohoo-ville/frontend/html/trainer/pages/modules.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
+                        <i class="fas fa-book w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> Modules
+                    </a>
+                    <a href="/Hohoo-ville/frontend/html/trainer/pages/progress_chart.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
+                        <i class="fas fa-chart-line w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> Progress Chart
+                    </a>
+                    <a href="/Hohoo-ville/frontend/html/trainer/pages/achievement_chart.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
+                        <i class="fas fa-trophy w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> Achievement Chart
+                    </a>
+                    <a href="/Hohoo-ville/frontend/html/trainer/pages/reports.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
+                        <i class="fas fa-chart-bar w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> Reports
+                    </a>
+                </nav>
+            </div>
+
+            <div class="p-4 border-t border-blue-100">
+                <button id="sidebarCloseBtn" class="lg:hidden w-full flex items-center justify-center px-4 py-2 rounded-lg border border-blue-200 text-sm font-semibold text-blue-700 bg-white hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                    Close Menu
+                </button>
+            </div>
+        </aside>
+
+        <div class="flex-1 flex flex-col lg:ml-72 min-w-0 overflow-hidden">
+            <header class="bg-white/85 backdrop-blur border-b border-blue-100 shadow-sm z-10">
+                <div class="h-16 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <button id="sidebarCollapse" class="lg:hidden p-2 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                            <i class="fas fa-bars text-lg"></i>
+                        </button>
+                        <h1 class="text-xl font-semibold text-slate-800">Trainee Profile</h1>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <div class="relative">
+                            <button id="notificationBtn" class="relative p-2 rounded-lg border border-blue-100 bg-white text-slate-600 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" aria-label="Notifications">
+                                <i class="fas fa-bell"></i>
+                                <span id="notificationBadge" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold items-center justify-center"></span>
                             </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </nav>
-
-            <div class="container-fluid mt-4" id="profile-content">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2 class="text-gray-800">Trainee Profile</h2>
-                    <a href="my_batches.html" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2"></i> Back to List</a>
-                </div>
-
-                <!-- Profile Header -->
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <div class="row align-items-center">
-                            <div class="col-md-auto">
-                                <img id="headerTraineePhoto" src="https://via.placeholder.com/120" class="rounded-circle" width="120" height="120" style="object-fit: cover;" alt="Trainee Photo">
+                            <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 max-w-[90vw] rounded-xl border border-blue-100 bg-white shadow-xl shadow-blue-100/40 origin-top-right transition-all duration-200 transform scale-95 opacity-0 z-40">
+                                <div id="notificationList" class="max-h-96 overflow-y-auto">
+                                    <div class="px-4 py-3 text-center text-sm text-slate-500">No notifications</div>
+                                </div>
                             </div>
-                            <div class="col-md">
-                                <h3 class="mb-1" id="headerTraineeName">Loading...</h3>
-                                <p class="text-muted mb-0" id="headerTraineeCourse">Loading course...</p>
+                        </div>
+
+                        <div class="relative">
+                            <button id="userMenuButton" class="flex items-center gap-2 rounded-full border border-blue-100 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                <i class="fas fa-user-circle text-xl text-blue-500"></i>
+                                <span id="trainerName" class="hidden md:block">Trainer</span>
+                                <i class="fas fa-chevron-down text-xs text-slate-400"></i>
+                            </button>
+                            <div id="userMenuDropdown" class="hidden absolute right-0 mt-2 w-48 rounded-xl border border-blue-100 shadow-xl shadow-blue-100/40 py-1 bg-white z-40">
+                                <a href="/Hohoo-ville/frontend/html/trainer/pages/profile.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-user mr-2"></i> Profile</a>
+                                <div class="border-t border-blue-100"></div>
+                                <a href="#" id="logoutBtn" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-sign-out-alt mr-2"></i> Logout</a>
                             </div>
                         </div>
                     </div>
                 </div>
+            </header>
 
-                <!-- Nav Pills -->
-                <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="pills-profile-tab" data-bs-toggle="pill" data-bs-target="#pills-profile" type="button" role="tab">
-                            <i class="fas fa-user-circle me-1"></i> Profile Details
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="pills-attendance-tab" data-bs-toggle="pill" data-bs-target="#pills-attendance" type="button" role="tab">
-                            <i class="fas fa-calendar-check me-1"></i> Attendance
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="pills-progress-tab" data-bs-toggle="pill" data-bs-target="#pills-progress" type="button" role="tab">
-                            <i class="fas fa-tasks me-1"></i> Progress
-                        </button>
-                    </li>
-                </ul>
-
-                <!-- Tab Content -->
-                <div class="tab-content" id="pills-tabContent">
-                    <!-- Profile Details Tab -->
-                    <div class="tab-pane fade show active" id="pills-profile" role="tabpanel">
-                        <div class="row">
-                            <div class="col-lg-6">
-                                <div class="card mb-4">
-                                    <div class="card-header"><i class="fas fa-id-card me-2"></i>Personal Information</div>
-                                    <div class="card-body">
-                                        <dl class="row mb-0">
-                                            <dt class="col-sm-4">Full Name</dt><dd class="col-sm-8" id="profileFullName"></dd>
-                                            <dt class="col-sm-4">Sex</dt><dd class="col-sm-8" id="profileSex"></dd>
-                                            <dt class="col-sm-4">Civil Status</dt><dd class="col-sm-8" id="profileCivilStatus"></dd>
-                                            <dt class="col-sm-4">Birthdate</dt><dd class="col-sm-8" id="profileBirthdate"></dd>
-                                            <dt class="col-sm-4">Age</dt><dd class="col-sm-8" id="profileAge"></dd>
-                                            <dt class="col-sm-4">Birthplace</dt><dd class="col-sm-8" id="profileBirthplace"></dd>
-                                            <dt class="col-sm-4">Nationality</dt><dd class="col-sm-8" id="profileNationality"></dd>
-                                        </dl>
-                                    </div>
-                                </div>
-                                <div class="card mb-4">
-                                    <div class="card-header"><i class="fas fa-phone-alt me-2"></i>Contact & Address</div>
-                                    <div class="card-body">
-                                        <dl class="row mb-0">
-                                            <dt class="col-sm-4">Email</dt><dd class="col-sm-8" id="profileEmail"></dd>
-                                            <dt class="col-sm-4">Phone</dt><dd class="col-sm-8" id="profilePhone"></dd>
-                                            <dt class="col-sm-4">Facebook</dt><dd class="col-sm-8" id="profileFacebook"></dd>
-                                            <dt class="col-sm-4">Address</dt><dd class="col-sm-8" id="profileAddress"></dd>
-                                        </dl>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-6">
-                                <div class="card mb-4">
-                                    <div class="card-header"><i class="fas fa-graduation-cap me-2"></i>Training & Background</div>
-                                    <div class="card-body">
-                                        <dl class="row mb-0">
-                                            <dt class="col-sm-4">School ID</dt><dd class="col-sm-8" id="profileSchoolId"></dd>
-                                            <dt class="col-sm-4">Batch</dt><dd class="col-sm-8" id="profileBatch"></dd>
-                                            <dt class="col-sm-4">Scholarship</dt><dd class="col-sm-8" id="profileScholarship"></dd>
-                                            <dt class="col-sm-4">Enrollment</dt><dd class="col-sm-8" id="profileEnrollStatus"></dd>
-                                            <hr class="my-3">
-                                            <dt class="col-sm-4">Education</dt><dd class="col-sm-8" id="profileEducation"></dd>
-                                            <dt class="col-sm-4">Employment</dt><dd class="col-sm-8" id="profileEmployment"></dd>
-                                        </dl>
-                                    </div>
-                                </div>
-                                <div class="card mb-4">
-                                    <div class="card-header"><i class="fas fa-folder-open me-2"></i>Submitted Documents</div>
-                                    <div class="card-body">
-                                        <a id="linkValidId" href="#" target="_blank" class="btn btn-outline-primary me-2 disabled"><i class="fas fa-id-badge me-1"></i> View Valid ID</a>
-                                        <a id="linkBirthCert" href="#" target="_blank" class="btn btn-outline-primary disabled"><i class="fas fa-file-alt me-1"></i> View Birth Cert.</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+            <main class="flex-1 overflow-y-auto bg-gradient-to-b from-blue-50/60 via-white to-slate-50 p-4 sm:p-6 lg:p-8" id="profile-content">
+                <div class="mx-auto w-full max-w-7xl space-y-6">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <h2 class="text-2xl font-bold text-slate-900">Trainee Details</h2>
+                        <a href="my_batches.html" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                            <i class="fas fa-arrow-left"></i> Back to List
+                        </a>
                     </div>
 
-                    <!-- Attendance Tab -->
-                    <div class="tab-pane fade" id="pills-attendance" role="tabpanel">
-                        <div class="card">
-                            <div class="card-header"><h5 class="mb-0">Attendance Summary</h5></div>
-                            <div class="card-body">
-                                <div class="row text-center">
-                                    <div class="col-4 border-end">
-                                        <h3 class="text-success" id="attPresent">0</h3>
-                                        <small class="text-muted">Present</small>
+                    <section class="bg-white rounded-2xl border border-blue-100 shadow-sm p-6">
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+                            <img id="headerTraineePhoto" src="https://via.placeholder.com/120" class="h-24 w-24 rounded-2xl object-cover ring-2 ring-blue-100" alt="Trainee Photo">
+                            <div>
+                                <h3 class="text-2xl font-bold text-slate-900" id="headerTraineeName">Loading...</h3>
+                                <p class="text-slate-500" id="headerTraineeCourse">Loading course...</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="bg-white rounded-2xl border border-blue-100 shadow-sm overflow-hidden">
+                        <div class="border-b border-blue-100 bg-blue-50/50 px-4 sm:px-6">
+                            <div class="flex flex-wrap gap-2 py-3">
+                                <button id="pills-profile-tab" data-top-tab="profile" data-target="pills-profile" class="top-tab-btn rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                    <i class="fas fa-user-circle mr-1"></i> Profile Details
+                                </button>
+                                <button id="pills-attendance-tab" data-top-tab="attendance" data-target="pills-attendance" class="top-tab-btn rounded-lg border border-transparent bg-transparent px-3 py-2 text-sm font-medium text-slate-600 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                    <i class="fas fa-calendar-check mr-1"></i> Attendance
+                                </button>
+                                <button id="pills-progress-tab" data-top-tab="progress" data-target="pills-progress" class="top-tab-btn rounded-lg border border-transparent bg-transparent px-3 py-2 text-sm font-medium text-slate-600 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                    <i class="fas fa-tasks mr-1"></i> Progress
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="p-4 sm:p-6">
+                            <div id="pills-profile" data-top-pane="profile" class="top-pane block">
+                                <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                                    <div class="space-y-6">
+                                        <div class="rounded-xl border border-slate-200 overflow-hidden">
+                                            <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 font-semibold text-slate-900"><i class="fas fa-id-card mr-2 text-blue-600"></i>Personal Information</div>
+                                            <dl class="px-4 py-4 grid grid-cols-3 gap-y-3 text-sm">
+                                                <dt class="text-slate-500">Full Name</dt><dd class="col-span-2 text-slate-800" id="profileFullName"></dd>
+                                                <dt class="text-slate-500">Sex</dt><dd class="col-span-2 text-slate-800" id="profileSex"></dd>
+                                                <dt class="text-slate-500">Civil Status</dt><dd class="col-span-2 text-slate-800" id="profileCivilStatus"></dd>
+                                                <dt class="text-slate-500">Birthdate</dt><dd class="col-span-2 text-slate-800" id="profileBirthdate"></dd>
+                                                <dt class="text-slate-500">Age</dt><dd class="col-span-2 text-slate-800" id="profileAge"></dd>
+                                                <dt class="text-slate-500">Birthplace</dt><dd class="col-span-2 text-slate-800" id="profileBirthplace"></dd>
+                                                <dt class="text-slate-500">Nationality</dt><dd class="col-span-2 text-slate-800" id="profileNationality"></dd>
+                                            </dl>
+                                        </div>
+                                        <div class="rounded-xl border border-slate-200 overflow-hidden">
+                                            <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 font-semibold text-slate-900"><i class="fas fa-phone-alt mr-2 text-blue-600"></i>Contact & Address</div>
+                                            <dl class="px-4 py-4 grid grid-cols-3 gap-y-3 text-sm">
+                                                <dt class="text-slate-500">Email</dt><dd class="col-span-2 text-slate-800" id="profileEmail"></dd>
+                                                <dt class="text-slate-500">Phone</dt><dd class="col-span-2 text-slate-800" id="profilePhone"></dd>
+                                                <dt class="text-slate-500">Facebook</dt><dd class="col-span-2 text-slate-800 break-words" id="profileFacebook"></dd>
+                                                <dt class="text-slate-500">Address</dt><dd class="col-span-2 text-slate-800" id="profileAddress"></dd>
+                                            </dl>
+                                        </div>
                                     </div>
-                                    <div class="col-4 border-end">
-                                        <h3 class="text-danger" id="attAbsent">0</h3>
-                                        <small class="text-muted">Absent</small>
-                                    </div>
-                                    <div class="col-4">
-                                        <h3 class="text-warning" id="attLate">0</h3>
-                                        <small class="text-muted">Late</small>
+
+                                    <div class="space-y-6">
+                                        <div class="rounded-xl border border-slate-200 overflow-hidden">
+                                            <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 font-semibold text-slate-900"><i class="fas fa-graduation-cap mr-2 text-blue-600"></i>Training & Background</div>
+                                            <dl class="px-4 py-4 grid grid-cols-3 gap-y-3 text-sm">
+                                                <dt class="text-slate-500">School ID</dt><dd class="col-span-2 text-slate-800" id="profileSchoolId"></dd>
+                                                <dt class="text-slate-500">Batch</dt><dd class="col-span-2 text-slate-800" id="profileBatch"></dd>
+                                                <dt class="text-slate-500">Scholarship</dt><dd class="col-span-2 text-slate-800" id="profileScholarship"></dd>
+                                                <dt class="text-slate-500">Enrollment</dt><dd class="col-span-2 text-slate-800" id="profileEnrollStatus"></dd>
+                                                <dt class="text-slate-500">Education</dt><dd class="col-span-2 text-slate-800" id="profileEducation"></dd>
+                                                <dt class="text-slate-500">Employment</dt><dd class="col-span-2 text-slate-800" id="profileEmployment"></dd>
+                                            </dl>
+                                        </div>
+                                        <div class="rounded-xl border border-slate-200 overflow-hidden">
+                                            <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 font-semibold text-slate-900"><i class="fas fa-folder-open mr-2 text-blue-600"></i>Submitted Documents</div>
+                                            <div class="px-4 py-4 flex flex-wrap gap-2">
+                                                <a id="linkValidId" href="#" class="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 pointer-events-none opacity-50">
+                                                    <i class="fas fa-id-badge"></i> View Valid ID
+                                                </a>
+                                                <a id="linkBirthCert" href="#" class="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 pointer-events-none opacity-50">
+                                                    <i class="fas fa-file-alt"></i> View Birth Cert.
+                                                </a>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <!-- A detailed log could be added here in the future -->
                             </div>
-                        </div>
-                    </div>
 
-                    <!-- Progress Tab -->
-                    <div class="tab-pane fade" id="pills-progress" role="tabpanel">
-                        <ul class="nav nav-pills nav-fill mb-3" id="competency-pills-tab" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active" id="pills-core-tab" data-bs-toggle="pill" data-bs-target="#pills-core" type="button" role="tab">Core Competencies</button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="pills-common-tab" data-bs-toggle="pill" data-bs-target="#pills-common" type="button" role="tab">Common Competencies</button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="pills-basic-tab" data-bs-toggle="pill" data-bs-target="#pills-basic" type="button" role="tab">Basic Competencies</button>
-                            </li>
-                        </ul>
-                        <div class="tab-content" id="competency-pills-tabContent">
-                            <div class="tab-pane fade show active" id="pills-core" role="tabpanel">
-                                <div class="accordion" id="progressAccordionCore"></div>
+                            <div id="pills-attendance" data-top-pane="attendance" class="top-pane hidden">
+                                <div class="rounded-xl border border-slate-200 overflow-hidden">
+                                    <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 font-semibold text-slate-900">Attendance Summary</div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 text-center">
+                                        <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                                            <p class="text-3xl font-bold text-emerald-700" id="attPresent">0</p>
+                                            <p class="text-sm text-emerald-700">Present</p>
+                                        </div>
+                                        <div class="rounded-xl border border-red-200 bg-red-50 p-4">
+                                            <p class="text-3xl font-bold text-red-700" id="attAbsent">0</p>
+                                            <p class="text-sm text-red-700">Absent</p>
+                                        </div>
+                                        <div class="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                                            <p class="text-3xl font-bold text-amber-700" id="attLate">0</p>
+                                            <p class="text-sm text-amber-700">Late</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="tab-pane fade" id="pills-common" role="tabpanel">
-                                <div class="accordion" id="progressAccordionCommon"></div>
-                            </div>
-                            <div class="tab-pane fade" id="pills-basic" role="tabpanel">
-                                <div class="accordion" id="progressAccordionBasic"></div>
+
+                            <div id="pills-progress" data-top-pane="progress" class="top-pane hidden">
+                                <div class="rounded-xl border border-slate-200 overflow-hidden">
+                                    <div class="border-b border-slate-200 bg-slate-50 px-4">
+                                        <div class="flex flex-wrap gap-2 py-3">
+                                            <button id="pills-core-tab" data-competency-tab="core" data-target="pills-core" class="competency-tab-btn rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-700">Core Competencies</button>
+                                            <button id="pills-common-tab" data-competency-tab="common" data-target="pills-common" class="competency-tab-btn rounded-lg border border-transparent bg-transparent px-3 py-2 text-sm font-medium text-slate-600 hover:bg-white">Common Competencies</button>
+                                            <button id="pills-basic-tab" data-competency-tab="basic" data-target="pills-basic" class="competency-tab-btn rounded-lg border border-transparent bg-transparent px-3 py-2 text-sm font-medium text-slate-600 hover:bg-white">Basic Competencies</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="p-4">
+                                        <div id="pills-core" data-competency-pane="core" class="competency-pane block">
+                                            <div class="space-y-3" id="progressAccordionCore"></div>
+                                        </div>
+                                        <div id="pills-common" data-competency-pane="common" class="competency-pane hidden">
+                                            <div class="space-y-3" id="progressAccordionCommon"></div>
+                                        </div>
+                                        <div id="pills-basic" data-competency-pane="basic" class="competency-pane hidden">
+                                            <div class="space-y-3" id="progressAccordionBasic"></div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+                    </section>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="contentModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div data-modal-backdrop class="absolute inset-0 bg-slate-900/50"></div>
+        <div data-modal-panel class="relative z-10 w-full max-w-3xl max-h-[85vh] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                <h5 class="text-base font-semibold text-slate-900" id="contentModalTitle"></h5>
+                <button id="contentModalClose" data-modal-close type="button" class="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="max-h-[70vh] overflow-y-auto p-4" id="contentModalBody"></div>
+        </div>
+    </div>
+
+    <div id="documentModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div data-modal-backdrop class="absolute inset-0 bg-slate-900/50"></div>
+        <div data-modal-panel class="relative z-10 w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
+                <h5 class="text-base font-semibold text-slate-900" id="documentModalTitle">Submitted Document</h5>
+                <div class="flex items-center gap-2">
+                    <button id="docZoomOutBtn" type="button" class="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                        <i class="fas fa-magnifying-glass-minus"></i>
+                    </button>
+                    <span id="docZoomLabel" class="min-w-[52px] text-center text-xs font-semibold text-slate-600">100%</span>
+                    <button id="docZoomInBtn" type="button" class="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                        <i class="fas fa-magnifying-glass-plus"></i>
+                    </button>
+                    <button id="docZoomResetBtn" type="button" class="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                        Reset
+                    </button>
+                    <a id="docOpenNewTabBtn" href="#" target="_blank" rel="noopener" class="rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                        Open
+                    </a>
+                    <button data-modal-close type="button" class="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4">
+                <div id="documentViewport" class="h-[72vh] overflow-auto rounded-xl border border-slate-200 bg-slate-100 p-3">
+                    <div id="documentZoomLayer" class="origin-top transition-transform duration-150 ease-out">
+                        <img id="documentPreviewImage" alt="Submitted requirement" class="hidden max-w-none rounded-md border border-slate-200 bg-white">
+                        <iframe id="documentPreviewFrame" class="hidden h-[68vh] w-full rounded-md border border-slate-200 bg-white" title="Submitted requirement preview"></iframe>
+                    </div>
+                    <div id="documentPreviewFallback" class="hidden py-20 text-center text-slate-600">
+                        <p class="mb-3 text-sm">Preview is not available for this file type.</p>
+                        <a id="documentPreviewDownloadLink" href="#" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50">
+                            <i class="fas fa-arrow-up-right-from-square"></i> Open File
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-
-    <!-- Generic Modal for Content -->
-    <div class="modal fade" id="contentModal" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="contentModalTitle"></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body" id="contentModalBody">
-                    <!-- Content will be injected here -->
-                </div>
-            </div>
-        </div>
-    </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script src="../../../js/session_timeout.js"></script>
     <script src="../../../js/trainer/pages/trainee_details.js"></script>
     <script src="../../../js/notifications.js"></script>
-    <script>
-        document.getElementById('sidebarCollapse').addEventListener('click', function() {
-            document.getElementById('sidebar').classList.toggle('d-none');
-        });
-        document.getElementById('logoutBtn').addEventListener('click', function() {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = '../../../login.html';
-        });
-    </script>
 </body>
 </html>
-

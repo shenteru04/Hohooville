@@ -4,216 +4,231 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Training - Hohoo-Ville</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary-color: #4e73df;
-            --secondary-color: #858796;
-            --bg-color: #f8f9fc;
-            --text-color: #5a5c69;
-        }
-        body {
-            font-family: 'Nunito', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-        }
-        #sidebar {
-            background: #fff;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-            z-index: 1000;
-        }
-        #sidebar .sidebar-header {
-            padding: 1.5rem 1rem;
-            text-align: center;
-            color: var(--primary-color);
-            font-weight: 800;
-        }
-        #sidebar .nav-link {
-            color: var(--text-color);
-            padding: 0.5rem 1rem;
-            margin: 0.1rem 0.5rem;
-            border-radius: 0.35rem;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        #sidebar .nav-link:hover {
-            background-color: #eaecf4;
-            color: var(--primary-color);
-        }
-        #sidebar .nav-link.active {
-            background-color: var(--primary-color);
-            color: #fff;
-        }
-        .card {
-            border: none;
-            border-radius: 0.35rem;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-        }
-        .card-header {
-            background-color: #f8f9fc;
-            border-bottom: 1px solid #e3e6f0;
-            padding: 1rem 1.25rem;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
+        body { font-family: 'Nunito', sans-serif; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        details > summary { list-style: none; }
+        details > summary::-webkit-details-marker { display: none; }
     </style>
 </head>
-<body>
-    <div class="d-flex">
-        <!-- Sidebar -->
-        <nav id="sidebar" class="p-3">
-            <div class="sidebar-header mb-3">
-                <h3><img src="../../../../img/logo.jpg" alt="Logo" class="me-2" style="height: 35px; width: auto;">Hohooville</h3>
-                <p class="text-muted">Trainee Portal</p>
-            </div>
-            <ul class="nav flex-column">
-                <li class="nav-item mb-2"><a class="nav-link" href="../trainee_dashboard.html"><i class="fas fa-home me-2 me-2"></i> Dashboard</a></li>
-                <li class="nav-item mb-2"><a class="nav-link active" href="/Hohoo-ville/frontend/html/trainee/pages/my_training.html"><i class="fas fa-book-open me-2"></i> My Training</a></li>
-                <li class="nav-item mb-2"><a class="nav-link" href="/Hohoo-ville/frontend/html/trainee/pages/my_grades.html"><i class="fas fa-star me-2"></i> My Progress</a></li>
-            </ul>
-        </nav>
+<body class="bg-slate-50 text-slate-700">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar Overlay -->
+        <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/40 z-20 hidden lg:hidden transition-opacity opacity-0"></div>
 
-         <div class="flex-grow-1" id="content">
-            <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
-                <div class="container-fluid">
-                    <span class="navbar-brand mb-0 h1">My Training</span>
-                    <div class="ms-auto d-flex align-items-center">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-30 w-72 bg-white/95 backdrop-blur border-r border-blue-100 shadow-xl shadow-blue-100/40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col">
+            <div class="h-16 px-4 flex items-center gap-3 border-b border-blue-100 bg-gradient-to-r from-blue-600 to-blue-500 text-white">
+                <img src="../../../../img/logo.jpg" alt="Hohooville Logo" class="h-8 w-8 rounded-lg bg-white/20 p-1">
+                <div class="leading-tight">
+                    <p class="text-lg font-semibold">Hohooville</p>
+                    <p class="text-[11px] text-blue-100">Trainee Portal</p>
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto py-4">
+                <nav class="px-4 space-y-2">
+                    <p class="px-4 text-[11px] font-semibold text-blue-400 uppercase tracking-[0.2em] mb-2">Menu</p>
+                    <a href="../trainee_dashboard.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
+                        <i class="fas fa-home w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> Dashboard
+                    </a>
+                    <a href="/Hohoo-ville/frontend/html/trainee/pages/learning_path.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
+                        <i class="fas fa-graduation-cap w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> Learning Path
+                    </a>
+                    <a href="/Hohoo-ville/frontend/html/trainee/pages/my_training.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold text-blue-700 bg-blue-50 ring-1 ring-blue-100" aria-current="page">
+                        <i class="fas fa-book-open w-5 h-5 text-blue-600"></i> My Training
+                    </a>
+                    <a href="/Hohoo-ville/frontend/html/trainee/pages/my_grades.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
+                        <i class="fas fa-star w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> My Progress
+                    </a>
+                </nav>
+            </div>
+            <div class="p-4 border-t border-gray-200">
+                <button id="sidebarCloseBtn" class="lg:hidden w-full flex items-center justify-center px-4 py-2 rounded-lg border border-blue-200 text-sm font-semibold text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    Close Menu
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col lg:ml-72 min-w-0 overflow-hidden">
+            <!-- Navbar -->
+            <header class="bg-white/80 backdrop-blur border-b border-blue-100 shadow-sm z-10">
+                <div class="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
+                    <div class="flex items-center">
+                        <button id="sidebarCollapse" class="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500">
+                            <i class="fas fa-bars text-xl"></i>
+                        </button>
+                        <h1 class="text-xl font-semibold text-slate-800 ml-2 lg:ml-0">My Training</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
                         <div id="notificationContainer"></div>
-                        <div class="dropdown">
-                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-user-circle me-2"></i> <span id="traineeName">Trainee</span>
+                        <div class="relative">
+                            <button class="flex items-center gap-2 max-w-xs rounded-full border border-blue-100 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-700 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" id="userMenuButton">
+                                <i class="fas fa-user-circle text-xl text-blue-500"></i>
+                                <span id="traineeName" class="hidden md:block">Trainee</span>
+                                <i class="fas fa-chevron-down text-xs text-slate-400"></i>
                             </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="/Hohoo-ville/frontend/html/trainee/pages/profile.html"><i class="fas fa-user me-2"></i> Profile</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt me-2"></i> Logout</a></li>
-                            </ul>
+                            <div id="userDropdown" class="origin-top-right absolute right-0 mt-2 w-48 rounded-xl border border-blue-100 shadow-xl shadow-blue-100/40 py-1 bg-white hidden z-50">
+                                <a href="/Hohoo-ville/frontend/html/trainee/pages/profile.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-user mr-2"></i> Profile</a>
+                                <div class="border-t border-blue-100"></div>
+                                <a href="#" id="logoutBtn" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-sign-out-alt mr-2"></i> Logout</a>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </nav>
+            </header>
 
-            <div class="container-fluid mt-4">
-                <h2 class="mb-4 text-gray-800">My Training Modules</h2>
+            <!-- Content -->
+            <main class="flex-1 overflow-y-auto bg-gradient-to-b from-blue-50/60 via-white to-slate-50 p-4 sm:p-6 lg:p-8">
+                <div class="max-w-6xl mx-auto">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-6">Training Modules</h2>
                 
-                <ul class="nav nav-tabs mb-3" id="competencyTabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="core-tab" data-bs-toggle="tab" data-bs-target="#core-pane" type="button" role="tab">Core Competencies</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="common-tab" data-bs-toggle="tab" data-bs-target="#common-pane" type="button" role="tab">Common Competencies</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="basic-tab" data-bs-toggle="tab" data-bs-target="#basic-pane" type="button" role="tab">Basic Competencies</button>
-                    </li>
-                </ul>
+                    <!-- Tabs -->
+                    <div class="border-b border-blue-100 mb-6">
+                        <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                            <button class="tab-btn active border-blue-500 text-blue-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" data-target="core-pane">
+                                Core Competencies
+                            </button>
+                            <button class="tab-btn border-transparent text-slate-500 hover:text-blue-600 hover:border-blue-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" data-target="common-pane">
+                                Common Competencies
+                            </button>
+                            <button class="tab-btn border-transparent text-slate-500 hover:text-blue-600 hover:border-blue-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" data-target="basic-pane">
+                                Basic Competencies
+                            </button>
+                        </nav>
+                    </div>
 
-                <div class="tab-content" id="competencyTabsContent">
-                    <div class="tab-pane fade show active" id="core-pane" role="tabpanel">
-                        <div class="accordion" id="accordionCore"><div class="text-center p-5"><div class="spinner-border"></div></div></div>
-                    </div>
-                    <div class="tab-pane fade" id="common-pane" role="tabpanel">
-                        <div class="accordion" id="accordionCommon"></div>
-                    </div>
-                    <div class="tab-pane fade" id="basic-pane" role="tabpanel">
-                        <div class="accordion" id="accordionBasic"></div>
+                    <!-- Tab Content -->
+                    <div id="tab-contents">
+                        <div id="core-pane" class="tab-pane block">
+                            <div id="accordionCore" class="space-y-4">
+                                <div class="text-center py-10"><div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>
+                            </div>
+                        </div>
+                        <div id="common-pane" class="tab-pane hidden">
+                            <div id="accordionCommon" class="space-y-4"></div>
+                        </div>
+                        <div id="basic-pane" class="tab-pane hidden">
+                            <div id="accordionBasic" class="space-y-4"></div>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </main>
         </div>
     </div>
 
     <!-- Lesson Items Modal -->
-    <div class="modal fade" id="lessonItemsModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="lessonItemsTitle"></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div id="lessonItemsModal" class="fixed inset-0 z-50 hidden items-center justify-center overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <!-- Backdrop is added by JS -->
+        <div class="relative bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-lg w-full mx-4">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900" id="lessonItemsTitle">Lesson Materials</h3>
+                    <button type="button" class="text-gray-400 hover:text-gray-500 focus:outline-none" onclick="lessonItemsModal.hide()">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
-                <div class="modal-body">
-                    <h6 class="text-primary">Information Sheets</h6>
-                    <div id="lessonItemsContentsList" class="list-group mb-4"></div>
-                    <h6 class="text-primary">Task Sheets</h6>
-                    <div id="lessonItemsTaskSheetsList" class="list-group"></div>
+                <div class="mt-2">
+                    <h6 class="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-2">Information Sheets</h6>
+                    <div id="lessonItemsContentsList" class="bg-white border border-gray-200 rounded-md mb-4 divide-y divide-gray-100"></div>
+                    <h6 class="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-2">Task Sheets</h6>
+                    <div id="lessonItemsTaskSheetsList" class="bg-white border border-gray-200 rounded-md divide-y divide-gray-100"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Lesson Content Modal -->
-    <div class="modal fade" id="lessonContentModal" tabindex="-1">
-        <div class="modal-dialog modal-xl modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="lessonContentTitle"></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body" id="lessonContentBody">
-                    <!-- Lesson content loaded here -->
-                </div>
-                <div class="modal-footer" id="lessonContentFooter" style="display: none;">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-outline-danger" id="unsubmitTaskSheetBtn" style="display: none;">Unsubmit</button>
-                    <button type="button" class="btn btn-primary" id="submitTaskSheetBtn">Submit Task Sheet</button>
-                </div>
+    <div id="lessonContentModal" class="fixed inset-0 z-50 hidden items-center justify-center overflow-y-auto">
+        <div class="relative bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-4xl w-full mx-4 h-[90vh] flex flex-col">
+            <div class="bg-white px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900" id="lessonContentTitle">Content</h3>
+                <button type="button" class="text-gray-400 hover:text-gray-500 focus:outline-none" onclick="lessonContentModal.hide()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-6" id="lessonContentBody">
+                <!-- Content loaded here -->
+            </div>
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-200" id="lessonContentFooter" style="display: none;">
+                <button type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm" id="submitTaskSheetBtn">Submit Task Sheet</button>
+                <button type="button" class="w-full inline-flex justify-center rounded-md border border-red-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-red-700 hover:bg-red-50 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm hidden" id="unsubmitTaskSheetBtn">Unsubmit</button>
+                <button type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm" onclick="lessonContentModal.hide()">Close</button>
             </div>
         </div>
     </div>
 
     <!-- Quiz Modal -->
-    <div class="modal fade" id="quizModal" tabindex="-1" data-bs-backdrop="static">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="quizTitle">Quiz</h5>
-                </div>
-                <div class="modal-body">
-                    <form id="quizForm">
-                        <div id="quizQuestionsContainer">
-                            <!-- Quiz questions loaded here -->
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="submitQuizBtn">Submit Quiz</button>
-                </div>
+    <div id="quizModal" class="fixed inset-0 z-50 hidden items-center justify-center overflow-y-auto">
+        <div class="relative bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col">
+            <div class="bg-white px-4 py-3 border-b border-gray-200">
+                <h3 class="text-lg leading-6 font-medium text-gray-900" id="quizTitle">Quiz</h3>
+            </div>
+            <div class="flex-1 overflow-y-auto p-6">
+                <form id="quizForm">
+                    <div id="quizQuestionsContainer"></div>
+                </form>
+            </div>
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-200">
+                <button type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm" id="submitQuizBtn">Submit Quiz</button>
+                <button type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm" onclick="quizModal.hide()">Cancel</button>
             </div>
         </div>
     </div>
 
     <!-- Quiz Result Modal -->
-    <div class="modal fade" id="quizResultModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Quiz Result</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body text-center">
-                    <h4>Your Score:</h4>
-                    <h1 id="quizResultScore" class="display-1 fw-bold"></h1>
-                    <p id="quizResultPercentage" class="lead"></p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
-                </div>
+    <div id="quizResultModal" class="fixed inset-0 z-50 hidden items-center justify-center overflow-y-auto">
+        <div class="relative bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-sm w-full mx-4">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 text-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Quiz Result</h3>
+                <p class="text-sm text-gray-500">Your Score:</p>
+                <h1 id="quizResultScore" class="text-5xl font-bold text-gray-900 my-2"></h1>
+                <p id="quizResultPercentage" class="text-lg"></p>
+            </div>
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:text-sm" onclick="quizResultModal.hide()">Close</button>
             </div>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script src="../../../js/session_timeout.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
     <script>
         fetch('/Hohoo-ville/frontend/html/trainee/components/notification.html')
             .then(r => r.text())
             .then(html => document.getElementById('notificationContainer').innerHTML = html);
+        
+        // Tab Logic
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Remove active class from all buttons
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    b.classList.remove('border-blue-500', 'text-blue-600');
+                    b.classList.add('border-transparent', 'text-slate-500');
+                });
+                // Add active class to clicked button
+                btn.classList.remove('border-transparent', 'text-slate-500');
+                btn.classList.add('border-blue-500', 'text-blue-600');
+                
+                // Hide all panes
+                document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+                document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('block'));
+                
+                // Show target pane
+                const target = document.getElementById(btn.dataset.target);
+                if(target) {
+                    target.classList.remove('hidden');
+                    target.classList.add('block');
+                }
+            });
+        });
     </script>
     <script src="../../../js/notifications.js"></script>
     <script src="../../../js/trainee/pages/my_training.js"></script>

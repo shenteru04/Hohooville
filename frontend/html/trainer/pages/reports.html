@@ -4,315 +4,195 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reports - Hohoo-Ville Tech</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- SweetAlert2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
     <style>
-        :root {
-            --primary-color: #4e73df;
-            --secondary-color: #858796;
-            --bg-color: #f8f9fc;
-            --text-color: #5a5c69;
-            --border-color: #e3e6f0;
-        }
-        body {
-            font-family: 'Nunito', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-        }
-        #sidebar {
-            background: #fff;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-            z-index: 1000;
-        }
-        #sidebar .sidebar-header {
-            padding: 1.5rem 1rem;
-            text-align: center;
-            color: var(--primary-color);
-            font-weight: 800;
-        }
-        #sidebar .nav-link {
-            color: var(--text-color);
-            padding: 0.5rem 1rem;
-            margin: 0.1rem 0.5rem;
-            border-radius: 0.35rem;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        #sidebar .nav-link:hover {
-            background-color: #eaecf4;
-            color: var(--primary-color);
-        }
-        #sidebar .nav-link.active {
-            background-color: var(--primary-color);
-            color: #fff;
-        }
-        .card {
-            border: none;
-            border-radius: 0.35rem;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-        }
-        .card-header {
-            background-color: #f8f9fc;
-            border-bottom: 1px solid var(--border-color);
-            padding: 1rem 1.25rem;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-        .page-header {
-            background: linear-gradient(135deg, #eef2ff 0%, #f8f9fc 70%);
-            border: 1px solid var(--border-color);
-            border-radius: 0.5rem;
-            padding: 1rem 1.25rem;
-        }
-        .stat-tile {
-            background: #fff;
-            border: 1px solid var(--border-color);
-            border-radius: 0.5rem;
-            padding: 0.9rem 1rem;
-            height: 100%;
-        }
-        .stat-label {
-            font-size: 0.8rem;
-            color: var(--secondary-color);
-            text-transform: uppercase;
-            letter-spacing: 0.02em;
-        }
-        .stat-value {
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: #1f2a44;
-        }
-        .report-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.75rem 1.5rem;
-            font-size: 0.9rem;
-        }
-        .report-meta span {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            color: var(--secondary-color);
-        }
-        .report-badge {
-            background: #eef2ff;
-            color: #2f4cc8;
-            border-radius: 999px;
-            padding: 0.15rem 0.6rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-        .table thead th {
-            background: #f3f6ff;
-        }
-        .btn-icon {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.45rem;
-        }
-        .muted-note {
-            color: var(--secondary-color);
-            font-size: 0.9rem;
-        }
+        body { font-family: 'Nunito', sans-serif; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body>
-    <div class="d-flex">
-         <!-- Sidebar -->
-        <nav id="sidebar" class="p-3">
-            <div class="sidebar-header mb-4">
-                <h3><img src="../../../../img/logo.jpg" alt="Logo" class="me-2" style="height: 35px; width: auto;">Hohooville</h3>
-                <p class="text-muted">Trainer Portal</p>
+<body class="bg-slate-50 text-slate-700">
+    <div class="flex h-screen overflow-hidden">
+        <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/40 z-20 hidden lg:hidden transition-opacity opacity-0"></div>
+
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-30 w-72 bg-white/95 backdrop-blur border-r border-blue-100 shadow-xl shadow-blue-100/40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col">
+            <div class="h-16 px-4 flex items-center gap-3 border-b border-blue-100 bg-gradient-to-r from-blue-600 to-blue-500 text-white">
+                <img src="../../../../img/logo.jpg" alt="Hohooville Logo" class="h-8 w-8 rounded-lg bg-white/20 p-1">
+                <div class="leading-tight">
+                    <p class="text-lg font-semibold">Hohooville</p>
+                    <p class="text-[11px] text-blue-100">Trainer Portal</p>
+                </div>
             </div>
-            <ul class="nav flex-column">
-                <li class="nav-item mb-1">
-                    <a class="nav-link" href="../trainer_dashboard.html">
-                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
-                    </a>
-                </li>
-                <li class="nav-item mb-1">
-                    <a class="nav-link" href="my_batches.html">
-                        <i class="fas fa-chalkboard-teacher me-2"></i> My Batches
-                    </a>
-                </li>
 
-                <li class="nav-item mb-1">
-                    <a class="nav-link" href="modules.html">
-                        <i class="fas fa-book me-2"></i> Modules
+            <div class="flex-1 overflow-y-auto py-4 scrollbar-hide">
+                <nav class="px-4 space-y-2">
+                    <p class="px-4 text-[11px] font-semibold text-blue-400 uppercase tracking-[0.2em] mb-2">Menu</p>
+                    <a href="/Hohoo-ville/frontend/html/trainer/trainer_dashboard.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
+                        <i class="fas fa-home w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> Dashboard
                     </a>
-                </li>
-            
-                <li class="nav-item mb-1">
-                    <a class="nav-link" href="progress_chart.html">
-                        <i class="fas fa-chart-line me-2"></i> Progress Chart
+                    <a href="/Hohoo-ville/frontend/html/trainer/pages/my_batches.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
+                        <i class="fas fa-users w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> My Batches
                     </a>
-                </li>
-                <li class="nav-item mb-1">
-                    <a class="nav-link active" href="reports.html">
-                        <i class="fas fa-chart-bar me-2"></i> Reports
+                    <a href="/Hohoo-ville/frontend/html/trainer/pages/modules.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
+                        <i class="fas fa-book w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> Modules
                     </a>
-                </li>
-            </ul>
-        </nav>
+                    <a href="/Hohoo-ville/frontend/html/trainer/pages/progress_chart.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
+                        <i class="fas fa-chart-line w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> Progress Chart
+                    </a>
+                    <a href="/Hohoo-ville/frontend/html/trainer/pages/achievement_chart.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
+                        <i class="fas fa-trophy w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> Achievement Chart
+                    </a>
+                    <a href="/Hohoo-ville/frontend/html/trainer/pages/reports.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold text-blue-700 bg-blue-50 ring-1 ring-blue-100" aria-current="page">
+                        <i class="fas fa-chart-bar w-5 h-5 text-blue-600"></i> Reports
+                    </a>
+                </nav>
+            </div>
 
-        <!-- Content -->
-        <div class="flex-grow-1" id="content">
-            <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
-                <div class="container-fluid">
-                    <button type="button" id="sidebarCollapse" class="btn btn-outline-primary me-2 d-lg-none">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <div class="ms-auto d-flex align-items-center">
-                        <ul class="navbar-nav flex-row me-2">
-                            <li class="nav-item dropdown no-arrow mx-1">
-                                <a class="nav-link dropdown-toggle" href="#" id="alertsDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    <i class="fas fa-bell fa-fw"></i>
-                                    <span class="badge bg-danger badge-counter" id="notificationBadge" style="display: none;"></span>
-                                </a>
-                                <div class="dropdown-menu dropdown-menu-end p-0 shadow animated--grow-in" aria-labelledby="alertsDropdown" style="min-width: 320px;">
-                                    <div class="p-2 border-bottom">
-                                        <strong class="small mb-0">Notifications</strong>
-                                    </div>
-                                    <div class="list-group list-group-flush" id="notificationList" style="max-height: 400px; overflow-y: auto;">
-                                        <div class="list-group-item text-center small text-muted">No new notifications</div>
-                                    </div>
-                                </div>
-                            </li>
-                        </ul>
-                        <div class="dropdown">
-                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
-                                <i class="fas fa-user-circle"></i> <span id="trainerName">Trainer</span>
+            <div class="p-4 border-t border-blue-100">
+                <button id="sidebarCloseBtn" class="lg:hidden w-full flex items-center justify-center px-4 py-2 rounded-lg border border-blue-200 text-sm font-semibold text-blue-700 bg-white hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                    Close Menu
+                </button>
+            </div>
+        </aside>
+
+        <div class="flex-1 flex flex-col lg:ml-72 min-w-0 overflow-hidden">
+            <header class="bg-white/85 backdrop-blur border-b border-blue-100 shadow-sm z-10">
+                <div class="h-16 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <button id="sidebarCollapse" class="lg:hidden p-2 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                            <i class="fas fa-bars text-lg"></i>
+                        </button>
+                        <h1 class="text-xl font-semibold text-slate-800">Reports</h1>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <div class="relative">
+                            <button id="notificationBtn" class="relative p-2 rounded-lg border border-blue-100 bg-white text-slate-600 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" aria-label="Notifications">
+                                <i class="fas fa-bell"></i>
+                                <span id="notificationBadge" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold items-center justify-center"></span>
                             </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
-                            </ul>
+                            <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 max-w-[90vw] rounded-xl border border-blue-100 bg-white shadow-xl shadow-blue-100/40 origin-top-right transition-all duration-200 transform scale-95 opacity-0 z-40">
+                                <div id="notificationList" class="max-h-96 overflow-y-auto">
+                                    <div class="px-4 py-3 text-center text-sm text-slate-500">No notifications</div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            </nav>
 
-            <div class="container-fluid mt-4">
-                <div class="page-header mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
-                    <div>
-                        <h2 class="mb-1 text-gray-800">Reports</h2>
-                        <p class="mb-0 muted-note">Generate printable summaries for attendance, grading, and competency progress.</p>
-                    </div>
-                    <div class="text-end">
-                        <div class="muted-note">Trainer Reporting</div>
-                        <div class="report-badge">Live Data</div>
+                        <div class="relative">
+                            <button id="userMenuButton" class="flex items-center gap-2 rounded-full border border-blue-100 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                <i class="fas fa-user-circle text-xl text-blue-500"></i>
+                                <span id="trainerName" class="hidden md:block">Trainer</span>
+                                <i class="fas fa-chevron-down text-xs text-slate-400"></i>
+                            </button>
+                            <div id="userMenuDropdown" class="hidden absolute right-0 mt-2 w-48 rounded-xl border border-blue-100 shadow-xl shadow-blue-100/40 py-1 bg-white z-40">
+                                <a href="/Hohoo-ville/frontend/html/trainer/pages/profile.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-user mr-2"></i> Profile</a>
+                                <div class="border-t border-blue-100"></div>
+                                <a href="#" id="logoutBtn" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-sign-out-alt mr-2"></i> Logout</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                
-                <div class="card mb-4">
-                    <div class="card-header bg-white d-flex align-items-center justify-content-between">
-                        <h5 class="mb-0">Generate Report</h5>
-                        <span class="muted-note" id="reportStatus">Select a batch to begin</span>
-                    </div>
-                    <div class="card-body">
-                        <form id="reportForm" class="row g-3">
-                            <div class="col-md-4">
-                                <label class="form-label">Report Type</label>
-                                <select id="reportType" class="form-select">
-                                    <option value="grading_summary">Class Grading Summary</option>
-                                    <option value="attendance_summary">Attendance Report</option>
-                                    <option value="competency_status">Competency Status (CTPR)</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Batch</label>
-                                <select id="batchSelect" class="form-select">
-                                    <option value="">Select Batch</option>
-                                    <!-- Populated by JS -->
-                                </select>
-                            </div>
-                            <div class="col-md-4 d-flex align-items-end">
-                                <button type="submit" class="btn btn-primary me-2 btn-icon" id="viewReportBtn">
-                                    <i class="fas fa-eye"></i> View
-                                </button>
-                                <button type="button" class="btn btn-success btn-icon" id="exportReportBtn">
-                                    <i class="fas fa-file-export"></i> Export Excel
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+            </header>
 
-                <div id="reportResult" class="card d-none">
-                    <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
-                        <div>
-                            <h5 class="mb-0" id="reportTitle">Report Preview</h5>
-                            <div class="report-meta mt-2">
-                                <span><i class="fas fa-calendar-alt"></i> <span id="reportDate">-</span></span>
-                                <span><i class="fas fa-layer-group"></i> <span id="reportBatchName">-</span></span>
-                                <span><i class="fas fa-tag"></i> <span id="reportTypeLabel">-</span></span>
+            <main class="flex-1 overflow-y-auto bg-gradient-to-b from-blue-50/60 via-white to-slate-50 p-4 sm:p-6 lg:p-8">
+                <div class="mx-auto w-full max-w-7xl space-y-6">
+                    <section class="bg-white rounded-2xl border border-blue-100 shadow-sm p-6 sm:p-8">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <h2 class="text-2xl font-bold text-slate-900">Generate Reports</h2>
+                                <p class="text-sm text-slate-500 mt-1">Create summaries for grading, attendance, and competency status.</p>
+                            </div>
+                            <span class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">Live Data</span>
+                        </div>
+                    </section>
+
+                    <section class="bg-white rounded-2xl border border-blue-100 shadow-sm overflow-hidden">
+                        <div class="px-6 py-4 border-b border-blue-100 bg-blue-50/50 flex items-center justify-between gap-3">
+                            <h3 class="text-base font-semibold text-slate-900">Report Setup</h3>
+                            <span id="reportStatus" class="text-sm text-slate-500">Select a batch to begin</span>
+                        </div>
+                        <div class="p-6">
+                            <form id="reportForm" class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                                <div class="md:col-span-4">
+                                    <label for="reportType" class="block text-sm font-medium text-slate-700 mb-1">Report Type</label>
+                                    <select id="reportType" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                        <option value="grading_summary">Class Grading Summary</option>
+                                        <option value="attendance_summary">Attendance Report</option>
+                                        <option value="competency_status">Competency Status (CTPR)</option>
+                                    </select>
+                                </div>
+                                <div class="md:col-span-4">
+                                    <label for="batchSelect" class="block text-sm font-medium text-slate-700 mb-1">Batch</label>
+                                    <select id="batchSelect" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                        <option value="">Select Batch</option>
+                                    </select>
+                                </div>
+                                <div class="md:col-span-4 flex items-end gap-2">
+                                    <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="viewReportBtn">
+                                        <i class="fas fa-eye"></i> View
+                                    </button>
+                                    <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500" id="exportReportBtn">
+                                        <i class="fas fa-file-export"></i> Export Excel
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </section>
+
+                    <section id="reportResult" class="hidden bg-white rounded-2xl border border-blue-100 shadow-sm overflow-hidden">
+                        <div class="px-6 py-4 border-b border-blue-100 bg-blue-50/50">
+                            <h3 class="text-base font-semibold text-slate-900" id="reportTitle">Report Preview</h3>
+                            <div class="mt-2 flex flex-wrap gap-3 text-sm text-slate-500">
+                                <span><i class="fas fa-calendar-alt mr-1"></i><span id="reportDate">-</span></span>
+                                <span><i class="fas fa-layer-group mr-1"></i><span id="reportBatchName">-</span></span>
+                                <span><i class="fas fa-tag mr-1"></i><span id="reportTypeLabel">-</span></span>
                             </div>
                         </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-3 mb-3 d-none" id="reportSummary">
-                            <div class="col-md-3">
-                                <div class="stat-tile">
-                                    <div class="stat-label">Trainees</div>
-                                    <div class="stat-value" id="summaryTotal">0</div>
+                        <div class="p-6">
+                            <div class="hidden grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-4" id="reportSummary">
+                                <div class="rounded-xl border border-slate-200 bg-white p-4">
+                                    <p class="text-xs uppercase tracking-wider font-semibold text-slate-500">Trainees</p>
+                                    <p class="text-2xl font-bold text-slate-900" id="summaryTotal">0</p>
+                                </div>
+                                <div class="rounded-xl border border-slate-200 bg-white p-4">
+                                    <p class="text-xs uppercase tracking-wider font-semibold text-slate-500">Competent</p>
+                                    <p class="text-2xl font-bold text-slate-900" id="summaryCompetent">0</p>
+                                </div>
+                                <div class="rounded-xl border border-slate-200 bg-white p-4">
+                                    <p class="text-xs uppercase tracking-wider font-semibold text-slate-500">Avg. Score</p>
+                                    <p class="text-2xl font-bold text-slate-900" id="summaryAverage">0%</p>
+                                </div>
+                                <div class="rounded-xl border border-slate-200 bg-white p-4">
+                                    <p class="text-xs uppercase tracking-wider font-semibold text-slate-500">Attendance Avg.</p>
+                                    <p class="text-2xl font-bold text-slate-900" id="summaryAttendance">0%</p>
                                 </div>
                             </div>
-                            <div class="col-md-3">
-                                <div class="stat-tile">
-                                    <div class="stat-label">Competent</div>
-                                    <div class="stat-value" id="summaryCompetent">0</div>
-                                </div>
+
+                            <div id="reportEmpty" class="hidden rounded-lg border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                                No data available for the selected report.
                             </div>
-                            <div class="col-md-3">
-                                <div class="stat-tile">
-                                    <div class="stat-label">Avg. Score</div>
-                                    <div class="stat-value" id="summaryAverage">0%</div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="stat-tile">
-                                    <div class="stat-label">Attendance Avg.</div>
-                                    <div class="stat-value" id="summaryAttendance">0%</div>
-                                </div>
+
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-slate-200" id="reportTable" data-table-manager="true" data-filters="Category:0" data-filter-auto-options="true">
+                                    <thead id="reportHead" class="bg-slate-50"></thead>
+                                    <tbody id="reportBody" class="divide-y divide-slate-100 bg-white"></tbody>
+                                </table>
                             </div>
                         </div>
-                        <div id="reportEmpty" class="alert alert-light text-center text-muted d-none">
-                            No data available for the selected report.
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-striped" id="reportTable" data-table-manager="true" data-filters="Category:0" data-filter-auto-options="true">
-                                <thead id="reportHead"></thead>
-                                <tbody id="reportBody"></tbody>
-                            </table>
-                        </div>
-                    </div>
+                    </section>
                 </div>
-            </div>
+            </main>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
+    <script src="../../../js/session_timeout.js"></script>
     <script src="../../../js/table_manager.js"></script>
     <script src="../../../js/trainer/pages/reports.js"></script>
     <script src="../../../js/notifications.js"></script>
-    <script>
-        document.getElementById('sidebarCollapse').addEventListener('click', function() {
-            document.getElementById('sidebar').classList.toggle('d-none');
-        });
-        document.getElementById('logoutBtn').addEventListener('click', function() {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = '../../../login.html';
-        });
-    </script>
 </body>
 </html>
-
-

@@ -4,220 +4,203 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Profile - Hohoo-Ville</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary-color: #4e73df;
-            --secondary-color: #858796;
-            --bg-color: #f8f9fc;
-            --text-color: #5a5c69;
-        }
-        body {
-            font-family: 'Nunito', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-        }
-        #sidebar {
-            background: #fff;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-            z-index: 1000;
-        }
-        #sidebar .sidebar-header {
-            padding: 1.5rem 1rem;
-            text-align: center;
-            color: var(--primary-color);
-            font-weight: 800;
-        }
-        #sidebar .nav-link {
-            color: var(--text-color);
-            padding: 0.5rem 1rem;
-            margin: 0.1rem 0.5rem;
-            border-radius: 0.35rem;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        #sidebar .nav-link:hover {
-            background-color: #eaecf4;
-            color: var(--primary-color);
-        }
-        #sidebar .nav-link.active {
-            background-color: var(--primary-color);
-            color: #fff;
-        }
-        .card {
-            border: none;
-            border-radius: 0.35rem;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-        }
-        .card-header {
-            background-color: #f8f9fc;
-            border-bottom: 1px solid #e3e6f0;
-            padding: 1rem 1.25rem;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
+        body { font-family: 'Nunito', sans-serif; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body>
-    <div class="d-flex">
+<body class="bg-slate-50 text-slate-700">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar Overlay -->
+        <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/40 z-20 hidden lg:hidden transition-opacity opacity-0"></div>
+
         <!-- Sidebar -->
-        <nav id="sidebar" class="p-3">
-            <div class="sidebar-header mb-4">
-                <h3><img src="../../../../img/logo.jpg" alt="Logo" class="me-2" style="height: 35px; width: auto;">Hohooville</h3>
-                <p class="text-muted">Trainee Portal</p>
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-30 w-72 bg-white/95 backdrop-blur border-r border-blue-100 shadow-xl shadow-blue-100/40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col">
+            <div class="h-16 px-4 flex items-center gap-3 border-b border-blue-100 bg-gradient-to-r from-blue-600 to-blue-500 text-white">
+                <img src="../../../../img/logo.jpg" alt="Hohooville Logo" class="h-8 w-8 rounded-lg bg-white/20 p-1">
+                <div class="leading-tight">
+                    <p class="text-lg font-semibold">Hohooville</p>
+                    <p class="text-[11px] text-blue-100">Trainee Portal</p>
+                </div>
             </div>
-            <ul class="nav flex-column">
-                <li class="nav-item mb-1">
-                    <a class="nav-link" href="../trainee_dashboard.html">
-                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+            <div class="flex-1 overflow-y-auto py-4">
+                <nav class="px-4 space-y-2">
+                    <p class="px-4 text-[11px] font-semibold text-blue-400 uppercase tracking-[0.2em] mb-2">Menu</p>
+                    <a href="../trainee_dashboard.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
+                        <i class="fas fa-home w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> Dashboard
                     </a>
-                </li>
-                <li class="nav-item mb-1">
-                    <a class="nav-link" href="my_training.html">
-                        <i class="fas fa-book me-2"></i> My Training
+                    <a href="/Hohoo-ville/frontend/html/trainee/pages/learning_path.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
+                        <i class="fas fa-graduation-cap w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> Learning Path
                     </a>
-                </li>
-                <li class="nav-item mb-1">
-                    <a class="nav-link" href="my_grades.html">
-                        <i class="fas fa-star me-2"></i> My Progress
+                    <a href="/Hohoo-ville/frontend/html/trainee/pages/my_training.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
+                        <i class="fas fa-book-open w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> My Training
                     </a>
-                </li>
-            </ul>
-        </nav>
+                    <a href="/Hohoo-ville/frontend/html/trainee/pages/my_grades.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
+                        <i class="fas fa-star w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> My Progress
+                    </a>
+                </nav>
+            </div>
+            <div class="p-4 border-t border-gray-200">
+                <button id="sidebarCloseBtn" class="lg:hidden w-full flex items-center justify-center px-4 py-2 rounded-lg border border-blue-200 text-sm font-semibold text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    Close Menu
+                </button>
+            </div>
+        </aside>
 
         <!-- Content -->
-        <div class="flex-grow-1" id="content">
-            <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm px-4 py-3">
-                <span class="navbar-brand mb-0 h1">My Profile</span>
-                <div class="ms-auto d-flex align-items-center">
+        <div class="flex-1 flex flex-col lg:ml-72 min-w-0 overflow-hidden">
+            <!-- Navbar -->
+            <header class="bg-white/80 backdrop-blur border-b border-blue-100 shadow-sm z-10">
+                <div class="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
+                    <div class="flex items-center">
+                        <button id="sidebarCollapse" class="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500">
+                            <i class="fas fa-bars text-xl"></i>
+                        </button>
+                        <h1 class="text-xl font-semibold text-slate-800 ml-2 lg:ml-0">My Profile</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
                     <div id="notificationContainer"></div>
-                    <div class="dropdown">
-                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
-                        <i class="fas fa-user-circle me-2"></i> <span id="traineeName">Trainee</span>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="/Hohoo-ville/frontend/html/trainee/pages/profile.html"><i class="fas fa-user me-2"></i> Profile</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt me-2"></i> Logout</a></li>
-                    </ul>
+                        <div class="relative group">
+                            <button class="flex items-center gap-2 max-w-xs rounded-full border border-blue-100 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-700 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" id="userMenuButton">
+                                <i class="fas fa-user-circle text-xl text-blue-500"></i>
+                                <span id="traineeName" class="hidden md:block">Trainee</span>
+                                <i class="fas fa-chevron-down text-xs text-slate-400"></i>
+                            </button>
+                            <div class="origin-top-right absolute right-0 mt-2 w-48 rounded-xl border border-blue-100 shadow-xl shadow-blue-100/40 py-1 bg-white hidden group-hover:block focus-within:block">
+                                <a href="/Hohoo-ville/frontend/html/trainee/pages/profile.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-user mr-2"></i> Profile</a>
+                                <div class="border-t border-blue-100"></div>
+                                <a href="#" id="logoutBtn" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-sign-out-alt mr-2"></i> Logout</a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </nav>
+            </header>
 
-            <div class="container-fluid p-4">
-                <!-- Profile Header -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-body">
-                        <div class="row align-items-center">
-                            <div class="col-md-auto">
-                                <img id="headerTraineePhoto" src="https://ui-avatars.com/api/?name=Trainee&background=random" class="rounded-circle" width="120" height="120" style="object-fit: cover;" alt="Trainee Photo">
+            <!-- Content -->
+            <main class="flex-1 overflow-y-auto bg-gradient-to-b from-blue-50/60 via-white to-slate-50 p-4 sm:p-6 lg:p-8">
+                <div class="mx-auto w-full max-w-6xl space-y-6">
+                    <!-- Profile Header -->
+                    <div class="bg-white rounded-2xl border border-blue-100 shadow-sm p-6 sm:p-8">
+                        <div class="flex flex-col md:flex-row items-center gap-5">
+                            <div class="relative">
+                                <img id="headerTraineePhoto" src="https://ui-avatars.com/api/?name=Trainee&background=random" class="h-24 w-24 rounded-2xl object-cover ring-2 ring-blue-100" alt="Trainee Photo">
+                                <div class="absolute -bottom-2 -right-2 h-8 w-8 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-md">
+                                    <i class="fas fa-user text-xs"></i>
+                                </div>
                             </div>
-                            <div class="col-md">
-                                <h3 class="mb-1" id="headerTraineeName">Loading...</h3>
-                                <p class="text-muted mb-0" id="headerTraineeCourse">Loading course...</p>
+                            <div class="text-center md:text-left">
+                                <p class="text-xs font-semibold uppercase tracking-widest text-blue-500 mb-1">Profile</p>
+                                <h3 class="text-2xl font-bold text-slate-900" id="headerTraineeName">Loading...</h3>
+                                <p class="text-slate-500" id="headerTraineeCourse">Loading course...</p>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="row">
-                    <div class="col-lg-7">
-                        <div class="card shadow-sm mb-4">
-                            <div class="card-header">
-                                <i class="fas fa-edit me-2"></i>Update Your Contact Information
-                            </div>
-                            <div class="card-body">
-                                <form id="profileForm">
-                                    <div class="row mb-3">
-                                        <div class="col-md-6">
-                                            <label class="form-label">First Name</label>
-                                            <input type="text" class="form-control" id="firstName" required>
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        <div class="lg:col-span-7">
+                            <div class="bg-white rounded-2xl border border-blue-100 shadow-sm overflow-hidden">
+                                <div class="px-6 py-4 border-b border-blue-100 bg-blue-50/60">
+                                    <h3 class="text-lg font-semibold text-slate-900"><i class="fas fa-edit mr-2 text-blue-500"></i>Update Contact Information</h3>
+                                </div>
+                                <div class="p-6">
+                                    <form id="profileForm" class="space-y-4">
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-slate-700 mb-1">First Name</label>
+                                                <input type="text" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200" id="firstName" required>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-slate-700 mb-1">Last Name</label>
+                                                <input type="text" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200" id="lastName" required>
+                                            </div>
                                         </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Last Name</label>
-                                            <input type="text" class="form-control" id="lastName" required>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-slate-700 mb-1">Qualification</label>
+                                                <input type="text" class="w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-600 shadow-sm cursor-not-allowed" id="qualification" readonly>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-slate-700 mb-1">Sex</label>
+                                                <input type="text" class="w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-600 shadow-sm cursor-not-allowed" id="sex" readonly>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="row mb-3">
-                                        <div class="col-md-6">
-                                            <label class="form-label">Qualification</label>
-                                            <input type="text" class="form-control" id="qualification" readonly>
+                                        <div>
+                                            <label class="block text-sm font-medium text-slate-700 mb-1">Birthdate</label>
+                                            <input type="text" class="w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-600 shadow-sm cursor-not-allowed" id="birthdate" readonly>
                                         </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Sex</label>
-                                            <input type="text" class="form-control" id="sex" readonly>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+                                                <input type="email" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200" id="email" required>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-slate-700 mb-1">Phone Number</label>
+                                                <input type="text" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200" id="phone">
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="row mb-3">
-                                        <div class="col-md-6">
-                                            <label class="form-label">Birthdate</label>
-                                            <input type="text" class="form-control" id="birthdate" readonly>
+                                        <div>
+                                            <label class="block text-sm font-medium text-slate-700 mb-1">Facebook Account URL</label>
+                                            <input type="text" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200" id="facebook">
                                         </div>
-                                    </div>
-                                    <div class="row mb-3">
-                                        <div class="col-md-6">
-                                            <label class="form-label">Email Address</label>
-                                            <input type="email" class="form-control" id="email" required>
+                                        <div>
+                                            <label class="block text-sm font-medium text-slate-700 mb-1">Address</label>
+                                            <textarea class="w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-600 shadow-sm cursor-not-allowed" id="address" rows="2" readonly></textarea>
+                                            <p class="mt-1 text-xs text-slate-500">Address details can only be updated through the registrar's office.</p>
                                         </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Phone Number</label>
-                                            <input type="text" class="form-control" id="phone">
+                                        <div class="flex justify-end">
+                                            <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" id="saveProfileBtn">
+                                                <i class="fas fa-save"></i>Save Changes
+                                            </button>
                                         </div>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">Facebook Account URL</label>
-                                        <input type="text" class="form-control" id="facebook">
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">Address</label>
-                                        <textarea class="form-control" id="address" rows="2" readonly></textarea>
-                                        <div class="form-text">Address details can only be updated through the registrar's office.</div>
-                                    </div>
-                                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                                        <button type="submit" class="btn btn-primary" id="saveProfileBtn">
-                                            <i class="fas fa-save me-2"></i>Save Changes
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-5">
-                        <div class="card shadow-sm mb-4">
-                            <div class="card-header"><i class="fas fa-id-card me-2"></i>Personal Information</div>
-                            <div class="card-body">
-                                <dl class="row mb-0">
-                                    <dt class="col-sm-5">Sex</dt><dd class="col-sm-7" id="profileSex"></dd>
-                                    <dt class="col-sm-5">Civil Status</dt><dd class="col-sm-7" id="profileCivilStatus"></dd>
-                                    <dt class="col-sm-5">Birthdate</dt><dd class="col-sm-7" id="profileBirthdate"></dd>
-                                    <dt class="col-sm-5">Age</dt><dd class="col-sm-7" id="profileAge"></dd>
-                                    <dt class="col-sm-5">Birthplace</dt><dd class="col-sm-7" id="profileBirthplace"></dd>
-                                    <dt class="col-sm-5">Nationality</dt><dd class="col-sm-7" id="profileNationality"></dd>
-                                    <dt class="col-sm-5">Education</dt><dd class="col-sm-7" id="profileEducation"></dd>
-                                </dl>
+                                    </form>
+                                </div>
                             </div>
                         </div>
-                        <div class="card shadow-sm mb-4">
-                            <div class="card-header"><i class="fas fa-graduation-cap me-2"></i>Training Information</div>
-                            <div class="card-body">
-                                <dl class="row mb-0">
-                                    <dt class="col-sm-5">School ID</dt><dd class="col-sm-7" id="profileSchoolId"></dd>
-                                    <dt class="col-sm-5">Username</dt><dd class="col-sm-7" id="profileUsername"></dd>
-                                    <dt class="col-sm-5">Batch</dt><dd class="col-sm-7" id="profileBatch"></dd>
-                                    <dt class="col-sm-5">Scholarship</dt><dd class="col-sm-7" id="profileScholarship"></dd>
-                                </dl>
+                        <div class="lg:col-span-5 space-y-6">
+                            <div class="bg-white rounded-2xl border border-blue-100 shadow-sm overflow-hidden">
+                                <div class="px-6 py-4 border-b border-blue-100 bg-blue-50/60">
+                                    <h3 class="text-lg font-semibold text-slate-900"><i class="fas fa-id-card mr-2 text-blue-500"></i>Personal Information</h3>
+                                </div>
+                                <div class="p-6">
+                                    <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
+                                        <div class="sm:col-span-1"><dt class="text-xs font-semibold uppercase tracking-widest text-slate-500">Sex</dt><dd class="mt-1 text-sm text-slate-900" id="profileSex"></dd></div>
+                                        <div class="sm:col-span-1"><dt class="text-xs font-semibold uppercase tracking-widest text-slate-500">Civil Status</dt><dd class="mt-1 text-sm text-slate-900" id="profileCivilStatus"></dd></div>
+                                        <div class="sm:col-span-1"><dt class="text-xs font-semibold uppercase tracking-widest text-slate-500">Birthdate</dt><dd class="mt-1 text-sm text-slate-900" id="profileBirthdate"></dd></div>
+                                        <div class="sm:col-span-1"><dt class="text-xs font-semibold uppercase tracking-widest text-slate-500">Age</dt><dd class="mt-1 text-sm text-slate-900" id="profileAge"></dd></div>
+                                        <div class="sm:col-span-2"><dt class="text-xs font-semibold uppercase tracking-widest text-slate-500">Birthplace</dt><dd class="mt-1 text-sm text-slate-900" id="profileBirthplace"></dd></div>
+                                        <div class="sm:col-span-2"><dt class="text-xs font-semibold uppercase tracking-widest text-slate-500">Nationality</dt><dd class="mt-1 text-sm text-slate-900" id="profileNationality"></dd></div>
+                                        <div class="sm:col-span-2"><dt class="text-xs font-semibold uppercase tracking-widest text-slate-500">Education</dt><dd class="mt-1 text-sm text-slate-900" id="profileEducation"></dd></div>
+                                    </dl>
+                                </div>
+                            </div>
+                            <div class="bg-white rounded-2xl border border-blue-100 shadow-sm overflow-hidden">
+                                <div class="px-6 py-4 border-b border-blue-100 bg-blue-50/60">
+                                    <h3 class="text-lg font-semibold text-slate-900"><i class="fas fa-graduation-cap mr-2 text-blue-500"></i>Training Information</h3>
+                                </div>
+                                <div class="p-6">
+                                    <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
+                                        <div class="sm:col-span-1"><dt class="text-xs font-semibold uppercase tracking-widest text-slate-500">School ID</dt><dd class="mt-1 text-sm text-slate-900" id="profileSchoolId"></dd></div>
+                                        <div class="sm:col-span-1"><dt class="text-xs font-semibold uppercase tracking-widest text-slate-500">Username</dt><dd class="mt-1 text-sm text-slate-900" id="profileUsername"></dd></div>
+                                        <div class="sm:col-span-1"><dt class="text-xs font-semibold uppercase tracking-widest text-slate-500">Batch</dt><dd class="mt-1 text-sm text-slate-900" id="profileBatch"></dd></div>
+                                        <div class="sm:col-span-1"><dt class="text-xs font-semibold uppercase tracking-widest text-slate-500">Scholarship</dt><dd class="mt-1 text-sm text-slate-900" id="profileScholarship"></dd></div>
+                                        <div class="sm:col-span-1"><dt class="text-xs font-semibold uppercase tracking-widest text-slate-500">Enrollment Date</dt><dd class="mt-1 text-sm text-slate-900" id="profileEnrollmentDate"></dd></div>
+                                    </dl>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </main>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script src="../../../js/session_timeout.js"></script>
     <script>
         fetch('/Hohoo-ville/frontend/html/trainee/components/notification.html')
             .then(r => r.text())

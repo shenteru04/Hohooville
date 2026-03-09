@@ -1,140 +1,23 @@
-const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
+const API_BASE_URL = window.location.origin + '/Hohoo-ville/api';
 const REPORT_LABELS = {
     grading_summary: 'Class Grading Summary',
     attendance_summary: 'Attendance Report',
     competency_status: 'Competency Status (CTPR)'
 };
 
-document.addEventListener('DOMContentLoaded', async function() {
-    if (typeof Swal === 'undefined') {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
-        document.head.appendChild(script);
-    }
-
+document.addEventListener('DOMContentLoaded', async function () {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
-        window.location.href = '../../../login.html';
+        window.location.href = '/Hohoo-ville/frontend/login.html';
         return;
     }
 
-    try {
-        const response = await axios.get(`${API_BASE_URL}/role/trainer/profile.php?action=get-trainer-id&user_id=${user.user_id}`);
-        if (response.data.success) {
-            const trainer = response.data.data;
-            if (trainer.first_name && trainer.last_name) {
-                const nameEl = document.getElementById('trainerName');
-                if (nameEl) nameEl.textContent = `${trainer.first_name} ${trainer.last_name}`;
-            }
-            loadBatches(trainer.trainer_id);
-        }
-    } catch (error) {
-        console.error('Error fetching trainer ID:', error);
-    }
+    initSidebar();
+    initUserMenu();
+    initLogout();
 
-    // Inject Sidebar CSS (W3.CSS Reference Style)
-    const ms = document.createElement('style');
-    ms.innerHTML = `
-        #sidebar {
-            width: 200px;
-            position: fixed;
-            z-index: 1050;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            overflow-y: auto;
-            background-color: #fff;
-            box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16), 0 2px 10px 0 rgba(0,0,0,0.12);
-            display: block;
-        }
-        .main-content, #content, .content-wrapper {
-            margin-left: 200px !important;
-            transition: margin-left .4s;
-        }
-        #sidebarCloseBtn {
-            display: none;
-            width: 100%;
-            text-align: left;
-            padding: 8px 16px;
-            background: none;
-            border: none;
-            font-size: 18px;
-        }
-        #sidebarCloseBtn:hover { background-color: #ccc; }
-        
-        @media (max-width: 991.98px) {
-            #sidebar { display: none; }
-            .main-content, #content, .content-wrapper { margin-left: 0 !important; }
-            #sidebarCloseBtn { display: block; }
-        }
-        .table-responsive, table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    `;
-    document.head.appendChild(ms);
-
-    // Sidebar Logic
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) {
-        if (!document.getElementById('sidebarCloseBtn')) {
-            const closeBtn = document.createElement('button');
-            closeBtn.id = 'sidebarCloseBtn';
-            closeBtn.innerHTML = 'Close &times;';
-            closeBtn.className = 'w3-bar-item w3-button w3-hide-large';
-            closeBtn.addEventListener('click', () => {
-                sidebar.style.display = 'none';
-            });
-            sidebar.insertBefore(closeBtn, sidebar.firstChild);
-        }
-    }
-
-    // Open Button Logic
-    let sc = document.getElementById('sidebarCollapse');
-    if (!sc) {
-        const nb = document.querySelector('.navbar');
-        if (nb) {
-            const c = nb.querySelector('.container-fluid') || nb;
-            const b = document.createElement('button');
-            b.id = 'sidebarCollapse';
-            b.className = 'btn btn-outline-primary me-2 d-lg-none';
-            b.type = 'button';
-            b.innerHTML = '&#9776;';
-            c.insertBefore(b, c.firstChild);
-            sc = b;
-        }
-    }
-    if (sc) {
-        const nb = sc.cloneNode(true);
-        if(sc.parentNode) sc.parentNode.replaceChild(nb, sc);
-        nb.addEventListener('click', () => {
-            if (sidebar) sidebar.style.display = 'block';
-        });
-    }
-
-    // Remove Attendance and Grading pages from sidebar
-    if (sidebar) {
-        const ul = sidebar.querySelector('ul');
-        if (ul) {
-            ul.innerHTML = '';
-            const menuItems = [
-                { href: '/Hohoo-ville/frontend/html/trainer/trainer_dashboard.html', icon: 'fas fa-home', text: 'Dashboard' },
-                { href: 'my_batches.html', icon: 'fas fa-users', text: 'My Batches' },
-                { href: 'modules.html', icon: 'fas fa-book', text: 'Modules' },
-                { href: 'progress_chart.html', icon: 'fas fa-chart-line', text: 'Progress Chart' },
-                { href: 'achievement_chart.html', icon: 'fas fa-trophy', text: 'Achievement Chart' },
-                { href: 'reports.html', icon: 'fas fa-file-alt', text: 'Reports' }
-            ];
-            const currentPage = window.location.pathname.split('/').pop();
-            menuItems.forEach(item => {
-                const li = document.createElement('li');
-                li.className = 'nav-item mb-1';
-                const isActive = currentPage === item.href ? 'active' : '';
-                li.innerHTML = `<a class="nav-link ${isActive}" href="${item.href}"><i class="${item.icon} me-2"></i> ${item.text}</a>`;
-                ul.appendChild(li);
-            });
-        }
-    }
-
-    document.getElementById('reportForm').addEventListener('submit', function(e) {
-        e.preventDefault();
+    document.getElementById('reportForm').addEventListener('submit', function (event) {
+        event.preventDefault();
         generateReport();
     });
 
@@ -147,28 +30,111 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (typeof window.exportTableToExcel === 'function') {
                 window.exportTableToExcel('reportTable', filename);
             } else {
-                alert('Export is not available.');
+                notify('info', 'Export is not available.');
             }
         });
     }
 
-    // Logout
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            localStorage.clear();
-            window.location.href = '../../../login.html';
-        });
+    try {
+        const response = await axios.get(`${API_BASE_URL}/role/trainer/profile.php?action=get-trainer-id&user_id=${user.user_id}`);
+        if (response.data.success) {
+            const trainer = response.data.data;
+            if (trainer.first_name && trainer.last_name) {
+                const fullName = `${trainer.first_name} ${trainer.last_name}`;
+                document.getElementById('trainerName').textContent = fullName;
+            } else {
+                document.getElementById('trainerName').textContent = user.username || 'Trainer';
+            }
+            loadBatches(trainer.trainer_id);
+        }
+    } catch (error) {
+        console.error('Error fetching trainer ID:', error);
     }
 });
+
+function initSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const sidebarCollapse = document.getElementById('sidebarCollapse');
+    const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+    if (!sidebar) return;
+
+    function openSidebar() {
+        sidebar.classList.remove('-translate-x-full');
+        if (sidebarOverlay) {
+            sidebarOverlay.classList.remove('hidden');
+            requestAnimationFrame(() => sidebarOverlay.classList.remove('opacity-0'));
+        }
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function closeSidebar() {
+        sidebar.classList.add('-translate-x-full');
+        if (sidebarOverlay) {
+            sidebarOverlay.classList.add('opacity-0');
+            setTimeout(() => sidebarOverlay.classList.add('hidden'), 300);
+        }
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    function toggleSidebar() {
+        if (sidebar.classList.contains('-translate-x-full')) openSidebar();
+        else closeSidebar();
+    }
+
+    if (sidebarCollapse) sidebarCollapse.addEventListener('click', toggleSidebar);
+    if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', closeSidebar);
+    if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+
+    window.addEventListener('resize', () => {
+        if (window.innerWidth >= 1024) {
+            document.body.classList.remove('overflow-hidden');
+            if (sidebarOverlay) sidebarOverlay.classList.add('hidden', 'opacity-0');
+        }
+    });
+}
+
+function initUserMenu() {
+    const userMenuButton = document.getElementById('userMenuButton');
+    const userMenuDropdown = document.getElementById('userMenuDropdown');
+    if (!userMenuButton || !userMenuDropdown) return;
+
+    userMenuButton.addEventListener('click', function (event) {
+        event.stopPropagation();
+        userMenuDropdown.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', function (event) {
+        if (!event.target.closest('#userMenuDropdown')) {
+            userMenuDropdown.classList.add('hidden');
+        }
+    });
+}
+
+function initLogout() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (!logoutBtn) return;
+
+    logoutBtn.addEventListener('click', function (event) {
+        event.preventDefault();
+        localStorage.clear();
+        window.location.href = '/Hohoo-ville/frontend/login.html';
+    });
+}
 
 async function loadBatches(trainerId) {
     try {
         const response = await axios.get(`${API_BASE_URL}/role/trainer/trainer_dashboard.php?action=schedule&trainer_id=${trainerId}`);
         if (response.data.success) {
             const select = document.getElementById('batchSelect');
+            if (!select) return;
+
+            select.innerHTML = '<option value="">Select Batch</option>';
+            const unique = new Set();
             response.data.data.forEach(batch => {
+                const key = `${batch.batch_id}-${batch.batch_name}-${batch.course_name}`;
+                if (unique.has(key)) return;
+                unique.add(key);
                 select.innerHTML += `<option value="${batch.batch_id}">${batch.batch_name} - ${batch.course_name}</option>`;
             });
         }
@@ -182,27 +148,26 @@ async function generateReport() {
     const batchId = document.getElementById('batchSelect').value;
 
     if (!batchId) {
-        Swal.fire('Missing Input', 'Please select a batch', 'warning');
+        notify('warning', 'Please select a batch.');
         return;
     }
 
     try {
         setLoading(true, 'Generating report...');
         const response = await axios.get(`${API_BASE_URL}/role/trainer/reports.php?action=${type}&batch_id=${batchId}`);
-        
         if (response.data.success) {
-            renderReport(type, response.data.data);
+            renderReport(type, response.data.data || []);
             setLoading(false, 'Report generated');
         } else {
-            Swal.fire('No Data', 'No data found for this report.', 'info');
             renderEmpty();
             setLoading(false, 'No data found');
+            notify('info', 'No data found for this report.');
         }
     } catch (error) {
         console.error('Report Error:', error);
-        Swal.fire('Error', 'Failed to generate report', 'error');
         renderEmpty();
         setLoading(false, 'Error generating report');
+        notify('error', 'Failed to generate report.');
     }
 }
 
@@ -210,20 +175,22 @@ function renderReport(type, data) {
     const container = document.getElementById('reportResult');
     const thead = document.getElementById('reportHead');
     const tbody = document.getElementById('reportBody');
+    const emptyState = document.getElementById('reportEmpty');
     const reportTitle = document.getElementById('reportTitle');
     const reportTypeLabel = document.getElementById('reportTypeLabel');
     const reportDate = document.getElementById('reportDate');
     const reportBatchName = document.getElementById('reportBatchName');
-    const emptyState = document.getElementById('reportEmpty');
-    
-    container.classList.remove('d-none');
+
+    container.classList.remove('hidden');
+    if (emptyState) emptyState.classList.add('hidden');
+
     reportTitle.textContent = `${REPORT_LABELS[type] || 'Report'} Preview`;
     reportTypeLabel.textContent = REPORT_LABELS[type] || 'Report';
     reportDate.textContent = new Date().toLocaleString();
     reportBatchName.textContent = getSelectedBatchLabel();
-    tbody.innerHTML = '';
+
     thead.innerHTML = '';
-    if (emptyState) emptyState.classList.add('d-none');
+    tbody.innerHTML = '';
 
     if (!data || data.length === 0) {
         renderEmpty();
@@ -233,29 +200,55 @@ function renderReport(type, data) {
     if (type === 'grading_summary' || type === 'competency_status') {
         thead.innerHTML = `
             <tr>
-                <th>Trainee Name</th>
-                <th>Course</th>
-                <th>Total Grade</th>
-                <th>Status</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Trainee Name</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Course</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Total Grade</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th>
             </tr>
         `;
         data.forEach(row => {
+            const grade = parseFloat(row.total_grade);
+            const competent = !Number.isNaN(grade) && grade >= 80;
+            const badgeClass = competent
+                ? 'bg-emerald-100 text-emerald-700'
+                : 'bg-amber-100 text-amber-700';
+            const statusText = competent ? 'Competent' : 'NYC';
+
             tbody.innerHTML += `
                 <tr>
-                    <td>${row.trainee_name}</td>
-                    <td>${row.course_name}</td>
-                    <td>${row.total_grade || 'N/A'}</td>
-                    <td><span class="badge ${row.total_grade >= 80 ? 'bg-success' : 'bg-warning'}">${row.total_grade >= 80 ? 'Competent' : 'NYC'}</span></td>
+                    <td class="px-4 py-3 text-sm text-slate-700">${row.trainee_name || 'N/A'}</td>
+                    <td class="px-4 py-3 text-sm text-slate-700">${row.course_name || 'N/A'}</td>
+                    <td class="px-4 py-3 text-sm text-slate-700">${row.total_grade || 'N/A'}</td>
+                    <td class="px-4 py-3 text-sm">
+                        <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${badgeClass}">${statusText}</span>
+                    </td>
                 </tr>
             `;
         });
     } else if (type === 'attendance_summary') {
-        thead.innerHTML = '<tr><th>Trainee Name</th><th>Present</th><th>Absent</th><th>Late</th><th>Attendance Rate</th></tr>';
+        thead.innerHTML = `
+            <tr>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Trainee Name</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Present</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Absent</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Late</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Attendance Rate</th>
+            </tr>
+        `;
         data.forEach(row => {
-            const total = parseInt(row.present) + parseInt(row.absent) + parseInt(row.late);
-            const rate = total > 0 ? Math.round((row.present / total) * 100) : 0;
+            const present = parseInt(row.present, 10) || 0;
+            const absent = parseInt(row.absent, 10) || 0;
+            const late = parseInt(row.late, 10) || 0;
+            const total = present + absent + late;
+            const rate = total > 0 ? Math.round((present / total) * 100) : 0;
             tbody.innerHTML += `
-                <tr><td>${row.trainee_name}</td><td>${row.present}</td><td>${row.absent}</td><td>${row.late}</td><td>${rate}%</td></tr>
+                <tr>
+                    <td class="px-4 py-3 text-sm text-slate-700">${row.trainee_name || 'N/A'}</td>
+                    <td class="px-4 py-3 text-sm text-slate-700">${present}</td>
+                    <td class="px-4 py-3 text-sm text-slate-700">${absent}</td>
+                    <td class="px-4 py-3 text-sm text-slate-700">${late}</td>
+                    <td class="px-4 py-3 text-sm text-slate-700">${rate}%</td>
+                </tr>
             `;
         });
     }
@@ -266,7 +259,7 @@ function renderReport(type, data) {
 function renderSummary(type, data) {
     const summary = document.getElementById('reportSummary');
     if (!summary) return;
-    summary.classList.remove('d-none');
+    summary.classList.remove('hidden');
 
     const totalEl = document.getElementById('summaryTotal');
     const competentEl = document.getElementById('summaryCompetent');
@@ -278,12 +271,15 @@ function renderSummary(type, data) {
 
     if (type === 'attendance_summary') {
         const rates = data.map(row => {
-            const totalDays = parseInt(row.present) + parseInt(row.absent) + parseInt(row.late);
-            return totalDays > 0 ? (parseInt(row.present) / totalDays) * 100 : 0;
+            const present = parseInt(row.present, 10) || 0;
+            const absent = parseInt(row.absent, 10) || 0;
+            const late = parseInt(row.late, 10) || 0;
+            const totalDays = present + absent + late;
+            return totalDays > 0 ? (present / totalDays) * 100 : 0;
         });
-        const avgRate = rates.length ? (rates.reduce((a, b) => a + b, 0) / rates.length) : 0;
-        avgEl.textContent = 'N/A';
+        const avgRate = rates.length ? rates.reduce((a, b) => a + b, 0) / rates.length : 0;
         competentEl.textContent = 'N/A';
+        avgEl.textContent = 'N/A';
         attendanceEl.textContent = `${avgRate.toFixed(1)}%`;
         return;
     }
@@ -291,7 +287,8 @@ function renderSummary(type, data) {
     const numericGrades = data
         .map(row => parseFloat(row.total_grade))
         .filter(val => !Number.isNaN(val));
-    const avg = numericGrades.length ? (numericGrades.reduce((a, b) => a + b, 0) / numericGrades.length) : 0;
+
+    const avg = numericGrades.length ? numericGrades.reduce((a, b) => a + b, 0) / numericGrades.length : 0;
     const competent = data.filter(row => parseFloat(row.total_grade) >= 80).length;
 
     competentEl.textContent = competent;
@@ -306,11 +303,11 @@ function renderEmpty() {
     const summary = document.getElementById('reportSummary');
     const emptyState = document.getElementById('reportEmpty');
 
-    container.classList.remove('d-none');
+    container.classList.remove('hidden');
     thead.innerHTML = '';
     tbody.innerHTML = '';
-    if (summary) summary.classList.add('d-none');
-    if (emptyState) emptyState.classList.remove('d-none');
+    if (summary) summary.classList.add('hidden');
+    if (emptyState) emptyState.classList.remove('hidden');
 }
 
 function getSelectedBatchLabel() {
@@ -326,14 +323,24 @@ function setLoading(isLoading, statusText) {
     const status = document.getElementById('reportStatus');
 
     if (status) status.textContent = statusText || '';
-
     if (!viewBtn) return;
+
     viewBtn.disabled = isLoading;
     if (exportBtn) exportBtn.disabled = isLoading;
+
     if (isLoading) {
         viewBtn.dataset.originalText = viewBtn.innerHTML;
-        viewBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating';
+        viewBtn.innerHTML = '<i class="fas fa-circle-notch animate-spin"></i> Generating';
     } else if (viewBtn.dataset.originalText) {
         viewBtn.innerHTML = viewBtn.dataset.originalText;
+    }
+}
+
+function notify(type, message) {
+    if (window.Swal) {
+        const icon = type === 'warning' || type === 'error' || type === 'info' || type === 'success' ? type : 'info';
+        Swal.fire({ icon, text: message });
+    } else {
+        alert(message);
     }
 }
