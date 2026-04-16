@@ -234,6 +234,19 @@ document.addEventListener('DOMContentLoaded', async function () {
     if (viewModuleEl) {
         viewModuleModal = new SimpleModal(viewModuleEl, {
             onHide: () => { currentViewedModuleId = null; }
+<<<<<<< HEAD
+=======
+        });
+    }
+
+    const contentEditorEl = document.getElementById('contentEditorModal');
+    if (contentEditorEl) {
+        contentEditorModal = new SimpleModal(contentEditorEl, {
+            onHide: () => {
+                document.getElementById('editorItemId').value = '';
+                document.getElementById('editorItemType').value = '';
+            }
+>>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
         });
     }
 
@@ -1127,7 +1140,17 @@ window.openContentEditor = async function(type, itemId = null) {
     document.getElementById('editorItemType').value = type;
     document.getElementById('editorItemId').value = itemId || '';
     document.getElementById('editorItemTitle').value = '';
+<<<<<<< HEAD
     document.getElementById('editorContent').innerHTML = '<p data-editor-placeholder class="text-sm text-slate-400">Start writing content here...</p>';
+=======
+    
+    // Clear content blocks
+    const contentItemsContainer = document.getElementById('editorContentItems');
+    const noMessage = document.getElementById('noContentBlocksMessage');
+    contentItemsContainer.innerHTML = '';
+    noMessage.style.display = 'block';
+    
+>>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
     document.getElementById('contentEditorModalLabel').textContent = `${itemId ? 'Edit' : 'Add'} ${type === 'content' ? 'Information Sheet' : 'Task Sheet'}`;
 
     if (itemId) {
@@ -1136,7 +1159,16 @@ window.openContentEditor = async function(type, itemId = null) {
         if (response.data.success) {
             const item = response.data.data;
             document.getElementById('editorItemTitle').value = item.title;
-            document.getElementById('editorContent').innerHTML = item.content || '';
+            
+            if (item.content) {
+                // Create a single content block with the existing content
+                addContentBlockItem();
+                const firstBlock = contentItemsContainer.querySelector('.content-block');
+                if (firstBlock) {
+                    const editor = firstBlock.querySelector('.content-editor');
+                    editor.innerHTML = item.content;
+                }
+            }
         } else {
             Swal.fire('Error', 'Error fetching content: ' + response.data.message, 'error');
             return;
@@ -1144,6 +1176,72 @@ window.openContentEditor = async function(type, itemId = null) {
     }
 
     contentEditorModal.show();
+}
+
+/**
+ * Add a content block item to the editor
+ */
+window.addContentBlockItem = function() {
+    const container = document.getElementById('editorContentItems');
+    const noMessage = document.getElementById('noContentBlocksMessage');
+    
+    if (noMessage) noMessage.style.display = 'none';
+
+    const itemId = Date.now();
+    const html = `
+        <div class="content-block bg-white p-3 rounded-md border border-slate-200 space-y-2" data-item-id="${itemId}">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-slate-600"><i class="fas fa-grip-vertical mr-1"></i>Content Block</span>
+                <button type="button" onclick="removeContentBlockItem(${itemId})" class="text-xs text-red-600 hover:text-red-700 font-semibold">
+                    <i class="fas fa-trash"></i> Remove
+                </button>
+            </div>
+
+            <!-- Content Title -->
+            <div>
+                <input type="text" class="content-title w-full text-xs px-2 py-1 border border-slate-200 rounded" placeholder="e.g., Introduction to Safety">
+            </div>
+
+            <!-- Rich Text Editor with Inline Images -->
+            <div class="rich-text-content">
+                <div class="flex gap-2 mb-2 pb-2 border-b border-slate-200">
+                    <button type="button" class="text-xs px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded border border-slate-300" title="Upload and insert image" onclick="triggerImageUploadForEditor('${itemId}')">
+                        <i class="fas fa-image mr-1"></i> Insert Image
+                    </button>
+                    <small class="text-xs text-slate-500 flex items-center">Drag images into the editor to position them alongside text</small>
+                </div>
+                <div class="content-editor w-full min-h-32 px-3 py-2 border border-slate-200 rounded bg-white text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                     contenteditable="true" 
+                     data-item-id="${itemId}"
+                     style="word-wrap: break-word; overflow-wrap: break-word;">
+                </div>
+                <input type="file" class="editor-image-file hidden" accept="image/*" data-item-id="${itemId}">
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', html);
+
+    const contentBlock = container.querySelector(`[data-item-id="${itemId}"]`);
+    const editor = contentBlock.querySelector('.content-editor');
+    const imageFile = contentBlock.querySelector('.editor-image-file');
+
+    // Setup rich text editor with image handling
+    setupRichTextEditor(itemId, editor, imageFile);
+}
+
+/**
+ * Remove a content block item
+ */
+window.removeContentBlockItem = function(itemId) {
+    const block = document.querySelector(`.content-block[data-item-id="${itemId}"]`);
+    if (block) {
+        block.remove();
+        const container = document.getElementById('editorContentItems');
+        if (container.children.length === 0) {
+            const noMessage = document.getElementById('noContentBlocksMessage');
+            if (noMessage) noMessage.style.display = 'block';
+        }
+    }
 }
 
 window.addQuestion = function(data = null) {
@@ -1236,20 +1334,35 @@ window.saveContent = async function() {
         return;
     }
 
-    const editor = document.getElementById('editorContent');
-    editor.querySelectorAll('input[type="text"]').forEach(input => input.setAttribute('value', input.value));
-    editor.querySelectorAll('input[type="checkbox"]').forEach(input => {
-        if (input.checked) input.setAttribute('checked', 'checked');
-        else input.removeAttribute('checked');
+    // Gather content from all content blocks
+    let fullContent = '';
+    const contentBlocks = document.querySelectorAll('.content-block');
+    
+    contentBlocks.forEach(block => {
+        const blockTitle = block.querySelector('.content-title').value;
+        const editor = block.querySelector('.content-editor');
+        
+        // Add block title if provided
+        if (blockTitle) {
+            fullContent += `<h3 style="margin-top: 1.5rem; margin-bottom: 0.5rem; font-weight: 600; font-size: 1rem;">${blockTitle}</h3>`;
+        }
+        
+        // Add editor content
+        const editorContent = editor.innerHTML;
+        fullContent += editorContent;
+        fullContent += '<br/>';
     });
-    const content = editor.innerHTML;
 
     const action = `save-${itemType}`;
     const user = JSON.parse(localStorage.getItem('user'));
     const payload = {
         lesson_id: lessonId,
         title: title,
+<<<<<<< HEAD
         content: content,
+=======
+        content: fullContent,
+>>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
         trainer_id: trainerId,
         user_id: user?.user_id
     };
@@ -1689,16 +1802,38 @@ function removeContentItem(outcomeId, itemId) {
  * Trigger image file upload dialog for rich text editor
  */
 function triggerImageUploadForEditor(itemId) {
+<<<<<<< HEAD
     const contentItem = document.querySelector(`.content-item[data-item-id="${itemId}"]`);
     const fileInput = contentItem.querySelector('.editor-image-file');
     if (fileInput) fileInput.click();
+=======
+    // Support both .content-item (learning outcomes) and .content-block (edit modal)
+    let contentItem = document.querySelector(`.content-item[data-item-id="${itemId}"]`);
+    if (!contentItem) {
+        contentItem = document.querySelector(`.content-block[data-item-id="${itemId}"]`);
+    }
+    if (contentItem) {
+        const fileInput = contentItem.querySelector('.editor-image-file');
+        if (fileInput) fileInput.click();
+    }
+>>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
 }
 
 /**
  * Insert image into rich text editor
  */
 function insertImageIntoEditor(itemId, dataUrl, filename) {
+<<<<<<< HEAD
     const contentItem = document.querySelector(`.content-item[data-item-id="${itemId}"]`);
+=======
+    // Support both .content-item (learning outcomes) and .content-block (edit modal)
+    let contentItem = document.querySelector(`.content-item[data-item-id="${itemId}"]`);
+    if (!contentItem) {
+        contentItem = document.querySelector(`.content-block[data-item-id="${itemId}"]`);
+    }
+    if (!contentItem) return;
+    
+>>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
     const editor = contentItem.querySelector('.content-editor');
     
     // Create image wrapper with positioning - constrain to 40% of editor width
@@ -2022,6 +2157,12 @@ function setupContentDragDrop(outcomeId) {
 }
 
 /**
+<<<<<<< HEAD
+=======
+ * Trigger image file upload dialog for main editor
+ */
+/**
+>>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
  * Get element after which to drop
  */
 function getDragAfterElement(container, y) {

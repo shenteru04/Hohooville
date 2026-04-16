@@ -48,7 +48,7 @@ function getData($conn) {
         $trainers_stmt->execute();
         $trainers = $trainers_stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        // Get open batches with their course, trainer, and schedule info
+        // Get all batches with their course, trainer, and schedule info (all statuses except archived)
                 $batches_query = "SELECT 
                                                         b.batch_id, 
                                                         b.batch_name, 
@@ -57,14 +57,16 @@ function getData($conn) {
                                                         b.trainer_id, 
                                                         CONCAT_WS(' ', t.first_name, t.last_name) as trainer_name,
                                                         s.schedule,
-                                                        r.room_name as room
+                                                        s.room_id,
+                                                        r.room_name as room,
+                                                        b.status as batch_status
                                                     FROM tbl_batch b
                                                     LEFT JOIN tbl_qualifications c ON b.qualification_id = c.qualification_id
                                                     LEFT JOIN tbl_trainer t ON b.trainer_id = t.trainer_id
                                                     LEFT JOIN tbl_schedule s ON b.batch_id = s.batch_id
                                                     LEFT JOIN tbl_rooms r ON s.room_id = r.room_id
-                                                    WHERE b.status = 'open'
-                                                    ORDER BY b.batch_id DESC";
+                                                    WHERE b.status IN ('open', 'closed', 'in-progress')
+                                                    ORDER BY b.status DESC, b.batch_id DESC";
         
         $batches_stmt = $conn->prepare($batches_query);
         $batches_stmt->execute();

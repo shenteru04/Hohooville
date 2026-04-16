@@ -47,6 +47,102 @@
         </header>
 
         <main class="space-y-6 p-4 sm:p-6 lg:p-8">
+            <section class="rounded-2xl border border-blue-100 bg-white p-4 shadow-sm">
+                <div class="flex flex-col gap-3 md:flex-row md:items-end md:gap-3">
+                    <!-- Search Input -->
+                    <div class="flex-1 md:flex-initial">
+                        <label for="searchInput" class="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wider">Search</label>
+                        <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="searchInput" placeholder="Name, School ID, Email...">
+                    </div>
+                    
+                    <!-- Batch Filter -->
+                    <div class="flex-1 md:flex-initial md:min-w-[180px]">
+                        <label for="batchFilter" class="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wider">Batch</label>
+                        <select class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="batchFilter">
+                            <option value="">All Batches</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Qualification Filter -->
+                    <div class="flex-1 md:flex-initial md:min-w-[180px]">
+                        <label for="qualificationFilter" class="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wider">Qualification</label>
+                        <select class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="qualificationFilter">
+                            <option value="">All Programs</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Status Filter -->
+                    <div class="flex-1 md:flex-initial md:min-w-[150px]">
+                        <label for="statusFilter" class="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</label>
+                        <select class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="statusFilter">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Clear Filters Button -->
+                    <button type="button" id="clearFiltersBtn" class="hidden rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 md:inline-flex items-center gap-2" title="Clear all filters">
+                        <i class="fas fa-redo-alt text-xs"></i> Reset
+                    </button>
+                </div>
+                <div class="mt-2 text-xs text-slate-500">
+                    <span id="filterStatus"></span>
+                </div>
+            </section>
+
+            <article class="rounded-2xl border border-blue-100 bg-white shadow-sm">
+                <div class="border-b border-blue-100 px-5 py-4">
+                    <h2 class="text-base font-semibold text-slate-900">Trainees List</h2>
+                </div>
+                <div class="overflow-x-auto p-5">
+                    <table class="min-w-full divide-y divide-slate-200" id="traineesTable" data-table-manager="true" data-search-input="searchInput" data-filter-controls="batchFilter:4:Batch|qualificationFilter:5:Qualification|statusFilter:7:Status">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">School ID</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Name</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Email</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Phone</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Batch</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Qualification</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Enrolled Date</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="traineesTableBody" class="divide-y divide-slate-100 bg-white"></tbody>
+                    </table>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <div class="fixed inset-0 z-50 hidden items-center justify-center p-4" id="createAccountModal" aria-hidden="true">
+        <div class="absolute inset-0 bg-slate-900/50" data-modal-hide="createAccountModal"></div>
+        <div class="relative z-10 w-full max-w-md rounded-2xl border border-blue-100 bg-white shadow-2xl">
+            <div class="flex items-center justify-between border-b border-blue-100 px-5 py-4">
+                <h3 class="text-lg font-semibold text-slate-900">Create Trainee Account</h3>
+                <button type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800" data-modal-hide="createAccountModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-5">
+                <form id="createAccountForm" class="space-y-4">
+                    <input type="hidden" id="accountTraineeId">
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700">Username</label>
+                        <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="accountUsername" required autocomplete="username">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700">Password</label>
+                        <input type="password" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="accountPassword" required autocomplete="new-password">
+                    </div>
+                    <button type="submit" class="inline-flex w-full items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Create Account</button>
+                </form>
+            </div>
+        </header>
+
+        <main class="space-y-6 p-4 sm:p-6 lg:p-8">
             <section class="grid grid-cols-1 gap-3 rounded-2xl border border-blue-100 bg-white p-4 shadow-sm md:grid-cols-12">
                 <div class="md:col-span-4">
                     <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="searchInput" placeholder="Search trainees...">
@@ -93,6 +189,7 @@
         </main>
     </div>
 
+<<<<<<< HEAD
     <div class="fixed inset-0 z-50 hidden items-center justify-center p-4" id="createAccountModal" aria-hidden="true">
         <div class="absolute inset-0 bg-slate-900/50" data-modal-hide="createAccountModal"></div>
         <div class="relative z-10 w-full max-w-md rounded-2xl border border-blue-100 bg-white shadow-2xl">
@@ -128,6 +225,17 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
+=======
+    <div class="fixed inset-0 z-50 hidden items-center justify-center p-4" id="viewProfileModal" aria-hidden="true">
+        <div class="absolute inset-0 bg-slate-900/50" data-modal-hide="viewProfileModal"></div>
+        <div class="relative z-10 w-full max-w-4xl overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-2xl">
+            <div class="flex items-center justify-between border-b border-blue-100 px-5 py-4">
+                <h3 class="text-lg font-semibold text-slate-900">Trainee Profile</h3>
+                <button type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800" data-modal-hide="viewProfileModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+>>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
             <div class="max-h-[70vh] overflow-y-auto p-5">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
                     <div class="md:col-span-4">

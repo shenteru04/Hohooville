@@ -35,6 +35,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const form = document.getElementById('createAccountForm');
     if (form) form.addEventListener('submit', handleCreateAccount);
+<<<<<<< HEAD
+=======
+
+    // Setup filter event listeners for status updates
+    const searchInput = document.getElementById('searchInput');
+    const batchFilter = document.getElementById('batchFilter');
+    const qualificationFilter = document.getElementById('qualificationFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    const clearBtn = document.getElementById('clearFiltersBtn');
+
+    if (searchInput) {
+        searchInput.addEventListener('input', updateFilterStatus);
+    }
+    if (batchFilter) {
+        batchFilter.addEventListener('change', updateFilterStatus);
+    }
+    if (qualificationFilter) {
+        qualificationFilter.addEventListener('change', updateFilterStatus);
+    }
+    if (statusFilter) {
+        statusFilter.addEventListener('change', updateFilterStatus);
+    }
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearAllFilters);
+    }
+>>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
 });
 
 async function ensureSwal() {
@@ -102,6 +128,10 @@ async function loadTrainees() {
         }
         traineesData = response.data.data || [];
         populateBatchFilter(traineesData);
+<<<<<<< HEAD
+=======
+        populateQualificationFilter(traineesData);
+>>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
         renderTraineesTable(traineesData);
     } catch (error) {
         console.error('Error loading trainees:', error);
@@ -114,7 +144,11 @@ function renderTraineesTable(data) {
     if (!tbody) return;
 
     if (!data || data.length === 0) {
+<<<<<<< HEAD
         tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-6 text-center text-sm text-slate-500">No trainees found</td></tr>';
+=======
+        tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-6 text-center text-sm text-slate-500">No trainees found</td></tr>';
+>>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
         return;
     }
 
@@ -131,6 +165,11 @@ function renderTraineesTable(data) {
             ? trainee.formatted_enrollment_date 
             : (trainee.enrollment_date || 'N/A');
 
+<<<<<<< HEAD
+=======
+        const qualification = trainee.course_name || '<span class="text-slate-400">Not Assigned</span>';
+
+>>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
         return `
             <tr class="hover:bg-slate-50">
                 <td class="px-3 py-3 text-sm text-slate-700">${escapeHtml(trainee.trainee_school_id || 'N/A')}</td>
@@ -140,8 +179,18 @@ function renderTraineesTable(data) {
                 <td class="px-3 py-3 text-sm text-slate-700" data-filter-value="${escapeHtml(String(trainee.batch_id || ''))}">
                     ${trainee.batch_name ? escapeHtml(trainee.batch_name) : '<span class="text-slate-400">Not Enrolled</span>'}
                 </td>
+<<<<<<< HEAD
                 <td class="px-3 py-3 text-sm text-slate-600">${enrolledDate}</td>
                 <td class="px-3 py-3 text-sm">${statusBadge}</td>
+=======
+                <td class="px-3 py-3 text-sm text-slate-700" data-filter-value="${escapeHtml(String(trainee.course_name || ''))}">
+                    ${qualification}
+                </td>
+                <td class="px-3 py-3 text-sm text-slate-600">${enrolledDate}</td>
+                <td class="px-3 py-3 text-sm" data-filter-value="${escapeHtml(String(trainee.status || ''))}">
+                    ${statusBadge}
+                </td>
+>>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
                 <td class="px-3 py-3 text-sm">
                     <div class="flex flex-wrap items-center gap-2">
                         ${accountCell}
@@ -151,6 +200,11 @@ function renderTraineesTable(data) {
             </tr>
         `;
     }).join('');
+<<<<<<< HEAD
+=======
+    
+    updateFilterStatus();
+>>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
 }
 
 function populateBatchFilter(data) {
@@ -183,6 +237,7 @@ function populateBatchFilter(data) {
     }
 }
 
+<<<<<<< HEAD
 function openAccountModal(id) {
     setValue('accountTraineeId', id);
     const form = document.getElementById('createAccountForm');
@@ -190,6 +245,45 @@ function openAccountModal(id) {
     if (accountModal) accountModal.show();
 }
 
+=======
+function populateQualificationFilter(data) {
+    const select = document.getElementById('qualificationFilter');
+    if (!select) return;
+
+    const currentValue = select.value;
+    const qualifications = new Map();
+    (data || []).forEach((item) => {
+        if (!item.course_name) return;
+        if (!qualifications.has(item.course_name)) {
+            qualifications.set(item.course_name, item.course_name);
+        }
+    });
+
+    select.innerHTML = '';
+    select.insertAdjacentHTML('beforeend', '<option value="">All Programs</option>');
+
+    Array.from(qualifications.values())
+        .sort((a, b) => String(a).localeCompare(String(b), undefined, { sensitivity: 'base' }))
+        .forEach((name) => {
+            const option = document.createElement('option');
+            option.value = String(name).toLowerCase();
+            option.textContent = name;
+            select.appendChild(option);
+        });
+
+    if (currentValue && Array.from(select.options).some((option) => option.value === currentValue)) {
+        select.value = currentValue;
+    }
+}
+
+function openAccountModal(id) {
+    setValue('accountTraineeId', id);
+    const form = document.getElementById('createAccountForm');
+    if (form) form.reset();
+    if (accountModal) accountModal.show();
+}
+
+>>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
 async function handleCreateAccount(event) {
     event.preventDefault();
     const payload = {
@@ -325,6 +419,63 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
+<<<<<<< HEAD
 window.openAccountModal = openAccountModal;
 window.viewProfile = viewProfile;
 window.deleteTrainee = deleteTrainee;
+=======
+function updateFilterStatus() {
+    const statusEl = document.getElementById('filterStatus');
+    if (!statusEl) return;
+
+    const searchInput = document.getElementById('searchInput');
+    const batchFilter = document.getElementById('batchFilter');
+    const qualificationFilter = document.getElementById('qualificationFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    const clearBtn = document.getElementById('clearFiltersBtn');
+
+    const hasSearch = searchInput && searchInput.value.trim() !== '';
+    const hasBatch = batchFilter && batchFilter.value !== '';
+    const hasQual = qualificationFilter && qualificationFilter.value !== '';
+    const hasStatus = statusFilter && statusFilter.value !== '';
+
+    const activeFilters = [];
+    if (hasSearch) activeFilters.push(`"${searchInput.value}"`);
+    if (hasBatch) activeFilters.push(`Batch: ${batchFilter.options[batchFilter.selectedIndex].text}`);
+    if (hasQual) activeFilters.push(`Program: ${qualificationFilter.options[qualificationFilter.selectedIndex].text}`);
+    if (hasStatus) activeFilters.push(`Status: ${statusFilter.value}`);
+
+    if (activeFilters.length > 0) {
+        statusEl.innerHTML = `<i class="fas fa-filter text-blue-500 mr-1"></i>Filtering by: ${activeFilters.join(', ')}`;
+        if (clearBtn) clearBtn.classList.remove('hidden');
+    } else {
+        statusEl.innerHTML = '';
+        if (clearBtn) clearBtn.classList.add('hidden');
+    }
+}
+
+function clearAllFilters() {
+    const searchInput = document.getElementById('searchInput');
+    const batchFilter = document.getElementById('batchFilter');
+    const qualificationFilter = document.getElementById('qualificationFilter');
+    const statusFilter = document.getElementById('statusFilter');
+
+    if (searchInput) searchInput.value = '';
+    if (batchFilter) batchFilter.value = '';
+    if (qualificationFilter) qualificationFilter.value = '';
+    if (statusFilter) statusFilter.value = '';
+
+    updateFilterStatus();
+    
+    // Trigger table refresh if table manager exists
+    const table = document.getElementById('traineesTable');
+    if (table && window.tableManagers && window.tableManagers[0]) {
+        window.tableManagers[0].apply();
+    }
+}
+
+window.openAccountModal = openAccountModal;
+window.viewProfile = viewProfile;
+window.deleteTrainee = deleteTrainee;
+window.clearAllFilters = clearAllFilters;
+>>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6

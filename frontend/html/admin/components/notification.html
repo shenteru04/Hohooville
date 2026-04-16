@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <div class="relative">
     <button id="notificationBtn" class="flex items-center text-gray-500 hover:text-blue-600 focus:outline-none transition-colors relative p-2 rounded-full hover:bg-gray-100">
         <div class="relative">
@@ -13,6 +14,25 @@
     <div id="notificationDropdown" class="fixed md:absolute left-1/2 md:left-auto md:right-0 -translate-x-1/2 md:translate-x-0 top-1/2 md:top-auto md:mt-2 w-11/12 md:w-96 bg-white rounded-lg shadow-xl overflow-hidden z-50 border border-gray-100 hidden md:origin-top-right transition-all duration-200 ease-out transform scale-95 opacity-0">
         <div id="notificationList" class="max-h-96 md:max-h-[400px] overflow-y-auto">
             <div class="px-4 py-3 text-center text-sm text-gray-500">Loading...</div>
+=======
+<!-- Notification Dropdown Component -->
+<div class="relative" id="notification-container">
+    <button id="notificationBtn" type="button" class="relative rounded-lg border border-blue-100 bg-white p-2 text-slate-600 transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" aria-label="Notifications" aria-expanded="false">
+        <i class="fas fa-bell"></i>
+        <span id="notificationBadge" class="absolute -right-1 -top-1 hidden h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">0</span>
+    </button>
+
+    <div id="notificationDropdown" class="absolute right-0 z-50 mt-2 hidden w-80 max-w-[90vw] origin-top-right rounded-xl border border-blue-100 bg-white opacity-0 shadow-xl shadow-blue-100/40 transition-all duration-200 scale-95">
+        <div class="flex items-center justify-between border-b border-slate-200 px-4 py-2.5">
+            <strong class="text-sm font-semibold text-slate-800">Notifications</strong>
+            <div class="flex items-center gap-2">
+                <button id="markAllRead" class="text-xs font-medium text-blue-600 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">Mark all as read</button>
+                <a href="#" id="viewAllNotifications" class="text-xs font-medium text-blue-600 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">View all</a>
+            </div>
+        </div>
+        <div id="notificationList" class="max-h-96 overflow-y-auto">
+            <div class="px-4 py-3 text-center text-sm text-slate-500">No new notifications</div>
+>>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
         </div>
     </div>
 </div>

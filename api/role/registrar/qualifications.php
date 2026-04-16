@@ -24,7 +24,11 @@ switch ($action) {
 function getApprovedQualifications($conn) {
     try {
         autoActivatePendingQualifications($conn);
+<<<<<<< HEAD
         $stmt = $conn->query("SELECT q.qualification_id, q.qualification_name, q.qualification_name as course_name, q.ctpr_number, q.duration, q.training_cost, q.status, q.nc_level_id, nc.nc_level_code, nc.nc_level_name FROM tbl_qualifications q LEFT JOIN tbl_nc_levels nc ON q.nc_level_id = nc.nc_level_id WHERE q.status = 'active' AND q.is_archived = 0 ORDER BY q.qualification_name ASC");
+=======
+        $stmt = $conn->query("SELECT q.qualification_id, q.qualification_name, q.qualification_name as course_name, q.ctpr_number, q.duration, q.training_cost, q.status, q.nc_level_id, nc.nc_level_code, nc.nc_level_name FROM tbl_qualifications q LEFT JOIN tbl_nc_levels nc ON q.nc_level_id = nc.nc_level_id WHERE q.status = 'active' ORDER BY q.qualification_name ASC");
+>>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(['success' => true, 'data' => $data]);
     } catch (Exception $e) {
@@ -56,7 +60,11 @@ function createQualification($conn) {
             throw new Exception('Qualification name is required');
         }
 
+<<<<<<< HEAD
         $stmt = $conn->prepare("INSERT INTO tbl_qualifications (qualification_name, nc_level_id, ctpr_number, duration, training_cost, description, status) VALUES (?, ?, ?, ?, ?, ?, ?)");
+=======
+        $stmt = $conn->prepare("INSERT INTO tbl_qualifications (qualification_name, nc_level_id, ctpr_number, duration, training_cost, description, status) VALUES (?, ?, ?, ?, ?, ?, 'active')");
+>>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
         $stmt->execute([
             $data['qualification_name'],
             $data['nc_level_id'] ?? null,

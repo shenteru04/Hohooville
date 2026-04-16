@@ -20,8 +20,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 ctpr_number: document.getElementById('ctprNumber').value,
                 duration: document.getElementById('duration').value,
                 training_cost: document.getElementById('trainingCost').value,
+<<<<<<< HEAD
                 description: document.getElementById('description').value,
                 status: document.getElementById('qualificationStatus')?.value || 'active'
+=======
+                description: document.getElementById('description').value
+>>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
             };
 
             try {
