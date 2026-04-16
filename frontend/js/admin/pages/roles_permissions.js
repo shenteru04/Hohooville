@@ -1,109 +1,208 @@
 const API_BASE = '/Hohoo-ville/api/role/admin';
-let createRoleModal, assignRoleModal;
+let createRoleModal;
 
-document.addEventListener('DOMContentLoaded', () => {
-        // Logout
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => {
-                localStorage.clear();
-                window.location.href = '/hohoo-ville/frontend/login.html';
-            });
-        }
-    if (typeof Swal === 'undefined') {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
-        document.head.appendChild(script);
+class SimpleModal {
+    constructor(element) {
+        this.element = element;
     }
 
-    createRoleModal = new bootstrap.Modal(document.getElementById('createRoleModal'));
-    assignRoleModal = new bootstrap.Modal(document.getElementById('assignRoleModal'));
+    show() {
+        if (!this.element) return;
+        this.element.classList.remove('hidden');
+        this.element.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+    }
+
+    hide() {
+        if (!this.element) return;
+        this.element.classList.add('hidden');
+        this.element.classList.remove('flex');
+        document.body.classList.remove('overflow-hidden');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    await ensureSwal();
+    initUserDropdown();
+    initLogout();
+    initTabs();
+    initModals();
+
     loadRoles();
     loadPermissions();
-    loadUsersForAssignment();
 });
+
+async function ensureSwal() {
+    if (typeof window.Swal !== 'undefined') return;
+    await new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        script.onload = resolve;
+        script.onerror = resolve;
+        document.head.appendChild(script);
+    });
+}
+
+function initUserDropdown() {
+    const button = document.getElementById('userDropdown');
+    const menu = document.getElementById('userDropdownMenu');
+    if (!button || !menu) return;
+
+    button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        menu.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('#userDropdown') && !event.target.closest('#userDropdownMenu')) {
+            menu.classList.add('hidden');
+        }
+    });
+}
+
+function initLogout() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (!logoutBtn) return;
+    logoutBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        if (typeof window.logout === 'function') {
+            window.logout();
+            return;
+        }
+        localStorage.clear();
+        window.location.href = '/Hohoo-ville/frontend/login.html';
+    });
+}
+
+function initTabs() {
+    const buttons = Array.from(document.querySelectorAll('[data-tab-group="main"]'));
+    const panes = Array.from(document.querySelectorAll('.tab-main-pane'));
+    if (!buttons.length || !panes.length) return;
+
+    const activate = (button) => {
+        buttons.forEach((btn) => setTabButtonState(btn, btn === button));
+        const target = button.getAttribute('data-tab-target');
+        panes.forEach((pane) => pane.classList.add('hidden'));
+        const targetPane = target ? document.querySelector(target) : null;
+        if (targetPane) targetPane.classList.remove('hidden');
+    };
+
+    buttons.forEach((button) => {
+        button.addEventListener('click', () => activate(button));
+    });
+
+    const initial = buttons.find((button) => button.classList.contains('active')) || buttons[0];
+    activate(initial);
+}
+
+function setTabButtonState(button, active) {
+    button.classList.toggle('active', active);
+    button.classList.toggle('bg-blue-600', active);
+    button.classList.toggle('text-white', active);
+
+    button.classList.toggle('border', !active);
+    button.classList.toggle('border-slate-300', !active);
+    button.classList.toggle('bg-white', !active);
+    button.classList.toggle('text-slate-700', !active);
+    button.classList.toggle('hover:bg-slate-50', !active);
+}
+
+function initModals() {
+    createRoleModal = new SimpleModal(document.getElementById('createRoleModal'));
+
+    document.querySelectorAll('[data-modal-hide]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const target = button.getAttribute('data-modal-hide');
+            if (target === 'createRoleModal' && createRoleModal) createRoleModal.hide();
+        });
+    });
+}
 
 async function loadRoles() {
     try {
         const response = await axios.get(`${API_BASE}/roles_permissions.php?action=list-roles`);
-        if (response.data.success) {
-            document.getElementById('rolesTable').innerHTML = response.data.data.map(role => `
-                <tr>
-                    <td><strong>${role.role_name}</strong></td>
-                    <td><span class="badge ${role.is_custom ? 'bg-primary' : 'bg-secondary'}">${role.is_custom ? 'Custom' : 'System'}</span></td>
-                    <td><span class="badge bg-info">${role.permission_count || 0} permissions</span></td>
-                    <td>${role.description || '-'}</td>
-                    <td>
-                        ${role.is_custom ? `<button class="btn btn-sm btn-danger" onclick="deleteRole(${role.role_id})">Delete</button>` : '<small class="text-muted">System</small>'}
-                    </td>
-                </tr>
-            `).join('');
-        } else {
-            document.getElementById('rolesTable').innerHTML = '<tr><td colspan="5" class="text-danger">Error loading roles</td></tr>';
+        const tbody = document.getElementById('rolesTable');
+        if (!tbody) return;
+
+        if (!response.data.success) {
+            tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-sm text-rose-600">Error loading roles</td></tr>';
+            return;
         }
-    } catch (error) { 
+
+        const roles = response.data.data || [];
+        tbody.innerHTML = roles.map((role) => `
+            <tr class="hover:bg-slate-50">
+                <td class="px-3 py-3 text-sm font-semibold text-slate-900">${escapeHtml(role.role_name || '')}</td>
+                <td class="px-3 py-3 text-sm">
+                    <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold ${role.is_custom ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'}">
+                        ${role.is_custom ? 'Custom' : 'System'}
+                    </span>
+                </td>
+                <td class="px-3 py-3 text-sm">
+                    <span class="inline-flex rounded-full bg-sky-100 px-2 py-1 text-xs font-semibold text-sky-700">
+                        ${Number(role.permission_count || 0)} permissions
+                    </span>
+                </td>
+                <td class="px-3 py-3 text-sm text-slate-700">${escapeHtml(role.description || '-')}</td>
+                <td class="px-3 py-3 text-sm">
+                    ${role.is_custom
+                        ? `<button class="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100" onclick="deleteRole(${role.role_id})">Delete</button>`
+                        : '<span class="text-xs text-slate-400">System</span>'
+                    }
+                </td>
+            </tr>
+        `).join('');
+    } catch (error) {
         console.error('Error loading roles:', error);
-        document.getElementById('rolesTable').innerHTML = '<tr><td colspan="5" class="text-danger">Failed to load roles</td></tr>';
+        const tbody = document.getElementById('rolesTable');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-sm text-rose-600">Failed to load roles</td></tr>';
+        }
     }
 }
 
 async function loadPermissions() {
     try {
         const response = await axios.get(`${API_BASE}/roles_permissions.php?action=list-permissions`);
-        if (response.data.success) {
-            const list = document.getElementById('permissionsList');
-            list.innerHTML = response.data.data.map(p => `
-                <div class="col-md-4 mb-2">
-                    <div class="permission-item border p-2 rounded">
-                        <strong>${p.resource}</strong>: ${p.action}
-                    </div>
-                </div>
-            `).join('');
-            
-            // Populate checkboxes for modal
-            document.getElementById('permissionsCheckboxes').innerHTML = response.data.data.map(p => `
-                <div class="form-check">
-                    <input class="form-check-input permission-checkbox" type="checkbox" value="${p.permission_id}">
-                    <label class="form-check-label">${p.resource} - ${p.action}</label>
-                </div>
-            `).join('');
+        const list = document.getElementById('permissionsList');
+        const checkboxes = document.getElementById('permissionsCheckboxes');
+        if (!list || !checkboxes) return;
+
+        if (!response.data.success) {
+            list.innerHTML = '<div class="col-span-full text-center text-sm text-rose-600">Failed to load permissions.</div>';
+            checkboxes.innerHTML = '<div class="text-sm text-rose-600">Failed to load permissions.</div>';
+            return;
         }
-    } catch (error) { 
+
+        const permissions = response.data.data || [];
+        list.innerHTML = permissions.map((permission) => `
+            <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+                <strong class="text-slate-900">${escapeHtml(permission.resource || '')}</strong>: ${escapeHtml(permission.action || '')}
+            </div>
+        `).join('');
+
+        checkboxes.innerHTML = permissions.map((permission) => `
+            <label class="mb-2 flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+                <input class="permission-checkbox h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" type="checkbox" value="${permission.permission_id}">
+                <span>${escapeHtml(permission.resource || '')} - ${escapeHtml(permission.action || '')}</span>
+            </label>
+        `).join('');
+    } catch (error) {
         console.error('Error loading permissions:', error);
-        document.getElementById('permissionsList').innerHTML = '<div class="col-12 text-danger">Failed to load permissions</div>';
+        const list = document.getElementById('permissionsList');
+        if (list) list.innerHTML = '<div class="col-span-full text-center text-sm text-rose-600">Failed to load permissions.</div>';
     }
 }
 
-async function loadUsersForAssignment() {
-    try {
-        const response = await axios.get(`${API_BASE}/user_management.php?action=list`);
-        if (response.data.success) {
-            // Filter out archived users (only show active and inactive non-archived users)
-            const activeUsers = response.data.data.filter(u => u.is_archived === 0 || !u.is_archived);
-            const options = activeUsers.map(u => `<option value="${u.user_id}">${u.username} (${u.role_name || 'Unknown'})</option>`).join('');
-            document.getElementById('userSelect').innerHTML += options;
-            document.getElementById('assignUserSelect').innerHTML += options;
-        }
-        // Load roles into select
-        const rolesRes = await axios.get(`${API_BASE}/roles_permissions.php?action=list-roles`);
-        if(rolesRes.data.success) {
-             document.getElementById('assignRoleSelect').innerHTML += rolesRes.data.data.map(r => `<option value="${r.role_id}">${r.role_name}</option>`).join('');
-        }
-    } catch (error) { 
-        console.error('Error loading users:', error);
-        Swal.fire('Error', 'Error loading users and roles', 'error');
-    }
+function openCreateRoleModal() {
+    if (createRoleModal) createRoleModal.show();
 }
 
-window.openCreateRoleModal = function() { createRoleModal.show(); };
-window.openAssignRoleModal = function() { assignRoleModal.show(); };
+async function saveRole() {
+    const name = document.getElementById('roleName')?.value.trim() || '';
+    const desc = document.getElementById('roleDescription')?.value.trim() || '';
+    const permissions = Array.from(document.querySelectorAll('.permission-checkbox:checked')).map((checkbox) => checkbox.value);
 
-window.saveRole = async function() {
-    const name = document.getElementById('roleName').value.trim();
-    const desc = document.getElementById('roleDescription').value.trim();
-    const permissions = Array.from(document.querySelectorAll('.permission-checkbox:checked')).map(cb => cb.value);
-
-    // Validation
     if (!name) {
         Swal.fire('Validation Error', 'Please enter a role name', 'warning');
         return;
@@ -114,27 +213,35 @@ window.saveRole = async function() {
     }
 
     try {
-        const response = await axios.post(`${API_BASE}/roles_permissions.php?action=create-role`, { role_name: name, description: desc, permissions });
-        if (response.data.success) {
-            Swal.fire('Success', 'Role created successfully!', 'success');
-            createRoleModal.hide();
-            document.getElementById('roleName').value = '';
-            document.getElementById('roleDescription').value = '';
-            document.querySelectorAll('.permission-checkbox').forEach(cb => cb.checked = false);
-            loadRoles();
-        } else {
-            Swal.fire('Error', 'Error: ' + (response.data.message || 'Failed to create role'), 'error');
-        }
-    } catch (error) { 
-        console.error('Error creating role:', error);
-        Swal.fire('Error', 'Error creating role: ' + (error.response?.data?.message || error.message), 'error');
-    }
-};
+        const response = await axios.post(`${API_BASE}/roles_permissions.php?action=create-role`, {
+            role_name: name,
+            description: desc,
+            permissions
+        });
 
-window.deleteRole = async function(id) {
+        if (!response.data.success) {
+            Swal.fire('Error', `Error: ${response.data.message || 'Failed to create role'}`, 'error');
+            return;
+        }
+
+        Swal.fire('Success', 'Role created successfully!', 'success');
+        if (createRoleModal) createRoleModal.hide();
+        setValue('roleName', '');
+        setValue('roleDescription', '');
+        document.querySelectorAll('.permission-checkbox').forEach((checkbox) => {
+            checkbox.checked = false;
+        });
+        loadRoles();
+    } catch (error) {
+        console.error('Error creating role:', error);
+        Swal.fire('Error', `Error creating role: ${error.response?.data?.message || error.message}`, 'error');
+    }
+}
+
+async function deleteRole(id) {
     const result = await Swal.fire({
         title: 'Delete Role?',
-        text: "Users with this role may lose permissions.",
+        text: 'Users with this role may lose permissions.',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
@@ -144,56 +251,32 @@ window.deleteRole = async function(id) {
 
     try {
         const response = await axios.post(`${API_BASE}/roles_permissions.php?action=delete-role`, { role_id: id });
-        if (response.data.success) {
-            Swal.fire('Deleted!', 'Role deleted successfully!', 'success');
-            loadRoles();
-        } else {
-            Swal.fire('Error', 'Error: ' + (response.data.message || 'Failed to delete role'), 'error');
+        if (!response.data.success) {
+            Swal.fire('Error', `Error: ${response.data.message || 'Failed to delete role'}`, 'error');
+            return;
         }
-    } catch (error) { 
+        Swal.fire('Deleted!', 'Role deleted successfully!', 'success');
+        loadRoles();
+    } catch (error) {
         console.error('Error deleting role:', error);
-        Swal.fire('Error', 'Error deleting role: ' + (error.response?.data?.message || error.message), 'error');
+        Swal.fire('Error', `Error deleting role: ${error.response?.data?.message || error.message}`, 'error');
     }
-};
+}
 
-window.assignRole = async function() {
-    const userId = document.getElementById('assignUserSelect').value;
-    const roleId = document.getElementById('assignRoleSelect').value;
-    
-    // Validation
-    if (!userId) {
-        Swal.fire('Validation Error', 'Please select a user', 'warning');
-        return;
-    }
-    if (!roleId) {
-        Swal.fire('Validation Error', 'Please select a role', 'warning');
-        return;
-    }
-    
-    try {
-        const response = await axios.post(`${API_BASE}/roles_permissions.php?action=assign-role`, { user_id: userId, role_id: roleId });
-        if (response.data.success) {
-            Swal.fire('Success', 'Role assigned successfully!', 'success');
-            assignRoleModal.hide();
-            document.getElementById('assignUserSelect').value = '';
-            document.getElementById('assignRoleSelect').value = '';
-        } else {
-            Swal.fire('Error', 'Error: ' + (response.data.message || 'Failed to assign role'), 'error');
-        }
-    } catch (error) { 
-        console.error('Error assigning role:', error);
-        Swal.fire('Error', 'Error assigning role: ' + (error.response?.data?.message || error.message), 'error');
-    }
-};
+function setValue(id, value) {
+    const element = document.getElementById(id);
+    if (element) element.value = value;
+}
 
-window.loadUserRoles = function() { 
-    const userId = document.getElementById('userSelect').value;
-    if (!userId) {
-        document.getElementById('userRolesCard').style.display = 'none';
-        return;
-    }
-    // TODO: Implement loading user roles from API
-    // This would fetch and display all roles assigned to the selected user
-    document.getElementById('userRolesCard').style.display = 'block';
-    document.getElementById('selectedUserName').innerText = 'User Roles for ID: ' + userId;
-};
+function escapeHtml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+window.openCreateRoleModal = openCreateRoleModal;
+window.saveRole = saveRole;
+window.deleteRole = deleteRole;

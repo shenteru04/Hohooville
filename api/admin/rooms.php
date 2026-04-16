@@ -22,6 +22,16 @@ try {
                 echo json_encode(['success' => false, 'message' => 'Room name is required.']);
                 break;
             }
+            
+            // Check if room name already exists (case-insensitive)
+            $checkStmt = $conn->prepare('SELECT COUNT(*) FROM tbl_rooms WHERE LOWER(TRIM(room_name)) = LOWER(TRIM(?)) AND is_archived = 0');
+            $checkStmt->execute([$data['room_name']]);
+            if ($checkStmt->fetchColumn() > 0) {
+                http_response_code(409);
+                echo json_encode(['success' => false, 'message' => 'A room with this name already exists. Please use a different name.']);
+                break;
+            }
+            
             $stmt = $conn->prepare('INSERT INTO tbl_rooms (room_name, room_description) VALUES (?, ?)');
             $stmt->execute([$data['room_name'], $data['room_description'] ?? null]);
             echo json_encode(['success' => true, 'message' => 'Room created successfully.']);
@@ -43,6 +53,16 @@ try {
                 echo json_encode(['success' => false, 'message' => 'Room ID and Room Name are required.']);
                 break;
             }
+            
+            // Check if new room name already exists (case-insensitive, excluding current room)
+            $checkStmt = $conn->prepare('SELECT COUNT(*) FROM tbl_rooms WHERE LOWER(TRIM(room_name)) = LOWER(TRIM(?)) AND room_id != ? AND is_archived = 0');
+            $checkStmt->execute([$data['room_name'], $data['room_id']]);
+            if ($checkStmt->fetchColumn() > 0) {
+                http_response_code(409);
+                echo json_encode(['success' => false, 'message' => 'A room with this name already exists. Please use a different name.']);
+                break;
+            }
+            
             $stmt = $conn->prepare('UPDATE tbl_rooms SET room_name = ?, room_description = ? WHERE room_id = ?');
             $stmt->execute([$data['room_name'], $data['room_description'] ?? null, $data['room_id']]);
             echo json_encode(['success' => true, 'message' => 'Room updated successfully.']);

@@ -11,6 +11,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once '../../database/db.php';
 
+/**
+ * Extract abbreviation from qualification name
+ */
+function getAbbreviatedQualificationName($fullName) {
+    // Extract NC level (NC I, NC II, NC III, etc.)
+    $ncPattern = '/\b(NC\s+[IVX]+)\b/i';
+    $ncLevel = '';
+    if (preg_match($ncPattern, $fullName, $matches)) {
+        $ncLevel = $matches[1];
+        $qualName = preg_replace($ncPattern, '', $fullName);
+    } else {
+        $qualName = $fullName;
+    }
+    
+    $qualName = trim($qualName);
+    
+    // Check if there's already an abbreviation in parentheses like (EPAS)
+    if (preg_match('/\(([A-Z]+)\)/', $qualName, $matches)) {
+        $abbr = $matches[1];
+    } else {
+        // Generate abbreviation from qualification name
+        $words = preg_split('/\s+/', $qualName);
+        
+        // For single word names, use first 4 letters
+        if (count($words) === 1) {
+            $abbr = strtoupper(substr($words[0], 0, 4));
+        } else {
+            // For multi-word names, take first letter of major words
+            $abbr = '';
+            foreach ($words as $word) {
+                // Skip small words and special characters
+                if (strlen($word) > 2 && !in_array(strtolower($word), ['and', 'the', 'for', 'with', 'in', 'at', 'to', 'of'])) {
+                    $abbr .= strtoupper($word[0]);
+                }
+            }
+            
+            // If we couldn't generate proper abbreviation, use first 4 letters
+            if (empty($abbr)) {
+                $abbr = strtoupper(substr(str_replace(' ', '', $qualName), 0, 4));
+            }
+        }
+    }
+    
+    // Return abbreviation with NC level (only add space if NC level exists)
+    return !empty($ncLevel) ? $abbr . ' ' . $ncLevel : $abbr;
+}
+
 class RegistrarDashboard {
     private $conn;
 
@@ -77,8 +124,14 @@ class RegistrarDashboard {
         $stmt = $this->conn->query($query);
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
+        // Generate abbreviated labels
+        $abbreviations = array_map(function($result) {
+            return getAbbreviatedQualificationName($result['label']);
+        }, $results);
+        
         $charts['by_course'] = [
             'labels' => array_column($results, 'label'),
+            'abbreviations' => $abbreviations,
             'data' => array_column($results, 'count')
         ];
 

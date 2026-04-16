@@ -4,357 +4,239 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Hohoo-Ville Technical School</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Sidebar CSS -->
-    <link rel="stylesheet" href="../../css/admin/sidebar.css">
     <style>
-        :root {
-            --primary-color: #4e73df;
-            --secondary-color: #858796;
-            --bg-color: #f8f9fc;
-            --text-color: #5a5c69;
-        }
-        body {
-            font-family: 'Nunito', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-        }
-        #sidebar {
-            background: #fff;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-            z-index: 1000;
-        }
-        #sidebar .sidebar-header {
-            padding: 1.5rem 1rem;
-            text-align: center;
-            color: var(--primary-color);
-            font-weight: 800;
-        }
-        #sidebar .nav-link {
-            color: var(--text-color);
-            padding: 0.5rem 1rem;
-            margin: 0.1rem 0.5rem;
-            border-radius: 0.35rem;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        #sidebar .nav-link:hover {
-            background-color: #eaecf4;
-            color: var(--primary-color);
-        }
-        #sidebar .nav-link.active {
-            background-color: var(--primary-color);
-            color: #fff;
-        }
-        .card {
-            border: none;
-            border-radius: 0.35rem;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-        }
-        .card-header {
-            background-color: #f8f9fc;
-            border-bottom: 1px solid #e3e6f0;
-            padding: 1rem 1.25rem;
-            font-weight: 700;
-            color: var(--primary-color);
+        body { font-family: 'Nunito', sans-serif; }
+        a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
         }
     </style>
 </head>
-<body>
-    <!-- Sidebar Container - Content will be loaded here via JavaScript -->
+<body class="bg-slate-50 text-slate-700">
     <div id="sidebar-container"></div>
 
-    <!-- Main Content Area -->
-    <div class="main-content" >
-        <!-- Top Navigation -->
-        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
-                <div class="container-fluid">
-                    <button type="button" id="sidebarCollapse" class="btn btn-outline-primary me-2 d-lg-none">
-                        <i class="fas fa-bars"></i>
+    <div class="main-content min-h-screen lg:ml-72" id="content">
+        <header class="border-b border-blue-100 bg-white/85 shadow-sm backdrop-blur">
+            <div class="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center gap-3">
+                    <button type="button" id="sidebarCollapse" class="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 lg:hidden">
+                        <i class="fas fa-bars text-lg"></i>
                     </button>
-
-                    <div class="ms-auto d-flex align-items-center">
-                        <button class="btn btn-outline-primary me-2" id="refreshDashboard">
-                            <i class="fas fa-sync-alt"></i> Refresh
-                        </button>
-                        <div class="dropdown">
-                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
-                                <i class="fas fa-user-circle"></i> <span id="userName">Admin</span>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="pages/profile.html"><i class="fas fa-user"></i> Profile</a></li>
-                                <li><a class="dropdown-item" href="pages/settings.html"><i class="fas fa-cog"></i> Settings</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
-                            </ul>
-                        </div>
-                    </div>
+                    <h1 class="text-xl font-semibold text-slate-800">Admin Dashboard</h1>
                 </div>
-            </nav>
-            
-                <!-- Default dashboard content -->
-                <div class="container-fluid mt-4">
-                    <h2 class="mb-4 text-gray-800">Dashboard Overview</h2>
-                    <!-- Statistics Cards -->
-                    <div class="row mb-4">
-                        <div class="col-md-2">
-                            <div class="card text-center h-100 py-2 border-start border-4 border-primary">
-                                <div class="card-body">
-                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Enrolled</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalEnrolled">0</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="card text-center h-100 py-2 border-start border-4 border-success">
-                                <div class="card-body">
-                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Qualifications</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="activeQualifications">0</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="card text-center h-100 py-2 border-start border-4 border-info">
-                                <div class="card-body">
-                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Trainers</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="trainerCount">0</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="card text-center h-100 py-2 border-start border-4 border-warning">
-                                <div class="card-body">
-                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Scheduled</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="scheduledTrainings">0</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="card text-center h-100 py-2 border-start border-4 border-danger">
-                                <div class="card-body">
-                                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Pending</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="pendingEnrollments">0</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="card text-center h-100 py-2 border-start border-4 border-secondary">
-                                <div class="card-body">
-                                    <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">Completed</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="completedThisYear">0</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- Financial Summary -->
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">Financial Summary</div>
-                                <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-6">
-                                            <h5>Total Collected</h5>
-                                            <h4 id="totalCollected">$0</h4>
-                                        </div>
-                                        <div class="col-6">
-                                            <h5>Total Pending</h5>
-                                            <h4 id="totalPending">$0</h4>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">Overall Attendance Rate</div>
-                                <div class="card-body text-center">
-                                    <h1 id="overallAttendanceRate">0%</h1>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Charts Row 1 -->
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">Enrollments by Qualification</div>
-                                <div class="card-body">
-                                    <canvas id="enrollmentByQualificationChart" width="400" height="300"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">Enrollment Trend (Last 12 Months)</div>
-                                <div class="card-body">
-                                    <canvas id="enrollmentTrendChart" width="400" height="300"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Charts Row 2 -->
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">Scholarship Distribution</div>
-                                <div class="card-body">
-                                    <canvas id="scholarshipDistributionChart" width="400" height="300"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">Monthly Revenue (Last 6 Months)</div>
-                                <div class="card-body">
-                                    <canvas id="monthlyRevenueChart" width="400" height="300"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Competency and Activities Row -->
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">Competency Overview</div>
-                                <div class="card-body">
-                                    <canvas id="competencyChart" width="400" height="300"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">Recent System Activities</div>
-                                <div class="card-body">
-                                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                                        <table class="table table-sm table-hover" id="recentActivitiesTable" data-table-manager="true" data-filters="Action:1" data-filter-auto-options="true">
-                                            <thead>
-                                                <tr>
-                                                    <th>User</th>
-                                                    <th>Action</th>
-                                                    <th>Time</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="recentActivitiesBody">
-                                                <!-- Activities populated by JS -->
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Attendance Chart -->
-                    <div class="row mb-4">
-                        <div class="col-md-12">
-                            <div class="card">
-                                <div class="card-header">Attendance Rate (Last 7 Days)</div>
-                                <div class="card-body">
-                                    <canvas id="attendanceTrendChart" width="800" height="300"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Tables -->
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">Batch Enrollment Summary</div>
-                                <div class="card-body">
-                                    <div class="table-responsive">
-                                        <table class="table table-striped" id="batchSummaryTable" data-table-manager="true" data-filters="Status:2" data-filter-auto-options="true">
-                                            <thead>
-                                                <tr>
-                                                    <th>Batch Name</th>
-                                                    <th>Enrolled</th>
-                                                    <th>Status</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="batchTableBody">
-                                                <!-- Batch data will be populated here -->
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">Batch Attendance Summary</div>
-                                <div class="card-body">
-                                    <div class="table-responsive">
-                                        <table class="table table-striped" id="batchAttendanceTable" data-table-manager="true" data-filters="Batch Code:0" data-filter-auto-options="true">
-                                            <thead>
-                                                <tr>
-                                                    <th>Batch Code</th>
-                                                    <th>Total Records</th>
-                                                    <th>Present</th>
-                                                    <th>Rate</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="batchAttendanceTableBody">
-                                                <!-- Attendance data will be populated here -->
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
+                <div class="header-actions flex items-center gap-3" data-header-actions>
+                    <button class="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50" id="refreshDashboard" type="button">
+                        <i class="fas fa-sync-alt"></i>
+                        <span class="hidden sm:inline">Refresh</span>
+                    </button>
+                    <div class="relative">
+                        <button id="userDropdown" class="flex items-center gap-2 rounded-full border border-blue-100 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-700 hover:bg-blue-50" type="button">
+                            <i class="fas fa-user-circle text-xl text-blue-500"></i>
+                            <span id="userName" class="hidden md:block">Admin</span>
+                            <i class="fas fa-chevron-down text-xs text-slate-400"></i>
+                        </button>
+                        <div id="userDropdownMenu" class="absolute right-0 top-full z-40 mt-2 hidden w-48 rounded-xl border border-blue-100 bg-white py-1 shadow-xl shadow-blue-100/40">
+                            <a href="pages/profile.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-user mr-2"></i> Profile</a>
+                            <a href="pages/settings.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-cog mr-2"></i> Settings</a>
+                            <div class="border-t border-blue-100"></div>
+                            <a href="#" id="logoutBtn" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-sign-out-alt mr-2"></i> Logout</a>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </header>
+
+        <main class="space-y-6 p-4 sm:p-6 lg:p-8">
+            <section class="space-y-2">
+                <h2 class="text-2xl font-semibold text-slate-900">Dashboard Overview</h2>
+                <p class="text-sm text-slate-500">Operational snapshot of enrollments, attendance, finances, and activity.</p>
+            </section>
+
+            <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+                <article class="rounded-2xl border border-blue-100 bg-white p-4 shadow-sm">
+                    <p class="text-xs font-semibold uppercase tracking-[0.15em] text-blue-600">Total Enrolled</p>
+                    <p class="mt-2 text-3xl font-bold text-slate-900" id="totalEnrolled">0</p>
+                </article>
+                <article class="rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm">
+                    <p class="text-xs font-semibold uppercase tracking-[0.15em] text-emerald-600">Qualifications</p>
+                    <p class="mt-2 text-3xl font-bold text-slate-900" id="activeQualifications">0</p>
+                </article>
+                <article class="rounded-2xl border border-cyan-100 bg-white p-4 shadow-sm">
+                    <p class="text-xs font-semibold uppercase tracking-[0.15em] text-cyan-600">Trainers</p>
+                    <p class="mt-2 text-3xl font-bold text-slate-900" id="trainerCount">0</p>
+                </article>
+                <article class="rounded-2xl border border-amber-100 bg-white p-4 shadow-sm">
+                    <p class="text-xs font-semibold uppercase tracking-[0.15em] text-amber-600">Scheduled</p>
+                    <p class="mt-2 text-3xl font-bold text-slate-900" id="scheduledTrainings">0</p>
+                </article>
+                <article class="rounded-2xl border border-rose-100 bg-white p-4 shadow-sm">
+                    <p class="text-xs font-semibold uppercase tracking-[0.15em] text-rose-600">Pending</p>
+                    <p class="mt-2 text-3xl font-bold text-slate-900" id="pendingEnrollments">0</p>
+                </article>
+                <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <p class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-600">Completed</p>
+                    <p class="mt-2 text-3xl font-bold text-slate-900" id="completedThisYear">0</p>
+                </article>
+            </section>
+
+            <section class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <article class="rounded-2xl border border-blue-100 bg-white shadow-sm">
+                    <header class="border-b border-blue-100 px-5 py-4">
+                        <h3 class="text-lg font-semibold text-slate-900">Financial Summary</h3>
+                    </header>
+                    <div class="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
+                        <div class="rounded-xl border border-emerald-100 bg-emerald-50/50 p-4">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Total Collected</p>
+                            <p class="mt-2 text-2xl font-bold text-slate-900" id="totalCollected">PHP 0</p>
+                        </div>
+                        <div class="rounded-xl border border-amber-100 bg-amber-50/50 p-4">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-amber-700">Total Pending</p>
+                            <p class="mt-2 text-2xl font-bold text-slate-900" id="totalPending">PHP 0</p>
+                        </div>
+                    </div>
+                </article>
+                <article class="rounded-2xl border border-blue-100 bg-white shadow-sm">
+                    <header class="border-b border-blue-100 px-5 py-4">
+                        <h3 class="text-lg font-semibold text-slate-900">Overall Attendance Rate</h3>
+                    </header>
+                    <div class="flex h-[172px] items-center justify-center p-5">
+                        <p class="text-4xl font-bold text-blue-700" id="overallAttendanceRate">0%</p>
+                    </div>
+                </article>
+            </section>
+
+            <section class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                <article class="rounded-2xl border border-blue-100 bg-white shadow-sm">
+                    <header class="border-b border-blue-100 px-5 py-4">
+                        <h3 class="text-lg font-semibold text-slate-900">Enrollments by Qualification</h3>
+                    </header>
+                    <div class="h-80 p-5">
+                        <canvas id="enrollmentByQualificationChart"></canvas>
+                    </div>
+                </article>
+                <article class="rounded-2xl border border-blue-100 bg-white shadow-sm">
+                    <header class="border-b border-blue-100 px-5 py-4">
+                        <h3 class="text-lg font-semibold text-slate-900">Enrollment Trend (Last 12 Months)</h3>
+                    </header>
+                    <div class="h-80 p-5">
+                        <canvas id="enrollmentTrendChart"></canvas>
+                    </div>
+                </article>
+            </section>
+
+            <section class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                <article class="rounded-2xl border border-blue-100 bg-white shadow-sm">
+                    <header class="border-b border-blue-100 px-5 py-4">
+                        <h3 class="text-lg font-semibold text-slate-900">Scholarship Distribution</h3>
+                    </header>
+                    <div class="h-80 p-5">
+                        <canvas id="scholarshipDistributionChart"></canvas>
+                    </div>
+                </article>
+                <article class="rounded-2xl border border-blue-100 bg-white shadow-sm">
+                    <header class="border-b border-blue-100 px-5 py-4">
+                        <h3 class="text-lg font-semibold text-slate-900">Monthly Revenue (Last 6 Months)</h3>
+                    </header>
+                    <div class="h-80 p-5">
+                        <canvas id="monthlyRevenueChart"></canvas>
+                    </div>
+                </article>
+            </section>
+
+            <section class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                <article class="rounded-2xl border border-blue-100 bg-white shadow-sm">
+                    <header class="border-b border-blue-100 px-5 py-4">
+                        <h3 class="text-lg font-semibold text-slate-900">Competency Overview</h3>
+                    </header>
+                    <div class="h-80 p-5">
+                        <canvas id="competencyChart"></canvas>
+                    </div>
+                </article>
+                <article class="rounded-2xl border border-blue-100 bg-white shadow-sm">
+                    <header class="border-b border-blue-100 px-5 py-4">
+                        <h3 class="text-lg font-semibold text-slate-900">Recent System Activities</h3>
+                    </header>
+                    <div class="p-5">
+                        <div class="max-h-80 overflow-y-auto overflow-x-auto rounded-xl border border-slate-200">
+                            <table class="min-w-full divide-y divide-slate-200 text-sm" id="recentActivitiesTable" data-table-manager="true" data-filters="Action:1" data-filter-auto-options="true">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">User</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Action</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentActivitiesBody" class="divide-y divide-slate-100 bg-white"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <section>
+                <article class="rounded-2xl border border-blue-100 bg-white shadow-sm">
+                    <header class="border-b border-blue-100 px-5 py-4">
+                        <h3 class="text-lg font-semibold text-slate-900">Attendance Rate (Last 7 Days)</h3>
+                    </header>
+                    <div class="h-80 p-5">
+                        <canvas id="attendanceTrendChart"></canvas>
+                    </div>
+                </article>
+            </section>
+
+            <section class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                <article class="rounded-2xl border border-blue-100 bg-white shadow-sm">
+                    <header class="border-b border-blue-100 px-5 py-4">
+                        <h3 class="text-lg font-semibold text-slate-900">Batch Enrollment Summary</h3>
+                    </header>
+                    <div class="p-5">
+                        <div class="overflow-x-auto rounded-xl border border-slate-200">
+                            <table class="min-w-full divide-y divide-slate-200 text-sm" id="batchSummaryTable" data-table-manager="true" data-filters="Status:2" data-filter-auto-options="true">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Batch Name</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Enrolled</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="batchTableBody" class="divide-y divide-slate-100 bg-white"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </article>
+                <article class="rounded-2xl border border-blue-100 bg-white shadow-sm">
+                    <header class="border-b border-blue-100 px-5 py-4">
+                        <h3 class="text-lg font-semibold text-slate-900">Batch Attendance Summary</h3>
+                    </header>
+                    <div class="p-5">
+                        <div class="overflow-x-auto rounded-xl border border-slate-200">
+                            <table class="min-w-full divide-y divide-slate-200 text-sm" id="batchAttendanceTable" data-table-manager="true" data-filters="Batch Code:0" data-filter-auto-options="true">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Batch Code</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Total Records</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Present</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="batchAttendanceTableBody" class="divide-y divide-slate-100 bg-white"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </article>
+            </section>
+        </main>
     </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <!-- Chart.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.3.0/chart.umd.min.js"></script>
-    <!-- Axios -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
-    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- Sidebar Loader -->
     <script src="../../js/sidebar.js"></script>
     <script src="../../js/table_manager.js"></script>
-    <!-- Custom JS -->
     <script src="../../js/admin/admindashboard.js"></script>
-    <script>
-        // Logout
-        document.addEventListener('DOMContentLoaded', function() {
-            const logoutBtn = document.getElementById('logoutBtn');
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    logout();
-                });
-            }
-        });
-
-        // Sidebar Persistence
-        document.addEventListener("DOMContentLoaded", function() {
-            const sidebar = document.getElementById('sidebar');
-            if (sidebar) {
-                const scrollPos = localStorage.getItem('sidebarScroll');
-                if (scrollPos) sidebar.scrollTop = parseInt(scrollPos);
-                
-                window.addEventListener('beforeunload', () => {
-                    localStorage.setItem('sidebarScroll', sidebar.scrollTop);
-                });
-            }
-        });
-    </script>
 </body>
 </html>

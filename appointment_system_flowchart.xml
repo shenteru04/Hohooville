@@ -1,0 +1,270 @@
+<mxfile host="app.diagrams.net" modified="2026-04-07" agent="5.0" version="24.0.0" type="device">
+  <diagram id="C5RBs43oDa-KdzZeNtuy" name="Appointment System Flowchart">
+    <mxGraphModel dx="1200" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="1600" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        
+        <!-- Start -->
+        <mxCell id="start" value="START" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#d5e8d4;strokeColor=#82b366;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+          <mxGeometry x="375" y="20" width="100" height="100" as="geometry"/>
+        </mxCell>
+        
+        <!-- Main Menu -->
+        <mxCell id="mainMenu" value="Display Main Menu:&#10;1. Admin&#10;2. Patient&#10;3. Exit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+          <mxGeometry x="330" y="150" width="190" height="80" as="geometry"/>
+        </mxCell>
+        
+        <!-- Choice Decision -->
+        <mxCell id="choice" value="User Choice?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+          <mxGeometry x="375" y="280" width="100" height="100" as="geometry"/>
+        </mxCell>
+        
+        <!-- ADMIN PATH -->
+        <!-- Admin Login -->
+        <mxCell id="adminLogin" value="Admin Login&#10;Username: AdminOnly&#10;Password: privatespace" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+          <mxGeometry x="90" y="280" width="190" height="100" as="geometry"/>
+        </mxCell>
+        
+        <!-- Admin Login Valid? -->
+        <mxCell id="adminValid" value="Credentials&#10;Valid?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+          <mxGeometry x="115" y="430" width="100" height="100" as="geometry"/>
+        </mxCell>
+        
+        <!-- Admin Dashboard -->
+        <mxCell id="adminDashboard" value="Admin Dashboard:&#10;1. Add Appointment&#10;2. Edit Appointment&#10;3. Summary Report&#10;4. Logout" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+          <mxGeometry x="70" y="570" width="210" height="120" as="geometry"/>
+        </mxCell>
+        
+        <!-- Admin Operations -->
+        <mxCell id="adminOp1" value="Add Appointment:&#10;- Validate Name&#10;- Validate ID (3 digits)&#10;- Select Doctor&#10;- Enter Date & Time&#10;- Check Conflicts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+          <mxGeometry x="30" y="730" width="180" height="120" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="adminOp2" value="Edit Appointment:&#10;- Search by ID&#10;- Reschedule&#10;- Cancel" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+          <mxGeometry x="250" y="730" width="170" height="120" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="adminOp3" value="Summary Report:&#10;Display All Appointments" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+          <mxGeometry x="470" y="730" width="170" height="120" as="geometry"/>
+        </mxCell>
+        
+        <!-- PATIENT PATH -->
+        <!-- Patient Login -->
+        <mxCell id="patientLogin" value="Patient Login&#10;Enter Name & ID" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d4e6f1;strokeColor=#3d85c6;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+          <mxGeometry x="615" y="280" width="190" height="100" as="geometry"/>
+        </mxCell>
+        
+        <!-- Patient Login Valid? -->
+        <mxCell id="patientValid" value="Appointment&#10;Found?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+          <mxGeometry x="640" y="430" width="100" height="100" as="geometry"/>
+        </mxCell>
+        
+        <!-- Patient Dashboard -->
+        <mxCell id="patientDashboard" value="Patient Dashboard:&#10;1. View My Appointments&#10;2. Logout" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d4e6f1;strokeColor=#3d85c6;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+          <mxGeometry x="615" y="570" width="210" height="100" as="geometry"/>
+        </mxCell>
+        
+        <!-- Patient View Appointments -->
+        <mxCell id="patientOp" value="View Appointments:&#10;Display appointment&#10;details matching&#10;name and ID" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+          <mxGeometry x="630" y="730" width="170" height="120" as="geometry"/>
+        </mxCell>
+        
+        <!-- Exit -->
+        <mxCell id="exit" value="END" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#f8cecc;strokeColor=#b85450;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+          <mxGeometry x="375" y="1000" width="100" height="100" as="geometry"/>
+        </mxCell>
+        
+        <!-- Error messages -->
+        <mxCell id="invalidAdmin" value="Invalid Login&#10;Retry" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcccc;strokeColor=#cc0000;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+          <mxGeometry x="10" y="430" width="80" height="100" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="invalidPatient" value="No Appointment&#10;Retry" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcccc;strokeColor=#cc0000;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+          <mxGeometry x="760" y="430" width="80" height="100" as="geometry"/>
+        </mxCell>
+        
+        <!-- Edges -->
+        <mxCell id="edge1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="start" target="mainMenu" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="edge2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="mainMenu" target="choice" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        
+        <!-- Choice to Admin -->
+        <mxCell id="edge3" value="1. Admin" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="choice" target="adminLogin" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="sourcePoint" x="375" y="330"/>
+            <mxPoint as="targetPoint" x="185" y="330"/>
+            <Array as="points">
+              <mxPoint x="280" y="330"/>
+              <mxPoint x="280" y="330"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        
+        <!-- Choice to Patient -->
+        <mxCell id="edge4" value="2. Patient" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="choice" target="patientLogin" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="sourcePoint" x="475" y="330"/>
+            <mxPoint as="targetPoint" x="710" y="330"/>
+            <Array as="points">
+              <mxPoint x="570" y="330"/>
+              <mxPoint x="570" y="330"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        
+        <!-- Choice to Exit -->
+        <mxCell id="edge5" value="3. Exit" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="choice" target="exit" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="sourcePoint" x="425" y="380"/>
+            <mxPoint as="targetPoint" x="425" y="1000"/>
+          </mxGeometry>
+        </mxCell>
+        
+        <!-- Admin Login to Validation -->
+        <mxCell id="edge6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="adminLogin" target="adminValid" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        
+        <!-- Admin Valid - Yes -->
+        <mxCell id="edge7" value="Yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="adminValid" target="adminDashboard" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="sourcePoint" x="165" y="530"/>
+            <mxPoint as="targetPoint" x="175" y="570"/>
+          </mxGeometry>
+        </mxCell>
+        
+        <!-- Admin Valid - No -->
+        <mxCell id="edge8" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="adminValid" target="invalidAdmin" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="sourcePoint" x="115" y="480"/>
+            <mxPoint as="targetPoint" x="50" y="480"/>
+          </mxGeometry>
+        </mxCell>
+        
+        <!-- Invalid Admin back to Login -->
+        <mxCell id="edge9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="invalidAdmin" target="adminLogin" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="sourcePoint" x="50" y="430"/>
+            <mxPoint as="targetPoint" x="90" y="330"/>
+            <Array as="points">
+              <mxPoint x="50" y="350"/>
+              <mxPoint x="50" y="350"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        
+        <!-- Patient Login to Validation -->
+        <mxCell id="edge10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="patientLogin" target="patientValid" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        
+        <!-- Patient Valid - Yes -->
+        <mxCell id="edge11" value="Yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="patientValid" target="patientDashboard" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="sourcePoint" x="690" y="530"/>
+            <mxPoint as="targetPoint" x="720" y="570"/>
+          </mxGeometry>
+        </mxCell>
+        
+        <!-- Patient Valid - No -->
+        <mxCell id="edge12" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="patientValid" target="invalidPatient" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="sourcePoint" x="740" y="480"/>
+            <mxPoint as="targetPoint" x="760" y="480"/>
+          </mxGeometry>
+        </mxCell>
+        
+        <!-- Invalid Patient back to Login -->
+        <mxCell id="edge13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="invalidPatient" target="patientLogin" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="sourcePoint" x="800" y="430"/>
+            <mxPoint as="targetPoint" x="800" y="330"/>
+            <Array as="points">
+              <mxPoint x="800" y="350"/>
+              <mxPoint x="800" y="350"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        
+        <!-- Admin Dashboard to Operations -->
+        <mxCell id="edge14" value="Options" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="adminDashboard" target="adminOp1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="sourcePoint" x="105" y="690"/>
+            <mxPoint as="targetPoint" x="105" y="730"/>
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="edge15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="adminDashboard" target="adminOp2" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="sourcePoint" x="140" y="690"/>
+            <mxPoint as="targetPoint" x="335" y="730"/>
+            <Array as="points">
+              <mxPoint x="250" y="710"/>
+              <mxPoint x="335" y="710"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="edge16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="adminDashboard" target="adminOp3" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="sourcePoint" x="175" y="690"/>
+            <mxPoint as="targetPoint" x="555" y="730"/>
+            <Array as="points">
+              <mxPoint x="400" y="710"/>
+              <mxPoint x="555" y="710"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        
+        <!-- Patient Dashboard to Operations -->
+        <mxCell id="edge17" value="View" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="patientDashboard" target="patientOp" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="sourcePoint" x="720" y="670"/>
+            <mxPoint as="targetPoint" x="715" y="730"/>
+          </mxGeometry>
+        </mxCell>
+        
+        <!-- Operations back to Dashboard/Menu -->
+        <mxCell id="edge18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="adminOp1" target="adminDashboard" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="sourcePoint" x="105" y="730"/>
+            <mxPoint as="targetPoint" x="105" y="690"/>
+            <Array as="points">
+              <mxPoint x="105" y="720"/>
+              <mxPoint x="175" y="720"/>
+              <mxPoint x="175" y="690"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        
+        <!-- Logout paths -->
+        <mxCell id="edge19" value="Logout (4)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="adminDashboard" target="mainMenu" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="sourcePoint" x="280" y="630"/>
+            <mxPoint as="targetPoint" x="330" y="190"/>
+            <Array as="points">
+              <mxPoint x="280" y="600"/>
+              <mxPoint x="280" y="190"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="edge20" value="Logout (2)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="patientDashboard" target="mainMenu" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="sourcePoint" x="615" y="620"/>
+            <mxPoint as="targetPoint" x="520" y="190"/>
+            <Array as="points">
+              <mxPoint x="570" y="600"/>
+              <mxPoint x="570" y="190"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -47,6 +47,9 @@ switch ($action) {
 
 function listBatches($conn) {
     try {
+        // Close batches that have passed their enrollment deadline (start_date)
+        closeExpiredBatches($conn);
+        
         $query = "SELECT
                     b.batch_id,
                     b.batch_name,
@@ -293,6 +296,22 @@ function getTraineeDetails($conn) {
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         http_response_code(500);
+    }
+}
+
+/**
+ * Closes batches that have passed their enrollment deadline (start_date)
+ */
+function closeExpiredBatches($conn) {
+    try {
+        $query = "UPDATE tbl_batch 
+                  SET status = 'closed' 
+                  WHERE status = 'open' 
+                  AND start_date <= CURDATE()";
+        $stmt = $conn->prepare($query);
+        $stmt->execute();
+    } catch (Exception $e) {
+        error_log("Error closing expired batches: " . $e->getMessage());
     }
 }
 ?>

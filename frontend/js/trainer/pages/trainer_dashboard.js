@@ -1,23 +1,20 @@
-// API Configuration
-const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
+const API_BASE_URL = window.location.origin + '/Hohoo-ville/api';
 
-// Axios Instance
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
     headers: { 'Content-Type': 'application/json' }
 });
 
-// Chart Instances
-let moduleChart = null;
-let gradesChart = null;
-
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', async function () {
     const user = JSON.parse(localStorage.getItem('user'));
-    
     if (!user) {
-        window.location.href = '../../login.html';
+        window.location.href = '/Hohoo-ville/frontend/login.html';
         return;
     }
+
+    initSidebar();
+    initUserMenu();
+    initLogout();
 
     try {
         const response = await apiClient.get(`/role/trainer/profile.php?action=get-trainer-id&user_id=${user.user_id}`);
@@ -25,134 +22,92 @@ document.addEventListener('DOMContentLoaded', async function() {
             const trainer = response.data.data;
             if (trainer.first_name && trainer.last_name) {
                 document.getElementById('trainerName').textContent = `${trainer.first_name} ${trainer.last_name}`;
+            } else {
+                document.getElementById('trainerName').textContent = user.username || 'Trainer';
             }
             loadDashboardData(trainer.trainer_id);
-        } else {
-            // Security Check: If API fails due to archive/inactive status, logout immediately
-            if (response.data.message && (
-                response.data.message.toLowerCase().includes('archived') || 
-                response.data.message.toLowerCase().includes('inactive')
-            )) {
-                localStorage.clear();
-                window.location.href = '../../login.html';
-            }
         }
     } catch (error) {
         console.error('Error fetching trainer ID:', error);
     }
-
-    // Inject Sidebar CSS (W3.CSS Reference Style)
-    const ms = document.createElement('style');
-    ms.innerHTML = `
-        #sidebar {
-            width: 200px;
-            position: fixed;
-            z-index: 1050;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            overflow-y: auto;
-            background-color: #fff;
-            box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16), 0 2px 10px 0 rgba(0,0,0,0.12);
-            display: block;
-        }
-        .main-content, #content, .content-wrapper {
-            margin-left: 200px !important;
-            transition: margin-left .4s;
-        }
-        #sidebarCloseBtn {
-            display: none;
-            width: 100%;
-            text-align: left;
-            padding: 8px 16px;
-            background: none;
-            border: none;
-            font-size: 18px;
-        }
-        #sidebarCloseBtn:hover { background-color: #ccc; }
-        
-        @media (max-width: 991.98px) {
-            #sidebar { display: none; }
-            .main-content, #content, .content-wrapper { margin-left: 0 !important; }
-            #sidebarCloseBtn { display: block; }
-        }
-        .table-responsive, table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    `;
-    document.head.appendChild(ms);
-
-    // Sidebar Logic
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) {
-        if (!document.getElementById('sidebarCloseBtn')) {
-            const closeBtn = document.createElement('button');
-            closeBtn.id = 'sidebarCloseBtn';
-            closeBtn.innerHTML = 'Close &times;';
-            closeBtn.className = 'w3-bar-item w3-button w3-hide-large';
-            closeBtn.addEventListener('click', () => {
-                sidebar.style.display = 'none';
-            });
-            sidebar.insertBefore(closeBtn, sidebar.firstChild);
-        }
-    }
-
-    // Open Button Logic
-    let sc = document.getElementById('sidebarCollapse');
-    if (!sc) {
-        const nb = document.querySelector('.navbar');
-        if (nb) {
-            const c = nb.querySelector('.container-fluid') || nb;
-            const b = document.createElement('button');
-            b.id = 'sidebarCollapse';
-            b.className = 'btn btn-outline-primary me-2 d-lg-none';
-            b.type = 'button';
-            b.innerHTML = '&#9776;';
-            c.insertBefore(b, c.firstChild);
-            sc = b;
-        }
-    }
-    if (sc) {
-        const nb = sc.cloneNode(true);
-        if(sc.parentNode) sc.parentNode.replaceChild(nb, sc);
-        nb.addEventListener('click', () => {
-            if (sidebar) sidebar.style.display = 'block';
-        });
-    }
-
-    // Remove Attendance and Grading pages from sidebar
-    if (sidebar) {
-        const ul = sidebar.querySelector('ul');
-        if (ul) {
-            ul.innerHTML = '';
-            const menuItems = [
-                { href: '/Hohoo-ville/frontend/html/trainer/trainer_dashboard.html', icon: 'fas fa-home', text: 'Dashboard' },
-                { href: '/Hohoo-ville/frontend/html/trainer/pages/my_batches.html', icon: 'fas fa-users', text: 'My Batches' },
-                { href: '/Hohoo-ville/frontend/html/trainer/pages/modules.html', icon: 'fas fa-book', text: 'Modules' },
-                { href: '/Hohoo-ville/frontend/html/trainer/pages/progress_chart.html', icon: 'fas fa-chart-line', text: 'Progress Chart' },
-                { href: '/Hohoo-ville/frontend/html/trainer/pages/achievement_chart.html', icon: 'fas fa-trophy', text: 'Achievement Chart' },
-                { href: '/Hohoo-ville/frontend/html/trainer/pages/reports.html', icon: 'fas fa-file-alt', text: 'Reports' }
-            ];
-            const currentPage = window.location.pathname.split('/').pop();
-            menuItems.forEach(item => {
-                const li = document.createElement('li');
-                li.className = 'nav-item mb-1';
-                const isActive = currentPage === item.href ? 'active' : '';
-                li.innerHTML = `<a class="nav-link ${isActive}" href="${item.href}"><i class="${item.icon} me-2"></i> ${item.text}</a>`;
-                ul.appendChild(li);
-            });
-        }
-    }
-
-    // Logout
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = '../../login.html';
-        });
-    }
 });
+
+function initSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const sidebarCollapse = document.getElementById('sidebarCollapse');
+    const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+
+    if (!sidebar) return;
+
+    function openSidebar() {
+        sidebar.classList.remove('-translate-x-full');
+        if (sidebarOverlay) {
+            sidebarOverlay.classList.remove('hidden');
+            requestAnimationFrame(() => sidebarOverlay.classList.remove('opacity-0'));
+        }
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function closeSidebar() {
+        sidebar.classList.add('-translate-x-full');
+        if (sidebarOverlay) {
+            sidebarOverlay.classList.add('opacity-0');
+            setTimeout(() => sidebarOverlay.classList.add('hidden'), 300);
+        }
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    function toggleSidebar() {
+        if (sidebar.classList.contains('-translate-x-full')) {
+            openSidebar();
+        } else {
+            closeSidebar();
+        }
+    }
+
+    if (sidebarCollapse) sidebarCollapse.addEventListener('click', toggleSidebar);
+    if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', closeSidebar);
+    if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+
+    window.addEventListener('resize', () => {
+        if (window.innerWidth >= 1024) {
+            document.body.classList.remove('overflow-hidden');
+            if (sidebarOverlay) {
+                sidebarOverlay.classList.add('hidden', 'opacity-0');
+            }
+        }
+    });
+}
+
+function initUserMenu() {
+    const userMenuButton = document.getElementById('userMenuButton');
+    const userMenuDropdown = document.getElementById('userMenuDropdown');
+    if (!userMenuButton || !userMenuDropdown) return;
+
+    userMenuButton.addEventListener('click', function (event) {
+        event.stopPropagation();
+        userMenuDropdown.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', function (event) {
+        if (!event.target.closest('#userMenuDropdown')) {
+            userMenuDropdown.classList.add('hidden');
+        }
+    });
+}
+
+function initLogout() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (!logoutBtn) return;
+
+    logoutBtn.addEventListener('click', function (event) {
+        event.preventDefault();
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/Hohoo-ville/frontend/login.html';
+    });
+}
 
 async function loadDashboardData(trainerId) {
     try {
@@ -186,7 +141,10 @@ async function loadModulePerformance(trainerId) {
     try {
         const response = await apiClient.get(`/role/trainer/trainer_dashboard.php?action=module-performance&trainer_id=${trainerId}`);
         if (response.data.success && Array.isArray(response.data.data) && response.data.data.length > 0) {
-            data = response.data.data;
+            data = response.data.data.map(item => ({
+                module_title: item.module_title || 'Untitled Module',
+                avg_score: clampScore(item.avg_score)
+            }));
         }
     } catch (error) {
         console.error('Module Performance Error:', error);
@@ -195,12 +153,8 @@ async function loadModulePerformance(trainerId) {
     const labels = data.map(item => item.module_title);
     const scores = data.map(item => item.avg_score);
 
-    // Module Progress Chart (Bar)
-    renderChart('moduleProgressChart', 'bar', labels, scores, 'Average Score per Module', '#4e73df');
-    
-    // Average Grades Chart (Polar Area)
-    renderChart('avgGradesChart', 'polarArea', labels, scores, 'Score Distribution', 
-        ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b']);
+    renderModuleProgressChart(labels, scores);
+    renderAvgGradesChart(labels, scores);
 }
 
 async function loadSchedule(trainerId) {
@@ -209,19 +163,19 @@ async function loadSchedule(trainerId) {
         if (response.data.success) {
             const tbody = document.getElementById('scheduleTableBody');
             tbody.innerHTML = '';
-            
+
             if (response.data.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center">No upcoming schedule</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-6 text-center text-sm text-slate-500">No upcoming schedule</td></tr>';
                 return;
             }
 
             response.data.data.forEach(item => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${item.batch_name || 'N/A'}</td>
-                    <td>${item.course_name}</td>
-                    <td>${item.schedule || 'TBA'}</td>
-                    <td>${item.room || 'TBA'}</td>
+                    <td class="px-4 py-3 text-sm text-slate-700">${item.batch_name || 'N/A'}</td>
+                    <td class="px-4 py-3 text-sm text-slate-700">${item.course_name || 'N/A'}</td>
+                    <td class="px-4 py-3 text-sm text-slate-700">${item.schedule || 'TBA'}</td>
+                    <td class="px-4 py-3 text-sm text-slate-700">${formatRoomValue(item.room)}</td>
                 `;
                 tbody.appendChild(row);
             });
@@ -231,31 +185,158 @@ async function loadSchedule(trainerId) {
     }
 }
 
-function renderChart(canvasId, type, labels, data, label, colors) {
-    const ctx = document.getElementById(canvasId);
+function renderModuleProgressChart(labels, scores) {
+    const ctx = document.getElementById('moduleProgressChart');
     if (!ctx) return;
 
-    // Destroy existing chart if needed (simple check)
-    const existingChart = Chart.getChart(canvasId);
-    if (existingChart) existingChart.destroy();
+    const existing = Chart.getChart('moduleProgressChart');
+    if (existing) existing.destroy();
+
+    const hasData = labels.length > 0;
+    const chartLabels = hasData ? labels : ['No data yet'];
+    const chartData = hasData ? scores : [0];
 
     new Chart(ctx, {
-        type: type,
+        type: 'bar',
         data: {
-            labels: labels,
+            labels: chartLabels,
             datasets: [{
-                label: label,
-                data: data,
+                label: 'Average Score per Module',
+                data: chartData,
+                backgroundColor: '#2563eb',
+                borderRadius: 8,
+                barPercentage: 0.7,
+                categoryPercentage: 0.7
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: { padding: { left: 4, right: 8 } },
+            plugins: {
+                legend: {
+                    labels: { color: '#334155' }
+                },
+                tooltip: {
+                    callbacks: {
+                        title: (items) => items?.[0]?.label || '',
+                        label: (context) => `${context.raw}%`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        color: '#475569',
+                        callback: (value) => `${value}%`
+                    },
+                    grid: { color: '#e2e8f0' }
+                },
+                y: {
+                    ticks: {
+                        color: '#475569',
+                        callback: (_value, index) => truncateLabel(chartLabels[index], 48)
+                    },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+}
+
+function renderAvgGradesChart(labels, scores) {
+    const ctx = document.getElementById('avgGradesChart');
+    const legendEl = document.getElementById('avgGradesLegend');
+    if (!ctx || !legendEl) return;
+
+    const existing = Chart.getChart('avgGradesChart');
+    if (existing) existing.destroy();
+
+    if (!labels.length) {
+        legendEl.innerHTML = '<p class="text-sm text-slate-500">No grade data yet.</p>';
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels: ['No data'], datasets: [{ data: [1], backgroundColor: ['#e2e8f0'] }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } } }
+        });
+        return;
+    }
+
+    const colors = buildPalette(labels.length);
+    const total = scores.reduce((sum, val) => sum + Number(val || 0), 0);
+
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels,
+            datasets: [{
+                data: scores,
                 backgroundColor: colors,
-                borderWidth: 1
+                borderColor: '#ffffff',
+                borderWidth: 2
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            scales: type === 'bar' ? {
-                y: { beginAtZero: true, max: 100 }
-            } : {}
+            cutout: '46%',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        title: (items) => items?.[0]?.label || '',
+                        label: (context) => {
+                            const value = Number(context.raw || 0);
+                            const percent = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+                            return `${value.toFixed(1)} (${percent}%)`;
+                        }
+                    }
+                }
+            }
         }
     });
+
+    legendEl.innerHTML = labels.map((label, index) => {
+        const value = Number(scores[index] || 0);
+        const percent = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+        return `
+            <div class="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2">
+                <span class="mt-1 inline-block h-3 w-3 rounded-sm shrink-0" style="background:${colors[index]}"></span>
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold text-slate-700 break-words">${label}</p>
+                    <p class="text-xs text-slate-500">${value.toFixed(1)} pts - ${percent}%</p>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function clampScore(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return 0;
+    if (n < 0) return 0;
+    if (n > 100) return 100;
+    return Number(n.toFixed(2));
+}
+
+function truncateLabel(label, maxLen = 40) {
+    const text = String(label || '');
+    if (text.length <= maxLen) return text;
+    return `${text.slice(0, maxLen - 3)}...`;
+}
+
+function buildPalette(count) {
+    const palette = ['#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#1d4ed8', '#1e40af', '#0284c7', '#0ea5e9'];
+    return Array.from({ length: count }, (_, i) => palette[i % palette.length]);
+}
+
+function formatRoomValue(room) {
+    const value = String(room ?? '').trim();
+    if (!value || value.toLowerCase() === 'null' || value === '0') {
+        return 'TBA';
+    }
+    return value;
 }

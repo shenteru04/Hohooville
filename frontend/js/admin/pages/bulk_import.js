@@ -1,62 +1,61 @@
-// Global variables
 let currentFileToken = null;
+const BULK_IMPORT_API = `${window.location.origin}/Hohoo-ville/api/role/admin/bulk_import.php`;
 
-// Initialize
-document.addEventListener('DOMContentLoaded', function() {
-        // Logout
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => {
-                localStorage.clear();
-                window.location.href = '/hohoo-ville/frontend/login.html';
-            });
-        }
-    if (typeof Swal === 'undefined') {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
-        document.head.appendChild(script);
-    }
-    // Sidebar loading is handled by sidebar.js
+document.addEventListener('DOMContentLoaded', async () => {
+    await ensureSwal();
+    initUserDropdown();
+    initLogout();
+    bindDropZoneEvents();
 });
 
-function updateTemplate() {
-    // Logic to update UI based on radio button if needed
-    // Currently just used to determine download content
+async function ensureSwal() {
+    if (typeof window.Swal !== 'undefined') return;
+    await new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        script.onload = resolve;
+        script.onerror = resolve;
+        document.head.appendChild(script);
+    });
 }
 
-function downloadTemplate() {
-    const userType = document.querySelector('input[name="userType"]:checked').value;
-    let csvContent = "data:text/csv;charset=utf-8,";
-    
-    if (userType === 'trainee') {
-        csvContent += "First Name,Middle Name,Last Name,Extension Name,Email,Phone,House No/Street,Barangay,City,Province,District,Region,Birthplace City,Birthplace Province,Birthplace Region,Sex,Birthdate,Civil Status,Education,Employment Status,Employment Type,Learner Classification,Is PWD,Disability Type,Disability Cause,Facebook Account,Birth Certificate No,CTPR No,Nominal Duration,Batch Name,Qualification,Scholarship\n";
-        csvContent += "Angela,Gonzales,Ramos,Sr.,angela.ramos_1@example.com,09566296161,173 Road,Barangay Camarin,Caloocan City,Metro Manila,1st District,NCR,Quezon City,Metro Manila,NCR,Female,25/04/1995,Single,Elementary Graduate,Wage-Employed,Regular,Worker,No,,,facebook_angela,BC123456789,CTPR123456,,Batch 5,Shielded Metal Arc Welding (SMAW) NC II,TTSP\n";
-    } else {
-        csvContent += "First Name,Last Name,Email,Phone,Address\n";
-        csvContent += "Jane,Smith,jane@example.com,09987654321,456 Trainer Ave\n";
-    }
-    
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `${userType}_import_template.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+function initUserDropdown() {
+    const button = document.getElementById('userDropdown');
+    const menu = document.getElementById('userDropdownMenu');
+    if (!button || !menu) return;
+
+    button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        menu.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('#userDropdown') && !event.target.closest('#userDropdownMenu')) {
+            menu.classList.add('hidden');
+        }
+    });
 }
 
-function handleFileSelect(event) {
-    const file = event.target.files[0];
-    if (file) {
-        uploadFile(file);
-    }
+function initLogout() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (!logoutBtn) return;
+    logoutBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        if (typeof window.logout === 'function') {
+            window.logout();
+            return;
+        }
+        localStorage.clear();
+        window.location.href = '/Hohoo-ville/frontend/login.html';
+    });
 }
 
-// Drag and Drop support
-const dropZone = document.getElementById('dropZone');
-if (dropZone) {
-    dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
+function bindDropZoneEvents() {
+    const dropZone = document.getElementById('dropZone');
+    if (!dropZone) return;
+
+    dropZone.addEventListener('dragover', (event) => {
+        event.preventDefault();
         dropZone.classList.add('dragover');
     });
 
@@ -64,137 +63,229 @@ if (dropZone) {
         dropZone.classList.remove('dragover');
     });
 
-    dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
+    dropZone.addEventListener('drop', (event) => {
+        event.preventDefault();
         dropZone.classList.remove('dragover');
-        const file = e.dataTransfer.files[0];
-        if (file && file.type === "text/csv") {
-            uploadFile(file);
-        } else {
-            Swal.fire('Invalid File', 'Please upload a CSV file.', 'warning');
+        const file = event.dataTransfer?.files?.[0];
+        if (!file) return;
+        if (!isCsvFile(file)) {
+            showAlert('Invalid File', 'Please upload a CSV file.', 'warning');
+            return;
         }
+        uploadFile(file);
     });
+}
+
+function updateTemplate() {
+}
+
+function downloadTemplate() {
+    const userType = document.querySelector('input[name="userType"]:checked')?.value || 'trainee';
+    let csvContent = 'data:text/csv;charset=utf-8,';
+
+    if (userType === 'trainee') {
+        csvContent += 'First Name,Middle Name,Last Name,Extension Name,Email,Phone,House No/Street,Barangay,City,Province,District,Region,Birthplace City,Birthplace Province,Birthplace Region,Sex,Birthdate,Civil Status,Education,Employment Status,Employment Type,Learner Classification,Is PWD,Disability Type,Disability Cause,Facebook Account,Birth Certificate No,CTPR No,Nominal Duration,Batch Name,Qualification,Scholarship\n';
+        csvContent += 'Angela,Gonzales,Ramos,Sr.,angela.ramos_1@example.com,09566296161,173 Road,Barangay Camarin,Caloocan City,Metro Manila,1st District,NCR,Quezon City,Metro Manila,NCR,Female,25/04/1995,Single,Elementary Graduate,Wage-Employed,Regular,Worker,No,,,facebook_angela,BC123456789,CTPR123456,,Batch 5,Shielded Metal Arc Welding (SMAW) NC II,TTSP\n';
+    } else {
+        csvContent += 'First Name,Last Name,Email,Phone,Address\n';
+        csvContent += 'Jane,Smith,jane@example.com,09987654321,456 Trainer Ave\n';
+    }
+
+    const link = document.createElement('a');
+    link.href = encodeURI(csvContent);
+    link.download = `${userType}_import_template.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+}
+
+function handleFileSelect(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!isCsvFile(file)) {
+        showAlert('Invalid File', 'Please upload a CSV file.', 'warning');
+        resetImport();
+        return;
+    }
+
+    uploadFile(file);
+}
+
+function isCsvFile(file) {
+    const fileName = file.name?.toLowerCase() || '';
+    return fileName.endsWith('.csv') || file.type === 'text/csv';
+}
+
+function setDropZoneLoading(isLoading) {
+    const dropZone = document.getElementById('dropZone');
+    if (!dropZone) return;
+
+    if (isLoading) {
+        dropZone.innerHTML = `
+            <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600"></div>
+            <p class="mt-3 text-sm font-semibold text-slate-700">Uploading and analyzing...</p>
+        `;
+        return;
+    }
+
+    dropZone.innerHTML = `
+        <i class="fas fa-cloud-upload-alt mb-3 text-4xl text-blue-600"></i>
+        <p class="mb-1 text-sm font-semibold text-slate-900">Drag & drop your CSV file here or click to browse</p>
+        <p class="text-xs text-slate-500">Max file size: 10MB</p>
+    `;
 }
 
 function uploadFile(file) {
     const formData = new FormData();
     formData.append('file', file);
+    setDropZoneLoading(true);
 
-    // Show loading
-    const originalContent = document.getElementById('dropZone').innerHTML;
-    document.getElementById('dropZone').innerHTML = '<div class="spinner-border text-primary" role="status"></div><p class="mt-2">Uploading and analyzing...</p>';
-
-    axios.post('../../../../api/role/admin/bulk_import.php?action=preview', formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data'
-        }
+    axios.post(`${BULK_IMPORT_API}?action=preview`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
     })
-    .then(response => {
+    .then((response) => {
         const data = response.data;
-        if (data.success) {
-            currentFileToken = data.file_token;
-            renderPreview(data);
-            // Reset dropzone content for next time
-            document.getElementById('dropZone').innerHTML = originalContent;
-        } else {
-            Swal.fire('Error', 'Error: ' + data.message, 'error');
-            resetImport();
+        if (!data.success) {
+            throw new Error(data.message || 'Preview failed.');
         }
+        currentFileToken = data.file_token;
+        renderPreview(data);
+        setDropZoneLoading(false);
     })
-    .catch(error => {
-        console.error('Error:', error);
-        Swal.fire('Error', 'An error occurred during upload.', 'error');
+    .catch((error) => {
+        console.error('Upload error:', error);
+        setDropZoneLoading(false);
+        showAlert('Error', error.response?.data?.message || error.message || 'An error occurred during upload.', 'error');
         resetImport();
     });
 }
 
 function renderPreview(data) {
-    document.getElementById('dropZone').parentElement.parentElement.style.display = 'none'; // Hide step 2
-    document.getElementById('previewCard').style.display = 'block';
-    
-    document.getElementById('previewInfo').textContent = `Found ${data.total_rows} rows.`;
-    
+    const uploadCard = document.getElementById('dropZone')?.closest('article');
+    const previewCard = document.getElementById('previewCard');
+    const previewInfo = document.getElementById('previewInfo');
     const tableHead = document.querySelector('#previewTable thead');
     const tableBody = document.querySelector('#previewTable tbody');
-    
-    // Header
-    let headerRow = '<tr>';
-    data.header.forEach(col => {
-        headerRow += `<th>${col}</th>`;
-    });
-    headerRow += '</tr>';
-    tableHead.innerHTML = headerRow;
-    
-    // Body
-    tableBody.innerHTML = '';
-    let rowsHtml = '';
-    data.preview.forEach(row => {
-        let tr = '<tr>';
-        data.header.forEach(col => {
-            tr += `<td>${row[col] || ''}</td>`;
-        });
-        tr += '</tr>';
-        rowsHtml += tr;
-    });
-    tableBody.innerHTML = rowsHtml;
+
+    if (!uploadCard || !previewCard || !previewInfo || !tableHead || !tableBody) return;
+
+    uploadCard.classList.add('hidden');
+    previewCard.classList.remove('hidden');
+    previewInfo.textContent = `Found ${data.total_rows || 0} rows.`;
+
+    const headers = Array.isArray(data.header) ? data.header : [];
+    const rows = Array.isArray(data.preview) ? data.preview : [];
+
+    tableHead.innerHTML = `
+        <tr>
+            ${headers.map((column) => `<th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">${escapeHtml(column)}</th>`).join('')}
+        </tr>
+    `;
+
+    tableBody.innerHTML = rows.map((row) => `
+        <tr>
+            ${headers.map((column) => `<td class="px-3 py-3 text-sm text-slate-700">${escapeHtml(row[column] || '')}</td>`).join('')}
+        </tr>
+    `).join('');
 }
 
 function resetImport() {
-    document.getElementById('fileInput').value = '';
-    document.getElementById('dropZone').innerHTML = `
-        <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
-        <p class="mb-0"><strong>Drag & drop your CSV file here or click to browse</strong></p>
-        <small class="text-muted">Max file size: 10MB</small>
-    `;
-    document.getElementById('dropZone').parentElement.parentElement.style.display = 'block'; // Show step 2
-    document.getElementById('previewCard').style.display = 'none';
-    document.getElementById('progressCard').style.display = 'none';
+    const fileInput = document.getElementById('fileInput');
+    const uploadCard = document.getElementById('dropZone')?.closest('article');
+    const previewCard = document.getElementById('previewCard');
+    const progressCard = document.getElementById('progressCard');
+    const progressBar = document.getElementById('progressBar');
+    const importResults = document.getElementById('importResults');
+
+    if (fileInput) fileInput.value = '';
+    if (uploadCard) uploadCard.classList.remove('hidden');
+    if (previewCard) previewCard.classList.add('hidden');
+    if (progressCard) progressCard.classList.add('hidden');
+    if (progressBar) {
+        progressBar.style.width = '0%';
+        progressBar.classList.remove('bg-emerald-600', 'bg-rose-600');
+        progressBar.classList.add('bg-blue-600');
+    }
+    if (importResults) importResults.innerHTML = '';
+
+    setDropZoneLoading(false);
     currentFileToken = null;
 }
 
 function confirmImport() {
     if (!currentFileToken) return;
-    
-    const userType = document.querySelector('input[name="userType"]:checked').value;
-    
-    document.getElementById('previewCard').style.display = 'none';
-    document.getElementById('progressCard').style.display = 'block';
-    
+
+    const userType = document.querySelector('input[name="userType"]:checked')?.value || 'trainee';
+    const previewCard = document.getElementById('previewCard');
+    const progressCard = document.getElementById('progressCard');
     const progressBar = document.getElementById('progressBar');
-    progressBar.style.width = '50%';
-    
-    axios.post('../../../../api/role/admin/bulk_import.php?action=import', {
+
+    if (previewCard) previewCard.classList.add('hidden');
+    if (progressCard) progressCard.classList.remove('hidden');
+    if (progressBar) {
+        progressBar.style.width = '50%';
+        progressBar.classList.remove('bg-emerald-600', 'bg-rose-600');
+        progressBar.classList.add('bg-blue-600');
+    }
+
+    axios.post(`${BULK_IMPORT_API}?action=import`, {
         file_token: currentFileToken,
         user_type: userType
     })
-    .then(response => {
-        const data = response.data;
-        progressBar.style.width = '100%';
-        progressBar.classList.remove('progress-bar-animated');
-        
-        let resultHtml = '';
-        if (data.success) {
-            progressBar.classList.add('bg-success');
-            resultHtml += `<div class="alert alert-success">Successfully imported ${data.imported} records.</div>`;
-            if (data.skipped > 0) {
-                resultHtml += `<div class="alert alert-warning">Skipped ${data.skipped} records.</div>`;
-                resultHtml += `<ul class="list-group mt-2">`;
-                data.errors.forEach(err => {
-                    resultHtml += `<li class="list-group-item list-group-item-danger small">${err}</li>`;
-                });
-                resultHtml += `</ul>`;
-            }
-        } else {
-            progressBar.classList.add('bg-danger');
-            resultHtml += `<div class="alert alert-danger">Import failed: ${data.message}</div>`;
-        }
-        
-        resultHtml += `<button class="btn btn-primary mt-3" onclick="location.reload()">Import Another File</button>`;
-        document.getElementById('importResults').innerHTML = resultHtml;
+    .then((response) => {
+        const data = response.data || {};
+        renderImportResults(data);
     })
-    .catch(error => {
-        console.error('Error:', error);
-        progressBar.classList.add('bg-danger');
-        document.getElementById('importResults').innerHTML = `<div class="alert alert-danger">An error occurred during import.</div>`;
+    .catch((error) => {
+        console.error('Import error:', error);
+        renderImportResults({
+            success: false,
+            message: error.response?.data?.message || 'An error occurred during import.'
+        });
     });
+}
+
+function renderImportResults(data) {
+    const progressBar = document.getElementById('progressBar');
+    const importResults = document.getElementById('importResults');
+    if (!progressBar || !importResults) return;
+
+    progressBar.style.width = '100%';
+    progressBar.classList.remove('bg-blue-600', 'bg-emerald-600', 'bg-rose-600');
+    progressBar.classList.add(data.success ? 'bg-emerald-600' : 'bg-rose-600');
+
+    let html = '';
+    if (data.success) {
+        html += `<div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">Successfully imported ${Number(data.imported || 0)} records.</div>`;
+        if (Number(data.skipped || 0) > 0) {
+            html += `<div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">Skipped ${Number(data.skipped)} records.</div>`;
+            if (Array.isArray(data.errors) && data.errors.length) {
+                html += `
+                    <ul class="mt-3 space-y-2 rounded-lg border border-rose-200 bg-rose-50 p-3">
+                        ${data.errors.map((errorText) => `<li class="rounded border border-rose-200 bg-white px-3 py-2 text-xs text-rose-700">${escapeHtml(errorText)}</li>`).join('')}
+                    </ul>
+                `;
+            }
+        }
+    } else {
+        html += `<div class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">Import failed: ${escapeHtml(data.message || 'Unknown error')}</div>`;
+    }
+
+    html += `
+        <button class="mt-3 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" onclick="location.reload()">
+            <i class="fas fa-rotate-right"></i> Import Another File
+        </button>
+    `;
+
+    importResults.innerHTML = html;
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }

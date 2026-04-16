@@ -1,0 +1,62 @@
+<div id="notificationModal" class="fixed inset-0 bg-slate-900/50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+        <!-- Header -->
+        <div class="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-500 text-white px-6 py-4 flex items-center justify-between border-b border-blue-600">
+            <div class="flex items-center gap-3">
+                <i id="modalNotificationIcon" class="fas fa-bell text-xl"></i>
+                <h2 id="modalNotificationTitle" class="text-xl font-bold">Notification Details</h2>
+            </div>
+            <button id="closeNotificationModal" class="text-white hover:bg-white/20 rounded-lg p-2 transition-colors">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6">
+            <div id="modalNotificationContent" class="space-y-4">
+                <!-- Timestamp -->
+                <div class="flex items-center gap-3 text-sm text-slate-600 pb-4 border-b border-slate-200">
+                    <i class="fas fa-clock text-blue-500"></i>
+                    <span id="modalNotificationTime">Just now</span>
+                </div>
+
+                <!-- Message -->
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-900 mb-2" id="modalNotificationMessage">
+                        Loading notification...
+                    </h3>
+                    <p id="modalNotificationDescription" class="text-slate-700 leading-relaxed">
+                        <!-- Description goes here -->
+                    </p>
+                </div>
+
+                <!-- Additional Details (optional) -->
+                <div id="modalNotificationDetails" class="bg-slate-50 rounded-lg p-4 hidden">
+                    <!-- Dynamic details will be inserted here -->
+                </div>
+
+                <!-- Actions Section (optional) -->
+                <div id="modalNotificationActions" class="bg-blue-50 rounded-lg p-4 hidden border-l-4 border-blue-500">
+                    <p class="text-sm text-slate-700 mb-3">
+                        <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                        <span id="modalActionMessage">Additional action required</span>
+                    </p>
+                    <div id="modalActionButtons" class="flex gap-2 flex-wrap">
+                        <!-- Action buttons will be inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="sticky bottom-0 bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-between">
+            <label class="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                <input type="checkbox" id="markAsReadCheckbox" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                <span>Mark as read</span>
+            </label>
+            <button id="closeNotificationModalBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors">
+                Close
+            </button>
+        </div>
+    </div>
+</div>

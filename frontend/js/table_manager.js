@@ -5,64 +5,118 @@
         style.id = 'table-manager-styles';
         style.textContent = `
             .table-manager-controls {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                margin-bottom: 10px;
                 background: linear-gradient(180deg, rgba(248,249,252,0.95), rgba(255,255,255,0.95));
                 border: 1px solid rgba(78,115,223,0.12);
                 border-radius: 10px;
                 padding: 10px 12px;
             }
             .table-manager-search {
+                position: relative;
                 min-width: 220px;
-                max-width: 360px;
-                flex: 1 1 240px;
+                max-width: 380px;
+                flex: 1 1 260px;
             }
-            .table-manager-search .input-group-text {
+            .table-manager-search-icon {
+                position: absolute;
+                left: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #64748b;
+                font-size: 13px;
+                pointer-events: none;
+            }
+            .table-manager-search-input {
+                width: 100%;
+                border: 1px solid #cbd5e1;
+                border-radius: 10px;
                 background: #fff;
-                border-right: 0;
-                color: #6c757d;
-                font-weight: 600;
+                color: #0f172a;
+                font-size: 0.875rem;
+                line-height: 1.25rem;
+                padding: 8px 12px 8px 34px;
             }
-            .table-manager-search .form-control {
-                border-left: 0;
-                box-shadow: none;
-            }
-            .table-manager-search .form-control:focus {
-                box-shadow: none;
-                border-color: #4e73df;
+            .table-manager-search-input:focus {
+                outline: none;
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
             }
             .table-manager-filters {
+                display: flex;
+                flex-wrap: wrap;
                 flex: 1 1 auto;
                 justify-content: flex-end;
+                gap: 8px;
             }
-            .table-manager-filter select {
+            .table-manager-filter-select {
                 min-width: 160px;
-                border-radius: 8px;
-                box-shadow: none;
+                border: 1px solid #cbd5e1;
+                border-radius: 10px;
+                background: #fff;
+                color: #0f172a;
+                font-size: 0.875rem;
+                line-height: 1.25rem;
+                padding: 8px 10px;
             }
-            .table-manager-filter select:focus {
-                border-color: #4e73df;
-                box-shadow: 0 0 0 0.1rem rgba(78,115,223,0.15);
+            .table-manager-filter-select:focus {
+                outline: none;
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
             }
             .table-manager-pagination {
-                padding: 6px 2px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 8px;
+                padding: 8px 2px;
             }
-            .table-manager-pagination .pagination {
-                gap: 4px;
+            .table-manager-page-info {
+                font-size: 0.875rem;
+                color: #64748b;
             }
-            .table-manager-pagination .page-item .page-link {
+            .table-manager-pagination-list {
+                display: flex;
+                align-items: center;
+                list-style: none;
+                gap: 6px;
+                margin: 0;
+                padding: 0;
+            }
+            .table-manager-page-button {
+                border: 1px solid rgba(37, 99, 235, 0.3);
                 border-radius: 8px;
-                border: 1px solid rgba(78,115,223,0.2);
-                color: #4e73df;
+                background: #fff;
+                color: #1d4ed8;
+                font-size: 0.8125rem;
                 font-weight: 600;
                 padding: 4px 10px;
+                line-height: 1.2;
+                transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
             }
-            .table-manager-pagination .page-item.active .page-link {
-                background: #4e73df;
-                border-color: #4e73df;
+            .table-manager-page-button:hover {
+                background: #eff6ff;
+                border-color: #60a5fa;
+            }
+            .table-manager-page-button:focus-visible {
+                outline: none;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+            }
+            .table-manager-page-item.active .table-manager-page-button {
+                background: #2563eb;
+                border-color: #2563eb;
                 color: #fff;
             }
-            .table-manager-pagination .page-item.disabled .page-link {
-                color: #adb5bd;
-                border-color: #e9ecef;
+            .table-manager-page-item.disabled .table-manager-page-button {
+                color: #94a3b8;
+                border-color: #e2e8f0;
+                background: #f8fafc;
+                cursor: not-allowed;
             }
             @media (max-width: 768px) {
                 .table-manager-controls {
@@ -70,11 +124,12 @@
                 }
                 .table-manager-search {
                     min-width: 100%;
+                    max-width: 100%;
                 }
                 .table-manager-filters {
                     justify-content: flex-start;
                 }
-                .table-manager-filter select {
+                .table-manager-filter-select {
                     min-width: 140px;
                 }
             }
@@ -191,17 +246,17 @@
 
             if (needsSearch || needsFilters) {
                 const controls = document.createElement('div');
-                controls.className = 'table-manager-controls d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2';
+                controls.className = 'table-manager-controls';
                 const searchMarkup = needsSearch
                     ? `
-                        <div class="input-group input-group-sm table-manager-search">
-                            <span class="input-group-text"><i class="fas fa-search"></i></span>
-                            <input type="text" class="form-control" id="${searchId}" placeholder="Search...">
+                        <div class="table-manager-search">
+                            <span class="table-manager-search-icon"><i class="fas fa-search"></i></span>
+                            <input type="text" class="table-manager-search-input" id="${searchId}" placeholder="Search...">
                         </div>
                       `
                     : '';
                 const filtersMarkup = needsFilters
-                    ? `<div class="table-manager-filters d-flex flex-wrap gap-2" id="${filtersId}"></div>`
+                    ? `<div class="table-manager-filters" id="${filtersId}"></div>`
                     : '';
                 controls.innerHTML = `${searchMarkup}${filtersMarkup}`;
 
@@ -220,11 +275,11 @@
 
             if (!this.disablePagination && (!paginationContainer || !pageInfo)) {
                 const paginationWrapper = document.createElement('div');
-                paginationWrapper.className = 'table-manager-pagination d-flex align-items-center justify-content-between flex-wrap gap-2 mt-2';
+                paginationWrapper.className = 'table-manager-pagination';
                 paginationWrapper.innerHTML = `
-                    <div class="small text-muted" id="${infoId}"></div>
+                    <div class="table-manager-page-info" id="${infoId}"></div>
                     <nav aria-label="Table pagination">
-                        <ul class="pagination pagination-sm mb-0" id="${paginationId}"></ul>
+                        <ul class="table-manager-pagination-list" id="${paginationId}"></ul>
                     </nav>
                 `;
                 const responsiveWrap = this.table.parentElement && this.table.parentElement.classList.contains('table-responsive')
@@ -306,7 +361,7 @@
                     wrapper.className = 'table-manager-filter';
 
                     select = document.createElement('select');
-                    select.className = 'form-select form-select-sm';
+                    select.className = 'table-manager-filter-select';
                     select.setAttribute('data-filter-index', String(idx));
                     select.dataset.tableManagerAuto = 'true';
 
@@ -448,11 +503,12 @@
 
             const makePageItem = (label, page, disabled, active) => {
                 const li = document.createElement('li');
-                li.className = `page-item${disabled ? ' disabled' : ''}${active ? ' active' : ''}`;
+                li.className = `table-manager-page-item${disabled ? ' disabled' : ''}${active ? ' active' : ''}`;
                 const btn = document.createElement('button');
-                btn.className = 'page-link';
+                btn.className = 'table-manager-page-button';
                 btn.type = 'button';
                 btn.textContent = label;
+                btn.disabled = disabled;
                 if (!disabled) {
                     btn.addEventListener('click', () => {
                         this.currentPage = page;
@@ -522,7 +578,7 @@
             if (!emptyRow) {
                 emptyRow = document.createElement('tr');
                 emptyRow.setAttribute('data-table-manager-empty', 'true');
-                emptyRow.innerHTML = `<td colspan="${this.columnCount || 1}" class="text-center">No results found.</td>`;
+                emptyRow.innerHTML = `<td colspan="${this.columnCount || 1}" class="px-4 py-6 text-center text-sm text-slate-500">No results found.</td>`;
                 this.tbody.appendChild(emptyRow);
             }
             emptyRow.style.display = totalItems === 0 ? '' : 'none';

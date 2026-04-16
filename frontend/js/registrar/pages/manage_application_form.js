@@ -1,145 +1,230 @@
-const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
+const API_BASE_URL = window.location.origin + '/Hohoo-ville/api';
 let scholarshipModal;
 
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof Swal === 'undefined') {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
-        document.head.appendChild(script);
+class SimpleModal {
+    constructor(element) {
+        this.element = element;
     }
 
-    scholarshipModal = new bootstrap.Modal(document.getElementById('scholarshipModal'));
-    
+    show() {
+        if (!this.element) return;
+        this.element.classList.remove('hidden');
+        this.element.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+    }
+
+    hide() {
+        if (!this.element) return;
+        this.element.classList.add('hidden');
+        this.element.classList.remove('flex');
+        if (!document.querySelector('.modal-root.flex:not(.hidden)')) {
+            document.body.classList.remove('overflow-hidden');
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async function() {
+    await ensureSwal();
+    initSidebar();
+    initUserDropdown();
+    initLogout();
+    initModalDismissers();
+    hydrateHeaderUser();
+
+    scholarshipModal = new SimpleModal(document.getElementById('scholarshipModal'));
+
     loadScholarships();
     loadOfferedCourses();
 
-    document.getElementById('scholarshipForm').addEventListener('submit', saveScholarship);
-
-    // Inject Sidebar CSS (W3.CSS Reference Style)
-    const ms = document.createElement('style');
-    ms.innerHTML = `
-        #sidebar {
-            width: 200px;
-            position: fixed;
-            z-index: 1050;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            overflow-y: auto;
-            background-color: #fff;
-            box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16), 0 2px 10px 0 rgba(0,0,0,0.12);
-            display: block;
-        }
-        .main-content, #content, .content-wrapper {
-            margin-left: 200px !important;
-            transition: margin-left .4s;
-        }
-        #sidebarCloseBtn {
-            display: none;
-            width: 100%;
-            text-align: left;
-            padding: 8px 16px;
-            background: none;
-            border: none;
-            font-size: 18px;
-        }
-        #sidebarCloseBtn:hover { background-color: #ccc; }
-        
-        @media (max-width: 991.98px) {
-            #sidebar { display: none; }
-            .main-content, #content, .content-wrapper { margin-left: 0 !important; }
-            #sidebarCloseBtn { display: block; }
-        }
-        .table-responsive, table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    `;
-    document.head.appendChild(ms);
-
-    // Sidebar Logic
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) {
-        if (!document.getElementById('sidebarCloseBtn')) {
-            const closeBtn = document.createElement('button');
-            closeBtn.id = 'sidebarCloseBtn';
-            closeBtn.innerHTML = 'Close &times;';
-            closeBtn.addEventListener('click', () => {
-                sidebar.style.display = 'none';
-            });
-            sidebar.insertBefore(closeBtn, sidebar.firstChild);
-        }
-    }
-
-    // Open Button Logic
-    let sc = document.getElementById('sidebarCollapse');
-    if (!sc) {
-        const nb = document.querySelector('.navbar');
-        if (nb) {
-            const c = nb.querySelector('.container-fluid') || nb;
-            const b = document.createElement('button');
-            b.id = 'sidebarCollapse';
-            b.className = 'btn btn-outline-primary me-2 d-lg-none';
-            b.type = 'button';
-            b.innerHTML = '&#9776;';
-            c.insertBefore(b, c.firstChild);
-            sc = b;
-        }
-    }
-    if (sc) {
-        const nb = sc.cloneNode(true);
-        if(sc.parentNode) sc.parentNode.replaceChild(nb, sc);
-        nb.addEventListener('click', () => {
-            if (sidebar) sidebar.style.display = 'block';
-        });
-    }
+    const scholarshipForm = document.getElementById('scholarshipForm');
+    if (scholarshipForm) scholarshipForm.addEventListener('submit', saveScholarship);
 });
+
+async function ensureSwal() {
+    if (typeof window.Swal !== 'undefined') return;
+    await new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        script.onload = resolve;
+        script.onerror = resolve;
+        document.head.appendChild(script);
+    });
+}
+
+function hydrateHeaderUser() {
+    try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const userName = document.getElementById('userName');
+        if (!userName) return;
+        const displayName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.full_name || user.name || user.username || 'Registrar';
+        userName.textContent = displayName;
+    } catch (error) {
+        console.warn('Unable to parse user in localStorage:', error);
+    }
+}
+
+function initSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const sidebarCollapse = document.getElementById('sidebarCollapse');
+    const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+    if (!sidebar) return;
+
+    function openSidebar() {
+        sidebar.classList.remove('-translate-x-full');
+        if (sidebarOverlay) {
+            sidebarOverlay.classList.remove('hidden');
+            requestAnimationFrame(() => sidebarOverlay.classList.remove('opacity-0'));
+        }
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function closeSidebar() {
+        sidebar.classList.add('-translate-x-full');
+        if (sidebarOverlay) {
+            sidebarOverlay.classList.add('opacity-0');
+            setTimeout(() => sidebarOverlay.classList.add('hidden'), 300);
+        }
+        if (!document.querySelector('.modal-root.flex:not(.hidden)')) {
+            document.body.classList.remove('overflow-hidden');
+        }
+    }
+
+    if (sidebarCollapse) sidebarCollapse.addEventListener('click', openSidebar);
+    if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', closeSidebar);
+    if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+
+    window.addEventListener('resize', () => {
+        if (window.innerWidth >= 1024) {
+            if (sidebarOverlay) sidebarOverlay.classList.add('hidden', 'opacity-0');
+            if (!document.querySelector('.modal-root.flex:not(.hidden)')) {
+                document.body.classList.remove('overflow-hidden');
+            }
+        }
+    });
+}
+
+function initUserDropdown() {
+    const button = document.getElementById('userDropdown');
+    const menu = document.getElementById('userDropdownMenu');
+    if (!button || !menu) return;
+
+    button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        menu.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('#userDropdown') && !event.target.closest('#userDropdownMenu')) {
+            menu.classList.add('hidden');
+        }
+    });
+}
+
+function initLogout() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (!logoutBtn) return;
+    logoutBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '../../../login.html';
+    });
+}
+
+function initModalDismissers() {
+    document.querySelectorAll('[data-modal-hide]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const modalId = button.getAttribute('data-modal-hide');
+            if (modalId === 'scholarshipModal' && scholarshipModal) {
+                scholarshipModal.hide();
+                return;
+            }
+
+            const el = document.getElementById(modalId);
+            if (!el) return;
+            el.classList.add('hidden');
+            el.classList.remove('flex');
+            if (!document.querySelector('.modal-root.flex:not(.hidden)')) {
+                document.body.classList.remove('overflow-hidden');
+            }
+        });
+    });
+}
+
+function escapeJsValue(value) {
+    return String(value || '')
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/\r?\n/g, ' ');
+}
 
 async function loadScholarships() {
     try {
         const response = await axios.get(`${API_BASE_URL}/role/registrar/application_settings.php?action=list-scholarships`);
         const tbody = document.getElementById('scholarshipTableBody');
+        if (!tbody) return;
         tbody.innerHTML = '';
-        
-        if (response.data.success) {
-            response.data.data.forEach(s => {
-                const isActive = s.status === 'active';
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${s.scholarship_name}</td>
-                        <td>${s.description || ''}</td>
-                        <td><span class="badge ${isActive ? 'bg-success' : 'bg-secondary'}">${s.status || 'active'}</span></td>
-                        <td>
-                            <button class="btn btn-sm ${isActive ? 'btn-outline-warning' : 'btn-outline-success'}" 
-                                onclick="toggleScholarship(${s.scholarship_type_id}, '${isActive ? 'inactive' : 'active'}')">
+
+        if (!response.data.success || !Array.isArray(response.data.data) || !response.data.data.length) {
+            tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-6 text-center text-sm text-slate-500">No scholarship types found.</td></tr>';
+            return;
+        }
+
+        response.data.data.forEach((s) => {
+            const isActive = s.status === 'active';
+            const statusClass = isActive
+                ? 'bg-emerald-100 text-emerald-700'
+                : 'bg-slate-200 text-slate-700';
+            const toggleClass = isActive
+                ? 'border-amber-200 text-amber-700 hover:bg-amber-50'
+                : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50';
+            const safeName = escapeJsValue(s.scholarship_name);
+            const safeDesc = escapeJsValue(s.description);
+
+            tbody.innerHTML += `
+                <tr class="hover:bg-slate-50">
+                    <td class="px-4 py-3 text-sm font-medium text-slate-800">${s.scholarship_name}</td>
+                    <td class="px-4 py-3 text-sm text-slate-700">${s.description || ''}</td>
+                    <td class="px-4 py-3">
+                        <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${statusClass}">${s.status || 'active'}</span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex flex-wrap items-center gap-1">
+                            <button class="inline-flex items-center rounded-md border bg-white px-2.5 py-1.5 text-xs font-semibold ${toggleClass} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onclick="toggleScholarship(${s.scholarship_type_id}, '${isActive ? 'inactive' : 'active'}')">
                                 ${isActive ? 'Hide' : 'Show'}
                             </button>
-                            <button class="btn btn-sm btn-outline-primary" onclick="editScholarship(${s.scholarship_type_id}, '${s.scholarship_name}', '${s.description || ''}')"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteScholarship(${s.scholarship_type_id})"><i class="fas fa-trash"></i></button>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
+                            <button class="inline-flex items-center rounded-md border border-blue-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onclick="editScholarship(${s.scholarship_type_id}, '${safeName}', '${safeDesc}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
     } catch (error) {
         console.error('Error loading scholarships:', error);
     }
 }
 
 window.openScholarshipModal = function() {
-    document.getElementById('scholarshipForm').reset();
+    const form = document.getElementById('scholarshipForm');
+    if (form) form.reset();
     document.getElementById('scholarshipId').value = '';
     document.getElementById('scholarshipModalTitle').textContent = 'Add Scholarship';
-    scholarshipModal.show();
-}
+    if (scholarshipModal) scholarshipModal.show();
+};
 
 window.editScholarship = function(id, name, desc) {
     document.getElementById('scholarshipId').value = id;
     document.getElementById('scholarshipName').value = name;
     document.getElementById('scholarshipDesc').value = desc;
     document.getElementById('scholarshipModalTitle').textContent = 'Edit Scholarship';
-    scholarshipModal.show();
-}
+    if (scholarshipModal) scholarshipModal.show();
+};
 
-async function saveScholarship(e) {
-    e.preventDefault();
+async function saveScholarship(event) {
+    event.preventDefault();
     const id = document.getElementById('scholarshipId').value;
     const name = document.getElementById('scholarshipName').value;
     const desc = document.getElementById('scholarshipDesc').value;
@@ -152,33 +237,13 @@ async function saveScholarship(e) {
         });
 
         if (response.data.success) {
-            scholarshipModal.hide();
+            if (scholarshipModal) scholarshipModal.hide();
             loadScholarships();
         } else {
             Swal.fire('Error', 'Error: ' + response.data.message, 'error');
         }
     } catch (error) {
         console.error('Error saving scholarship:', error);
-    }
-}
-
-window.deleteScholarship = async function(id) {
-    const result = await Swal.fire({
-        title: 'Are you sure?',
-        text: "Delete this scholarship type?",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        confirmButtonText: 'Yes, delete it!'
-    });
-
-    if (!result.isConfirmed) return;
-    try {
-        const response = await axios.delete(`${API_BASE_URL}/role/registrar/application_settings.php?action=delete-scholarship&id=${id}`);
-        if (response.data.success) loadScholarships();
-        else Swal.fire('Error', 'Error: ' + response.data.message, 'error');
-    } catch (error) {
-        console.error('Error deleting scholarship:', error);
     }
 }
 
@@ -189,31 +254,43 @@ window.toggleScholarship = async function(id, status) {
     } catch (error) {
         console.error('Error toggling scholarship:', error);
     }
-}
+};
 
 async function loadOfferedCourses() {
     try {
         const response = await axios.get(`${API_BASE_URL}/role/registrar/application_settings.php?action=list-offered-courses`);
         const tbody = document.getElementById('offeredCoursesBody');
+        if (!tbody) return;
         tbody.innerHTML = '';
 
-        if (response.data.success) {
-            response.data.data.forEach(c => {
-                const isActive = c.status === 'active';
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${c.course_name}</td>
-                        <td><span class="badge ${isActive ? 'bg-success' : 'bg-secondary'}">${c.status}</span></td>
-                        <td>
-                            <button class="btn btn-sm ${isActive ? 'btn-outline-warning' : 'btn-outline-success'}" 
-                                onclick="toggleCourse(${c.qualification_id}, '${isActive ? 'inactive' : 'active'}')">
-                                ${isActive ? 'Hide' : 'Show'}
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
+        if (!response.data.success || !Array.isArray(response.data.data) || !response.data.data.length) {
+            tbody.innerHTML = '<tr><td colspan="3" class="px-4 py-6 text-center text-sm text-slate-500">No qualifications found.</td></tr>';
+            return;
         }
+
+        response.data.data.forEach((c) => {
+            const isActive = c.status === 'active';
+            const statusClass = isActive
+                ? 'bg-emerald-100 text-emerald-700'
+                : 'bg-slate-200 text-slate-700';
+            const toggleClass = isActive
+                ? 'border-amber-200 text-amber-700 hover:bg-amber-50'
+                : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50';
+
+            tbody.innerHTML += `
+                <tr class="hover:bg-slate-50">
+                    <td class="px-4 py-3 text-sm font-medium text-slate-800">${c.course_name}</td>
+                    <td class="px-4 py-3">
+                        <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${statusClass}">${c.status}</span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <button class="inline-flex items-center rounded-md border bg-white px-2.5 py-1.5 text-xs font-semibold ${toggleClass} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onclick="toggleCourse(${c.qualification_id}, '${isActive ? 'inactive' : 'active'}')">
+                            ${isActive ? 'Hide' : 'Show'}
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
     } catch (error) {
         console.error('Error loading courses:', error);
     }
@@ -226,4 +303,4 @@ window.toggleCourse = async function(id, status) {
     } catch (error) {
         console.error('Error toggling course:', error);
     }
-}
+};

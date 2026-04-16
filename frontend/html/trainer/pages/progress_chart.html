@@ -4,237 +4,179 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Progress Chart - Hohoo-Ville Technical School</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- SweetAlert2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
-    <!-- SheetJS for Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        :root {
-            --primary-color: #4e73df;
-            --secondary-color: #858796;
-            --bg-color: #f8f9fc;
-            --text-color: #5a5c69;
-        }
-        body {
-            font-family: 'Nunito', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-        }
-        #sidebar {
-            background: #fff;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-            z-index: 1000;
-        }
-        #sidebar .sidebar-header {
-            padding: 1.5rem 1rem;
-            text-align: center;
-            color: var(--primary-color);
-            font-weight: 800;
-        }
-        #sidebar .nav-link {
-            color: var(--text-color);
-            padding: 0.5rem 1rem;
-            margin: 0.1rem 0.5rem;
-            border-radius: 0.35rem;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        #sidebar .nav-link:hover {
-            background-color: #eaecf4;
-            color: var(--primary-color);
-        }
-        #sidebar .nav-link.active {
-            background-color: var(--primary-color);
-            color: #fff;
-        }
-        .card {
-            border: none;
-            border-radius: 0.35rem;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-        }
-        .card-header {
-            background-color: #f8f9fc;
-            border-bottom: 1px solid #e3e6f0;
-            padding: 1rem 1.25rem;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-        /* Table Styles for Progress Chart */
-        .tesda-table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
-        .tesda-table th, .tesda-table td { border: 1px solid #000; padding: 8px; text-align: center; font-size: 12px; }
+        body { font-family: 'Nunito', sans-serif; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .tesda-table { width: 100%; border-collapse: collapse; background: #fff; }
+        .tesda-table th, .tesda-table td { border: 1px solid #0f172a; padding: 6px; text-align: center; font-size: 12px; }
         .tesda-header { text-align: center; margin-bottom: 20px; }
-        .progress-mark { font-weight: bold; font-size: 16px; cursor: pointer; }
-        .selected-cell { background-color: #e8f0fe !important; outline: 2px solid #4e73df; }
+        .progress-mark { font-weight: bold; font-size: 14px; cursor: pointer; }
+        .selected-cell { background-color: #dbeafe !important; outline: 2px solid #2563eb; }
     </style>
 </head>
-<body>
-    <div class="d-flex">
-         <!-- Sidebar -->
-        <nav id="sidebar" class="p-3">
-            <div class="sidebar-header mb-4">
-                <h3><img src="../../../../img/logo.jpg" alt="Logo" class="me-2" style="height: 35px; width: auto;">Hohooville</h3>
-                <p class="text-muted">Trainer Portal</p>
+<body class="bg-slate-50 text-slate-700">
+    <div class="flex h-screen overflow-hidden">
+        <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/40 z-20 hidden lg:hidden transition-opacity opacity-0"></div>
+
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-30 w-72 bg-white/95 backdrop-blur border-r border-blue-100 shadow-xl shadow-blue-100/40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col">
+            <div class="h-16 px-4 flex items-center gap-3 border-b border-blue-100 bg-gradient-to-r from-blue-600 to-blue-500 text-white">
+                <img src="../../../../img/logo.jpg" alt="Hohooville Logo" class="h-8 w-8 rounded-lg bg-white/20 p-1">
+                <div class="leading-tight">
+                    <p class="text-lg font-semibold">Hohooville</p>
+                    <p class="text-[11px] text-blue-100">Trainer Portal</p>
+                </div>
             </div>
 
-            <ul class="nav flex-column">
-                <li class="nav-item mb-1">
-                    <a class="nav-link" href="../trainer_dashboard.html">
-                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+            <div class="flex-1 overflow-y-auto py-4 scrollbar-hide">
+                <nav class="px-4 space-y-2">
+                    <p class="px-4 text-[11px] font-semibold text-blue-400 uppercase tracking-[0.2em] mb-2">Menu</p>
+                    <a href="/Hohoo-ville/frontend/html/trainer/trainer_dashboard.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
+                        <i class="fas fa-home w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> Dashboard
                     </a>
-                </li>
-                <li class="nav-item mb-1">
-                    <a class="nav-link" href="my_batches.html">
-                        <i class="fas fa-chalkboard-teacher me-2"></i> My Batches
+                    <a href="/Hohoo-ville/frontend/html/trainer/pages/my_batches.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
+                        <i class="fas fa-users w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> My Batches
                     </a>
-                </li>
-                <li class="nav-item mb-1">
-                    <a class="nav-link" href="modules.html">
-                        <i class="fas fa-book me-2"></i> Modules
+                    <a href="/Hohoo-ville/frontend/html/trainer/pages/modules.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
+                        <i class="fas fa-book w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> Modules
                     </a>
-                </li>
-                <li class="nav-item mb-1">
-                    <a class="nav-link active" href="progress_chart.html">
-                        <i class="fas fa-chart-line me-2"></i> Progress Chart
+                    <a href="/Hohoo-ville/frontend/html/trainer/pages/progress_chart.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold text-blue-700 bg-blue-50 ring-1 ring-blue-100" aria-current="page">
+                        <i class="fas fa-chart-line w-5 h-5 text-blue-600"></i> Progress Chart
                     </a>
-                </li>
-                <li class="nav-item mb-1">
-                    <a class="nav-link" href="achievement_chart.html">
-                        <i class="fas fa-trophy me-2"></i> Achievement Chart
+                    <a href="/Hohoo-ville/frontend/html/trainer/pages/achievement_chart.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
+                        <i class="fas fa-trophy w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> Achievement Chart
                     </a>
-                </li>
-                <li class="nav-item mb-1">
-                    <a class="nav-link" href="reports.html">
-                        <i class="fas fa-chart-bar me-2"></i> Reports
+                    <a href="/Hohoo-ville/frontend/html/trainer/pages/reports.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
+                        <i class="fas fa-chart-bar w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> Reports
                     </a>
-                </li>
-            </ul>
-        </nav>
+                </nav>
+            </div>
 
-        <!-- Page Content -->
-        <div class="flex-grow-1" id="content">
-            <!-- Top Navigation -->
-            <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
-                <div class="container-fluid">
-                    <button type="button" id="sidebarCollapse" class="btn btn-outline-primary me-2 d-lg-none">
-                        <i class="fas fa-bars"></i>
-                    </button>
+            <div class="p-4 border-t border-blue-100">
+                <button id="sidebarCloseBtn" class="lg:hidden w-full flex items-center justify-center px-4 py-2 rounded-lg border border-blue-200 text-sm font-semibold text-blue-700 bg-white hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                    Close Menu
+                </button>
+            </div>
+        </aside>
 
-                    <div class="ms-auto d-flex align-items-center">
-                        <ul class="navbar-nav flex-row me-2">
-                            <li class="nav-item dropdown no-arrow mx-1">
-                                <a class="nav-link dropdown-toggle" href="#" id="alertsDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    <i class="fas fa-bell fa-fw"></i>
-                                    <span class="badge bg-danger badge-counter" id="notificationBadge" style="display: none;"></span>
-                                </a>
-                                <div class="dropdown-menu dropdown-menu-end p-0 shadow animated--grow-in" aria-labelledby="alertsDropdown" style="min-width: 320px;">
-                                    <div class="p-2 border-bottom">
-                                        <strong class="small mb-0">Notifications</strong>
-                                    </div>
-                                    <div class="list-group list-group-flush" id="notificationList" style="max-height: 400px; overflow-y: auto;">
-                                        <div class="list-group-item text-center small text-muted">No new notifications</div>
-                                    </div>
-                                </div>
-                            </li>
-                        </ul>
-                        <div class="dropdown">
-                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
-                                <i class="fas fa-user-circle"></i> <span id="trainerName">Trainer</span>
+        <div id="mainShell" class="flex-1 flex flex-col lg:ml-72 min-w-0 overflow-hidden">
+            <header class="bg-white/85 backdrop-blur border-b border-blue-100 shadow-sm z-10">
+                <div class="h-16 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <button id="sidebarCollapse" class="lg:hidden p-2 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                            <i class="fas fa-bars text-lg"></i>
+                        </button>
+                        <h1 class="text-xl font-semibold text-slate-800">Progress Chart</h1>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <div class="relative">
+                            <button id="notificationBtn" class="relative p-2 rounded-lg border border-blue-100 bg-white text-slate-600 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" aria-label="Notifications">
+                                <i class="fas fa-bell"></i>
+                                <span id="notificationBadge" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold items-center justify-center"></span>
                             </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </nav>
-
-            <!-- Main Content -->
-            <div class="container-fluid mt-4">
-                <h2 class="mb-4 text-gray-800">Progress Chart</h2>
-
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                        <h5 class="card-title mb-0">Chart Management</h5>
-                        <div>
-                            <button class="btn btn-outline-primary btn-sm me-2" onclick="generateEIMTemplate()">Load Template</button>
-                            <button class="btn btn-primary btn-sm" onclick="saveChart()">Save Chart</button>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-4">
-                                <label class="form-label">Load Saved Chart</label>
-                                <div class="input-group">
-                                    <select class="form-select" id="savedChartsSelect">
-                                        <option value="">Loading...</option>
-                                    </select>
-                                    <button class="btn btn-outline-secondary" onclick="loadSelectedChart()">Load</button>
+                            <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 max-w-[90vw] rounded-xl border border-blue-100 bg-white shadow-xl shadow-blue-100/40 origin-top-right transition-all duration-200 transform scale-95 opacity-0 z-40">
+                                <div id="notificationList" class="max-h-96 overflow-y-auto">
+                                    <div class="px-4 py-3 text-center text-sm text-slate-500">No notifications</div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Import Excel</label>
-                                <input type="file" class="form-control" id="excelInput" accept=".xlsx, .xls">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Chart Title</label>
-                                <input type="text" class="form-control" id="chartTitle" placeholder="e.g., EIM Batch 1 Progress">
-                                <input type="hidden" id="currentChartId">
-                            </div>
                         </div>
-                        
-                        <div class="border-top pt-3">
-                            <h6>Quick Tools:</h6>
-                            <div class="btn-group">
-                                <button class="btn btn-sm btn-outline-success" onclick="insertSymbol('✓')">Insert Check (✓)</button>
-                                <button class="btn btn-sm btn-outline-warning" onclick="insertSymbol('IP')">Insert In-Progress (IP)</button>
-                                <button class="btn btn-sm btn-outline-secondary" onclick="insertSymbol('')">Clear Cell</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="card shadow-sm">
-                    <div class="card-body overflow-auto">
-                        <div id="chartContainer" style="min-height: 500px;">
-                            <div class="text-center text-muted py-5">
-                                <i class="fas fa-chart-bar fa-3x mb-3"></i>
-                                <p>Load a template, import an Excel file, or select a saved chart to begin.</p>
+                        <div class="relative">
+                            <button id="userMenuButton" class="flex items-center gap-2 rounded-full border border-blue-100 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                <i class="fas fa-user-circle text-xl text-blue-500"></i>
+                                <span id="trainerName" class="hidden md:block">Trainer</span>
+                                <i class="fas fa-chevron-down text-xs text-slate-400"></i>
+                            </button>
+                            <div id="userMenuDropdown" class="hidden absolute right-0 mt-2 w-48 rounded-xl border border-blue-100 shadow-xl shadow-blue-100/40 py-1 bg-white z-40">
+                                <a href="/Hohoo-ville/frontend/html/trainer/pages/profile.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-user mr-2"></i> Profile</a>
+                                <div class="border-t border-blue-100"></div>
+                                <a href="#" id="logoutBtn" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-sign-out-alt mr-2"></i> Logout</a>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto bg-gradient-to-b from-blue-50/60 via-white to-slate-50 p-4 sm:p-6 lg:p-8">
+                <div class="mx-auto w-full max-w-7xl space-y-6">
+                    <section class="bg-white rounded-2xl border border-blue-100 shadow-sm overflow-hidden">
+                        <div class="px-6 py-4 border-b border-blue-100 bg-blue-50/50 flex items-center justify-between gap-2">
+                            <h3 class="text-base font-semibold text-slate-900">Chart Management</h3>
+                            <div class="flex flex-wrap gap-2">
+                                <button id="generateTemplateBtn" class="rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">Load Template</button>
+                                <button id="saveChartBtn" class="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">Save Chart</button>
+                            </div>
+                        </div>
+                        <div class="p-6 space-y-4">
+                            <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
+                                <div class="xl:col-span-4">
+                                    <label for="savedChartsSelect" class="block text-sm font-medium text-slate-700 mb-1">Load Saved Chart</label>
+                                    <div class="flex gap-2">
+                                        <select id="savedChartsSelect" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                            <option value="">Loading...</option>
+                                        </select>
+                                        <button id="loadChartBtn" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">Load</button>
+                                    </div>
+                                </div>
+                                <div class="xl:col-span-4">
+                                    <label for="excelInput" class="block text-sm font-medium text-slate-700 mb-1">Import Excel</label>
+                                    <input type="file" id="excelInput" accept=".xlsx, .xls" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                </div>
+                                <div class="xl:col-span-4">
+                                    <label for="chartTitle" class="block text-sm font-medium text-slate-700 mb-1">Chart Title</label>
+                                    <input type="text" id="chartTitle" placeholder="e.g., EIM Batch 1 Progress" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                    <input type="hidden" id="currentChartId">
+                                </div>
+                            </div>
+
+                            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                <h4 class="text-sm font-semibold text-slate-900 mb-3">Live Progress Chart</h4>
+                                <div class="flex flex-col sm:flex-row gap-2">
+                                    <select id="batchSelectForChart" class="w-full sm:max-w-md rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                        <option value="">Select a batch to generate live chart...</option>
+                                    </select>
+                                    <button id="generateLiveChartBtn" class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
+                                        <i class="fas fa-sync-alt"></i> Generate
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                <h4 class="text-sm font-semibold text-slate-900 mb-2">Quick Tools</h4>
+                                <div class="flex flex-wrap gap-2">
+                                    <button id="insertCheckBtn" class="rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">Insert Check</button>
+                                    <button id="insertIpBtn" class="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-sm font-medium text-amber-700 hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500">Insert IP</button>
+                                    <button id="clearCellBtn" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">Clear Cell</button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="bg-white rounded-2xl border border-blue-100 shadow-sm">
+                        <div class="p-4 sm:p-6 overflow-x-auto">
+                            <div id="chartContainer" class="min-h-[500px]">
+                                <div class="text-center text-slate-500 py-16">
+                                    <i class="fas fa-chart-bar text-4xl mb-3 text-slate-300"></i>
+                                    <p>Load a template, import an Excel file, or select a saved chart to begin.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </main>
         </div>
     </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <!-- Axios -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
-    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
-    <!-- Custom JS -->
+    <script src="../../../js/session_timeout.js"></script>
     <script src="../../../js/trainer/pages/progress_chart.js"></script>
     <script src="../../../js/notifications.js"></script>
-    <script>
-        document.getElementById('sidebarCollapse').addEventListener('click', function() {
-            document.getElementById('sidebar').classList.toggle('d-none');
-        });
-        document.getElementById('logoutBtn').addEventListener('click', function() {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = '../../../login.html';
-        });
-    </script>
 </body>
 </html>
-

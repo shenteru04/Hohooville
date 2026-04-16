@@ -1,174 +1,171 @@
-const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
+const API_BASE_URL = `${window.location.origin}/Hohoo-ville/api`;
 
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof Swal === 'undefined') {
+document.addEventListener('DOMContentLoaded', async () => {
+    await ensureSwal();
+    initUserDropdown();
+    initLogout();
+    initProfileForm();
+    loadProfile();
+});
+
+async function ensureSwal() {
+    if (typeof window.Swal !== 'undefined') return;
+    await new Promise((resolve) => {
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        script.onload = resolve;
+        script.onerror = resolve;
         document.head.appendChild(script);
-    }
+    });
+}
 
-    // Load profile data
-    loadProfile();
+function initUserDropdown() {
+    const button = document.getElementById('userDropdown');
+    const menu = document.getElementById('userDropdownMenu');
+    if (!button || !menu) return;
 
-    // Handle Form Submit
-    const form = document.getElementById('profileForm');
-    if (form) {
-        form.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const submitBtn = document.getElementById('submitBtn');
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Updating...';
+    button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        menu.classList.toggle('hidden');
+    });
 
-            const data = {
-                user_id: document.getElementById('userId').value,
-                first_name: document.getElementById('firstName').value,
-                last_name: document.getElementById('lastName').value,
-                email: document.getElementById('email').value,
-                phone: document.getElementById('phone').value
-            };
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('#userDropdown') && !event.target.closest('#userDropdownMenu')) {
+            menu.classList.add('hidden');
+        }
+    });
+}
 
-            try {
-                const response = await axios.post(`${API_BASE_URL}/role/admin/profile.php?action=update`, data);
-                if (response.data.success) {
-                    Swal.fire('Success', 'Profile updated successfully', 'success');
-                    // Update display name
-                    const fullName = `${data.first_name} ${data.last_name}`;
-                    document.getElementById('headerName').textContent = fullName;
-                    document.getElementById('displayEmail').textContent = data.email;
-                    document.getElementById('displayPhone').textContent = data.phone || 'N/A';
-                    updateAvatar(fullName);
-                } else {
-                    Swal.fire('Error', 'Error: ' + response.data.message, 'error');
-                }
-            } catch (error) {
-                console.error('Error updating profile:', error);
-                Swal.fire('Error', 'Failed to update profile', 'error');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-save me-1"></i> Save Changes';
-            }
-        });
-    }
-
-    // Logout
+function initLogout() {
     const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            localStorage.clear();
-            window.location.href = '/hohoo-ville/frontend/login.html';
-        });
-    }
+    if (!logoutBtn) return;
 
-    // Inject Sidebar CSS (W3.CSS Reference Style)
-    const ms = document.createElement('style');
-    ms.innerHTML = `
-        #sidebar {
-            width: 200px;
-            position: fixed;
-            z-index: 1050;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            overflow-y: auto;
-            background-color: #fff;
-            box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16), 0 2px 10px 0 rgba(0,0,0,0.12);
-            display: block;
+    logoutBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        if (typeof window.logout === 'function') {
+            window.logout();
+            return;
         }
-        .main-content, #content, .content-wrapper {
-            margin-left: 200px !important;
-            transition: margin-left .4s;
-        }
-        #sidebarCloseBtn {
-            display: none;
-            width: 100%;
-            text-align: left;
-            padding: 8px 16px;
-            background: none;
-            border: none;
-            font-size: 18px;
-        }
-        #sidebarCloseBtn:hover { background-color: #ccc; }
-        
-        @media (max-width: 991.98px) {
-            #sidebar { display: none; }
-            .main-content, #content, .content-wrapper { margin-left: 0 !important; }
-            #sidebarCloseBtn { display: block; }
-        }
-        .table-responsive, table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    `;
-    document.head.appendChild(ms);
+        localStorage.clear();
+        window.location.href = '/Hohoo-ville/frontend/login.html';
+    });
+}
 
-    // Sidebar Logic
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) {
-        if (!document.getElementById('sidebarCloseBtn')) {
-            const closeBtn = document.createElement('button');
-            closeBtn.id = 'sidebarCloseBtn';
-            closeBtn.innerHTML = 'Close &times;';
-            closeBtn.addEventListener('click', () => {
-                sidebar.style.display = 'none';
-            });
-            sidebar.insertBefore(closeBtn, sidebar.firstChild);
-        }
-    }
+function initProfileForm() {
+    const form = document.getElementById('profileForm');
+    if (!form) return;
 
-    // Open Button Logic
-    let sc = document.getElementById('sidebarCollapse');
-    if (!sc) {
-        const nb = document.querySelector('.navbar');
-        if (nb) {
-            const c = nb.querySelector('.container-fluid') || nb;
-            const b = document.createElement('button');
-            b.id = 'sidebarCollapse';
-            b.className = 'btn btn-outline-primary me-2 d-lg-none';
-            b.type = 'button';
-            b.innerHTML = '&#9776;';
-            c.insertBefore(b, c.firstChild);
-            sc = b;
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const submitBtn = document.getElementById('submitBtn');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
         }
-    }
-    if (sc) {
-        const nb = sc.cloneNode(true);
-        if(sc.parentNode) sc.parentNode.replaceChild(nb, sc);
-        nb.addEventListener('click', () => {
-            if (sidebar) sidebar.style.display = 'block';
-        });
-    }
-});
+
+        const data = {
+            user_id: document.getElementById('userId')?.value || '',
+            first_name: document.getElementById('firstName')?.value?.trim() || '',
+            last_name: document.getElementById('lastName')?.value?.trim() || '',
+            email: document.getElementById('email')?.value?.trim() || '',
+            phone: document.getElementById('phone')?.value?.trim() || ''
+        };
+
+        try {
+            const response = await axios.post(`${API_BASE_URL}/role/admin/profile.php?action=update`, data);
+            if (!response.data.success) {
+                throw new Error(response.data.message || 'Failed to update profile');
+            }
+
+            const fullName = formatName(data.first_name, data.last_name);
+            setText('headerName', fullName);
+            setText('displayEmail', data.email || 'N/A');
+            setText('displayPhone', data.phone || 'N/A');
+            setText('userName', data.first_name || 'Admin');
+            updateAvatar(fullName);
+
+            if (window.Swal) {
+                Swal.fire('Success', 'Profile updated successfully', 'success');
+            }
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            if (window.Swal) {
+                Swal.fire('Error', error.message || 'Failed to update profile', 'error');
+            }
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+            }
+        }
+    });
+}
 
 async function loadProfile() {
     try {
-        // In a real app, get ID from localStorage or token. Defaulting to 1 for demo.
-        const user = JSON.parse(localStorage.getItem('user')) || { user_id: 1 };
-        
-        const response = await axios.get(`${API_BASE_URL}/role/admin/profile.php?action=get&id=${user.user_id}`);
-        if (response.data.success) {
-            const data = response.data.data;
-            document.getElementById('userId').value = data.user_id;
-            document.getElementById('firstName').value = data.first_name;
-            document.getElementById('lastName').value = data.last_name;
-            document.getElementById('email').value = data.email;
-            document.getElementById('phone').value = data.phone_number;
-            
-            // Update new UI elements
-            const fullName = `${data.first_name} ${data.last_name}`;
-            document.getElementById('headerName').textContent = fullName;
-            document.getElementById('headerRole').textContent = (data.role_name || 'User').toUpperCase();
-            
-            document.getElementById('displayEmail').textContent = data.email;
-            document.getElementById('displayPhone').textContent = data.phone_number || 'N/A';
-            document.getElementById('displayUsername').textContent = data.username;
-            
-            updateAvatar(fullName);
+        const userId = getCurrentUserId();
+        const response = await axios.get(`${API_BASE_URL}/role/admin/profile.php?action=get&id=${encodeURIComponent(userId)}`);
+        if (!response.data.success || !response.data.data) {
+            throw new Error(response.data.message || 'Failed to load profile');
         }
+
+        const data = response.data.data;
+        const firstName = data.first_name || '';
+        const lastName = data.last_name || '';
+        const fullName = formatName(firstName, lastName);
+
+        setValue('userId', data.user_id || userId);
+        setValue('firstName', firstName);
+        setValue('lastName', lastName);
+        setValue('email', data.email || '');
+        setValue('phone', data.phone_number || data.phone || '');
+
+        setText('headerName', fullName || 'Admin');
+        setText('headerRole', String(data.role_name || 'User').toUpperCase());
+        setText('displayEmail', data.email || 'N/A');
+        setText('displayPhone', data.phone_number || data.phone || 'N/A');
+        setText('displayUsername', data.username || 'N/A');
+        setText('userName', firstName || data.username || 'Admin');
+
+        updateAvatar(fullName || data.username || 'Admin User');
     } catch (error) {
         console.error('Error loading profile:', error);
+        if (window.Swal) {
+            Swal.fire('Error', 'Failed to load profile data', 'error');
+        }
     }
+}
+
+function getCurrentUserId() {
+    const raw = localStorage.getItem('user');
+    if (!raw) return 1;
+
+    try {
+        const user = JSON.parse(raw);
+        const id = user?.user_id || user?.id || user?.uid;
+        return Number(id) || 1;
+    } catch (error) {
+        return 1;
+    }
+}
+
+function formatName(firstName, lastName) {
+    return `${firstName || ''} ${lastName || ''}`.trim();
+}
+
+function setText(id, text) {
+    const element = document.getElementById(id);
+    if (element) element.textContent = text;
+}
+
+function setValue(id, value) {
+    const element = document.getElementById(id);
+    if (element) element.value = value;
 }
 
 function updateAvatar(name) {
     const avatarImg = document.getElementById('profileAvatar');
-    if (avatarImg) {
-        avatarImg.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&size=128`;
-    }
+    if (!avatarImg) return;
+    avatarImg.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&size=128`;
 }

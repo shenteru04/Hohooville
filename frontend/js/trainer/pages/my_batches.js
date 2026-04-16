@@ -1,200 +1,196 @@
-const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
-let currentTrainerId = null; // To store trainer ID
-let currentBatches = []; // Store batches for reference
+const API_BASE_URL = window.location.origin + '/Hohoo-ville/api';
+let currentTrainerId = null;
+let currentBatches = [];
 let currentUserId = null;
 
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', async function () {
     const user = JSON.parse(localStorage.getItem('user'));
-    
     if (!user) {
-        window.location.href = '../../../login.html';
+        window.location.href = '/Hohoo-ville/frontend/login.html';
         return;
     }
     currentUserId = user.user_id;
 
-    // Inject Sidebar CSS (W3.CSS Reference Style)
-    const ms = document.createElement('style');
-    ms.innerHTML = `
-        #sidebar {
-            width: 200px;
-            position: fixed;
-            z-index: 1050;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            overflow-y: auto;
-            background-color: #fff;
-            box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16), 0 2px 10px 0 rgba(0,0,0,0.12);
-            display: block;
-        }
-        .main-content, #content, .content-wrapper {
-            margin-left: 200px !important;
-            transition: margin-left .4s;
-        }
-        #sidebarCloseBtn {
-            display: none;
-            width: 100%;
-            text-align: left;
-            padding: 8px 16px;
-            background: none;
-            border: none;
-            font-size: 18px;
-        }
-        #sidebarCloseBtn:hover { background-color: #ccc; }
-        
-        @media (max-width: 991.98px) {
-            #sidebar { display: none; }
-            .main-content, #content, .content-wrapper { margin-left: 0 !important; }
-            #sidebarCloseBtn { display: block; }
-        }
-        #content .table-responsive, #content table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    `;
-    document.head.appendChild(ms);
-
-    // Sidebar Logic
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) {
-        if (!document.getElementById('sidebarCloseBtn')) {
-            const closeBtn = document.createElement('button');
-            closeBtn.id = 'sidebarCloseBtn';
-            closeBtn.innerHTML = 'Close &times;';
-            closeBtn.addEventListener('click', () => {
-                sidebar.style.display = 'none';
-            });
-            sidebar.insertBefore(closeBtn, sidebar.firstChild);
-        }
-    }
-
-    // Open Button Logic
-    let sc = document.getElementById('sidebarCollapse');
-    if (!sc) {
-        const nb = document.querySelector('.navbar');
-        if (nb) {
-            const c = nb.querySelector('.container-fluid') || nb;
-            const b = document.createElement('button');
-            b.id = 'sidebarCollapse';
-            b.className = 'btn btn-outline-primary me-2 d-lg-none';
-            b.type = 'button';
-            b.innerHTML = '&#9776;';
-            c.insertBefore(b, c.firstChild);
-            sc = b;
-        }
-    }
-    if (sc) {
-        const nb = sc.cloneNode(true);
-        if(sc.parentNode) sc.parentNode.replaceChild(nb, sc);
-        nb.addEventListener('click', () => {
-            if (sidebar) sidebar.style.display = 'block';
-        });
-    }
-
-    // Remove Attendance and Grading pages from sidebar
-    if (sidebar) {
-        const ul = sidebar.querySelector('ul');
-        if (ul) {
-            ul.innerHTML = '';
-            const menuItems = [
-                { href: '/Hohoo-ville/frontend/html/trainer/trainer_dashboard.html', icon: 'fas fa-home', text: 'Dashboard' },
-                { href: 'my_batches.html', icon: 'fas fa-users', text: 'My Batches' },
-                { href: 'modules.html', icon: 'fas fa-book', text: 'Modules' },
-                { href: 'progress_chart.html', icon: 'fas fa-chart-line', text: 'Progress Chart' },
-                { href: 'achievement_chart.html', icon: 'fas fa-trophy', text: 'Achievement Chart' },
-                { href: 'reports.html', icon: 'fas fa-file-alt', text: 'Reports' }
-            ];
-            const currentPage = window.location.pathname.split('/').pop();
-            menuItems.forEach(item => {
-                const li = document.createElement('li');
-                li.className = 'nav-item mb-1';
-                const isActive = currentPage === item.href ? 'active' : '';
-                li.innerHTML = `<a class="nav-link ${isActive}" href="${item.href}"><i class="${item.icon} me-2"></i> ${item.text}</a>`;
-                ul.appendChild(li);
-            });
-        }
-    }
+    initSidebar();
+    initUserMenu();
+    initLogout();
 
     try {
         const response = await axios.get(`${API_BASE_URL}/role/trainer/profile.php?action=get-trainer-id&user_id=${user.user_id}`);
         if (response.data.success) {
-            const t = response.data.data;
-            if (t.first_name && t.last_name) {
-                document.getElementById('trainerName').textContent = `${t.first_name} ${t.last_name}`;
+            const trainer = response.data.data;
+            if (trainer.first_name && trainer.last_name) {
+                document.getElementById('trainerName').textContent = `${trainer.first_name} ${trainer.last_name}`;
+            } else {
+                document.getElementById('trainerName').textContent = user.username || 'Trainer';
             }
-            currentTrainerId = response.data.data.trainer_id;
+            currentTrainerId = trainer.trainer_id;
             loadBatches(currentTrainerId);
         }
     } catch (error) {
         console.error('Error fetching trainer ID:', error);
     }
-
-    // Logout
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            localStorage.clear();
-            window.location.href = '../../../login.html';
-        });
-    }
 });
+
+function initSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const sidebarCollapse = document.getElementById('sidebarCollapse');
+    const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+    if (!sidebar) return;
+
+    function openSidebar() {
+        sidebar.classList.remove('-translate-x-full');
+        if (sidebarOverlay) {
+            sidebarOverlay.classList.remove('hidden');
+            requestAnimationFrame(() => sidebarOverlay.classList.remove('opacity-0'));
+        }
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function closeSidebar() {
+        sidebar.classList.add('-translate-x-full');
+        if (sidebarOverlay) {
+            sidebarOverlay.classList.add('opacity-0');
+            setTimeout(() => sidebarOverlay.classList.add('hidden'), 300);
+        }
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    function toggleSidebar() {
+        if (sidebar.classList.contains('-translate-x-full')) openSidebar();
+        else closeSidebar();
+    }
+
+    if (sidebarCollapse) sidebarCollapse.addEventListener('click', toggleSidebar);
+    if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', closeSidebar);
+    if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+
+    window.addEventListener('resize', () => {
+        if (window.innerWidth >= 1024) {
+            document.body.classList.remove('overflow-hidden');
+            if (sidebarOverlay) {
+                sidebarOverlay.classList.add('hidden', 'opacity-0');
+            }
+        }
+    });
+}
+
+function initUserMenu() {
+    const userMenuButton = document.getElementById('userMenuButton');
+    const userMenuDropdown = document.getElementById('userMenuDropdown');
+    if (!userMenuButton || !userMenuDropdown) return;
+
+    userMenuButton.addEventListener('click', function (event) {
+        event.stopPropagation();
+        userMenuDropdown.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', function (event) {
+        if (!event.target.closest('#userMenuDropdown')) {
+            userMenuDropdown.classList.add('hidden');
+        }
+    });
+}
+
+function initLogout() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (!logoutBtn) return;
+    logoutBtn.addEventListener('click', function (event) {
+        event.preventDefault();
+        localStorage.clear();
+        window.location.href = '/Hohoo-ville/frontend/login.html';
+    });
+}
 
 async function loadBatches(trainerId) {
     try {
         const response = await axios.get(`${API_BASE_URL}/role/trainer/my_batches.php?trainer_id=${trainerId}`);
+        const tbody = document.getElementById('batchesTableBody');
+        if (!tbody) return;
+
         if (response.data.success) {
             currentBatches = response.data.data;
             renderBatchesTable(response.data.data);
         } else {
-            document.getElementById('batchesTableBody').innerHTML = `<tr><td colspan="5" class="text-center text-danger">${response.data.message || 'No batches assigned.'}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-sm text-red-600">${response.data.message || 'No batches assigned.'}</td></tr>`;
         }
     } catch (error) {
         console.error('Error loading batches:', error);
-        document.getElementById('batchesTableBody').innerHTML = '<tr><td colspan="5" class="text-center text-danger">Failed to load batches.</td></tr>';
+        const tbody = document.getElementById('batchesTableBody');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-sm text-red-600">Failed to load batches.</td></tr>';
+        }
     }
 }
 
 function renderBatchesTable(data) {
     const tbody = document.getElementById('batchesTableBody');
+    if (!tbody) return;
+
     tbody.innerHTML = '';
-
-    if (data && data.length > 0) {
-        data.forEach(batch => {
-            const row = document.createElement('tr');
-            row.style.cursor = 'pointer';
-            row.dataset.batchId = batch.batch_id;
-            row.innerHTML = `
-                <td>${batch.batch_name}</td>
-                <td>${batch.course_name}</td>
-                <td>${batch.schedule || '<span class="text-muted">TBA</span>'}</td>
-                <td>${batch.room || '<span class="text-muted">TBA</span>'}</td>
-                <td><span class="badge bg-${batch.status === 'open' ? 'success' : 'secondary'}">${batch.status}</span></td>
-            `;
-            tbody.appendChild(row);
-
-            row.addEventListener('click', function() {
-                if (this.classList.contains('table-active')) {
-                    // If already active, deactivate it and hide the trainee list
-                    this.classList.remove('table-active');
-                    document.getElementById('traineesContainer').classList.add('d-none');
-                } else {
-                    // Otherwise, activate it and load the trainees
-                    tbody.querySelectorAll('tr').forEach(r => r.classList.remove('table-active'));
-                    this.classList.add('table-active');
-                    loadTraineesForBatch(this.dataset.batchId);
-                }
-            });
-        });
-    } else {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center">No batches assigned.</td></tr>';
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-sm text-slate-500">No batches assigned.</td></tr>';
+        return;
     }
+
+    data.forEach(batch => {
+        const row = document.createElement('tr');
+        row.className = 'cursor-pointer hover:bg-slate-50 transition-colors';
+        row.dataset.batchId = batch.batch_id;
+
+        const statusClass = String(batch.status).toLowerCase() === 'open'
+            ? 'bg-emerald-100 text-emerald-700'
+            : 'bg-slate-100 text-slate-700';
+
+        row.innerHTML = `
+            <td class="px-4 py-3 text-sm font-medium text-slate-900">${batch.batch_name || 'N/A'}</td>
+            <td class="px-4 py-3 text-sm text-slate-700">${batch.course_name || 'N/A'}</td>
+            <td class="px-4 py-3 text-sm text-slate-700">${batch.schedule || '<span class="text-slate-400">TBA</span>'}</td>
+            <td class="px-4 py-3 text-sm text-slate-700">${formatRoomValue(batch.room)}</td>
+            <td class="px-4 py-3 text-sm">
+                <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${statusClass}">${batch.status || 'N/A'}</span>
+            </td>
+        `;
+
+        row.addEventListener('click', function () {
+            const isActive = row.classList.contains('bg-blue-50');
+            tbody.querySelectorAll('tr').forEach(r => r.classList.remove('bg-blue-50'));
+
+            if (isActive) {
+                document.getElementById('traineesContainer').classList.add('hidden');
+            } else {
+                row.classList.add('bg-blue-50');
+                loadTraineesForBatch(batch.batch_id);
+            }
+        });
+
+        tbody.appendChild(row);
+    });
+}
+
+function formatRoomValue(room) {
+    const value = String(room ?? '').trim();
+    if (!value || value.toLowerCase() === 'null' || value === '0') {
+        return '<span class="text-slate-400">TBA</span>';
+    }
+    return value;
 }
 
 async function loadTraineesForBatch(batchId) {
     const traineesContainer = document.getElementById('traineesContainer');
     const traineesBody = document.getElementById('traineesTableBody');
-    traineesContainer.classList.remove('d-none');
-    traineesBody.innerHTML = '<tr><td colspan="5" class="text-center"><div class="spinner-border spinner-border-sm"></div> Loading trainees...</td></tr>';
+    if (!traineesContainer || !traineesBody) return;
 
-    // Setup Download Button
+    traineesContainer.classList.remove('hidden');
+    traineesBody.innerHTML = `
+        <tr>
+            <td colspan="6" class="px-4 py-6 text-center text-sm text-slate-500">
+                <i class="fas fa-circle-notch animate-spin mr-2"></i> Loading trainees...
+            </td>
+        </tr>
+    `;
+
     const downloadBtn = document.getElementById('downloadAttendanceBtn');
     if (downloadBtn) {
         downloadBtn.onclick = () => generateAttendancePDF(batchId);
@@ -203,37 +199,42 @@ async function loadTraineesForBatch(batchId) {
     try {
         const response = await axios.get(`${API_BASE_URL}/role/trainer/my_trainees.php?action=list&trainer_id=${currentTrainerId}&batch_id=${batchId}`);
         if (response.data.success) {
-            renderTraineesTable(response.data.data);
+            renderTraineesTable(response.data.data || []);
         } else {
-            traineesBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Error: ${response.data.message}</td></tr>`;
+            traineesBody.innerHTML = `<tr><td colspan="6" class="px-4 py-6 text-center text-sm text-red-600">Error: ${response.data.message}</td></tr>`;
         }
     } catch (error) {
         console.error('Error loading trainees for batch:', error);
-        traineesBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Failed to load trainees.</td></tr>';
+        traineesBody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-sm text-red-600">Failed to load trainees.</td></tr>';
     }
 }
 
 function renderTraineesTable(trainees) {
     const tbody = document.getElementById('traineesTableBody');
+    if (!tbody) return;
+
     tbody.innerHTML = '';
-    if (trainees.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center">No approved trainees found in this batch.</td></tr>';
+    if (!trainees.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-sm text-slate-500">No approved trainees found in this batch.</td></tr>';
         return;
     }
 
     trainees.forEach(trainee => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>
-                <div class="fw-bold">${trainee.full_name}</div>
-                <div class="text-muted small">${trainee.email}</div>
+            <td class="px-4 py-3">
+                <p class="text-sm font-semibold text-slate-900">${trainee.full_name || 'N/A'}</p>
+                <p class="text-xs text-slate-500">${trainee.email || ''}</p>
             </td>
-            <td>${trainee.batch_name}</td>
-            <td>${trainee.course_name || '<span class="text-muted">N/A</span>'}</td>
-            <td><span class="badge bg-success">${trainee.enrollment_status}</span></td>
-            <td>
-                <a href="trainee_details.html?id=${trainee.trainee_id}" class="btn btn-sm btn-outline-primary" title="View Trainee Details">
-                    <i class="fas fa-eye me-1"></i> View
+            <td class="px-4 py-3 text-sm text-slate-700">${trainee.batch_name || 'N/A'}</td>
+            <td class="px-4 py-3 text-sm text-slate-700">${trainee.course_name || '<span class="text-slate-400">N/A</span>'}</td>
+            <td class="px-4 py-3 text-sm text-slate-600">${trainee.formatted_enrollment_date || trainee.enrollment_date || 'N/A'}</td>
+            <td class="px-4 py-3 text-sm">
+                <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold bg-emerald-100 text-emerald-700">${trainee.enrollment_status || 'Approved'}</span>
+            </td>
+            <td class="px-4 py-3 text-sm">
+                <a href="trainee_details.html?id=${trainee.trainee_id}" class="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50" title="View Trainee Details">
+                    <i class="fas fa-eye"></i> View
                 </a>
             </td>
         `;
@@ -243,82 +244,72 @@ function renderTraineesTable(trainees) {
 
 async function generateAttendancePDF(batchId) {
     const btn = document.getElementById('downloadAttendanceBtn');
+    if (!btn) return;
     const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Generating...';
+    btn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Generating...';
     btn.disabled = true;
+
     let wrapper = null;
     let fixStyle = null;
     const originalScroll = window.scrollY || 0;
 
     try {
         await ensurePdfLibs();
-        // 1. Get Batch Info
-        const batch = currentBatches.find(b => b.batch_id == batchId);
-        if (!batch) throw new Error("Batch details not found.");
 
-        // 2. Get Trainer Info (for NTTC)
+        const batch = currentBatches.find(b => String(b.batch_id) === String(batchId));
+        if (!batch) throw new Error('Batch details not found.');
+
         const trainerRes = await axios.get(`${API_BASE_URL}/role/trainer/profile.php?action=get&user_id=${currentUserId}`);
         const trainer = trainerRes.data.success ? trainerRes.data.data : {};
-        const trainerFullName = `${trainer.first_name || ''} ${trainer.last_name || ''}`.toUpperCase();
+        const trainerFullName = `${trainer.first_name || ''} ${trainer.last_name || ''}`.trim().toUpperCase();
 
-        // 3. Get Trainees
         const traineesRes = await axios.get(`${API_BASE_URL}/role/trainer/my_trainees.php?action=list&trainer_id=${currentTrainerId}&batch_id=${batchId}`);
         const trainees = traineesRes.data.success ? traineesRes.data.data : [];
 
-        // 4. Build PDF pages from template
-
-        // --- PATCH: Always render 25 rows per page, even if no trainees ---
         const template = document.getElementById('attendanceSheetTemplate');
-        if (!template) {
-            throw new Error('Attendance sheet template not found.');
-        }
+        if (!template) throw new Error('Attendance sheet template not found.');
 
         const rowsPerPage = 25;
         const totalPages = Math.max(1, Math.ceil(Math.max(trainees.length, 1) / rowsPerPage));
-        const A4_WIDTH_PX = 794;
-        const A4_HEIGHT_PX = 1123;
+        const a4WidthPx = 794;
+        const a4HeightPx = 1123;
 
         wrapper = document.createElement('div');
         wrapper.id = 'pdf-render-wrapper';
         wrapper.style.position = 'absolute';
         wrapper.style.left = '0';
         wrapper.style.top = '0';
-        wrapper.style.width = `${A4_WIDTH_PX}px`;
+        wrapper.style.width = `${a4WidthPx}px`;
         wrapper.style.background = '#fff';
         wrapper.style.pointerEvents = 'none';
         wrapper.style.zIndex = '9999';
-        wrapper.style.minHeight = `${totalPages * A4_HEIGHT_PX}px`;
+        wrapper.style.minHeight = `${totalPages * a4HeightPx}px`;
 
         for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
             const page = template.cloneNode(true);
             page.removeAttribute('id');
             page.style.display = 'block';
-            page.style.width = `${A4_WIDTH_PX}px`;
+            page.style.width = `${a4WidthPx}px`;
             page.style.boxSizing = 'border-box';
             page.style.pageBreakAfter = pageIndex === totalPages - 1 ? 'auto' : 'always';
             page.style.pageBreakInside = 'avoid';
 
-            console.log('[PDF] Batch:', batch);
             const setText = (selector, value) => {
                 const el = page.querySelector(selector);
                 if (el) el.textContent = value;
             };
 
-            console.log('[PDF] Trainer:', trainer);
             setText('#pdfProgramName', batch.course_name || batch.qualification_name || 'N/A');
             setText('#pdfDateStart', batch.start_date || 'TBA');
             setText('#pdfDateEnd', batch.end_date || 'TBA');
             setText('#pdfDuration', batch.duration || '');
-            console.log('[PDF] Trainees:', trainees);
-            setText('#pdfTrainerName', trainerFullName);
+            setText('#pdfTrainerName', trainerFullName || 'N/A');
             setText('#pdfNttcNumber', trainer.nttc_no || 'N/A');
             setText('#pdfValidityDate', '');
             setText('#pdfDate', new Date().toLocaleDateString());
-            setText('#pdfFooterTrainer', trainerFullName);
+            setText('#pdfFooterTrainer', trainerFullName || 'N/A');
             setText('#pdfFooterRegistrar', '');
-            console.log('[PDF] Template:', template);
 
-            // Normalize image sources so html2canvas can load them
             page.querySelectorAll('img').forEach(img => {
                 const src = img.getAttribute('src');
                 if (!src) return;
@@ -332,18 +323,15 @@ async function generateAttendancePDF(batchId) {
                 const startIndex = pageIndex * rowsPerPage;
                 const pageTrainees = trainees.slice(startIndex, startIndex + rowsPerPage);
                 for (let i = 0; i < rowsPerPage; i++) {
-                    const t = pageTrainees[i];
+                    const trainee = pageTrainees[i];
+                    const rowNumber = startIndex + i + 1;
                     const row = document.createElement('tr');
                     row.style.height = '21px';
-                    const name = t ? t.full_name.toUpperCase() : '';
-                    const phone = t ? (t.phone_number || '') : '';
-                    const email = t ? (t.email || '') : '';
-                    const rowNumber = startIndex + i + 1;
                     row.innerHTML = `
                         <td style="border:1px solid #000;text-align:center;font-size:10px;">${rowNumber}</td>
-                        <td style="border:1px solid #000;padding:0 4px;font-size:10px;">${name}</td>
-                        <td style="border:1px solid #000;text-align:center;font-size:10px;">${phone}</td>
-                        <td style="border:1px solid #000;text-align:center;font-size:10px;">${email}</td>
+                        <td style="border:1px solid #000;padding:0 4px;font-size:10px;">${trainee ? String(trainee.full_name || '').toUpperCase() : ''}</td>
+                        <td style="border:1px solid #000;text-align:center;font-size:10px;">${trainee ? (trainee.phone_number || '') : ''}</td>
+                        <td style="border:1px solid #000;text-align:center;font-size:10px;">${trainee ? (trainee.email || '') : ''}</td>
                         <td style="border:1px solid #000;"></td>
                         <td style="border:1px solid #000;"></td>
                         <td style="border:1px solid #000;"></td>
@@ -357,7 +345,6 @@ async function generateAttendancePDF(batchId) {
 
         document.body.appendChild(wrapper);
 
-        // Force-reset table display properties for PDF rendering to override conflicting global styles
         fixStyle = document.createElement('style');
         fixStyle.id = 'pdf-fix-style';
         fixStyle.innerHTML = `
@@ -370,29 +357,20 @@ async function generateAttendancePDF(batchId) {
         document.head.appendChild(fixStyle);
 
         window.scrollTo(0, 0);
-        if (document.fonts && document.fonts.ready) {
-            await document.fonts.ready;
-        }
+        if (document.fonts && document.fonts.ready) await document.fonts.ready;
         await waitForImages(wrapper);
-        // Give the browser a moment to render everything after image loads and style injections
         await new Promise(resolve => setTimeout(resolve, 100));
         await new Promise(resolve => requestAnimationFrame(resolve));
 
-        // 5. Generate PDF (manual: html2canvas + jsPDF)
-        if (typeof html2canvas === 'undefined') {
-            throw new Error('html2canvas not available');
-        }
+        if (typeof html2canvas === 'undefined') throw new Error('html2canvas not available');
         const jsPDF = window.jspdf && window.jspdf.jsPDF ? window.jspdf.jsPDF : null;
-        if (!jsPDF) {
-            throw new Error('jsPDF not available');
-        }
+        if (!jsPDF) throw new Error('jsPDF not available');
 
         const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
         const pages = Array.from(wrapper.children);
 
         for (let i = 0; i < pages.length; i++) {
-            const page = pages[i];
-            const canvas = await html2canvas(page, {
+            const canvas = await html2canvas(pages[i], {
                 scale: 2,
                 useCORS: true,
                 backgroundColor: '#ffffff',
@@ -416,18 +394,14 @@ async function generateAttendancePDF(batchId) {
             pdf.addImage(imgData, 'JPEG', x, y, renderWidth, renderHeight);
         }
 
-        pdf.save(`Attendance_${batch.batch_name.replace(/\s+/g, '_')}.pdf`);
-
+        const batchName = String(batch.batch_name || 'batch').replace(/\s+/g, '_');
+        pdf.save(`Attendance_${batchName}.pdf`);
     } catch (error) {
         console.error('PDF Generation Error:', error);
-        Swal.fire({title: 'Error', text: 'Failed to generate PDF. Please try again.', icon: 'error'});
+        Swal.fire({ title: 'Error', text: 'Failed to generate PDF. Please try again.', icon: 'error' });
     } finally {
-        if (wrapper && wrapper.parentElement) {
-            wrapper.parentElement.removeChild(wrapper);
-        }
-        if (fixStyle && fixStyle.parentElement) {
-            fixStyle.parentElement.removeChild(fixStyle);
-        }
+        if (wrapper && wrapper.parentElement) wrapper.parentElement.removeChild(wrapper);
+        if (fixStyle && fixStyle.parentElement) fixStyle.parentElement.removeChild(fixStyle);
         window.scrollTo(0, originalScroll);
         btn.innerHTML = originalText;
         btn.disabled = false;
@@ -436,7 +410,8 @@ async function generateAttendancePDF(batchId) {
 
 async function waitForImages(container) {
     const images = Array.from(container.querySelectorAll('img'));
-    if (images.length === 0) return;
+    if (!images.length) return;
+
     await Promise.all(images.map(img => {
         if (img.complete) return Promise.resolve();
         return new Promise(resolve => {
@@ -454,14 +429,12 @@ async function ensurePdfLibs() {
     if (!window.jspdf || !window.jspdf.jsPDF) {
         promises.push(loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'));
     }
-    if (promises.length) {
-        await Promise.all(promises);
-    }
+    if (promises.length) await Promise.all(promises);
 }
 
 function loadScript(src) {
     return new Promise((resolve, reject) => {
-        const existing = Array.from(document.scripts).find(s => s.src === src);
+        const existing = Array.from(document.scripts).find(script => script.src === src);
         if (existing) {
             if (existing.dataset.loaded === 'true') return resolve();
             existing.addEventListener('load', resolve, { once: true });

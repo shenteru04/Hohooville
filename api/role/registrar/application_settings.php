@@ -92,7 +92,7 @@ function listOfferedCourses($conn) {
         // Assuming tbl_course has course_id, course_name, and status/is_offered
         // If is_offered column doesn't exist, we might need to rely on status='active'
         // For this feature, let's assume we check 'status' column.
-        $stmt = $conn->query("SELECT qualification_id, qualification_name as course_name, status FROM tbl_qualifications ORDER BY qualification_name");
+        $stmt = $conn->query("SELECT q.qualification_id, q.qualification_name as course_name, q.status, q.nc_level_id, nc.nc_level_code FROM tbl_qualifications q LEFT JOIN tbl_nc_levels nc ON q.nc_level_id = nc.nc_level_id ORDER BY q.qualification_name");
         $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(['success' => true, 'data' => $courses]);
     } catch (Exception $e) {

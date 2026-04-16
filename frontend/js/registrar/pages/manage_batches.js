@@ -1,5 +1,5 @@
-const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
-const UPLOADS_URL = window.location.origin + '/hohoo-ville/uploads/trainees/';
+const API_BASE_URL = window.location.origin + '/Hohoo-ville/api';
+const UPLOADS_URL = window.location.origin + '/Hohoo-ville/uploads/trainees/';
 let batchModal;
 let viewBatchModal;
 let viewTraineeModal;
@@ -11,106 +11,213 @@ let currentBatchId = null;
 let currentBatchName = null;
 let closedBatchesModal;
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Fix: Dynamically load SweetAlert2 if it's missing
-    if (typeof Swal === 'undefined') {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
-        document.head.appendChild(script);
+class SimpleModal {
+    constructor(element) {
+        this.element = element;
     }
 
-    batchModal = new bootstrap.Modal(document.getElementById('batchModal'));
-    viewBatchModal = new bootstrap.Modal(document.getElementById('viewBatchModal'));
-    viewTraineeModal = new bootstrap.Modal(document.getElementById('viewTraineeModal'));
-    closedBatchesModal = new bootstrap.Modal(document.getElementById('closedBatchesModal'));
+    show() {
+        if (!this.element) return;
+        this.element.classList.remove('hidden');
+        this.element.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+    }
+
+    hide() {
+        if (!this.element) return;
+        this.element.classList.add('hidden');
+        this.element.classList.remove('flex');
+        if (!document.querySelector('.modal-root.flex:not(.hidden)')) {
+            document.body.classList.remove('overflow-hidden');
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async function() {
+    await ensureSwal();
+
+    initSidebar();
+    initUserDropdown();
+    initLogout();
+    initModalDismissers();
+    initTraineeTabs();
+    hydrateHeaderUser();
+
+    batchModal = new SimpleModal(document.getElementById('batchModal'));
+    viewBatchModal = new SimpleModal(document.getElementById('viewBatchModal'));
+    viewTraineeModal = new SimpleModal(document.getElementById('viewTraineeModal'));
+    closedBatchesModal = new SimpleModal(document.getElementById('closedBatchesModal'));
 
     loadInitialData();
 
-    document.getElementById('addBatchForm').addEventListener('submit', saveBatch);
-    document.getElementById('qualificationSelect').addEventListener('change', handleQualificationChange);
+    const addBatchForm = document.getElementById('addBatchForm');
+    if (addBatchForm) addBatchForm.addEventListener('submit', saveBatch);
+
+    const qualificationSelect = document.getElementById('qualificationSelect');
+    if (qualificationSelect) qualificationSelect.addEventListener('change', handleQualificationChange);
+
     const openClosedBtn = document.getElementById('openClosedBatches');
     if (openClosedBtn) {
         openClosedBtn.addEventListener('click', () => {
             if (closedBatchesModal) closedBatchesModal.show();
         });
     }
-
-    // Inject Sidebar CSS (W3.CSS Reference Style)
-    const ms = document.createElement('style');
-    ms.innerHTML = `
-        #sidebar {
-            width: 200px;
-            position: fixed;
-            z-index: 1050;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            overflow-y: auto;
-            background-color: #fff;
-            box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16), 0 2px 10px 0 rgba(0,0,0,0.12);
-            display: block;
-        }
-        .main-content, #content, .content-wrapper {
-            margin-left: 200px !important;
-            transition: margin-left .4s;
-        }
-        #sidebarCloseBtn {
-            display: none;
-            width: 100%;
-            text-align: left;
-            padding: 8px 16px;
-            background: none;
-            border: none;
-            font-size: 18px;
-        }
-        #sidebarCloseBtn:hover { background-color: #ccc; }
-        
-        @media (max-width: 991.98px) {
-            #sidebar { display: none; }
-            .main-content, #content, .content-wrapper { margin-left: 0 !important; }
-            #sidebarCloseBtn { display: block; }
-        }
-        .table-responsive, table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    `;
-    document.head.appendChild(ms);
-
-    // Sidebar Logic
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) {
-        if (!document.getElementById('sidebarCloseBtn')) {
-            const closeBtn = document.createElement('button');
-            closeBtn.id = 'sidebarCloseBtn';
-            closeBtn.innerHTML = 'Close &times;';
-            closeBtn.addEventListener('click', () => {
-                sidebar.style.display = 'none';
-            });
-            sidebar.insertBefore(closeBtn, sidebar.firstChild);
-        }
-    }
-
-    // Open Button Logic
-    let sc = document.getElementById('sidebarCollapse');
-    if (!sc) {
-        const nb = document.querySelector('.navbar');
-        if (nb) {
-            const c = nb.querySelector('.container-fluid') || nb;
-            const b = document.createElement('button');
-            b.id = 'sidebarCollapse';
-            b.className = 'btn btn-outline-primary me-2 d-lg-none';
-            b.type = 'button';
-            b.innerHTML = '&#9776;';
-            c.insertBefore(b, c.firstChild);
-            sc = b;
-        }
-    }
-    if (sc) {
-        const nb = sc.cloneNode(true);
-        if(sc.parentNode) sc.parentNode.replaceChild(nb, sc);
-        nb.addEventListener('click', () => {
-            if (sidebar) sidebar.style.display = 'block';
-        });
-    }
 });
+
+async function ensureSwal() {
+    if (typeof window.Swal !== 'undefined') return;
+    await new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        script.onload = resolve;
+        script.onerror = resolve;
+        document.head.appendChild(script);
+    });
+}
+
+function hydrateHeaderUser() {
+    try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const userName = document.getElementById('userName');
+        if (!userName) return;
+        const displayName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.full_name || user.name || user.username || 'Registrar';
+        userName.textContent = displayName;
+    } catch (error) {
+        console.warn('Unable to parse user in localStorage:', error);
+    }
+}
+
+function initSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const sidebarCollapse = document.getElementById('sidebarCollapse');
+    const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+    if (!sidebar) return;
+
+    function openSidebar() {
+        sidebar.classList.remove('-translate-x-full');
+        if (sidebarOverlay) {
+            sidebarOverlay.classList.remove('hidden');
+            requestAnimationFrame(() => sidebarOverlay.classList.remove('opacity-0'));
+        }
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function closeSidebar() {
+        sidebar.classList.add('-translate-x-full');
+        if (sidebarOverlay) {
+            sidebarOverlay.classList.add('opacity-0');
+            setTimeout(() => sidebarOverlay.classList.add('hidden'), 300);
+        }
+        if (!document.querySelector('.modal-root.flex:not(.hidden)')) {
+            document.body.classList.remove('overflow-hidden');
+        }
+    }
+
+    if (sidebarCollapse) sidebarCollapse.addEventListener('click', openSidebar);
+    if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', closeSidebar);
+    if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+
+    window.addEventListener('resize', () => {
+        if (window.innerWidth >= 1024) {
+            if (sidebarOverlay) sidebarOverlay.classList.add('hidden', 'opacity-0');
+            if (!document.querySelector('.modal-root.flex:not(.hidden)')) {
+                document.body.classList.remove('overflow-hidden');
+            }
+        }
+    });
+}
+
+function initUserDropdown() {
+    const button = document.getElementById('userDropdown');
+    const menu = document.getElementById('userDropdownMenu');
+    if (!button || !menu) return;
+
+    button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        menu.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('#userDropdown') && !event.target.closest('#userDropdownMenu')) {
+            menu.classList.add('hidden');
+        }
+    });
+}
+
+function initLogout() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (!logoutBtn) return;
+    logoutBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '../../../login.html';
+    });
+}
+
+function initModalDismissers() {
+    document.querySelectorAll('[data-modal-hide]').forEach((button) => {
+        button.addEventListener('click', () => {
+            hideModalById(button.getAttribute('data-modal-hide'));
+        });
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return;
+        document.querySelectorAll('.modal-root.flex:not(.hidden)').forEach((modal) => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        });
+        document.body.classList.remove('overflow-hidden');
+    });
+}
+
+function hideModalById(modalId) {
+    if (!modalId) return;
+    if (modalId === 'batchModal' && batchModal) return batchModal.hide();
+    if (modalId === 'viewBatchModal' && viewBatchModal) return viewBatchModal.hide();
+    if (modalId === 'viewTraineeModal' && viewTraineeModal) return viewTraineeModal.hide();
+    if (modalId === 'closedBatchesModal' && closedBatchesModal) return closedBatchesModal.hide();
+
+    const el = document.getElementById(modalId);
+    if (!el) return;
+    el.classList.add('hidden');
+    el.classList.remove('flex');
+    if (!document.querySelector('.modal-root.flex:not(.hidden)')) {
+        document.body.classList.remove('overflow-hidden');
+    }
+}
+
+function initTraineeTabs() {
+    const tabButtons = Array.from(document.querySelectorAll('#viewTraineeTabs .tab-btn'));
+    const panes = Array.from(document.querySelectorAll('#viewTraineeTabsContent .tab-pane'));
+    if (!tabButtons.length || !panes.length) return;
+
+    const setActiveTab = (targetId) => {
+        tabButtons.forEach((btn) => {
+            const isActive = btn.getAttribute('data-target') === targetId;
+            btn.classList.toggle('bg-blue-600', isActive);
+            btn.classList.toggle('text-white', isActive);
+            btn.classList.toggle('border', !isActive);
+            btn.classList.toggle('border-slate-300', !isActive);
+            btn.classList.toggle('bg-white', !isActive);
+            btn.classList.toggle('text-slate-600', !isActive);
+            btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
+
+        panes.forEach((pane) => {
+            pane.classList.toggle('hidden', pane.id !== targetId);
+        });
+    };
+
+    tabButtons.forEach((btn) => {
+        btn.addEventListener('click', () => setActiveTab(btn.getAttribute('data-target')));
+    });
+
+    window.setActiveTraineeTab = setActiveTab;
+    setActiveTab('detailPersonal');
+}
 
 async function loadInitialData() {
     await loadFormData();
@@ -181,32 +288,34 @@ function renderBatchesTable(data, tbodyId) {
     tbody.innerHTML = '';
 
     if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="text-center">No batches found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-6 text-center text-sm text-slate-500">No batches found</td></tr>';
         return;
     }
 
     data.forEach(batch => {
-        const statusClass = batch.status === 'open' ? 'bg-success' : 'bg-secondary';
+        const statusClass = batch.status === 'open'
+            ? 'bg-emerald-100 text-emerald-700'
+            : 'bg-slate-200 text-slate-700';
+        const safeBatchName = String(batch.batch_name || '').replace(/'/g, '\\\'');
         tbody.innerHTML += `
-            <tr>
-                <td>${batch.batch_name}</td>
-                <td>${batch.course_name || 'N/A'}</td>
-                <td>${batch.trainer_name || 'N/A'}</td>
-                <td>${batch.scholarship_type || 'None'}</td>
-                <td>${batch.start_date}</td>
-                <td>${batch.end_date}</td>
-                <td>${batch.max_trainees || '25'}</td>
-                <td><span class="badge ${statusClass}">${batch.status}</span></td>
-                <td class="text-center">
-                    <div class="d-flex justify-content-center gap-1 flex-wrap">
-                        <button class="btn btn-sm btn-outline-primary" type="button" onclick="viewBatch(${batch.batch_id}, '${batch.batch_name}')" title="View">
+            <tr class="hover:bg-slate-50">
+                <td class="px-4 py-3 text-sm text-slate-800">${batch.batch_name}</td>
+                <td class="px-4 py-3 text-sm text-slate-700">${batch.course_name || 'N/A'}</td>
+                <td class="px-4 py-3 text-sm text-slate-700">${batch.trainer_name || 'N/A'}</td>
+                <td class="px-4 py-3 text-sm text-slate-700">${batch.scholarship_type || 'None'}</td>
+                <td class="px-4 py-3 text-sm text-slate-700">${batch.start_date}</td>
+                <td class="px-4 py-3 text-sm text-slate-700">${batch.end_date}</td>
+                <td class="px-4 py-3 text-sm text-slate-700">${batch.max_trainees || '25'}</td>
+                <td class="px-4 py-3">
+                    <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${statusClass}">${batch.status}</span>
+                </td>
+                <td class="px-4 py-3">
+                    <div class="flex flex-wrap items-center justify-center gap-1">
+                        <button class="inline-flex items-center rounded-md border border-blue-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" type="button" onclick="viewBatch(${batch.batch_id}, '${safeBatchName}')" title="View">
                             <i class="fas fa-eye"></i>
                         </button>
-                        <button class="btn btn-sm btn-outline-secondary" type="button" onclick="editBatch(${batch.batch_id})" title="Edit">
+                        <button class="inline-flex items-center rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" type="button" onclick="editBatch(${batch.batch_id})" title="Edit">
                             <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger" type="button" onclick="deleteBatch(${batch.batch_id})" title="Delete">
-                            <i class="fas fa-trash"></i>
                         </button>
                     </div>
                 </td>
@@ -258,10 +367,24 @@ function filterTrainers(qualId) {
 
     const filtered = allTrainers.filter(t => Array.isArray(t.qualification_ids) && t.qualification_ids.includes(String(qualId)));
     
-    if (filtered.length === 0) {
+    // Sort trainers alphabetically by last name, then first name
+    const sorted = filtered.sort((a, b) => {
+        const lastNameA = (a.last_name || '').toUpperCase();
+        const lastNameB = (b.last_name || '').toUpperCase();
+        
+        if (lastNameA !== lastNameB) {
+            return lastNameA.localeCompare(lastNameB);
+        }
+        
+        const firstNameA = (a.first_name || '').toUpperCase();
+        const firstNameB = (b.first_name || '').toUpperCase();
+        return firstNameA.localeCompare(firstNameB);
+    });
+    
+    if (sorted.length === 0) {
         trainerSelect.innerHTML += '<option value="" disabled>No trainers available</option>';
     } else {
-        filtered.forEach(t => {
+        sorted.forEach(t => {
             trainerSelect.innerHTML += `<option value="${t.trainer_id}">${t.first_name} ${t.last_name}</option>`;
         });
     }
@@ -309,48 +432,12 @@ async function saveBatch(e) {
     }
 }
 
-window.deleteBatch = async function(id) {
-    if (typeof Swal === 'undefined') {
-        alert('System is still loading resources (SweetAlert2). Please try again in a moment.');
-        return;
-    }
-
-    const result = await Swal.fire({
-        title: 'Are you sure?',
-        text: "You won't be able to revert this!",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Yes, delete it!'
-    });
-
-    if (result.isConfirmed) {
-        try {
-            const response = await axios.delete(`${API_BASE_URL}/role/registrar/batches.php?action=delete&id=${id}`);
-            if (response.data.success) {
-                Swal.fire(
-                    'Deleted!',
-                    'Batch deleted successfully.',
-                    'success'
-                );
-                loadBatches();
-            } else {
-                Swal.fire('Error', 'Error: ' + response.data.message, 'error');
-            }
-        } catch (error) {
-            console.error('Error deleting batch:', error);
-            Swal.fire('Error', 'An error occurred while deleting the batch.', 'error');
-        }
-    }
-}
-
 window.viewBatch = async function(id, name) {
     currentBatchId = id;
     currentBatchName = name;
     document.getElementById('viewBatchTitle').textContent = name;
     const tbody = document.getElementById('batchTraineesBody');
-    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Loading...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-sm text-slate-500">Loading...</td></tr>';
     viewBatchModal.show();
 
     try {
@@ -360,21 +447,26 @@ window.viewBatch = async function(id, name) {
         if (response.data.success) {
             const trainees = response.data.data;
             if (trainees.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center">No trainees enrolled in this batch.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-sm text-slate-500">No trainees enrolled in this batch.</td></tr>';
             } else {
                 trainees.forEach(t => {
+                    const traineeStatusClass = t.status === 'active'
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-slate-200 text-slate-700';
                     tbody.innerHTML += `
-                        <tr>
-                            <td>${t.last_name}, ${t.first_name}</td>
-                            <td>${t.email}</td>
-                            <td>${t.phone_number || 'N/A'}</td>
-                            <td><span class="badge bg-${t.status === 'active' ? 'success' : 'secondary'}">${t.status}</span></td>
-                            <td>
-                                <div class="d-flex gap-1">
-                                    <button class="btn btn-sm btn-info text-white" onclick="viewTraineeDetails(${t.trainee_id})" title="View">
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-4 py-3 text-sm text-slate-800">${t.last_name}, ${t.first_name}</td>
+                            <td class="px-4 py-3 text-sm text-slate-700">${t.email}</td>
+                            <td class="px-4 py-3 text-sm text-slate-700">${t.phone_number || 'N/A'}</td>
+                            <td class="px-4 py-3">
+                                <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${traineeStatusClass}">${t.status}</span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex flex-wrap gap-1">
+                                    <button class="inline-flex items-center rounded-md bg-sky-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onclick="viewTraineeDetails(${t.trainee_id})" title="View">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    <button class="btn btn-sm btn-outline-secondary" onclick="openPrint(${t.trainee_id})" title="Print">
+                                    <button class="inline-flex items-center rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onclick="openPrint(${t.trainee_id})" title="Print">
                                         <i class="fas fa-print"></i>
                                     </button>
                                 </div>
@@ -384,11 +476,11 @@ window.viewBatch = async function(id, name) {
                 });
             }
         } else {
-            tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">${response.data.message}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-sm text-red-600">${response.data.message}</td></tr>`;
         }
     } catch (error) {
         console.error('Error fetching batch trainees:', error);
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Failed to load trainees.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-sm text-red-600">Failed to load trainees.</td></tr>';
     }
 }
 
@@ -437,28 +529,34 @@ window.viewTraineeDetails = async function(id) {
             const noPhoto = document.getElementById('detailNoPhoto');
             if (t.photo_file) {
                 photoImg.src = UPLOADS_URL + t.photo_file;
-                photoImg.style.display = 'block';
-                noPhoto.style.display = 'none';
+                photoImg.classList.remove('hidden');
+                noPhoto.classList.add('hidden');
             } else {
-                photoImg.style.display = 'none';
-                noPhoto.style.display = 'block';
+                photoImg.classList.add('hidden');
+                noPhoto.classList.remove('hidden');
             }
 
             // Docs
             const linkId = document.getElementById('detailLinkValidId');
             if(t.valid_id_file) {
                 linkId.href = UPLOADS_URL + t.valid_id_file;
-                linkId.classList.remove('disabled');
+                linkId.classList.remove('pointer-events-none', 'opacity-50', 'cursor-not-allowed');
+                linkId.setAttribute('aria-disabled', 'false');
             } else {
-                linkId.classList.add('disabled');
+                linkId.href = '#';
+                linkId.classList.add('pointer-events-none', 'opacity-50', 'cursor-not-allowed');
+                linkId.setAttribute('aria-disabled', 'true');
             }
 
             const linkBirth = document.getElementById('detailLinkBirthCert');
             if(t.birth_cert_file) {
                 linkBirth.href = UPLOADS_URL + t.birth_cert_file;
-                linkBirth.classList.remove('disabled');
+                linkBirth.classList.remove('pointer-events-none', 'opacity-50', 'cursor-not-allowed');
+                linkBirth.setAttribute('aria-disabled', 'false');
             } else {
-                linkBirth.classList.add('disabled');
+                linkBirth.href = '#';
+                linkBirth.classList.add('pointer-events-none', 'opacity-50', 'cursor-not-allowed');
+                linkBirth.setAttribute('aria-disabled', 'true');
             }
 
             // Signature
@@ -471,13 +569,16 @@ window.viewTraineeDetails = async function(id) {
                     sig = UPLOADS_URL + sig;
                 }
                 sigImg.src = sig;
-                sigImg.style.display = 'block';
-                sigNo.style.display = 'none';
+                sigImg.classList.remove('hidden');
+                sigNo.classList.add('hidden');
             } else {
-                sigImg.style.display = 'none';
-                sigNo.style.display = 'block';
+                sigImg.classList.add('hidden');
+                sigNo.classList.remove('hidden');
             }
 
+            if (typeof window.setActiveTraineeTab === 'function') {
+                window.setActiveTraineeTab('detailPersonal');
+            }
             viewTraineeModal.show();
         } else {
             Swal.fire('Error', 'Error: ' + response.data.message, 'error');
@@ -503,7 +604,7 @@ window.openPrint = function(id) {
                         const normalizeSrc = (val, folder) => {
                                 if (!val) return '';
                                 if (val.startsWith('data:') || val.startsWith('http')) return val;
-                                return window.location.origin + `/hohoo-ville/uploads/${folder}/` + encodeURIComponent(val);
+                                return window.location.origin + `/Hohoo-ville/uploads/${folder}/` + encodeURIComponent(val);
                         };
                         const sigSrc = normalizeSrc(p.digital_signature || '', 'trainees');
                         const photoSrc = normalizeSrc(p.photo_file || '', 'trainees');
@@ -622,17 +723,19 @@ window.openPrint = function(id) {
         })();
 }
 
-window.downloadAllApplications = function() {
+window.downloadAllApplications = function(evt) {
         if (!currentBatchId) {
                 Swal.fire('Warning', 'No batch selected.', 'warning');
                 return;
         }
 
         // Show loading indicator
-        const btn = event.target.closest('button');
+        const trigger = evt && evt.target ? evt.target.closest('button') : null;
+        const btn = trigger || document.querySelector('#viewBatchModal button[onclick*="downloadAllApplications"]');
+        if (!btn) return;
         const originalText = btn.innerHTML;
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Generating...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Generating...';
 
         (async function() {
                 try {
@@ -672,7 +775,7 @@ window.downloadAllApplications = function() {
                         const normalizeSrc = (val, folder) => {
                                 if (!val) return '';
                                 if (val.startsWith('data:') || val.startsWith('http')) return val;
-                                return window.location.origin + `/hohoo-ville/uploads/${folder}/` + encodeURIComponent(val);
+                                return window.location.origin + `/Hohoo-ville/uploads/${folder}/` + encodeURIComponent(val);
                         };
 
                         const formatDate = (d) => {

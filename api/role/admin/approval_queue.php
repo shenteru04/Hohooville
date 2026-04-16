@@ -9,10 +9,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
+require_once __DIR__ . '/../../utils/EmailService.php';
 require_once '../../database/db.php';
 
 $database = new Database();
 $conn = $database->getConnection();
+
+// Immediately check for a valid database connection
+if (!$conn) {
+    http_response_code(503); // Service Unavailable
+    echo json_encode(['success' => false, 'message' => 'Failed to connect to the database. Please check the database configuration and ensure the server is running.']);
+    exit();
+}
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
@@ -646,7 +654,6 @@ function sendNotificationEmail($details, $status, $reason = '') {
 
     $isSent = false;
     try {
-        require_once __DIR__ . '/../../utils/EmailService.php';
         $emailSvc = new EmailService();
         $result = $emailSvc->sendEmail($to, $subject, $message);
         $isSent = $result['success'] ?? false;

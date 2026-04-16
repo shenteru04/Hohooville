@@ -457,7 +457,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Submitting...';
+        submitBtn.innerHTML = '<span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white align-[-2px]"></span> <span class="ml-2">Submitting...</span>';
 
         const formData = new FormData(this);
 
@@ -485,7 +485,9 @@ document.addEventListener('DOMContentLoaded', function() {
             let errorMessage = (error.response?.data?.message) || 'An unexpected error occurred.';
             Swal.fire('Submission Error', errorMessage, 'error');
         } finally {
-            submitBtn.disabled = !privacyConsent.checked;
+            const sigInput = document.getElementById('digitalSignatureInput');
+            const isSignatureProvided = isReturningTrainee || (sigInput && sigInput.value !== '');
+            submitBtn.disabled = !privacyConsent.checked || !isSignatureProvided;
             submitBtn.innerHTML = 'Submit Application';
             if (isReturningTrainee) {
                 const step1Inputs = document.querySelectorAll('#step1 input, #step1 select, #step1 textarea');
@@ -532,7 +534,33 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- NEW: Signature Pad Logic ---
-    const signatureModal = new bootstrap.Modal(document.getElementById('signatureModal'));
+    const signatureModalElement = document.getElementById('signatureModal');
+    const signatureModal = {
+        show() {
+            if (!signatureModalElement) return;
+            signatureModalElement.style.display = 'flex';
+            signatureModalElement.classList.add('show');
+            signatureModalElement.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('overflow-hidden');
+        },
+        hide() {
+            if (!signatureModalElement) return;
+            signatureModalElement.classList.remove('show');
+            signatureModalElement.style.display = 'none';
+            signatureModalElement.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('overflow-hidden');
+        }
+    };
+
+    signatureModalElement?.querySelectorAll('[data-modal-close="signatureModal"]').forEach((button) => {
+        button.addEventListener('click', () => signatureModal.hide());
+    });
+    signatureModalElement?.addEventListener('click', (event) => {
+        if (event.target === signatureModalElement) {
+            signatureModal.hide();
+        }
+    });
+
     const canvas = document.getElementById('signatureCanvas');
     const ctx = canvas.getContext('2d');
     let drawing = false;
@@ -589,7 +617,9 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('signaturePreviewArea').addEventListener('click', () => signatureModal.show());
 
     document.getElementById('clearSignatureBtn').addEventListener('click', () => {
-        Object.assign(document.getElementById('signaturePreview'), { src: '', style: { display: 'none' } });
+        const signaturePreview = document.getElementById('signaturePreview');
+        signaturePreview.src = '';
+        signaturePreview.style.display = 'none';
         document.getElementById('signaturePlaceholder').style.display = 'block';
         document.getElementById('clearSignatureBtn').style.display = 'none';
         document.getElementById('digitalSignatureInput').value = '';

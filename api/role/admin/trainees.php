@@ -82,7 +82,7 @@ function getTrainees($conn) {
             SELECT 
                 t.trainee_id, t.user_id, t.trainee_school_id, t.first_name, t.last_name, t.email, t.phone_number, t.status,
                 t.photo_file, t.valid_id_file, t.birth_cert_file, t.address,
-                e.batch_id, b.batch_name, c.qualification_name as course_name
+                e.batch_id, b.batch_name, c.qualification_name as course_name, e.enrollment_date, DATE_FORMAT(e.enrollment_date, '%Y-%m-%d %H:%i:%s') as formatted_enrollment_date
             FROM tbl_trainee_hdr t 
             JOIN tbl_enrollment e ON t.trainee_id = e.trainee_id 
             LEFT JOIN tbl_batch b ON e.batch_id = b.batch_id 

@@ -1,18 +1,31 @@
 <?php
+// Prevent HTML error output
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+set_error_handler(function($errno, $errstr, $errfile, $errline) {
+    error_log("[$errno] $errstr in $errfile:$errline");
+    return true;
+});
+
 header("Content-Type: application/json");
 header("Access-Control-Allow-Origin: *");
 require_once 'database/db.php';
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
-if ($action == 'getOpen') {
-    try {
+try {
+    if ($action == 'getOpen') {
         $database = new Database();
         $conn = $database->getConnection();
 
         if (!$conn) {
-            exit; // Connection failed, error already echoed by Database class
+            http_response_code(500);
+            echo json_encode([]);
+            exit;
         }
+        
+        // Close batches that have passed their enrollment deadline (start_date)
+        closeExpiredBatches($conn);
         
         // Fetch batches that are currently open for enrollment or upcoming.
         // This query joins tbl_batch with tbl_qualifications to get the course name.
@@ -40,12 +53,28 @@ if ($action == 'getOpen') {
 
         echo json_encode($batches);
 
-    } catch (Exception $e) {
-        http_response_code(500);
-        error_log("API Error in batches.php: " . $e->getMessage());
-        echo json_encode([]); // Return empty array on error
+    } else {
+        echo json_encode([]);
     }
-} else {
-    echo json_encode([]);
+} catch (Exception $e) {
+    http_response_code(500);
+    error_log("API Error in batches.php: " . $e->getMessage());
+    echo json_encode([]); // Return empty array on error
+}
+
+/**
+ * Closes batches that have passed their enrollment deadline (start_date)
+ */
+function closeExpiredBatches($conn) {
+    try {
+        $query = "UPDATE tbl_batch 
+                  SET status = 'closed' 
+                  WHERE status = 'open' 
+                  AND start_date <= CURDATE()";
+        $stmt = $conn->prepare($query);
+        $stmt->execute();
+    } catch (Exception $e) {
+        error_log("Error closing expired batches: " . $e->getMessage());
+    }
 }
 ?>

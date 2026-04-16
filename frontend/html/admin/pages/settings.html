@@ -4,251 +4,117 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Settings - Hohoo-Ville Technical School</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Sidebar CSS -->
-    <link rel="stylesheet" href="../../../css/admin/sidebar.css">
     <style>
-        :root {
-            --primary-color: #4e73df;
-            --secondary-color: #858796;
-            --bg-color: #f8f9fc;
-            --text-color: #5a5c69;
-        }
-        body {
-            font-family: 'Nunito', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-        }
-        #sidebar {
-            background: #fff;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-            z-index: 1000;
-        }
-        #sidebar .sidebar-header {
-            padding: 1.5rem 1rem;
-            text-align: center;
-            color: var(--primary-color);
-            font-weight: 800;
-        }
-        #sidebar .nav-link {
-            color: var(--text-color);
-            padding: 0.5rem 1rem;
-            margin: 0.1rem 0.5rem;
-            border-radius: 0.35rem;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        #sidebar .nav-link:hover {
-            background-color: #eaecf4;
-            color: var(--primary-color);
-        }
-        #sidebar .nav-link.active {
-            background-color: var(--primary-color);
-            color: #fff;
-        }
-        .card {
-            border: none;
-            border-radius: 0.35rem;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-        }
-        .card-header {
-            background-color: #f8f9fc;
-            border-bottom: 1px solid #e3e6f0;
-            padding: 1rem 1.25rem;
-            font-weight: 700;
-            color: var(--primary-color);
+        body { font-family: 'Nunito', sans-serif; }
+        a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
         }
     </style>
 </head>
-<body>
-    <div class="d-flex">
-         <!-- Sidebar -->
-        <nav id="sidebar" class="p-3">
-            <div class="sidebar-header mb-3">
-                <h3><img src="../../../../img/logo.jpg" alt="Logo" class="me-2" style="height: 35px; width: auto;">Hohooville</h3>
-                <p class="text-muted">Management System</p>
-            </div>
+<body class="bg-slate-50 text-slate-700">
+    <div id="sidebar-container"></div>
 
-            <ul class="nav flex-column">
-    <li class="nav-item mb-1">
-        <a class="nav-link" href="../admin_dashboard.html">
-            <i class="fas fa-tachometer-alt me-2"></i> Dashboard
-        </a>
-    </li>
-    <li class="nav-item mb-1">
-        <a class="nav-link" data-bs-toggle="collapse" href="#enrollmentSubmenu" role="button" aria-expanded="false">
-            <i class="fas fa-user-plus me-2"></i> Enrollment Management
-        </a>
-        <div class="collapse" id="enrollmentSubmenu">
-            <ul class="nav flex-column ms-3">
-                <li class="nav-item"><a class="nav-link" href="view_trainees.html">View Trainees</a></li>
-                <li class="nav-item"><a class="nav-link" href="approval_queue.html">Approval Queue</a></li>
-            </ul>
-        </div>
-    </li>
-    <li class="nav-item mb-1">
-        <a class="nav-link" data-bs-toggle="collapse" href="#trainerSubmenu" role="button" aria-expanded="false">
-            <i class="fas fa-chalkboard-teacher me-2"></i> Trainer Management
-        </a>
-        <div class="collapse" id="trainerSubmenu">
-            <ul class="nav flex-column ms-3">
-                <li class="nav-item"><a class="nav-link" href="view_trainers.html">View Trainers</a></li>
-            </ul>
-        </div>
-    </li>
-     <li class="nav-item mb-1">
-                    <a class="nav-link" data-bs-toggle="collapse" href="#qualificationSubmenu" role="button" aria-expanded="false"><i class="fas fa-graduation-cap me-2"></i> Qualifications</a>
-                    <div class="collapse" id="qualificationSubmenu">
-                        <ul class="nav flex-column ms-3">
-                            <li class="nav-item"><a class="nav-link" href="manage_qualifications.html">Qualifications</a></li>
-                            <li class="nav-item"><a class="nav-link" href="view_batches.html">Batches</a></li>
-                        </ul>
-                    </div>
-                </li>
-    <li class="nav-item mb-1">
-        <a class="nav-link" data-bs-toggle="collapse" href="#reportsSubmenu" role="button" aria-expanded="false">
-            <i class="fas fa-chart-bar me-2"></i> Reports & Analytics
-        </a>
-        <div class="collapse" id="reportsSubmenu">
-            <ul class="nav flex-column ms-3">
-                <li class="nav-item"><a class="nav-link" href="reports.html">Reports</a></li>
-                <li class="nav-item"><a class="nav-link" href="analytics.html">Analytics Dashboard</a></li>
-            </ul>
-        </div>
-    </li>
-    <li class="nav-item mb-1">
-        <a class="nav-link" data-bs-toggle="collapse" href="#userSubmenu" role="button" aria-expanded="false">
-            <i class="fas fa-users-cog me-2"></i> User Management
-        </a>
-        <div class="collapse" id="userSubmenu">
-            <ul class="nav flex-column ms-3">
-                <li class="nav-item"><a class="nav-link" href="user_management.html">Manage Users</a></li>
-                <!-- <li class="nav-item"><a class="nav-link" href="roles_permissions.html">Roles & Permissions</a></li>
-                <li class="nav-item"><a class="nav-link" href="bulk_import.html">Bulk Import</a></li>
-            </ul>
-        </div>
-    </li>
-    <li class="nav-item mb-1">
-        <a class="nav-link" data-bs-toggle="collapse" href="#systemSubmenu" role="button" aria-expanded="false">
-            <i class="fas fa-cogs me-2"></i> System
-        </a>
-        <div class="collapse" id="systemSubmenu">
-            <ul class="nav flex-column ms-3">
-                <li class="nav-item"><a class="nav-link" href="system_settings.html">System Settings</a></li>
-                <li class="nav-item"><a class="nav-link" href="activity_logs.html">Activity Logs</a></li>
-            </ul>
-        </div>
-    </li> -->
-</ul>
-        </nav>
-
-        <!-- Page Content -->
-        <div class="flex-grow-1" id="content">
-            <!-- Top Navigation -->
-            <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
-                <div class="container-fluid">
-                    <button type="button" id="sidebarCollapse" class="btn btn-outline-primary me-2 d-lg-none">
-                        <i class="fas fa-bars"></i>
+    <div class="main-content min-h-screen lg:ml-72" id="content">
+        <header class="border-b border-blue-100 bg-white/85 shadow-sm backdrop-blur">
+            <div class="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center gap-3">
+                    <button type="button" id="sidebarCollapse" class="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 lg:hidden">
+                        <i class="fas fa-bars text-lg"></i>
                     </button>
-
-                    <div class="ms-auto d-flex align-items-center">
-                        <div class="dropdown">
-                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
-                                <i class="fas fa-user-circle"></i> <span id="userName">Admin</span>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
-                                <li><a class="dropdown-item" href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
-                            </ul>
-                        </div>
-                    </div>
+                    <h1 class="text-xl font-semibold text-slate-800">Settings</h1>
                 </div>
-            </nav>
 
-            <!-- Main Content -->
-            <div class="container-fluid mt-4">
-                <h2 class="mb-4 text-gray-800">System Settings</h2>
-
-                <div class="row">
-                    <div class="col-md-8">
-                        <div class="card mb-4">
-                            <div class="card-header">
-                                <h5 class="card-title">Account Settings</h5>
-                            </div>
-                            <div class="card-body">
-                                <form id="accountSettingsForm">
-                                    <div class="mb-3">
-                                        <label for="currentPassword" class="form-label">Current Password</label>
-                                        <input type="password" class="form-control" id="currentPassword" required>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="newPassword" class="form-label">New Password</label>
-                                        <input type="password" class="form-control" id="newPassword" required>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="confirmPassword" class="form-label">Confirm New Password</label>
-                                        <input type="password" class="form-control" id="confirmPassword" required>
-                                    </div>
-                                    <button type="submit" class="btn btn-primary">Change Password</button>
-                                </form>
-                            </div>
-                        </div>
-
-                        <div class="card mb-4">
-                            <div class="card-header">
-                                <h5 class="card-title">System Settings</h5>
-                            </div>
-                            <div class="card-body">
-                                <form id="systemSettingsForm">
-                                    <div class="mb-3">
-                                        <label for="defaultBatchSize" class="form-label">Default Batch Size</label>
-                                        <input type="number" class="form-control" id="defaultBatchSize" value="20">
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="sessionTimeout" class="form-label">Session Timeout (minutes)</label>
-                                        <input type="number" class="form-control" id="sessionTimeout" value="60">
-                                    </div>
-                                    <div class="mb-3 form-check">
-                                        <input type="checkbox" class="form-check-input" id="emailNotifications" checked>
-                                        <label class="form-check-label" for="emailNotifications">Enable Email Notifications</label>
-                                    </div>
-                                    <button type="submit" class="btn btn-primary">Save Settings</button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="card-title">Quick Actions</h5>
-                            </div>
-                            <div class="card-body">
-                                <button class="btn btn-outline-primary w-100 mb-2" id="backupDataBtn">Backup Data</button>
-                                <button class="btn btn-outline-warning w-100 mb-2" id="clearCacheBtn">Clear Cache</button>
-                            </div>
+                <div class="header-actions flex items-center gap-3" data-header-actions>
+                    <div class="relative">
+                        <button id="userDropdown" class="flex items-center gap-2 rounded-full border border-blue-100 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-700 hover:bg-blue-50">
+                            <i class="fas fa-user-circle text-xl text-blue-500"></i>
+                            <span id="userName" class="hidden md:block">Admin</span>
+                            <i class="fas fa-chevron-down text-xs text-slate-400"></i>
+                        </button>
+                        <div id="userDropdownMenu" class="absolute right-0 top-full z-40 mt-2 hidden w-48 rounded-xl border border-blue-100 bg-white py-1 shadow-xl shadow-blue-100/40">
+                            <a href="profile.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-user mr-2"></i> Profile</a>
+                            <a href="settings.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-cog mr-2"></i> Settings</a>
+                            <div class="border-t border-blue-100"></div>
+                            <a href="#" id="logoutBtn" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-sign-out-alt mr-2"></i> Logout</a>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </header>
+
+        <main class="space-y-6 p-4 sm:p-6 lg:p-8">
+            <section>
+                <h2 class="text-2xl font-semibold text-slate-900">System Settings</h2>
+                <p class="mt-1 text-sm text-slate-500">Manage your account credentials and base system configuration.</p>
+            </section>
+
+            <section class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+                <div class="space-y-6 xl:col-span-2">
+                    <article class="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6">
+                        <h3 class="mb-4 text-base font-semibold text-slate-900">Account Settings</h3>
+                        <form id="accountSettingsForm" class="space-y-4">
+                            <div>
+                                <label for="currentPassword" class="mb-1 block text-sm font-medium text-slate-700">Current Password</label>
+                                <input type="password" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="currentPassword" required>
+                            </div>
+                            <div>
+                                <label for="newPassword" class="mb-1 block text-sm font-medium text-slate-700">New Password</label>
+                                <input type="password" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="newPassword" required>
+                            </div>
+                            <div>
+                                <label for="confirmPassword" class="mb-1 block text-sm font-medium text-slate-700">Confirm New Password</label>
+                                <input type="password" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="confirmPassword" required>
+                            </div>
+                            <div class="flex justify-end">
+                                <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                    <i class="fas fa-lock"></i> Change Password
+                                </button>
+                            </div>
+                        </form>
+                    </article>
+
+                    <article class="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6">
+                        <h3 class="mb-4 text-base font-semibold text-slate-900">System Defaults</h3>
+                        <form id="systemSettingsForm" class="space-y-4">
+                            <div>
+                                <label for="sessionTimeout" class="mb-1 block text-sm font-medium text-slate-700">Session Timeout (minutes)</label>
+                                <input type="number" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="sessionTimeout" value="60">
+                            </div>
+                            <label for="emailNotifications" class="inline-flex cursor-pointer items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700">
+                                <input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" id="emailNotifications" checked>
+                                Enable Email Notifications
+                            </label>
+                            <div class="flex justify-end">
+                                <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                    <i class="fas fa-save"></i> Save Settings
+                                </button>
+                            </div>
+                        </form>
+                    </article>
+                </div>
+
+                <article class="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6">
+                    <h3 class="mb-4 text-base font-semibold text-slate-900">Quick Actions</h3>
+                    <div class="space-y-3">
+                        <button class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="backupDataBtn">
+                            <i class="fas fa-database"></i> Backup Data
+                        </button>
+                        <button class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500" id="clearCacheBtn">
+                            <i class="fas fa-broom"></i> Clear Cache
+                        </button>
+                    </div>
+                </article>
+            </section>
+        </main>
     </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <!-- Axios -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
-    <!-- Custom JS -->
-    <script src="../../../js/admin/pages/settings.js"></script>
-
-    <!-- Sidebar loader and global logout -->
+    <script src="../../../js/session_timeout.js"></script>
     <script src="../../../js/sidebar.js"></script>
+    <script src="../../../js/admin/pages/settings.js"></script>
 </body>
 </html>

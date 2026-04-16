@@ -1,4 +1,12 @@
 <?php
+// Prevent HTML error output
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+set_error_handler(function($errno, $errstr, $errfile, $errline) {
+    error_log("[$errno] $errstr in $errfile:$errline");
+    return true;
+});
+
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
@@ -9,14 +17,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-require_once '../../database/db.php';
-
-$database = new Database();
-$conn = $database->getConnection();
-
-$action = isset($_GET['action']) ? $_GET['action'] : '';
-
 try {
+    require_once '../../database/db.php';
+
+    $database = new Database();
+    $conn = $database->getConnection();
+
+    $action = isset($_GET['action']) ? $_GET['action'] : '';
+
     switch ($action) {
         case 'change-password':
             changePassword($conn);
@@ -34,6 +42,7 @@ try {
             throw new Exception('Invalid action');
     }
 } catch (Exception $e) {
+    error_log("Settings API error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }

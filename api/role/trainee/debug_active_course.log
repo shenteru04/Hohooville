@@ -1,14 +1,14 @@
 Array
 (
-    [trainee_school_id] => 2-2026-0002
+    [trainee_school_id] => 2-2026-0001
     [course_id] => 1
     [course_name] => Electrical Installation and Maintenance NC II
-    [batch_name] => Batch 2026
-    [start_date] => 2026-01-27
-    [end_date] => 2026-01-28
+    [batch_name] => Electrical Installation and Maintenance NC II - Batch 1
+    [start_date] => 2027-02-01
+    [end_date] => 2027-02-24
     [schedule] => Day Shift (8:00 AM - 5:00 PM)
-    [room_id] => 5
-    [room_name] => Room 4
-    [enrollment_id] => 7
+    [room_id] => 3
+    [room_name] => Room 2
+    [enrollment_id] => 4
     [enrollment_status] => approved
 )

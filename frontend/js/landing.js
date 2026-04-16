@@ -1,184 +1,279 @@
 document.addEventListener('DOMContentLoaded', () => {
     const qualificationsList = document.getElementById('qualificationsList');
     const batchesList = document.getElementById('batchesList');
-    // IMPORTANT: Adjust this base URL to match your backend API's location.
     const apiBaseUrl = 'api';
 
-    // Check for application submission status
+    setupMobileMenu();
+    setupBackToTop();
+    setupCourseCards();
+    setupCourseModalEvents();
+
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('status') === 'submitted') {
-        // Ensure bootstrap is loaded before trying to use it
-        if (typeof bootstrap !== 'undefined') {
-            showSubmissionSuccessModal();
-            // Clean up the URL to prevent the modal from showing on refresh
-            window.history.replaceState({}, document.title, window.location.pathname);
-        } else {
-            console.warn('Bootstrap not found, cannot display submission modal.');
-        }
+        showSubmissionSuccessModal();
+        window.history.replaceState({}, document.title, window.location.pathname);
     }
 
-    const fetchQualifications = async () => {
-        try {
-            // This endpoint should return a JSON array of active qualifications.
-            // Example: GET /Hohoo-ville/api/qualifications.php?action=getActive
-            const response = await axios.get(`${apiBaseUrl}/qualifications.php?action=getActive`);
-            qualificationsList.innerHTML = ''; // Clear spinner
-
-            if (response.data && Array.isArray(response.data) && response.data.length > 0) {
-                response.data.forEach(q => {
-                    const card = document.createElement('div');
-                    card.className = 'card shadow-sm mb-3 border-0';
-                    card.innerHTML = `
-                        <div class="card-body p-3">
-                            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
-                                <div class="d-flex align-items-start text-break flex-grow-1">
-                                    <i class="fas fa-certificate text-primary me-3 fa-lg mt-1"></i>
-                                    <div>
-                                        <h6 class="fw-bold mb-1">${q.qualification_name}</h6>
-                                        <small class="text-muted">${q.duration ? q.duration + ' hours' : 'Duration not specified'}</small>
-                                    </div>
-                                </div>
-                                <span class="badge bg-primary rounded-pill text-nowrap">Available</span>
-                            </div>
-                        </div>
-                    `;
-                    qualificationsList.appendChild(card);
-                });
-            } else {
-                qualificationsList.innerHTML = '<div class="alert alert-info"><i class="fas fa-info-circle me-2"></i>No qualifications currently available. Please check back later.</div>';
-            }
-        } catch (error) {
-            console.error('Error fetching qualifications:', error);
-            qualificationsList.innerHTML = '<div class="alert alert-danger"><i class="fas fa-exclamation-circle me-2"></i>Could not load qualifications at this time.</div>';
-        }
-    };
-
-    const fetchOpenBatches = async () => {
-        try {
-            // This endpoint should return a JSON array of open/ongoing batches.
-            // Example: GET /Hohoo-ville/api/batches.php?action=getOpen
-            const response = await axios.get(`${apiBaseUrl}/batches.php?action=getOpen`);
-            batchesList.innerHTML = ''; // Clear spinner
-
-            if (response.data && Array.isArray(response.data) && response.data.length > 0) {
-                response.data.forEach(batch => {
-                    const statusColor = batch.status === 'open' ? 'success' : batch.status === 'closed' ? 'danger' : 'warning';
-                    const card = document.createElement('div');
-                    card.className = 'card shadow-sm mb-3 border-0';
-                    card.innerHTML = `
-                        <div class="card-body">
-                            <h5 class="card-title fw-bold mb-2">
-                                <i class="fas fa-graduation-cap me-2 text-primary"></i>${batch.batch_name}
-                            </h5>
-                            <hr class="my-2">
-                            <p class="card-text mb-2">
-                                <small class="text-muted"><strong>Course:</strong> ${batch.qualification_name}</small>
-                            </p>
-                            <p class="card-text mb-2">
-                                <small class="text-muted"><i class="fas fa-clock me-2"></i><strong>Schedule:</strong> ${batch.schedule ? batch.schedule : 'To be announced'}</small>
-                            </p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span><strong>Status:</strong></span>
-                                <span class="badge bg-${statusColor} rounded-pill">${batch.status.toUpperCase()}</span>
-                            </div>
-                        </div>
-                    `;
-                    batchesList.appendChild(card);
-                });
-            } else {
-                batchesList.innerHTML = '<div class="alert alert-info"><i class="fas fa-info-circle me-2"></i>No open batches right now. Please check back soon for the next schedule!</div>';
-            }
-        } catch (error) {
-            console.error('Error fetching batches:', error);
-            batchesList.innerHTML = '<div class="alert alert-danger"><i class="fas fa-exclamation-circle me-2"></i>Could not load batch information at this time.</div>';
-        }
-    };
-    /**
-     * Back to top button functionality
-     */
-    const backToTopButton = document.querySelector('.back-to-top');
-    if (backToTopButton) {
-        const toggleBackToTop = () => {
-            if (window.scrollY > 100) {
-                backToTopButton.classList.add('active');
-            } else {
-                backToTopButton.classList.remove('active');
-            }
-        };
-        window.addEventListener('scroll', toggleBackToTop);
-    }
-
-    /**
-     * Featured Courses Modal functionality
-     */
-    const courseModal = document.getElementById('courseModal');
-    if (courseModal) {
-        courseModal.addEventListener('show.bs.modal', function (event) {
-            // Card that triggered the modal
-            const card = event.relatedTarget;
-
-            // Extract info from data-* attributes
-            const title = card.getAttribute('data-course-title');
-            const description = card.getAttribute('data-course-description');
-            const galleryImages = JSON.parse(card.getAttribute('data-course-gallery') || '[]');
-
-            // Update the modal's content
-            const modalTitle = courseModal.querySelector('#courseModalLabel');
-            const modalDescription = courseModal.querySelector('#courseModalDescription');
-            const modalGallery = courseModal.querySelector('#courseModalGallery');
-
-            modalTitle.textContent = title;
-            modalDescription.textContent = description;
-
-            // Clear previous gallery images and populate
-            modalGallery.innerHTML = '';
-            if (galleryImages && galleryImages.length > 0) {
-                galleryImages.forEach(imgUrl => {
-                    const col = document.createElement('div');
-                    col.className = 'col-6 col-md-4';
-                    col.innerHTML = `<a href="${imgUrl}" target="_blank" title="View full image"><img src="${imgUrl}" class="img-fluid rounded shadow-sm" style="width: 100%; height: 200px; object-fit: cover;" alt="${title} gallery image"></a>`;
-                    modalGallery.appendChild(col);
-                });
-            } else {
-                modalGallery.innerHTML = '<p class="text-muted">No gallery images available for this course.</p>';
-            }
-        });
-    }
-
-    fetchQualifications();
-    fetchOpenBatches();
+    fetchQualifications(qualificationsList, apiBaseUrl);
+    fetchOpenBatches(batchesList, apiBaseUrl);
 });
 
+function setupMobileMenu() {
+    const menuButton = document.getElementById('mobileMenuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    if (!menuButton || !mobileMenu) return;
+
+    menuButton.addEventListener('click', () => {
+        const expanded = menuButton.getAttribute('aria-expanded') === 'true';
+        menuButton.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+        mobileMenu.classList.toggle('hidden');
+    });
+
+    mobileMenu.querySelectorAll('a').forEach((link) => {
+        link.addEventListener('click', () => {
+            mobileMenu.classList.add('hidden');
+            menuButton.setAttribute('aria-expanded', 'false');
+        });
+    });
+}
+
+function setupBackToTop() {
+    const backToTopButton = document.querySelector('.back-to-top');
+    if (!backToTopButton) return;
+
+    const toggleBackToTop = () => {
+        if (window.scrollY > 100) backToTopButton.classList.add('active');
+        else backToTopButton.classList.remove('active');
+    };
+
+    window.addEventListener('scroll', toggleBackToTop);
+    backToTopButton.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+}
+
+function setupCourseCards() {
+    const cards = document.querySelectorAll('.course-card');
+    cards.forEach((card) => {
+        card.addEventListener('click', () => openCourseModal(card));
+        card.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openCourseModal(card);
+            }
+        });
+        if (!card.hasAttribute('tabindex')) card.setAttribute('tabindex', '0');
+    });
+}
+
+function setupCourseModalEvents() {
+    const courseModal = document.getElementById('courseModal');
+    if (!courseModal) return;
+
+    courseModal.querySelectorAll('[data-modal-close="courseModal"]').forEach((button) => {
+        button.addEventListener('click', () => closeModal('courseModal'));
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            if (!courseModal.classList.contains('hidden')) closeModal('courseModal');
+            const successModal = document.getElementById('submissionSuccessModal');
+            if (successModal && !successModal.classList.contains('hidden')) closeModal('submissionSuccessModal', true);
+        }
+    });
+}
+
+function openCourseModal(card) {
+    const courseModal = document.getElementById('courseModal');
+    if (!courseModal || !card) return;
+
+    const title = card.getAttribute('data-course-title') || 'Course Details';
+    const description = card.getAttribute('data-course-description') || 'No description available.';
+    let galleryImages = [];
+
+    try {
+        galleryImages = JSON.parse(card.getAttribute('data-course-gallery') || '[]');
+    } catch (_error) {
+        galleryImages = [];
+    }
+
+    const modalTitle = document.getElementById('courseModalLabel');
+    const modalDescription = document.getElementById('courseModalDescription');
+    const modalGallery = document.getElementById('courseModalGallery');
+
+    if (modalTitle) modalTitle.textContent = title;
+    if (modalDescription) modalDescription.textContent = description;
+    if (modalGallery) {
+        modalGallery.innerHTML = '';
+        if (galleryImages.length > 0) {
+            galleryImages.forEach((imgUrl) => {
+                const item = document.createElement('a');
+                item.href = imgUrl;
+                item.target = '_blank';
+                item.rel = 'noopener noreferrer';
+                item.className = 'block overflow-hidden rounded-lg border border-slate-200 bg-slate-100 shadow-sm';
+                item.innerHTML = `
+                    <img src="${escapeHtml(imgUrl)}" class="h-44 w-full object-cover transition-transform duration-200 hover:scale-105" alt="${escapeHtml(title)} gallery image">
+                `;
+                modalGallery.appendChild(item);
+            });
+        } else {
+            modalGallery.innerHTML = '<p class="text-sm text-slate-500">No gallery images available for this course.</p>';
+        }
+    }
+
+    openModal('courseModal');
+}
+
+async function fetchQualifications(container, apiBaseUrl) {
+    if (!container) return;
+    try {
+        const response = await axios.get(`${apiBaseUrl}/qualifications.php?action=getActive`);
+        container.innerHTML = '';
+
+        if (Array.isArray(response.data) && response.data.length > 0) {
+            response.data.forEach((qualification) => {
+                const card = document.createElement('div');
+                card.className = 'mb-3 rounded-xl border border-blue-100 bg-white p-4 shadow-sm';
+                card.innerHTML = `
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div class="flex min-w-0 flex-1 items-start gap-3">
+                            <i class="fas fa-certificate mt-1 text-blue-600"></i>
+                            <div>
+                                <h4 class="text-sm font-semibold text-slate-900">${escapeHtml(qualification.qualification_name || 'Untitled Qualification')}</h4>
+                                <p class="text-xs text-slate-500">${escapeHtml(qualification.duration ? `${qualification.duration} hours` : 'Duration not specified')}</p>
+                            </div>
+                        </div>
+                        <span class="inline-flex shrink-0 rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700">Available</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+                <i class="fas fa-info-circle mr-2"></i>No qualifications currently available. Please check back later.
+            </div>
+        `;
+    } catch (error) {
+        console.error('Error fetching qualifications:', error);
+        container.innerHTML = `
+            <div class="rounded-xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                <i class="fas fa-exclamation-circle mr-2"></i>Could not load qualifications at this time.
+            </div>
+        `;
+    }
+}
+
+async function fetchOpenBatches(container, apiBaseUrl) {
+    if (!container) return;
+    try {
+        const response = await axios.get(`${apiBaseUrl}/batches.php?action=getOpen`);
+        container.innerHTML = '';
+
+        if (Array.isArray(response.data) && response.data.length > 0) {
+            response.data.forEach((batch) => {
+                const status = String(batch.status || '').toLowerCase();
+                const statusClasses = status === 'open'
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : status === 'closed'
+                        ? 'bg-rose-100 text-rose-700'
+                        : 'bg-amber-100 text-amber-700';
+
+                const card = document.createElement('div');
+                card.className = 'batch-card mb-3 rounded-xl border border-blue-100 bg-white p-4 shadow-sm';
+                card.innerHTML = `
+                    <h4 class="mb-2 text-base font-bold text-slate-900">
+                        <i class="fas fa-graduation-cap mr-2 text-blue-600"></i>${escapeHtml(batch.batch_name || 'Unnamed Batch')}
+                    </h4>
+                    <p class="text-sm text-slate-600"><strong>Course:</strong> ${escapeHtml(batch.qualification_name || 'N/A')}</p>
+                    <p class="mt-1 text-sm text-slate-600"><i class="fas fa-clock mr-2"></i><strong>Schedule:</strong> ${escapeHtml(batch.schedule || 'To be announced')}</p>
+                    <div class="mt-3 flex items-center justify-between">
+                        <span class="text-sm font-medium text-slate-700">Status:</span>
+                        <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusClasses}">${escapeHtml((batch.status || 'N/A').toUpperCase())}</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+                <i class="fas fa-info-circle mr-2"></i>No open batches right now. Please check back soon for the next schedule.
+            </div>
+        `;
+    } catch (error) {
+        console.error('Error fetching batches:', error);
+        container.innerHTML = `
+            <div class="rounded-xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                <i class="fas fa-exclamation-circle mr-2"></i>Could not load batch information at this time.
+            </div>
+        `;
+    }
+}
+
 function showSubmissionSuccessModal() {
-    // Create modal HTML dynamically
     const modalHtml = `
-    <div class="modal fade" id="submissionSuccessModal" tabindex="-1" aria-labelledby="submissionSuccessModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content shadow-lg">
-          <div class="modal-header bg-success text-white border-0">
-            <h5 class="modal-title" id="submissionSuccessModalLabel"><i class="fas fa-check-circle me-2"></i> Application Submitted!</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body text-center py-4">
-            <p class="lead">Thank you for your application!</p>
-            <p>Your submission has been received. Please wait for an email or text message from the registrar regarding the status of your application and the next steps.</p>
-          </div>
-          <div class="modal-footer border-0">
-            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Got it!</button>
-          </div>
+        <div class="fixed inset-0 z-[70] hidden items-center justify-center p-4" id="submissionSuccessModal" aria-hidden="true">
+            <div class="absolute inset-0 bg-slate-900/60" data-modal-close="submissionSuccessModal"></div>
+            <div class="relative z-10 w-full max-w-lg rounded-2xl bg-white shadow-2xl">
+                <div class="flex items-center justify-between rounded-t-2xl bg-emerald-600 px-5 py-4 text-white">
+                    <h5 class="text-lg font-semibold"><i class="fas fa-check-circle mr-2"></i>Application Submitted!</h5>
+                    <button type="button" class="rounded p-1 text-white/90 hover:bg-white/20" data-modal-close="submissionSuccessModal" aria-label="Close">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="px-5 py-6 text-center">
+                    <p class="text-lg font-semibold text-slate-900">Thank you for your application!</p>
+                    <p class="mt-3 text-sm text-slate-600">Your submission has been received. Please wait for an email or text message from the registrar regarding the status of your application and the next steps.</p>
+                </div>
+                <div class="flex justify-end border-t border-slate-200 px-5 py-4">
+                    <button type="button" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" data-modal-close="submissionSuccessModal">
+                        Got it!
+                    </button>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
     `;
 
-    // Add modal to body and show it
     document.body.insertAdjacentHTML('beforeend', modalHtml);
-    const successModalEl = document.getElementById('submissionSuccessModal');
-    const successModal = new bootstrap.Modal(successModalEl);
-    successModal.show();
+    const modal = document.getElementById('submissionSuccessModal');
+    if (!modal) return;
 
-    // Clean up modal from DOM after it's hidden to keep the DOM clean
-    successModalEl.addEventListener('hidden.bs.modal', function () {
-        this.remove();
+    modal.querySelectorAll('[data-modal-close="submissionSuccessModal"]').forEach((button) => {
+        button.addEventListener('click', () => closeModal('submissionSuccessModal', true));
     });
+
+    openModal('submissionSuccessModal');
+}
+
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('overflow-hidden');
+}
+
+function closeModal(modalId, removeAfterClose = false) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    modal.classList.remove('flex');
+    modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('overflow-hidden');
+    if (removeAfterClose) modal.remove();
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }

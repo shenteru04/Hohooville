@@ -1,6 +1,5 @@
-// API Configuration
-const API_BASE_URL = window.location.origin + '/hohoo-ville/api';
-const UPLOADS_URL = window.location.origin + '/hohoo-ville/uploads/trainees/';
+const API_BASE_URL = window.location.origin + '/Hohoo-ville/api';
+const UPLOADS_URL = window.location.origin + '/Hohoo-ville/uploads/trainees/';
 
 let viewModal;
 let currentQueueData = [];
@@ -8,7 +7,6 @@ let unqualifiedData = [];
 let currentViewItem = null;
 let currentViewCanReview = false;
 
-// Axios Instance Configuration
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
     timeout: 10000,
@@ -17,21 +15,46 @@ const apiClient = axios.create({
     }
 });
 
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof Swal === 'undefined') {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
-        document.head.appendChild(script);
+class SimpleModal {
+    constructor(element) {
+        this.element = element;
     }
 
+    show() {
+        if (!this.element) return;
+        this.element.classList.remove('hidden');
+        this.element.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+    }
+
+    hide() {
+        if (!this.element) return;
+        this.element.classList.add('hidden');
+        this.element.classList.remove('flex');
+        if (!document.querySelector('.modal-root.flex:not(.hidden)')) {
+            document.body.classList.remove('overflow-hidden');
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async function() {
+    await ensureSwal();
+    initSidebar();
+    initUserDropdown();
+    initLogout();
+    initModalDismissers();
+    initMainTabs();
+    initViewModalTabs();
+    hydrateHeaderUser();
+
     const modalEl = document.getElementById('viewApplicationModal');
-    if (modalEl) viewModal = new bootstrap.Modal(modalEl);
-    
+    if (modalEl) viewModal = new SimpleModal(modalEl);
+
     loadApprovalQueue();
     loadUnqualifiedQueue();
 
-    // Refresh unqualified list when tab is clicked
-    document.getElementById('unqualified-tab').addEventListener('click', loadUnqualifiedQueue);
+    const unqualifiedTab = document.getElementById('unqualified-tab');
+    if (unqualifiedTab) unqualifiedTab.addEventListener('click', loadUnqualifiedQueue);
 
     const modalQualifyBtn = document.getElementById('modalQualifyBtn');
     const modalUnqualifyBtn = document.getElementById('modalUnqualifyBtn');
@@ -45,83 +68,171 @@ document.addEventListener('DOMContentLoaded', function() {
             if (currentViewItem) unqualifyApplication(currentViewItem.enrollment_id);
         });
     }
-
-    // Inject Sidebar CSS (W3.CSS Reference Style)
-    const ms = document.createElement('style');
-    ms.innerHTML = `
-        #sidebar {
-            width: 200px;
-            position: fixed;
-            z-index: 1050;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            overflow-y: auto;
-            background-color: #fff;
-            box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16), 0 2px 10px 0 rgba(0,0,0,0.12);
-            display: block;
-        }
-        .main-content, #content, .content-wrapper {
-            margin-left: 200px !important;
-            transition: margin-left .4s;
-        }
-        #sidebarCloseBtn {
-            display: none;
-            width: 100%;
-            text-align: left;
-            padding: 8px 16px;
-            background: none;
-            border: none;
-            font-size: 18px;
-        }
-        #sidebarCloseBtn:hover { background-color: #ccc; }
-        
-        @media (max-width: 991.98px) {
-            #sidebar { display: none; }
-            .main-content, #content, .content-wrapper { margin-left: 0 !important; }
-            #sidebarCloseBtn { display: block; }
-        }
-        .table-responsive, table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    `;
-    document.head.appendChild(ms);
-
-    // Sidebar Logic
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) {
-        if (!document.getElementById('sidebarCloseBtn')) {
-            const closeBtn = document.createElement('button');
-            closeBtn.id = 'sidebarCloseBtn';
-            closeBtn.innerHTML = 'Close &times;';
-            closeBtn.addEventListener('click', () => {
-                sidebar.style.display = 'none';
-            });
-            sidebar.insertBefore(closeBtn, sidebar.firstChild);
-        }
-    }
-
-    // Open Button Logic
-    let sc = document.getElementById('sidebarCollapse');
-    if (!sc) {
-        const nb = document.querySelector('.navbar');
-        if (nb) {
-            const c = nb.querySelector('.container-fluid') || nb;
-            const b = document.createElement('button');
-            b.id = 'sidebarCollapse';
-            b.className = 'btn btn-outline-primary me-2 d-lg-none';
-            b.type = 'button';
-            b.innerHTML = '&#9776;';
-            c.insertBefore(b, c.firstChild);
-            sc = b;
-        }
-    }
-    if (sc) {
-        const nb = sc.cloneNode(true);
-        if(sc.parentNode) sc.parentNode.replaceChild(nb, sc);
-        nb.addEventListener('click', () => {
-            if (sidebar) sidebar.style.display = 'block';
-        });
-    }
 });
+
+async function ensureSwal() {
+    if (typeof window.Swal !== 'undefined') return;
+    await new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        script.onload = resolve;
+        script.onerror = resolve;
+        document.head.appendChild(script);
+    });
+}
+
+function hydrateHeaderUser() {
+    try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const userName = document.getElementById('userName');
+        if (!userName) return;
+        const displayName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.full_name || user.name || user.username || 'Registrar';
+        userName.textContent = displayName;
+    } catch (error) {
+        console.warn('Unable to parse user in localStorage:', error);
+    }
+}
+
+function initSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const sidebarCollapse = document.getElementById('sidebarCollapse');
+    const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+    if (!sidebar) return;
+
+    function openSidebar() {
+        sidebar.classList.remove('-translate-x-full');
+        if (sidebarOverlay) {
+            sidebarOverlay.classList.remove('hidden');
+            requestAnimationFrame(() => sidebarOverlay.classList.remove('opacity-0'));
+        }
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function closeSidebar() {
+        sidebar.classList.add('-translate-x-full');
+        if (sidebarOverlay) {
+            sidebarOverlay.classList.add('opacity-0');
+            setTimeout(() => sidebarOverlay.classList.add('hidden'), 300);
+        }
+        if (!document.querySelector('.modal-root.flex:not(.hidden)')) {
+            document.body.classList.remove('overflow-hidden');
+        }
+    }
+
+    if (sidebarCollapse) sidebarCollapse.addEventListener('click', openSidebar);
+    if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', closeSidebar);
+    if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+
+    window.addEventListener('resize', () => {
+        if (window.innerWidth >= 1024) {
+            if (sidebarOverlay) sidebarOverlay.classList.add('hidden', 'opacity-0');
+            if (!document.querySelector('.modal-root.flex:not(.hidden)')) {
+                document.body.classList.remove('overflow-hidden');
+            }
+        }
+    });
+}
+
+function initUserDropdown() {
+    const button = document.getElementById('userDropdown');
+    const menu = document.getElementById('userDropdownMenu');
+    if (!button || !menu) return;
+
+    button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        menu.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('#userDropdown') && !event.target.closest('#userDropdownMenu')) {
+            menu.classList.add('hidden');
+        }
+    });
+}
+
+function initLogout() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (!logoutBtn) return;
+    logoutBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '../../../login.html';
+    });
+}
+
+function initModalDismissers() {
+    document.querySelectorAll('[data-modal-hide]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const modalId = button.getAttribute('data-modal-hide');
+            if (modalId === 'viewApplicationModal' && viewModal) {
+                viewModal.hide();
+                return;
+            }
+            const el = document.getElementById(modalId);
+            if (!el) return;
+            el.classList.add('hidden');
+            el.classList.remove('flex');
+            if (!document.querySelector('.modal-root.flex:not(.hidden)')) {
+                document.body.classList.remove('overflow-hidden');
+            }
+        });
+    });
+}
+
+function initMainTabs() {
+    const tabButtons = Array.from(document.querySelectorAll('#applicationTabs .tab-btn'));
+    const panes = Array.from(document.querySelectorAll('#applicationTabsContent .tab-panel'));
+    if (!tabButtons.length || !panes.length) return;
+
+    const setTab = (targetId) => {
+        tabButtons.forEach((btn) => {
+            const active = btn.getAttribute('data-target') === targetId;
+            btn.classList.toggle('bg-blue-600', active);
+            btn.classList.toggle('text-white', active);
+            btn.classList.toggle('border', !active);
+            btn.classList.toggle('border-slate-300', !active);
+            btn.classList.toggle('bg-white', !active);
+            btn.classList.toggle('text-slate-600', !active);
+            btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        panes.forEach((pane) => pane.classList.toggle('hidden', pane.id !== targetId));
+    };
+
+    tabButtons.forEach((btn) => {
+        btn.addEventListener('click', () => setTab(btn.getAttribute('data-target')));
+    });
+
+    setTab('pending');
+}
+
+function initViewModalTabs() {
+    const tabButtons = Array.from(document.querySelectorAll('#viewAppTabs .tab-btn'));
+    const panes = Array.from(document.querySelectorAll('#viewAppTabsContent .tab-panel'));
+    if (!tabButtons.length || !panes.length) return;
+
+    const setTab = (targetId) => {
+        tabButtons.forEach((btn) => {
+            const active = btn.getAttribute('data-target') === targetId;
+            btn.classList.toggle('bg-blue-600', active);
+            btn.classList.toggle('text-white', active);
+            btn.classList.toggle('border', !active);
+            btn.classList.toggle('border-slate-300', !active);
+            btn.classList.toggle('bg-white', !active);
+            btn.classList.toggle('text-slate-600', !active);
+            btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        panes.forEach((pane) => pane.classList.toggle('hidden', pane.id !== targetId));
+    };
+
+    tabButtons.forEach((btn) => {
+        btn.addEventListener('click', () => setTab(btn.getAttribute('data-target')));
+    });
+
+    window.setActiveViewApplicationTab = setTab;
+    setTab('viewPersonal');
+}
 
 async function loadApprovalQueue() {
     try {
@@ -156,7 +267,7 @@ function renderQueueTable(data, elementId, showActions) {
     tbody.innerHTML = '';
     
     if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center">No pending enrollments</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-sm text-slate-500">No pending enrollments</td></tr>';
         return;
     }
 
@@ -172,22 +283,22 @@ function renderQueueTable(data, elementId, showActions) {
         } else if (batchName) {
             courseOrBatch = batchName;
         }
-        const photoHtml = item.photo_file 
-            ? `<img src="${UPLOADS_URL}${encodeURIComponent(item.photo_file)}" class="rounded-circle border" width="40" height="40" style="object-fit: cover;">` 
-            : `<div class="rounded-circle bg-light text-secondary border d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;"><i class="fas fa-user"></i></div>`;
+        const photoHtml = item.photo_file
+            ? `<img src="${UPLOADS_URL}${encodeURIComponent(item.photo_file)}" class="h-10 w-10 rounded-full border border-slate-200 object-cover" alt="Photo">`
+            : `<div class="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-slate-500"><i class="fas fa-user"></i></div>`;
         const actionButtons = `
-            <button class="btn btn-sm btn-outline-primary" type="button" onclick="viewApplication(${item.enrollment_id}, ${showActions ? 'true' : 'false'})" title="View Details">
+            <button class="inline-flex items-center rounded-md border border-blue-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" type="button" onclick="viewApplication(${item.enrollment_id}, ${showActions ? 'true' : 'false'})" title="View Details">
                 <i class="fas fa-eye"></i>
             </button>
         `;
         const appliedAt = formatDateTime(item.enrollment_date);
         row.innerHTML = `
-            <td>${photoHtml}</td>
-            <td>${item.first_name} ${item.last_name}</td>
-            <td>${courseOrBatch}</td>
-            <td>${appliedAt}</td>
-            <td>
-                <div class="d-flex justify-content-center align-items-center flex-nowrap">
+            <td class="px-4 py-3 text-sm">${photoHtml}</td>
+            <td class="px-4 py-3 text-sm font-medium text-slate-800">${item.first_name} ${item.last_name}</td>
+            <td class="px-4 py-3 text-sm text-slate-700">${courseOrBatch}</td>
+            <td class="px-4 py-3 text-sm text-slate-700">${appliedAt}</td>
+            <td class="px-4 py-3 text-center">
+                <div class="flex items-center justify-center">
                     ${actionButtons}
                 </div>
             </td>
@@ -250,25 +361,32 @@ window.viewApplication = function(id, canReview = false) {
     // Docs & Photo
     const linkValidId = document.getElementById('linkValidId');
     linkValidId.href = item.valid_id_file ? UPLOADS_URL + encodeURIComponent(item.valid_id_file) : '#';
+    linkValidId.classList.toggle('pointer-events-none', !item.valid_id_file);
+    linkValidId.classList.toggle('opacity-50', !item.valid_id_file);
     
     const linkBirthCert = document.getElementById('linkBirthCert');
     linkBirthCert.href = item.birth_cert_file ? UPLOADS_URL + encodeURIComponent(item.birth_cert_file) : '#';
+    linkBirthCert.classList.toggle('pointer-events-none', !item.birth_cert_file);
+    linkBirthCert.classList.toggle('opacity-50', !item.birth_cert_file);
 
     const photo = document.getElementById('appPhoto');
     const noPhoto = document.getElementById('appNoPhoto');
     photo.src = item.photo_file ? UPLOADS_URL + encodeURIComponent(item.photo_file) : '';
     photo.onerror = function() {
-        this.style.display = 'none';
-        noPhoto.style.display = 'block';
+        this.classList.add('hidden');
+        noPhoto.classList.remove('hidden');
     };
-    photo.style.display = item.photo_file ? 'block' : 'none';
-    noPhoto.style.display = item.photo_file ? 'none' : 'block';
+    photo.classList.toggle('hidden', !item.photo_file);
+    noPhoto.classList.toggle('hidden', !!item.photo_file);
 
     const modalQualifyBtn = document.getElementById('modalQualifyBtn');
     const modalUnqualifyBtn = document.getElementById('modalUnqualifyBtn');
-    if (modalQualifyBtn) modalQualifyBtn.style.display = currentViewCanReview ? 'inline-block' : 'none';
-    if (modalUnqualifyBtn) modalUnqualifyBtn.style.display = currentViewCanReview ? 'inline-block' : 'none';
+    if (modalQualifyBtn) modalQualifyBtn.classList.toggle('hidden', !currentViewCanReview);
+    if (modalUnqualifyBtn) modalUnqualifyBtn.classList.toggle('hidden', !currentViewCanReview);
 
+    if (typeof window.setActiveViewApplicationTab === 'function') {
+        window.setActiveViewApplicationTab('viewPersonal');
+    }
     viewModal.show();
 }
 
