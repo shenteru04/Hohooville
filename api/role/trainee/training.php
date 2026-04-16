@@ -1,4 +1,5 @@
 <?php
+session_start();
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
@@ -6,6 +7,13 @@ header('Access-control-allow-headers: Content-Type, Authorization');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
+    exit();
+}
+
+// Role Integration: Verify User is Trainee (Role ID 3)
+if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 3) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Unauthorized: Trainee access required.']);
     exit();
 }
 
@@ -50,7 +58,8 @@ switch ($action) {
 }
 
 function getLessonsForTrainee($conn) {
-    $traineeId = $_GET['trainee_id'] ?? 0;
+    // Integration: Use session ID instead of GET parameter to prevent data leaking
+    $traineeId = $_SESSION['trainee_id'] ?? 0;
 
     // Find the trainee's course
     $stmt = $conn->prepare("SELECT oc.qualification_id FROM tbl_enrollment e JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id WHERE e.trainee_id = ? AND e.status = 'approved' LIMIT 1");
@@ -195,7 +204,8 @@ function getLessonItem($conn, $table, $id_column) {
 }
 
 function getProfile($conn) {
-    $traineeId = $_GET['trainee_id'] ?? 0;
+    // Integration: Ensure trainee can only view their own profile
+    $traineeId = $_SESSION['trainee_id'] ?? 0;
     if (!$traineeId) {
         echo json_encode(['success' => false, 'message' => 'Trainee ID is required.']);
         return;
@@ -245,7 +255,8 @@ function getProfile($conn) {
 
 function updateProfile($conn) {
     $data = json_decode(file_get_contents('php://input'), true);
-    $traineeId = $data['trainee_id'] ?? 0;
+    // Integration: Use session ID to prevent updating other users
+    $traineeId = $_SESSION['trainee_id'] ?? 0;
 
     if (!$traineeId) {
         echo json_encode(['success' => false, 'message' => 'Trainee ID is required.']);
@@ -303,7 +314,8 @@ function getQuizForLesson($conn) {
 
 function submitQuiz($conn) {
     $data = json_decode(file_get_contents('php://input'), true);
-    $traineeId = $data['trainee_id'] ?? 0;
+    // Integration: Enforce session-based identity
+    $traineeId = $_SESSION['trainee_id'] ?? 0;
     $lessonId = $data['lesson_id'] ?? 0;
     $answers = $data['answers'] ?? []; // Expected format: ['question_id' => 'option_id', ...]
 
@@ -425,7 +437,8 @@ function submitQuiz($conn) {
 function submitTaskSheet($conn) {
     try {
         $data = json_decode(file_get_contents('php://input'), true);
-        $traineeId = $data['trainee_id'] ?? null;
+        // Integration: Enforce session-based identity
+        $traineeId = $_SESSION['trainee_id'] ?? null;
         $lessonId = $data['lesson_id'] ?? null;
         $taskSheetId = $data['task_sheet_id'] ?? null;
         $content = $data['submitted_content'] ?? '';
@@ -504,7 +517,8 @@ function submitTaskSheet($conn) {
 
 function unsubmitTaskSheet($conn) {
     $data = json_decode(file_get_contents('php://input'), true);
-    $traineeId = $data['trainee_id'] ?? 0;
+    // Integration: Enforce session-based identity
+    $traineeId = $_SESSION['trainee_id'] ?? 0;
     $lessonId = $data['lesson_id'] ?? 0;
     $taskSheetId = $data['task_sheet_id'] ?? 0;
 
