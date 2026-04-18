@@ -85,18 +85,35 @@ function initUserDropdown() {
     });
 }
 
-function initLogout() {
+async function initLogout() {
     const logoutBtn = document.getElementById('logoutBtn');
     if (!logoutBtn) return;
 
-    logoutBtn.addEventListener('click', (event) => {
+    logoutBtn.addEventListener('click', async (event) => {
         event.preventDefault();
-        if (typeof window.logout === 'function') {
-            window.logout();
-            return;
-        }
-        localStorage.clear();
-        window.location.href = '/Hohoo-ville/frontend/login.html';
+        await ensureSwal();
+        
+        Swal.fire({
+            title: 'Logout Confirmation',
+            text: 'Are you sure you want to logout?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Logout',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                if (typeof window.logout === 'function') {
+                    window.logout();
+                    return;
+                }
+                localStorage.clear();
+                window.location.href = '/Hohoo-ville/frontend/login.html';
+            }
+        });
     });
 }
 
@@ -183,14 +200,9 @@ function statusBadge(status) {
     return '<span class="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">Inactive</span>';
 }
 
-<<<<<<< HEAD
 function formatNCLevel(ncLevelCode) {
-    // The nc_level_code from database is already in format 'NC I', 'NC II', 'NC III', 'NC IV'
     return ncLevelCode && String(ncLevelCode).trim() !== '' ? escapeHtml(ncLevelCode) : 'N/A';
 }
-
-=======
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
 function renderTable(data) {
     currentQualifications = data;
     const tbody = document.getElementById('qualificationsTableBody');
@@ -204,11 +216,7 @@ function renderTable(data) {
     tbody.innerHTML = data.map((item) => `
         <tr class="hover:bg-slate-50">
             <td class="px-3 py-3 text-sm text-slate-900">${escapeHtml(item.qualification_name || '')}</td>
-<<<<<<< HEAD
-            <td class="px-3 py-3 text-sm text-slate-700"><span class="inline-flex rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700">${formatNCLevel(item.nc_level_code)}</span></td>
-=======
-            <td class="px-3 py-3 text-sm text-slate-700"><span class="inline-flex rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700">${escapeHtml(item.nc_level_code || 'N/A')}</span></td>
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
+            <td class="px-3 py-3 text-sm text-slate-700"><span class="inline-flex rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700">${formatNCLevel(item.nc_level_code || item.nc_level_name)}</span></td>
             <td class="px-3 py-3 text-sm text-slate-700">${escapeHtml(item.ctpr_number || '-')}</td>
             <td class="px-3 py-3 text-sm text-slate-700">${item.training_cost ? `PHP ${escapeHtml(String(item.training_cost))}` : 'Free'}</td>
             <td class="px-3 py-3 text-sm text-slate-700">${escapeHtml(item.duration || 'N/A')}</td>
@@ -229,21 +237,13 @@ function renderTable(data) {
 
 async function addQualification() {
     const payload = {
-<<<<<<< HEAD
         qualification_name: document.getElementById('qualificationName')?.value?.trim(),
-=======
-        qualification_name: document.getElementById('courseName')?.value?.trim(),
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
         nc_level_id: document.getElementById('ncLevel')?.value?.trim(),
         ctpr_number: document.getElementById('ctprNumber')?.value?.trim() || '',
         training_cost: document.getElementById('trainingCost')?.value || '',
         duration: document.getElementById('duration')?.value?.trim(),
         description: document.getElementById('description')?.value?.trim() || '',
-<<<<<<< HEAD
         status: document.getElementById('qualificationStatus')?.value || 'active'
-=======
-        status: 'active'
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
     };
 
     try {
@@ -266,21 +266,13 @@ async function updateQualification(id) {
     const existing = currentQualifications.find((item) => String(item.qualification_id) === String(id));
     const payload = {
         qualification_id: id,
-<<<<<<< HEAD
         qualification_name: document.getElementById('qualificationName')?.value?.trim(),
-=======
-        qualification_name: document.getElementById('courseName')?.value?.trim(),
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
         nc_level_id: document.getElementById('ncLevel')?.value?.trim(),
         ctpr_number: document.getElementById('ctprNumber')?.value?.trim() || '',
         training_cost: document.getElementById('trainingCost')?.value || '',
         duration: document.getElementById('duration')?.value?.trim(),
         description: document.getElementById('description')?.value?.trim() || '',
-<<<<<<< HEAD
         status: document.getElementById('qualificationStatus')?.value || existing?.status || 'active'
-=======
-        status: existing?.status || 'active'
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
     };
 
     try {
@@ -398,19 +390,12 @@ function editQualification(id) {
     if (!item) return;
 
     setValue('qualificationId', item.qualification_id);
-<<<<<<< HEAD
     setValue('qualificationName', item.qualification_name || '');
-=======
-    setValue('courseName', item.qualification_name || '');
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
     setValue('ncLevel', item.nc_level_id || '');
     setValue('ctprNumber', item.ctpr_number || '');
     setValue('trainingCost', item.training_cost || '');
     setValue('duration', item.duration || '');
-<<<<<<< HEAD
     setValue('qualificationStatus', item.status || 'active');
-=======
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
     setValue('description', item.description || '');
 
     setText('submitBtn', 'Update Qualification');
@@ -460,7 +445,7 @@ function showAlert(title, text, icon) {
 }
 
 function escapeHtml(value) {
-    return String(value)
+    return String(value ?? '')
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')

@@ -92,17 +92,34 @@ function initUserDropdown() {
     });
 }
 
-function initLogout() {
+async function initLogout() {
     const logoutBtn = document.getElementById('logoutBtn');
     if (!logoutBtn) return;
-    logoutBtn.addEventListener('click', (event) => {
+    logoutBtn.addEventListener('click', async (event) => {
         event.preventDefault();
-        if (typeof window.logout === 'function') {
-            window.logout();
-            return;
-        }
-        localStorage.clear();
-        window.location.href = '/Hohoo-ville/frontend/login.html';
+        await ensureSwal();
+        
+        Swal.fire({
+            title: 'Logout Confirmation',
+            text: 'Are you sure you want to logout?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Logout',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                if (typeof window.logout === 'function') {
+                    window.logout();
+                    return;
+                }
+                localStorage.clear();
+                window.location.href = '/Hohoo-ville/frontend/login.html';
+            }
+        });
     });
 }
 

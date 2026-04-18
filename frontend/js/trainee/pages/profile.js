@@ -1,12 +1,18 @@
 const API_BASE_URL = window.location.origin + '/Hohoo-ville/api';
 const UPLOADS_URL = window.location.origin + '/hohoo-ville/uploads/trainees/';
 
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof Swal === 'undefined') {
+async function ensureSwal() {
+    if (typeof window.Swal !== 'undefined') return;
+    await new Promise((resolve) => {
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        script.onload = resolve;
+        script.onerror = resolve;
         document.head.appendChild(script);
-    }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
 
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user || user.role !== 'trainee') {
@@ -62,6 +68,12 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         saveProfileData(user.trainee_id);
     });
+
+    // Setup profile image upload
+    setupProfileImageUpload(user);
+
+    initPasswordForm(user);
+    initPasswordToggle();
 });
 
 function setupUserNav(user) {
@@ -73,9 +85,26 @@ function setupUserNav(user) {
 
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => {
-                localStorage.clear();
-                window.location.href = '../../../../login.html';
+            logoutBtn.addEventListener('click', async () => {
+                await ensureSwal();
+                
+                Swal.fire({
+                    title: 'Logout Confirmation',
+                    text: 'Are you sure you want to logout?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, Logout',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#6b7280',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        localStorage.clear();
+                        window.location.href = '../../../../login.html';
+                    }
+                });
             });
         }
     }
@@ -175,4 +204,143 @@ async function saveProfileData(traineeId) {
         saveBtn.disabled = false;
         saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Save Changes';
     }
+}
+
+function initPasswordForm(user) {
+    const form = document.getElementById('passwordForm');
+    if (!form) return;
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const submitBtn = document.getElementById('submitPasswordBtn');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+        }
+
+        const data = {
+            user_id: user.user_id,
+            current_password: document.getElementById('currentPassword')?.value || '',
+            new_password: document.getElementById('newPassword')?.value || '',
+            confirm_password: document.getElementById('confirmPassword')?.value || ''
+        };
+
+        try {
+            const response = await axios.post(`${API_BASE_URL}/role/trainee/profile.php?action=change-password`, data);
+            if (!response.data.success) {
+                throw new Error(response.data.message || 'Failed to change password');
+            }
+
+            form.reset();
+            Swal.fire('Success', 'Password changed successfully', 'success');
+        } catch (error) {
+            console.error('Error changing password:', error);
+            Swal.fire('Error', error.message || 'Failed to change password', 'error');
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-check"></i> Update Password';
+            }
+        }
+    });
+
+    const resetBtn = document.getElementById('resetPasswordBtn');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', (event) => {
+            event.preventDefault();
+            form.reset();
+        });
+    }
+}
+
+function initPasswordToggle() {
+    const toggleButtons = document.querySelectorAll('.password-toggle');
+    
+    toggleButtons.forEach(button => {
+        button.addEventListener('click', (event) => {
+            event.preventDefault();
+            
+            const targetId = button.getAttribute('data-target');
+            const input = document.getElementById(targetId);
+            const icon = button.querySelector('i');
+            
+            if (!input || !icon) return;
+            
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            icon.classList.toggle('fa-eye', isPassword);
+            icon.classList.toggle('fa-eye-slash', !isPassword);
+        });
+    });
+}
+
+function setupProfileImageUpload(user) {
+    const fileInput = document.getElementById('profileImageInput');
+    const preview = document.getElementById('profileImagePreview');
+    const uploadBtn = document.getElementById('uploadProfileImageBtn');
+    const profileImageForm = document.getElementById('profileImageForm');
+
+    if (!fileInput || !preview) return;
+
+    // Click on image to select file
+    preview.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    // Handle file selection
+    fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            preview.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+
+        // Enable upload button
+        uploadBtn.disabled = false;
+    });
+
+    // Handle form submission
+    profileImageForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const file = fileInput.files[0];
+        if (!file) {
+            await ensureSwal();
+            Swal.fire('Error', 'Please select an image file', 'error');
+            return;
+        }
+
+        uploadBtn.disabled = true;
+        uploadBtn.innerHTML = '<i class="animate-spin fas fa-spinner mr-2"></i> Uploading...';
+
+        try {
+            const response = await uploadProfileImage(
+                file,
+                'trainee',
+                user.user_id,
+                user.trainee_id
+            );
+
+            await ensureSwal();
+            Swal.fire('Success', 'Profile photo updated successfully!', 'success');
+
+            // Update preview with uploaded image URL
+            preview.src = response.url;
+            fileInput.value = '';
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<i class="fas fa-upload mr-2"></i>Upload Photo';
+
+        } catch (error) {
+            console.error('Error uploading profile image:', error);
+            await ensureSwal();
+            Swal.fire('Error', error.message || 'Failed to upload profile photo', 'error');
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = '<i class="fas fa-upload mr-2"></i>Upload Photo';
+        }
+    });
 }

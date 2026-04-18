@@ -1,9 +1,6 @@
 const API_BASE_URL = `${window.location.origin}/Hohoo-ville/api`;
-<<<<<<< HEAD
-=======
-let currentViewMode = 'classic'; // 'classic' or 'schedule'
-let allRoomsData = []; // Store all rooms data for filtering
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
+let currentViewMode = 'classic';
+let allRoomsData = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
     await ensureSwal();
@@ -11,11 +8,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     initLogout();
     initArchiveButton();
     initRoomForm();
-<<<<<<< HEAD
-=======
     initSearch();
     initViewModeButtons();
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
+    updateViewModeButtons();
     loadRooms();
 });
 
@@ -46,72 +41,36 @@ function initUserDropdown() {
         }
     });
 }
-<<<<<<< HEAD
 
-function initLogout() {
+async function initLogout() {
     const logoutBtn = document.getElementById('logoutBtn');
     if (!logoutBtn) return;
-    logoutBtn.addEventListener('click', (event) => {
+
+    logoutBtn.addEventListener('click', async (event) => {
         event.preventDefault();
-        if (typeof window.logout === 'function') {
-            window.logout();
-            return;
-        }
-        localStorage.clear();
-        window.location.href = '/Hohoo-ville/frontend/login.html';
-    });
-}
-
-function initArchiveButton() {
-    const form = document.getElementById('roomForm');
-    if (!form || document.getElementById('showArchiveModal')) return;
-
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.id = 'showArchiveModal';
-    button.className = 'inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50';
-    button.innerHTML = '<i class="fas fa-box-archive"></i> View Archived Rooms';
-    form.parentNode.insertBefore(button, form);
-
-    button.addEventListener('click', showArchivedRoomsModal);
-}
-
-function initRoomForm() {
-    const form = document.getElementById('roomForm');
-    if (!form) return;
-
-    form.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const roomName = document.getElementById('roomName')?.value?.trim();
-        const roomDescription = document.getElementById('roomDescription')?.value?.trim() || '';
-
-        if (!roomName) {
-            showAlert('Missing Field', 'Room name is required.', 'warning');
-            return;
-        }
-
-        try {
-            const response = await axios.post(`${API_BASE_URL}/admin/rooms.php?action=create`, {
-                room_name: roomName,
-                room_description: roomDescription
-            });
-
-            if (!response.data?.success) {
-                throw new Error(response.data?.message || 'Error creating room.');
+        await ensureSwal();
+        
+        Swal.fire({
+            title: 'Logout Confirmation',
+            text: 'Are you sure you want to logout?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Logout',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                if (typeof window.logout === 'function') {
+                    window.logout();
+                    return;
+                }
+                localStorage.clear();
+                window.location.href = '/Hohoo-ville/frontend/login.html';
             }
-=======
-
-function initLogout() {
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (!logoutBtn) return;
-    logoutBtn.addEventListener('click', (event) => {
-        event.preventDefault();
-        if (typeof window.logout === 'function') {
-            window.logout();
-            return;
-        }
-        localStorage.clear();
-        window.location.href = '/Hohoo-ville/frontend/login.html';
+        });
     });
 }
 
@@ -124,33 +83,27 @@ function initArchiveButton() {
     button.id = 'showArchiveModal';
     button.className = 'inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50';
     button.innerHTML = '<i class="fas fa-box-archive"></i> View Archived Rooms';
-    
-    const formParent = form.parentNode;
-    const wrapper = formParent.querySelector('.space-y-5');
-    if (wrapper) {
-        wrapper.insertBefore(button, form);
-    }
-
+    form.insertAdjacentElement('beforebegin', button);
     button.addEventListener('click', showArchivedRoomsModal);
 }
 
 function initViewModeButtons() {
     const viewModeBtn = document.getElementById('viewModeBtn');
     const classicModeBtn = document.getElementById('classicModeBtn');
-    
+
     if (viewModeBtn) {
         viewModeBtn.addEventListener('click', () => {
             currentViewMode = 'schedule';
             updateViewModeButtons();
-            loadRooms();
+            filterAndDisplayRooms(document.getElementById('searchRooms')?.value || '');
         });
     }
-    
+
     if (classicModeBtn) {
         classicModeBtn.addEventListener('click', () => {
             currentViewMode = 'classic';
             updateViewModeButtons();
-            loadRooms();
+            filterAndDisplayRooms(document.getElementById('searchRooms')?.value || '');
         });
     }
 }
@@ -158,55 +111,58 @@ function initViewModeButtons() {
 function updateViewModeButtons() {
     const viewModeBtn = document.getElementById('viewModeBtn');
     const classicModeBtn = document.getElementById('classicModeBtn');
-    
+
     if (viewModeBtn) {
-        if (currentViewMode === 'schedule') {
-            viewModeBtn.className = 'inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100';
-        } else {
-            viewModeBtn.className = 'inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50';
-        }
+        viewModeBtn.className = currentViewMode === 'schedule'
+            ? 'inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100'
+            : 'inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50';
     }
-    
+
     if (classicModeBtn) {
-        if (currentViewMode === 'classic') {
-            classicModeBtn.className = 'inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100';
-        } else {
-            classicModeBtn.className = 'inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50';
-        }
+        classicModeBtn.className = currentViewMode === 'classic'
+            ? 'inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100'
+            : 'inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50';
     }
 }
 
 function initSearch() {
     const searchInput = document.getElementById('searchRooms');
     const clearBtn = document.getElementById('clearSearchBtn');
-    
+
     if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-            const query = e.target.value;
-            filterAndDisplayRooms(query);
+        searchInput.addEventListener('input', (event) => {
+            filterAndDisplayRooms(event.target.value || '');
         });
     }
-    
+
     if (clearBtn) {
         clearBtn.addEventListener('click', () => {
-            if (searchInput) {
-                searchInput.value = '';
-                filterAndDisplayRooms('');
-            }
+            if (!searchInput) return;
+            searchInput.value = '';
+            filterAndDisplayRooms('');
         });
     }
 }
 
-function filterAndDisplayRooms(searchQuery) {
-    const filtered = allRoomsData.filter(room => {
-        const searchLower = searchQuery.toLowerCase();
-        const matchesRoom = room.room_name.toLowerCase().includes(searchLower);
-        const matchesDesc = (room.room_description || '').toLowerCase().includes(searchLower);
-        const matchesQual = (room.scheduled_classes || '').toLowerCase().includes(searchLower);
-        return matchesRoom || matchesDesc || matchesQual;
+function filterRooms(searchQuery = '') {
+    const normalizedQuery = String(searchQuery || '').trim().toLowerCase();
+    if (!normalizedQuery) return [...allRoomsData];
+
+    return allRoomsData.filter((room) => {
+        const roomName = String(room.room_name || '').toLowerCase();
+        const roomDescription = String(room.room_description || '').toLowerCase();
+        const scheduledClasses = String(room.scheduled_classes || '').toLowerCase();
+        const nextSchedule = String(room.next_schedule || '').toLowerCase();
+
+        return roomName.includes(normalizedQuery)
+            || roomDescription.includes(normalizedQuery)
+            || scheduledClasses.includes(normalizedQuery)
+            || nextSchedule.includes(normalizedQuery);
     });
-    
-    displayRooms(filtered);
+}
+
+function filterAndDisplayRooms(searchQuery = '') {
+    displayRooms(filterRooms(searchQuery));
 }
 
 function initRoomForm() {
@@ -232,7 +188,6 @@ function initRoomForm() {
             if (!response.data?.success) {
                 throw new Error(response.data?.message || 'Error creating room.');
             }
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
 
             showAlert('Room Created', 'The room was created successfully.', 'success');
             form.reset();
@@ -324,16 +279,9 @@ async function loadRooms() {
     roomList.innerHTML = '<p class="text-sm text-slate-500">Loading rooms...</p>';
 
     try {
-<<<<<<< HEAD
-        const response = await axios.get(`${API_BASE_URL}/admin/rooms.php?action=list`);
-        const rooms = Array.isArray(response.data?.data) ? response.data.data : [];
-=======
         const response = await axios.get(`${API_BASE_URL}/admin/rooms.php?action=schedules`);
         const rooms = Array.isArray(response.data?.data) ? response.data.data : [];
-        
-        // Store all rooms for filtering
         allRoomsData = rooms;
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
 
         if (!rooms.length) {
             roomList.innerHTML = `
@@ -344,56 +292,38 @@ async function loadRooms() {
             return;
         }
 
-<<<<<<< HEAD
-        roomList.innerHTML = `
-            <h3 class="mb-3 text-base font-semibold text-slate-900">Existing Rooms</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                ${rooms.map((room) => `
-                    <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <p class="font-semibold text-slate-900">${escapeHtml(room.room_name || '')}</p>
-                        <p class="mt-1 text-sm text-slate-600">${escapeHtml(room.room_description || 'No description')}</p>
-                        <div class="mt-3 flex flex-wrap gap-2">
-                            <button type="button" class="edit-room-btn inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100" data-room-id="${room.room_id}" data-room-name="${escapeHtml(room.room_name || '')}" data-room-description="${escapeHtml(room.room_description || '')}">
-                                <i class="fas fa-pen"></i> Edit
-                            </button>
-                            <button type="button" class="archive-room-btn inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100" data-room-id="${room.room_id}">
-                                <i class="fas fa-box-archive"></i> Archive
-                            </button>
-                        </div>
-                    </article>
-                `).join('')}
-            </div>
-        `;
-
-=======
-        displayRooms(rooms);
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
-        bindRoomActionButtons();
+        filterAndDisplayRooms(document.getElementById('searchRooms')?.value || '');
     } catch (error) {
         console.error('Load rooms error:', error);
         roomList.innerHTML = '<p class="text-sm text-rose-600">Error loading rooms.</p>';
     }
 }
 
-<<<<<<< HEAD
-function bindRoomActionButtons() {
-=======
 function displayRooms(rooms) {
     const roomList = document.getElementById('roomList');
     if (!roomList) return;
+
+    if (!rooms.length) {
+        roomList.innerHTML = `
+            <article class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                No rooms match the current filters.
+            </article>
+        `;
+        return;
+    }
 
     if (currentViewMode === 'schedule') {
         displayScheduleView(rooms);
     } else {
         displayClassicView(rooms);
     }
-    
+
     bindRoomActionButtons();
 }
 
 function displayClassicView(rooms) {
     const roomList = document.getElementById('roomList');
-    
+
     roomList.innerHTML = `
         <h3 class="mb-3 text-base font-semibold text-slate-900">Existing Rooms (${rooms.length})</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -429,7 +359,7 @@ function displayClassicView(rooms) {
 
 function displayScheduleView(rooms) {
     const roomList = document.getElementById('roomList');
-    
+
     roomList.innerHTML = `
         <h3 class="mb-3 text-base font-semibold text-slate-900">Room Schedule Overview (${rooms.length})</h3>
         <div class="space-y-3">
@@ -468,14 +398,14 @@ function displayScheduleView(rooms) {
 async function showRoomDetailsModal(roomId) {
     try {
         const response = await axios.get(`${API_BASE_URL}/admin/rooms.php?action=room-detail&room_id=${roomId}`);
-        
+
         if (!response.data?.success) {
             throw new Error(response.data?.message || 'Failed to load room details.');
         }
-        
-        const roomInfo = response.data.data;
-        const schedules = roomInfo.scheduled_classes || [];
-        
+
+        const roomInfo = response.data.data || {};
+        const schedules = Array.isArray(roomInfo.scheduled_classes) ? roomInfo.scheduled_classes : [];
+
         let schedulesHtml = '';
         if (schedules.length > 0) {
             schedulesHtml = `
@@ -501,9 +431,9 @@ async function showRoomDetailsModal(roomId) {
         } else {
             schedulesHtml = '<p class="mt-4 text-sm text-slate-500">No scheduled classes in this room yet.</p>';
         }
-        
+
         Swal.fire({
-            title: escapeHtml(roomInfo.room_name),
+            title: escapeHtml(roomInfo.room_name || 'Room Details'),
             html: `
                 <div class="text-left">
                     <p class="mb-3 text-sm text-slate-600">${escapeHtml(roomInfo.room_description || 'No description provided')}</p>
@@ -512,10 +442,7 @@ async function showRoomDetailsModal(roomId) {
             `,
             showCloseButton: true,
             showConfirmButton: false,
-            width: '52rem',
-            didOpen: () => {
-                // Additional functionality if needed
-            }
+            width: '52rem'
         });
     } catch (error) {
         console.error('Show room details error:', error);
@@ -524,16 +451,13 @@ async function showRoomDetailsModal(roomId) {
 }
 
 function bindRoomActionButtons() {
-    // View Room Details
     document.querySelectorAll('.view-room-btn').forEach((button) => {
         button.addEventListener('click', async () => {
             const roomId = button.getAttribute('data-room-id');
-            await showRoomDetailsModal(roomId);
+            if (roomId) await showRoomDetailsModal(roomId);
         });
     });
 
-    // Edit Room
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
     document.querySelectorAll('.edit-room-btn').forEach((button) => {
         button.addEventListener('click', async () => {
             const roomId = button.getAttribute('data-room-id');
@@ -543,13 +467,8 @@ function bindRoomActionButtons() {
             const result = await Swal.fire({
                 title: 'Edit Room',
                 html: `
-<<<<<<< HEAD
-                    <input id="swal-room-name" class="swal2-input" placeholder="Room Name" value="${roomName}">
-                    <textarea id="swal-room-description" class="swal2-textarea" placeholder="Room Description">${roomDescription}</textarea>
-=======
                     <input id="swal-room-name" class="swal2-input" placeholder="Room Name" value="${escapeHtml(roomName)}">
                     <textarea id="swal-room-description" class="swal2-textarea" placeholder="Room Description">${escapeHtml(roomDescription)}</textarea>
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
                 `,
                 showCancelButton: true,
                 confirmButtonText: 'Save',
@@ -564,7 +483,7 @@ function bindRoomActionButtons() {
                 }
             });
 
-            if (!result.isConfirmed || !result.value) return;
+            if (!result.isConfirmed || !result.value || !roomId) return;
 
             try {
                 const response = await axios.post(`${API_BASE_URL}/admin/rooms.php?action=update`, {
@@ -585,13 +504,10 @@ function bindRoomActionButtons() {
         });
     });
 
-<<<<<<< HEAD
-=======
-    // Archive Room
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
     document.querySelectorAll('.archive-room-btn').forEach((button) => {
         button.addEventListener('click', async () => {
             const roomId = button.getAttribute('data-room-id');
+            if (!roomId) return;
 
             const result = await Swal.fire({
                 title: 'Archive Room?',
@@ -622,7 +538,7 @@ function bindRoomActionButtons() {
 }
 
 function escapeHtml(value) {
-    return String(value)
+    return String(value ?? '')
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')

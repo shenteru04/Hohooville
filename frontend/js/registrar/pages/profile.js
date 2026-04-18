@@ -15,6 +15,9 @@ document.addEventListener('DOMContentLoaded', async function () {
     initSidebar();
     initUserDropdown();
     initLogout();
+    setupProfileImageUpload(user);
+    initPasswordForm();
+    initPasswordToggle();
     hydrateHeaderUser(user);
     loadProfile(currentUserId);
 
@@ -145,14 +148,31 @@ function initUserDropdown() {
     });
 }
 
-function initLogout() {
+async function initLogout() {
     const logoutBtn = document.getElementById('logoutBtn');
     if (!logoutBtn) return;
-    logoutBtn.addEventListener('click', function (event) {
+    logoutBtn.addEventListener('click', async (event) => {
         event.preventDefault();
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '../../../login.html';
+        await ensureSwal();
+        
+        Swal.fire({
+            title: 'Logout Confirmation',
+            text: 'Are you sure you want to logout?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Logout',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '../../../login.html';
+            }
+        });
     });
 }
 
@@ -232,4 +252,146 @@ async function updateProfile(userId) {
         console.error('Error updating profile:', error);
         notify('error', 'Failed to update profile.');
     }
+}
+
+function initPasswordForm() {
+    const form = document.getElementById('passwordForm');
+    if (!form) return;
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const submitBtn = document.getElementById('submitPasswordBtn');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+        }
+
+        const data = {
+            user_id: currentUserId,
+            current_password: document.getElementById('currentPassword')?.value || '',
+            new_password: document.getElementById('newPassword')?.value || '',
+            confirm_password: document.getElementById('confirmPassword')?.value || ''
+        };
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.post(
+                `${API_BASE_URL}/role/registrar/profile.php?action=change-password`,
+                data,
+                token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+            );
+            if (!response.data.success) {
+                throw new Error(response.data.message || 'Failed to change password');
+            }
+
+            form.reset();
+            notify('success', 'Password changed successfully');
+        } catch (error) {
+            console.error('Error changing password:', error);
+            notify('error', error.message || 'Failed to change password');
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-check"></i> Update Password';
+            }
+        }
+    });
+
+    const resetBtn = document.getElementById('resetPasswordBtn');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', (event) => {
+            event.preventDefault();
+            form.reset();
+        });
+    }
+}
+
+function initPasswordToggle() {
+    const toggleButtons = document.querySelectorAll('.password-toggle');
+    
+    toggleButtons.forEach(button => {
+        button.addEventListener('click', (event) => {
+            event.preventDefault();
+            
+            const targetId = button.getAttribute('data-target');
+            const input = document.getElementById(targetId);
+            const icon = button.querySelector('i');
+            
+            if (!input || !icon) return;
+            
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            icon.classList.toggle('fa-eye', isPassword);
+            icon.classList.toggle('fa-eye-slash', !isPassword);
+        });
+    });
+}
+
+function setupProfileImageUpload(user) {
+    const fileInput = document.getElementById('profileImageInput');
+    const preview = document.getElementById('profileImagePreview');
+    const uploadBtn = document.getElementById('uploadProfileImageBtn');
+    const profileImageForm = document.getElementById('profileImageForm');
+
+    if (!fileInput || !preview) return;
+
+    // Click on image to select file
+    preview.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    // Handle file selection
+    fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            preview.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+
+        // Enable upload button
+        uploadBtn.disabled = false;
+    });
+
+    // Handle form submission
+    profileImageForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const file = fileInput.files[0];
+        if (!file) {
+            if (window.Swal) {
+                Swal.fire('Error', 'Please select an image file', 'error');
+            }
+            return;
+        }
+
+        uploadBtn.disabled = true;
+        uploadBtn.innerHTML = '<i class="animate-spin fas fa-spinner mr-2"></i> Uploading...';
+
+        try {
+            const response = await uploadProfileImage(file, 'registrar', currentUserId);
+
+            if (window.Swal) {
+                Swal.fire('Success', 'Profile photo updated successfully!', 'success');
+            }
+
+            // Update preview with uploaded image URL
+            preview.src = response.url;
+            fileInput.value = '';
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<i class="fas fa-upload mr-2"></i>Upload Photo';
+
+        } catch (error) {
+            console.error('Error uploading profile image:', error);
+            if (window.Swal) {
+                Swal.fire('Error', error.message || 'Failed to upload profile photo', 'error');
+            }
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = '<i class="fas fa-upload mr-2"></i>Upload Photo';
+        }
+    });
 }

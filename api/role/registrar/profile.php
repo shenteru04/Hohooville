@@ -30,6 +30,9 @@ class RegistrarProfile {
                 case 'update':
                     $this->updateProfile();
                     break;
+                case 'change-password':
+                    $this->changePassword();
+                    break;
                 default:
                     throw new Exception('Invalid action');
             }
@@ -107,6 +110,7 @@ class RegistrarProfile {
         $lastName = trim((string)($payload['last_name'] ?? ''));
         $email = trim((string)($payload['email'] ?? ''));
         $phone = trim((string)($payload['phone_number'] ?? ''));
+        $profileImage = trim((string)($payload['profile_image'] ?? ''));
 
         if ($firstName === '' || $lastName === '' || $email === '') {
             throw new Exception('First name, last name, and email are required');
@@ -116,24 +120,95 @@ class RegistrarProfile {
             throw new Exception('Invalid email format');
         }
 
-        $query = "UPDATE tbl_users
-                  SET first_name = ?, last_name = ?, email = ?, phone_number = ?
-                  WHERE user_id = ?";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute([$firstName, $lastName, $email, $phone, $userId]);
+        $this->conn->beginTransaction();
 
-        echo json_encode(['success' => true, 'message' => 'Profile updated successfully']);
+        try {
+            // Update email in tbl_users
+            $stmtUser = $this->conn->prepare("UPDATE tbl_users SET email = ? WHERE user_id = ?");
+            $stmtUser->execute([$email, $userId]);
+
+            // Check if employee record exists
+            $stmtCheck = $this->conn->prepare("SELECT employee_id FROM tbl_employee WHERE user_id = ?");
+            $stmtCheck->execute([$userId]);
+            $employeeExists = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+
+            if ($employeeExists) {
+                // Update existing employee record
+                if ($profileImage) {
+                    $stmtEmployee = $this->conn->prepare("UPDATE tbl_employee SET first_name = ?, last_name = ?, email = ?, phone_number = ?, profile_image = ? WHERE user_id = ?");
+                    $stmtEmployee->execute([$firstName, $lastName, $email, $phone, $profileImage, $userId]);
+                } else {
+                    $stmtEmployee = $this->conn->prepare("UPDATE tbl_employee SET first_name = ?, last_name = ?, email = ?, phone_number = ? WHERE user_id = ?");
+                    $stmtEmployee->execute([$firstName, $lastName, $email, $phone, $userId]);
+                }
+            } else {
+                // Create new employee record
+                $stmtInsert = $this->conn->prepare("INSERT INTO tbl_employee (user_id, first_name, last_name, email, phone_number, profile_image) VALUES (?, ?, ?, ?, ?, ?)");
+                $stmtInsert->execute([$userId, $firstName, $lastName, $email, $phone, $profileImage ?: null]);
+            }
+
+            $this->conn->commit();
+            echo json_encode(['success' => true, 'message' => 'Profile updated successfully']);
+        } catch (Exception $e) {
+            $this->conn->rollBack();
+            throw $e;
+        }
+    }
+
+    private function changePassword() {
+        $data = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($data)) {
+            throw new Exception('Invalid request payload');
+        }
+
+        $userId = $this->resolveAuthenticatedUserId($data);
+
+        if (empty($data['current_password'])) throw new Exception('Current password required');
+        if (empty($data['new_password'])) throw new Exception('New password required');
+        if (empty($data['confirm_password'])) throw new Exception('Confirm password required');
+
+        if ($data['new_password'] !== $data['confirm_password']) {
+            throw new Exception('New passwords do not match');
+        }
+
+        if (strlen($data['new_password']) < 8) {
+            throw new Exception('New password must be at least 8 characters');
+        }
+
+        $stmtUser = $this->conn->prepare("SELECT password FROM tbl_users WHERE user_id = ?");
+        $stmtUser->execute([$userId]);
+        $user = $stmtUser->fetch(PDO::FETCH_ASSOC);
+
+        if (!$user) {
+            throw new Exception('User not found');
+        }
+
+        if (!password_verify($data['current_password'], $user['password'])) {
+            throw new Exception('Current password is incorrect');
+        }
+
+        $hashedPassword = password_hash($data['new_password'], PASSWORD_DEFAULT);
+        $stmtUpdate = $this->conn->prepare("UPDATE tbl_users SET password = ? WHERE user_id = ?");
+        $stmtUpdate->execute([$hashedPassword, $userId]);
+
+        echo json_encode(['success' => true, 'message' => 'Password changed successfully']);
     }
 
     private function fetchUserProfileRow($userId) {
         $query = "SELECT 
                     u.user_id,
-                    u.first_name,
-                    u.last_name,
+                    u.username,
                     u.email,
-                    u.phone_number,
-                    u.username
+                    u.password,
+                    r.role_id,
+                    r.role_name,
+                    COALESCE(e.first_name, '') as first_name,
+                    COALESCE(e.last_name, '') as last_name,
+                    COALESCE(e.phone_number, '') as phone_number,
+                    COALESCE(e.profile_image, '') as profile_image
                   FROM tbl_users u
+                  LEFT JOIN tbl_role r ON u.role_id = r.role_id
+                  LEFT JOIN tbl_employee e ON u.user_id = e.user_id
                   WHERE u.user_id = ?
                   LIMIT 1";
 

@@ -24,7 +24,6 @@
         }
 
         body {
-<<<<<<< HEAD
             font-family: 'Plus Jakarta Sans', sans-serif;
             color: var(--ink);
             background:
@@ -229,7 +228,311 @@
 
         @media (max-width: 1024px) {
             .hero-panel {
-                min-height: 15rem;
+                min-height: 12rem;
+            }
+
+            .brand-pill {
+                padding: 0.55rem 0.85rem;
+                gap: 0.65rem;
+            }
+
+            .brand-pill img {
+                width: 1.85rem;
+                height: 1.85rem;
+            }
+
+            .brand-pill p:first-child {
+                font-size: 0.65rem;
+            }
+
+            .brand-pill p:last-child {
+                font-size: 0.75rem;
+            }
+
+            .hero-panel h1 {
+                font-size: 1.5rem;
+                line-height: 1.08;
+            }
+
+            .hero-panel p {
+                font-size: 0.9rem;
+                line-height: 1.4;
+            }
+
+            .hero-access-card h3 {
+                font-size: 0.95rem;
+            }
+
+            .hero-access-card p:last-child {
+                font-size: 0.75rem;
+            }
+
+            .hero-corner-badge {
+                width: 3.5rem;
+                height: 3.5rem;
+            }
+
+            .hero-corner-badge i {
+                font-size: 1.5rem;
+            }
+
+            .right-panel {
+                padding: 1.25rem 1rem;
+            }
+
+            .right-panel h2 {
+                font-size: 1.5rem;
+            }
+
+            .right-panel p {
+                font-size: 0.85rem;
+                line-height: 1.4;
+            }
+
+            .field-shell {
+                padding: 0.65rem 1rem;
+            }
+
+            .field-shell input {
+                font-size: 0.9rem;
+            }
+
+            #captchaQuestion {
+                font-size: 1rem;
+                padding: 0.75rem 1rem;
+            }
+
+            .capsule {
+                font-size: 0.7rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 0.75rem;
+            }
+
+            main {
+                min-height: calc(100vh - 1.5rem);
+            }
+
+            .auth-shell {
+                border-radius: 1.25rem;
+            }
+
+            .right-panel {
+                padding: 1rem;
+                min-height: auto;
+            }
+
+            .right-panel > div {
+                max-width: 100%;
+            }
+
+            .right-panel h2 {
+                font-size: 1.25rem;
+            }
+
+            .hero-panel {
+                padding: 1rem;
+                min-height: 10rem;
+            }
+
+            .hero-feature-grid {
+                gap: 0.5rem;
+            }
+
+            .hero-access-card {
+                padding: 0.7rem;
+            }
+
+            .hero-panel h1 {
+                font-size: 1.25rem;
+                line-height: 1.1;
+                margin-top: 0.5rem;
+            }
+
+            .field-shell {
+                padding: 0.6rem 0.9rem;
+            }
+
+            #captchaQuestion {
+                min-height: 50px;
+                font-size: 0.95rem;
+            }
+
+            .mt-5 {
+                margin-top: 0.75rem;
+            }
+
+            .mt-4 {
+                margin-top: 0.6rem;
+            }
+
+            .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+                margin-top: 0.75rem;
+            }
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 0.5rem;
+            }
+
+            main {
+                min-height: calc(100vh - 1rem);
+            }
+
+            .auth-shell {
+                border-radius: 1rem;
+                grid-template-columns: 1fr;
+            }
+
+            .hero-panel {
+                order: 1;
+                min-height: 8rem;
+                padding: 0.75rem;
+                border-radius: 1rem 1rem 0 0;
+            }
+
+            .right-panel {
+                order: 2;
+                border-radius: 0 0 1rem 1rem;
+                padding: 0.9rem;
+                background: white;
+            }
+
+            .right-panel > div {
+                max-width: 100%;
+            }
+
+            .brand-pill {
+                padding: 0.5rem 0.7rem;
+                gap: 0.5rem;
+            }
+
+            .brand-pill img {
+                width: 1.75rem;
+                height: 1.75rem;
+            }
+
+            .hero-panel h1 {
+                font-size: 1.1rem;
+                line-height: 1.2;
+                margin-top: 0.4rem;
+            }
+
+            .hero-panel p:not(.text-xs) {
+                display: none;
+            }
+
+            .hero-feature-grid {
+                display: none;
+            }
+
+            .hero-corner-badge {
+                width: 3rem;
+                height: 3rem;
+            }
+
+            .hero-corner-badge i {
+                font-size: 1.25rem;
+            }
+
+            .right-panel h2 {
+                font-size: 1.15rem;
+            }
+
+            .right-panel p {
+                font-size: 0.8rem;
+            }
+
+            .capsule {
+                font-size: 0.65rem;
+                padding: 0.4rem 0.75rem;
+            }
+
+            .field-shell {
+                padding: 0.55rem 0.85rem;
+                border-radius: 1rem;
+            }
+
+            .field-shell input {
+                font-size: 0.85rem;
+            }
+
+            .field-shell i {
+                font-size: 0.75rem;
+            }
+
+            #captchaQuestion {
+                font-size: 0.9rem;
+                border-radius: 1rem;
+                min-height: 50px;
+                padding: 0.6rem;
+            }
+
+            .cta-button,
+            .secondary-button {
+                font-size: 0.85rem;
+                padding-top: 0.6rem;
+                padding-bottom: 0.6rem;
+                border-radius: 1rem;
+            }
+
+            .rounded-mobile-lg {
+                border-radius: 1rem;
+                padding: 0.9rem;
+            }
+
+            .rounded-mobile-xl {
+                border-radius: 1rem;
+                padding: 1rem;
+            }
+
+            .mt-5,
+            .mt-6 {
+                margin-top: 0.75rem;
+            }
+
+            .mt-4,
+            .mt-3,
+            .mt-2 {
+                margin-top: 0.5rem;
+            }
+
+            .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+                margin-top: 0.65rem;
+            }
+
+            .mb-3 {
+                margin-bottom: 0.6rem;
+            }
+
+            .mb-4 {
+                margin-bottom: 0.75rem;
+            }
+
+            .grid-cols-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .sm\:grid-cols-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .sm\:grid-cols-\[auto_1fr\] {
+                grid-template-columns: 1fr;
+                gap: 0.6rem;
+            }
+
+            .flex-wrap {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .gap-2 {
+                gap: 0.5rem;
             }
         }
 
@@ -410,32 +713,32 @@
     <div class="page-orb page-orb-a"></div>
     <div class="page-orb page-orb-b"></div>
 
-    <main class="mx-auto flex min-h-[calc(100vh-1.5rem)] max-w-[1180px] items-start lg:items-center">
-        <div class="auth-shell grid w-full overflow-hidden rounded-[2rem] lg:grid-cols-[1.1fr_0.9fr]">
-            <section class="hero-panel hero-grid order-2 flex flex-col justify-between p-5 text-white sm:p-6 lg:order-1 lg:min-h-[650px] lg:p-7">
+    <main class="mx-auto flex min-h-[calc(100vh-1.5rem)] w-full items-start justify-center px-2 py-2 sm:min-h-[calc(100vh-2rem)] sm:px-4 sm:py-4 lg:min-h-[calc(100vh-2.5rem)] lg:items-center lg:px-5 lg:py-4">
+        <div class="auth-shell grid w-full max-w-xs overflow-hidden rounded-2xl sm:max-w-lg md:max-w-2xl lg:max-w-[1180px] lg:grid-cols-[1.1fr_0.9fr]">
+            <section class="hero-panel hero-grid order-2 flex flex-col justify-between p-3 text-white sm:order-2 sm:p-5 md:p-6 lg:order-1 lg:min-h-[650px] lg:p-7">
                 <div class="relative z-10">
-                    <div class="brand-pill inline-flex items-center gap-3 rounded-full px-4 py-2.5">
-                        <img src="../img/logo.jpg" alt="Hohoo-Ville logo" class="h-10 w-10 rounded-full border border-white/30 object-cover">
+                    <div class="brand-pill inline-flex items-center gap-2 rounded-full px-3 py-2 sm:gap-3 sm:px-4 sm:py-2.5">
+                        <img src="../img/logo.jpg" alt="Hohoo-Ville logo" class="h-8 w-8 rounded-full border border-white/30 object-cover sm:h-10 sm:w-10">
                         <div>
-                            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-teal-100">Hohoo-Ville</p>
-                            <p class="text-sm text-white/80">Technical Training School</p>
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-teal-100 sm:text-xs">Hohoo-Ville</p>
+                            <p class="text-xs text-white/80 sm:text-sm">Technical Training School</p>
                         </div>
                     </div>
 
-                    <div class="mt-5 max-w-[31rem]">
-                        <p class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">
-                            <i class="fas fa-shield-heart text-[11px]"></i>
+                    <div class="mt-3 max-w-[31rem] sm:mt-5">
+                        <p class="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.15em] text-amber-200 sm:gap-2 sm:px-3 sm:text-xs sm:tracking-[0.18em]">
+                            <i class="fas fa-shield-heart text-[9px] sm:text-[11px]"></i>
                             Secure learning operations
                         </p>
-                        <h1 class="mt-4 text-3xl font-extrabold leading-[1.05] sm:text-4xl lg:text-[2.72rem]">
+                        <h1 class="mt-2 text-xl font-extrabold leading-[1.08] sm:mt-4 sm:text-3xl sm:leading-[1.05] md:text-4xl lg:text-[2.72rem]">
                             Sign in to the portal that keeps your school workflow moving.
                         </h1>
-                        <p class="mt-3 max-w-lg text-[15px] leading-[1.45] text-white/88">
+                        <p class="mt-2 max-w-lg text-xs leading-[1.4] text-white/88 sm:mt-3 sm:text-[15px] sm:leading-[1.45]">
                             Access qualifications, approvals, training reports, and learner records from one streamlined workspace built for your team.
                         </p>
                     </div>
 
-                    <div class="hero-feature-grid mt-4 grid gap-3 sm:grid-cols-3">
+                    <div class="hero-feature-grid mt-2 hidden gap-2 sm:mt-4 sm:grid sm:gap-3 sm:grid-cols-3">
                         <div class="hero-access-card glass-tile rounded-2xl p-4">
                             <p class="text-xs font-semibold uppercase tracking-[0.18em] text-teal-100/95">Access</p>
                             <h3 class="mt-2 text-[1.08rem] font-bold">Role-based dashboards</h3>
@@ -461,178 +764,119 @@
                 </div>
             </section>
 
-            <section class="right-panel order-1 flex items-center bg-white/80 p-4 sm:p-6 lg:order-2 lg:px-8 lg:py-7">
-                <div class="mx-auto w-full max-w-md">
-                    <div class="capsule inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">
-                        <i class="fas fa-lock"></i>
-                        Portal login
+            <section class="right-panel order-1 flex items-center bg-white/80 p-3 sm:order-1 sm:p-5 md:p-6 lg:order-2 lg:px-8 lg:py-7">
+                <div class="mx-auto w-full max-w-xs sm:max-w-md">
+                    <div class="capsule inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">
+                        <i class="fas fa-lock text-xs"></i>
+                        <span>Portal login</span>
                     </div>
 
-                    <div class="mt-4">
-                        <h2 class="text-3xl font-extrabold text-slate-900 sm:text-[2rem]">Welcome back</h2>
-                        <p class="mt-2 text-sm leading-6 text-slate-600">
+                    <div class="mt-3 sm:mt-4">
+                        <h2 class="text-xl font-extrabold text-slate-900 sm:text-2xl md:text-3xl lg:text-[2rem]">Welcome back</h2>
+                        <p class="mt-1.5 text-xs leading-5 text-slate-600 sm:mt-2 sm:text-sm sm:leading-6">
                             Sign in with your account to continue to your dashboard. We kept the process quick, secure, and mobile-friendly.
                         </p>
                     </div>
 
-                    <div class="mt-4 flex flex-wrap gap-2 text-xs font-medium text-slate-600">
-                        <span class="rounded-full bg-teal-50 px-3 py-1 text-teal-700">Protected access</span>
-                        <span class="rounded-full bg-amber-50 px-3 py-1 text-amber-700">Smart CAPTCHA</span>
-                        <span class="rounded-full bg-slate-100 px-3 py-1 text-slate-700">Fast redirect by role</span>
+                    <div class="mt-3 flex flex-wrap gap-1.5 text-[9px] font-medium text-slate-600 sm:mt-4 sm:gap-2 sm:text-xs">
+                        <span class="rounded-full bg-teal-50 px-2.5 py-1 text-teal-700">Protected access</span>
+                        <span class="rounded-full bg-amber-50 px-2.5 py-1 text-amber-700">Smart CAPTCHA</span>
+                        <span class="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">Fast redirect by role</span>
                     </div>
 
-                    <form id="loginForm" class="mt-5 space-y-4">
+                    <form id="loginForm" class="mt-3 space-y-3 sm:mt-5 sm:space-y-4">
                         <div>
-                            <label for="username" class="mb-2 block text-sm font-semibold text-slate-800">Username</label>
-                            <div class="field-shell flex items-center gap-3 rounded-2xl px-4 py-3">
-                                <i class="fas fa-user text-sm text-slate-400"></i>
-                                <input type="text" id="username" name="username" class="w-full text-sm text-slate-900 placeholder:text-slate-400" placeholder="Enter your username" required autocomplete="username">
+                            <label for="username" class="mb-1.5 block text-xs font-semibold text-slate-800 sm:mb-2 sm:text-sm">Username</label>
+                            <div class="field-shell flex items-center gap-2 rounded-lg px-3 py-2 sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
+                                <i class="fas fa-user text-xs text-slate-400 sm:text-sm"></i>
+                                <input type="text" id="username" name="username" class="w-full text-xs text-slate-900 placeholder:text-slate-400 sm:text-sm" placeholder="Enter your username" required autocomplete="username">
                             </div>
                         </div>
 
                         <div>
-                            <div class="mb-2 flex items-center justify-between gap-3">
-                                <label for="password" class="block text-sm font-semibold text-slate-800">Password</label>
-                                <a href="forgot-password.html" class="text-xs font-semibold text-teal-700 transition hover:text-teal-800">Forgot password?</a>
+                            <div class="mb-1.5 flex flex-col items-start justify-between gap-1.5 sm:mb-2 sm:flex-row sm:items-center sm:gap-3">
+                                <label for="password" class="block text-xs font-semibold text-slate-800 sm:text-sm">Password</label>
+                                <a href="forgot-password.html" class="text-[9px] font-semibold text-teal-700 transition hover:text-teal-800 sm:text-xs">Forgot password?</a>
                             </div>
-                            <div class="field-shell flex items-center gap-3 rounded-2xl px-4 py-3">
-                                <i class="fas fa-key text-sm text-slate-400"></i>
-                                <input type="password" id="password" name="password" class="w-full text-sm text-slate-900 placeholder:text-slate-400" placeholder="Enter your password" required autocomplete="current-password">
+                            <div class="field-shell flex items-center gap-2 rounded-lg px-3 py-2 sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
+                                <i class="fas fa-key text-xs text-slate-400 sm:text-sm"></i>
+                                <input type="password" id="password" name="password" class="w-full text-xs text-slate-900 placeholder:text-slate-400 sm:text-sm" placeholder="Enter your password" required autocomplete="current-password">
                                 <button type="button" id="togglePassword" class="text-slate-500 transition hover:text-slate-700" aria-label="Show password">
-                                    <i class="fas fa-eye" id="eyeIcon"></i>
+                                    <i class="fas fa-eye text-xs sm:text-sm" id="eyeIcon"></i>
                                 </button>
                             </div>
                         </div>
 
-                        <div class="rounded-[1.5rem] border border-teal-100 bg-teal-50/70 p-4">
-                            <div class="mb-3 flex items-center justify-between gap-3">
+                        <div class="rounded-lg border border-teal-100 bg-teal-50/70 p-3 sm:rounded-[1.5rem] sm:p-4">
+                            <div class="mb-2 flex flex-col items-start justify-between gap-2 sm:mb-3 sm:flex-row sm:items-center sm:gap-3">
                                 <div>
-                                    <p class="text-sm font-semibold text-slate-900">Security check</p>
-                                    <p class="mt-1 text-xs leading-5 text-slate-600">Solve the quick math prompt before signing in.</p>
+                                    <p class="text-xs font-semibold text-slate-900 sm:text-sm">Security check</p>
+                                    <p class="mt-0.5 text-[10px] leading-4 text-slate-600 sm:mt-1 sm:text-xs sm:leading-5">Solve the quick math prompt before signing in.</p>
                                 </div>
-                                <button type="button" id="refreshCaptcha" class="secondary-button inline-flex items-center gap-2 rounded-full border border-teal-200 bg-white px-3 py-2 text-xs font-semibold text-teal-700 shadow-sm hover:border-teal-300 hover:bg-teal-100/70">
-                                    <i class="fas fa-rotate-right text-[11px]"></i>
+                                <button type="button" id="refreshCaptcha" class="secondary-button inline-flex shrink-0 items-center gap-1.5 rounded-full border border-teal-200 bg-white px-2.5 py-1.5 text-[10px] font-semibold text-teal-700 shadow-sm hover:border-teal-300 hover:bg-teal-100/70 sm:gap-2 sm:px-3 sm:py-2 sm:text-xs">
+                                    <i class="fas fa-rotate-right text-[9px] sm:text-[11px]"></i>
                                     Refresh
                                 </button>
                             </div>
 
-                            <div class="grid gap-3 sm:grid-cols-[auto_1fr]">
-                                <div id="captchaQuestion" class="flex min-h-[56px] items-center justify-center rounded-2xl bg-gradient-to-br from-teal-700 to-teal-500 px-5 text-lg font-bold tracking-[0.18em] text-white">
+                            <div class="grid gap-2 sm:grid-cols-[auto_1fr] sm:gap-3">
+                                <div id="captchaQuestion" class="flex min-h-12 items-center justify-center rounded-lg bg-gradient-to-br from-teal-700 to-teal-500 px-3 text-base font-bold tracking-[0.15em] text-white sm:rounded-2xl sm:min-h-14 sm:px-5 sm:text-lg sm:tracking-[0.18em]">
                                     0 + 0
                                 </div>
-                                <div class="field-shell flex items-center gap-3 rounded-2xl px-4 py-3">
-                                    <i class="fas fa-equals text-sm text-slate-400"></i>
-                                    <input type="number" id="captchaInput" class="w-full text-sm text-slate-900 placeholder:text-slate-400" placeholder="Type the answer" required inputmode="numeric">
+                                <div class="field-shell flex items-center gap-2 rounded-lg px-3 py-2 sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
+                                    <i class="fas fa-equals text-xs text-slate-400 sm:text-sm"></i>
+                                    <input type="number" id="captchaInput" class="w-full text-xs text-slate-900 placeholder:text-slate-400 sm:text-sm" placeholder="Type the answer" required inputmode="numeric">
                                 </div>
                             </div>
                         </div>
 
-                        <div class="flex items-center justify-between gap-3">
-                            <label class="inline-flex cursor-pointer items-center gap-3 text-sm text-slate-700">
+                        <div class="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-3">
+                            <label class="inline-flex cursor-pointer items-center gap-2 text-xs text-slate-700 sm:gap-3 sm:text-sm">
                                 <input type="checkbox" id="rememberMe" class="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500">
                                 <span>Remember my username</span>
                             </label>
-                            <span class="text-xs text-slate-500">Secure device only</span>
+                            <span class="text-[10px] text-slate-500 sm:text-xs">Secure device only</span>
                         </div>
-=======
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-    </style>
-</head>
-<body class="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
-    <div class="w-full max-w-sm">
-        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
-            <div class="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-6">
-                <div class="text-center mb-4">
-                    <img src="../img/logo.jpg" alt="Logo" class="h-20 w-auto mx-auto">
-                </div>
-                <h2 class="text-2xl font-bold text-center mb-1">Welcome Back</h2>
-                <p class="text-center text-blue-100">Sign in to your account</p>
-            </div>
-            <div class="p-6">
-                <form id="loginForm">
-                    <div class="mb-4">
-                        <label for="username" class="block text-sm font-semibold text-gray-900 mb-2">Username or Email</label>
-                        <div class="flex">
-                            <span class="inline-flex items-center px-3 bg-gray-100 text-gray-600 border border-gray-300 rounded-l-lg">
-                                <i class="fas fa-user"></i>
-                            </span>
-                            <input type="text" id="username" name="username" class="flex-1 px-4 py-2 border border-gray-300 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter your username or email" required autocomplete="username">
-                        </div>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <label for="password" class="block text-sm font-semibold text-gray-900 mb-2">Password</label>
-                        <div class="flex">
-                            <span class="inline-flex items-center px-3 bg-gray-100 text-gray-600 border border-gray-300 rounded-l-lg">
-                                <i class="fas fa-lock"></i>
-                            </span>
-                            <input type="password" id="password" name="password" class="flex-1 px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter your password" required autocomplete="current-password">
-                            <button class="px-3 bg-gray-100 text-gray-600 border border-gray-300 rounded-r-lg hover:bg-gray-50 transition" type="button" id="togglePassword">
-                                <i class="fas fa-eye" id="eyeIcon"></i>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- CAPTCHA Section -->
-                    <div class="mb-4">
-                        <label class="block text-sm font-semibold text-gray-900 mb-2">Security Check</label>
-                        <div class="flex gap-2">
-                            <div class="bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 font-bold text-blue-600 flex items-center justify-center min-w-max" id="captchaQuestion" style="min-width: 80px;"></div>
-                            <input type="number" id="captchaInput" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Answer" required>
-                        </div>
-                        <p class="text-xs text-gray-500 mt-1">Please solve the math problem.</p>
-                    </div>
-                    
-                    <div class="text-center mb-4">
-                        <a href="forgot-password.html" class="text-sm text-blue-600 hover:text-blue-700 font-medium">Forgot Password?</a>
-                    </div>
 
-                    <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-blue-800 hover:shadow-lg text-white font-bold py-2.5 px-4 rounded-lg transition duration-200 transform hover:-translate-y-0.5">
-                        <i class="fas fa-sign-in-alt mr-2"></i>Login
-                    </button>
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
-
-                        <button type="submit" id="loginSubmit" class="cta-button inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-slate-900/15 hover:bg-slate-800">
+                        <button type="submit" id="loginSubmit" class="cta-button inline-flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white shadow-lg shadow-slate-900/15 hover:bg-slate-800 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm">
                             <i class="fas fa-arrow-right-to-bracket"></i>
                             <span>Sign in securely</span>
                         </button>
                     </form>
 
-<<<<<<< HEAD
-                    <form id="otpForm" class="mt-6 hidden space-y-4">
-                        <div class="rounded-[1.75rem] border border-teal-100 bg-gradient-to-br from-white to-teal-50 p-5">
-                            <div class="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-600 text-white shadow-lg shadow-teal-600/20">
-                                <i class="fas fa-shield-halved text-xl"></i>
+                    <form id="otpForm" class="mt-3 hidden space-y-3 sm:mt-6 sm:space-y-4">
+                        <div class="rounded-lg border border-teal-100 bg-gradient-to-br from-white to-teal-50 p-3 sm:rounded-[1.75rem] sm:p-5">
+                            <div class="mb-2 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-teal-600 text-white shadow-lg shadow-teal-600/20 sm:mb-4 sm:h-14 sm:w-14 sm:rounded-2xl">
+                                <i class="fas fa-shield-halved text-lg sm:text-xl"></i>
                             </div>
-                            <h3 class="text-2xl font-bold text-slate-900">Verify your sign-in</h3>
-                            <p class="mt-2 text-sm leading-7 text-slate-600">
+                            <h3 class="text-lg font-bold text-slate-900 sm:text-2xl">Verify your sign-in</h3>
+                            <p class="mt-1 text-xs leading-5 text-slate-600 sm:mt-2 sm:text-sm sm:leading-7">
                                 Enter the 6-digit OTP sent to your email. This extra step protects administrator and registrar access.
                             </p>
                         </div>
 
                         <div>
-                            <label for="otpInput" class="mb-2 block text-sm font-semibold text-slate-800">One-time password</label>
-                            <div class="field-shell flex items-center gap-3 rounded-2xl px-4 py-3">
-                                <i class="fas fa-mobile-screen-button text-sm text-slate-400"></i>
-                                <input type="text" id="otpInput" class="w-full text-center text-2xl font-bold tracking-[0.55em] text-slate-900 placeholder:text-slate-300" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code" pattern="\d{6}" required>
+                            <label for="otpInput" class="mb-1.5 block text-xs font-semibold text-slate-800 sm:mb-2 sm:text-sm">One-time password</label>
+                            <div class="field-shell flex items-center gap-2 rounded-lg px-3 py-2 sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
+                                <i class="fas fa-mobile-screen-button text-xs text-slate-400 sm:text-sm"></i>
+                                <input type="text" id="otpInput" class="w-full text-center text-xl font-bold tracking-[0.4em] text-slate-900 placeholder:text-slate-300 sm:text-2xl sm:tracking-[0.55em]" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code" pattern="\d{6}" required>
                             </div>
                         </div>
 
-                        <button type="submit" id="otpSubmit" class="cta-button inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-teal-600 px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-teal-600/20 hover:bg-teal-700">
+                        <button type="submit" id="otpSubmit" class="cta-button inline-flex w-full items-center justify-center gap-2 rounded-lg bg-teal-600 px-3 py-2 text-xs font-bold text-white shadow-lg shadow-teal-600/20 hover:bg-teal-700 sm:rounded-2xl sm:px-4 sm:py-3.5 sm:text-sm">
                             <i class="fas fa-check-circle"></i>
                             <span>Verify OTP</span>
                         </button>
 
-                        <button type="button" id="backToLogin" class="secondary-button inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50">
+                        <button type="button" id="backToLogin" class="secondary-button inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50 sm:rounded-2xl sm:px-4 sm:py-3.5 sm:text-sm">
                             <i class="fas fa-arrow-left"></i>
                             <span>Back to login</span>
                         </button>
                     </form>
 
-                    <div id="message" class="message-banner mt-5 hidden rounded-2xl border px-4 py-3 text-sm" role="alert" aria-live="polite"></div>
+                    <div id="message" class="message-banner mt-3 hidden rounded-lg border px-3 py-2 text-xs sm:mt-5 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm" role="alert" aria-live="polite"></div>
 
-                    <div class="mt-6 border-t border-slate-200/80 pt-4 text-center text-xs leading-5 text-slate-500">
+                    <div class="mt-3 border-t border-slate-200/80 pt-2 text-center text-[10px] leading-4 text-slate-500 sm:mt-6 sm:pt-4 sm:text-xs sm:leading-5">
                         By signing in, you confirm that you are authorized to access Hohoo-Ville school records and services.
                     </div>
                 </div>
@@ -640,26 +884,6 @@
         </div>
     </main>
 
-=======
-                <!-- OTP Form (Hidden by default) -->
-                <form id="otpForm" style="display: none;">
-                    <div class="mb-4 text-center">
-                        <i class="fas fa-shield-alt text-4xl text-blue-600 mb-3 inline-block"></i>
-                        <h5 class="text-lg font-bold text-gray-900 mt-2">Two-Factor Authentication</h5>
-                        <p class="text-gray-500 text-xs mt-1">An OTP has been sent to your email. Please enter it below.</p>
-                    </div>
-                    <div class="mb-4">
-                        <input type="text" id="otpInput" class="w-full px-4 py-3 border border-gray-300 rounded-lg text-center text-2xl font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent tracking-widest" placeholder="000000" maxlength="6" pattern="\d*">
-                    </div>
-                    <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-blue-800 hover:shadow-lg text-white font-bold py-2.5 px-4 rounded-lg transition duration-200 transform hover:-translate-y-0.5">Verify OTP</button>
-                    <button type="button" class="w-full text-blue-600 hover:text-blue-700 font-medium py-2 px-4 mt-2 rounded-lg hover:bg-blue-50 transition" id="backToLogin">Back to Login</button>
-                </form>
-
-                <div id="message" class="hidden px-4 py-3 rounded-lg bg-red-100 text-red-700 border border-red-300 text-sm"></div>
-            </div>
-        </div>
-    </div>
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
     <script src="login.js"></script>
 </body>
 </html>

@@ -18,8 +18,31 @@ document.addEventListener('DOMContentLoaded', function () {
     initSidebar();
     initUserDropdown();
     initLogout();
+    loadUserProfileImage();
     loadDashboardData();
 });
+
+async function loadUserProfileImage() {
+    try {
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user || !user.user_id) return;
+
+        const response = await axios.get(`${API_BASE_URL}/role/registrar/profile.php?action=get&user_id=${user.user_id}`);
+        if (response.data.success && response.data.data) {
+            const profileData = response.data.data;
+            const profileImg = document.getElementById('userProfileImage');
+
+            // Update profile image
+            if (profileImg && profileData.profile_image) {
+                profileImg.src = `/Hohoo-ville/uploads/profile_images/${encodeURIComponent(profileData.profile_image)}`;
+            } else if (profileImg && profileData.first_name) {
+                profileImg.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(profileData.first_name)}&background=random`;
+            }
+        }
+    } catch (error) {
+        console.log('Profile image load skipped (not critical)');
+    }
+}
 
 function initSidebar() {
     const sidebar = document.getElementById('sidebar');
@@ -74,20 +97,49 @@ function initUserDropdown() {
     });
 
     document.addEventListener('click', (event) => {
-        if (!event.target.closest('#userDropdownMenu') && !event.target.closest('#userDropdown')) {
+        if (!event.target.closest('#userDropdown') && !event.target.closest('#userDropdownMenu')) {
             menu.classList.add('hidden');
         }
+    });
+}
+
+async function ensureSwal() {
+    if (typeof window.Swal !== 'undefined') return;
+    await new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        script.onload = resolve;
+        script.onerror = resolve;
+        document.head.appendChild(script);
     });
 }
 
 function initLogout() {
     const logoutBtn = document.getElementById('logoutBtn');
     if (!logoutBtn) return;
-    logoutBtn.addEventListener('click', function (event) {
+    logoutBtn.addEventListener('click', async function (event) {
         event.preventDefault();
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '../../login.html';
+        event.stopPropagation();
+        await ensureSwal();
+        
+        Swal.fire({
+            title: 'Logout Confirmation',
+            text: 'Are you sure you want to logout?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Logout',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '../../login.html';
+            }
+        });
     });
 }
 

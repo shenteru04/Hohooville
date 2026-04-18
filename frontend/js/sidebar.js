@@ -109,7 +109,13 @@ class SidebarManager {
 
     normalizeLinks() {
         const inPages = window.location.pathname.includes('/pages/');
+        const dashboardFile = this.role === 'registrar' ? 'registrar_dashboard.html' : 'admin_dashboard.html';
+        const homeLinks = this.sidebarContainer.querySelectorAll('[data-sidebar-home]');
         const navLinks = this.sidebarContainer.querySelectorAll('.nav-link[data-page]');
+
+        homeLinks.forEach((link) => {
+            link.setAttribute('href', inPages ? `../${dashboardFile}` : `./${dashboardFile}`);
+        });
 
         navLinks.forEach((link) => {
             const page = link.getAttribute('data-page');
@@ -117,7 +123,6 @@ class SidebarManager {
 
             let href = '';
             if (page === 'dashboard') {
-                const dashboardFile = this.role === 'registrar' ? 'registrar_dashboard.html' : 'admin_dashboard.html';
                 href = inPages ? `../${dashboardFile}` : `./${dashboardFile}`;
             } else {
                 href = inPages ? `${page}.html` : `pages/${page}.html`;
@@ -376,14 +381,40 @@ class SidebarManager {
     }
 }
 
-function logout() {
-    if (window.confirm('Are you sure you want to logout?')) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        sessionStorage.clear();
-        const inPages = window.location.pathname.includes('/pages/');
-        window.location.href = inPages ? '../../../login.html' : '../../login.html';
-    }
+async function ensureSwal() {
+    if (typeof window.Swal !== 'undefined') return;
+    await new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        script.onload = resolve;
+        script.onerror = resolve;
+        document.head.appendChild(script);
+    });
+}
+
+async function logout() {
+    await ensureSwal();
+    
+    Swal.fire({
+        title: 'Logout Confirmation',
+        text: 'Are you sure you want to logout?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Logout',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        allowOutsideClick: false,
+        allowEscapeKey: false
+    }).then((result) => {
+        if (result.isConfirmed) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            sessionStorage.clear();
+            const inPages = window.location.pathname.includes('/pages/');
+            window.location.href = inPages ? '../../../login.html' : '../../login.html';
+        }
+    });
 }
 
 if (document.readyState === 'loading') {

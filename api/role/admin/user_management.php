@@ -1,5 +1,4 @@
 <?php
-session_start();
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 header('Access-Control-Allow-Methods: POST, GET, PUT, DELETE, OPTIONS');
@@ -10,43 +9,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// Role Integration: Verify User is Admin (Role ID 1)
-if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 1) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'message' => 'Unauthorized: Admin access required.']);
-    exit();
-}
-
 require_once '../../database/db.php';
-
 $database = new Database();
 $conn = $database->getConnection();
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
-switch ($action) {
-    case 'list':
-        getUsers($conn);
-        break;
-    case 'get':
-        getUser($conn);
-        break;
-    case 'add':
-        addUser($conn);
-        break;
-    case 'update':
-        updateUser($conn);
-        break;
-    case 'archive':
-        archiveUser($conn);
-        break;
-    case 'reactivate':
-        reactivateUser($conn);
-        break;
-    default:
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Invalid action']);
-        break;
+try {
+    switch ($action) {
+        case 'list':
+            getUsers($conn);
+            break;
+        case 'get':
+            getUser($conn);
+            break;
+        case 'add':
+            addUser($conn);
+            break;
+        case 'update':
+            updateUser($conn);
+            break;
+        case 'archive':
+            archiveUser($conn);
+            break;
+        case 'reactivate':
+            reactivateUser($conn);
+            break;
+        default:
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid action']);
+            break;
+    }
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
 
 function getUsers($conn) {

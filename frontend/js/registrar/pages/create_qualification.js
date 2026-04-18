@@ -20,12 +20,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 ctpr_number: document.getElementById('ctprNumber').value,
                 duration: document.getElementById('duration').value,
                 training_cost: document.getElementById('trainingCost').value,
-<<<<<<< HEAD
                 description: document.getElementById('description').value,
                 status: document.getElementById('qualificationStatus')?.value || 'active'
-=======
-                description: document.getElementById('description').value
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
             };
 
             try {
@@ -122,14 +118,31 @@ function initUserDropdown() {
     });
 }
 
-function initLogout() {
+async function initLogout() {
     const logoutBtn = document.getElementById('logoutBtn');
     if (!logoutBtn) return;
-    logoutBtn.addEventListener('click', (event) => {
+    logoutBtn.addEventListener('click', async (event) => {
         event.preventDefault();
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '../../../login.html';
+        await ensureSwal();
+        
+        Swal.fire({
+            title: 'Logout Confirmation',
+            text: 'Are you sure you want to logout?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Logout',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '../../../login.html';
+            }
+        });
     });
 }
 

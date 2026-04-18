@@ -5,6 +5,17 @@ const apiClient = axios.create({
     headers: { 'Content-Type': 'application/json' }
 });
 
+async function ensureSwal() {
+    if (typeof window.Swal !== 'undefined') return;
+    await new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        script.onload = resolve;
+        script.onerror = resolve;
+        document.head.appendChild(script);
+    });
+}
+
 document.addEventListener('DOMContentLoaded', async function () {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
@@ -14,7 +25,32 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     initSidebar();
     initUserMenu();
-    initLogout();
+    loadUserProfileImage();
+
+    document.getElementById('logoutBtn').addEventListener('click', async function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        await ensureSwal();
+        
+        Swal.fire({
+            title: 'Logout Confirmation',
+            text: 'Are you sure you want to logout?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Logout',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/Hohoo-ville/frontend/login.html';
+            }
+        });
+    });
 
     try {
         const response = await apiClient.get(`/role/trainer/profile.php?action=get-trainer-id&user_id=${user.user_id}`);
@@ -31,6 +67,28 @@ document.addEventListener('DOMContentLoaded', async function () {
         console.error('Error fetching trainer ID:', error);
     }
 });
+
+async function loadUserProfileImage() {
+    try {
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user || !user.user_id) return;
+
+        const response = await axios.get(`${API_BASE_URL}/role/trainer/profile.php?action=get&user_id=${user.user_id}`);
+        if (response.data.success && response.data.data) {
+            const profileData = response.data.data;
+            const profileImg = document.getElementById('userProfileImage');
+
+            // Update profile image
+            if (profileImg && profileData.profile_image) {
+                profileImg.src = `/Hohoo-ville/uploads/profile_images/${encodeURIComponent(profileData.profile_image)}`;
+            } else if (profileImg && profileData.first_name) {
+                profileImg.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(profileData.first_name)}&background=random`;
+            }
+        }
+    } catch (error) {
+        console.log('Profile image load skipped (not critical)');
+    }
+}
 
 function initSidebar() {
     const sidebar = document.getElementById('sidebar');
@@ -91,21 +149,9 @@ function initUserMenu() {
     });
 
     document.addEventListener('click', function (event) {
-        if (!event.target.closest('#userMenuDropdown')) {
+        if (!event.target.closest('#userMenuButton') && !event.target.closest('#userMenuDropdown')) {
             userMenuDropdown.classList.add('hidden');
         }
-    });
-}
-
-function initLogout() {
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (!logoutBtn) return;
-
-    logoutBtn.addEventListener('click', function (event) {
-        event.preventDefault();
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/Hohoo-ville/frontend/login.html';
     });
 }
 

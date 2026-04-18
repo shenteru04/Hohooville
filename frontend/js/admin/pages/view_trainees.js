@@ -31,36 +31,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     initUserDropdown();
     initLogout();
     initModals();
+    initFilterStatusHandlers();
     loadTrainees();
 
     const form = document.getElementById('createAccountForm');
     if (form) form.addEventListener('submit', handleCreateAccount);
-<<<<<<< HEAD
-=======
-
-    // Setup filter event listeners for status updates
-    const searchInput = document.getElementById('searchInput');
-    const batchFilter = document.getElementById('batchFilter');
-    const qualificationFilter = document.getElementById('qualificationFilter');
-    const statusFilter = document.getElementById('statusFilter');
-    const clearBtn = document.getElementById('clearFiltersBtn');
-
-    if (searchInput) {
-        searchInput.addEventListener('input', updateFilterStatus);
-    }
-    if (batchFilter) {
-        batchFilter.addEventListener('change', updateFilterStatus);
-    }
-    if (qualificationFilter) {
-        qualificationFilter.addEventListener('change', updateFilterStatus);
-    }
-    if (statusFilter) {
-        statusFilter.addEventListener('change', updateFilterStatus);
-    }
-    if (clearBtn) {
-        clearBtn.addEventListener('click', clearAllFilters);
-    }
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
 });
 
 async function ensureSwal() {
@@ -91,17 +66,34 @@ function initUserDropdown() {
     });
 }
 
-function initLogout() {
+async function initLogout() {
     const logoutBtn = document.getElementById('logoutBtn');
     if (!logoutBtn) return;
-    logoutBtn.addEventListener('click', (event) => {
+    logoutBtn.addEventListener('click', async (event) => {
         event.preventDefault();
-        if (typeof window.logout === 'function') {
-            window.logout();
-            return;
-        }
-        localStorage.clear();
-        window.location.href = '/Hohoo-ville/frontend/login.html';
+        await ensureSwal();
+        
+        Swal.fire({
+            title: 'Logout Confirmation',
+            text: 'Are you sure you want to logout?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Logout',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                if (typeof window.logout === 'function') {
+                    window.logout();
+                    return;
+                }
+                localStorage.clear();
+                window.location.href = '/Hohoo-ville/frontend/login.html';
+            }
+        });
     });
 }
 
@@ -119,6 +111,18 @@ function initModals() {
     });
 }
 
+function initFilterStatusHandlers() {
+    ['searchInput', 'batchFilter', 'qualificationFilter', 'statusFilter'].forEach((id) => {
+        const element = document.getElementById(id);
+        if (!element) return;
+        const eventName = element.tagName === 'SELECT' ? 'change' : 'input';
+        element.addEventListener(eventName, updateFilterStatus);
+    });
+
+    const searchBtn = document.getElementById('searchBtn');
+    if (searchBtn) searchBtn.addEventListener('click', updateFilterStatus);
+}
+
 async function loadTrainees() {
     try {
         const response = await axios.get(`${API_BASE_URL}/role/admin/trainees.php?action=list`);
@@ -128,10 +132,7 @@ async function loadTrainees() {
         }
         traineesData = response.data.data || [];
         populateBatchFilter(traineesData);
-<<<<<<< HEAD
-=======
         populateQualificationFilter(traineesData);
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
         renderTraineesTable(traineesData);
     } catch (error) {
         console.error('Error loading trainees:', error);
@@ -144,11 +145,7 @@ function renderTraineesTable(data) {
     if (!tbody) return;
 
     if (!data || data.length === 0) {
-<<<<<<< HEAD
-        tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-6 text-center text-sm text-slate-500">No trainees found</td></tr>';
-=======
         tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-6 text-center text-sm text-slate-500">No trainees found</td></tr>';
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
         return;
     }
 
@@ -165,11 +162,8 @@ function renderTraineesTable(data) {
             ? trainee.formatted_enrollment_date 
             : (trainee.enrollment_date || 'N/A');
 
-<<<<<<< HEAD
-=======
         const qualification = trainee.course_name || '<span class="text-slate-400">Not Assigned</span>';
 
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
         return `
             <tr class="hover:bg-slate-50">
                 <td class="px-3 py-3 text-sm text-slate-700">${escapeHtml(trainee.trainee_school_id || 'N/A')}</td>
@@ -179,10 +173,6 @@ function renderTraineesTable(data) {
                 <td class="px-3 py-3 text-sm text-slate-700" data-filter-value="${escapeHtml(String(trainee.batch_id || ''))}">
                     ${trainee.batch_name ? escapeHtml(trainee.batch_name) : '<span class="text-slate-400">Not Enrolled</span>'}
                 </td>
-<<<<<<< HEAD
-                <td class="px-3 py-3 text-sm text-slate-600">${enrolledDate}</td>
-                <td class="px-3 py-3 text-sm">${statusBadge}</td>
-=======
                 <td class="px-3 py-3 text-sm text-slate-700" data-filter-value="${escapeHtml(String(trainee.course_name || ''))}">
                     ${qualification}
                 </td>
@@ -190,7 +180,6 @@ function renderTraineesTable(data) {
                 <td class="px-3 py-3 text-sm" data-filter-value="${escapeHtml(String(trainee.status || ''))}">
                     ${statusBadge}
                 </td>
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
                 <td class="px-3 py-3 text-sm">
                     <div class="flex flex-wrap items-center gap-2">
                         ${accountCell}
@@ -200,11 +189,8 @@ function renderTraineesTable(data) {
             </tr>
         `;
     }).join('');
-<<<<<<< HEAD
-=======
     
     updateFilterStatus();
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
 }
 
 function populateBatchFilter(data) {
@@ -237,15 +223,6 @@ function populateBatchFilter(data) {
     }
 }
 
-<<<<<<< HEAD
-function openAccountModal(id) {
-    setValue('accountTraineeId', id);
-    const form = document.getElementById('createAccountForm');
-    if (form) form.reset();
-    if (accountModal) accountModal.show();
-}
-
-=======
 function populateQualificationFilter(data) {
     const select = document.getElementById('qualificationFilter');
     if (!select) return;
@@ -283,7 +260,6 @@ function openAccountModal(id) {
     if (accountModal) accountModal.show();
 }
 
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
 async function handleCreateAccount(event) {
     event.preventDefault();
     const payload = {
@@ -411,7 +387,7 @@ function setValue(id, value) {
 }
 
 function escapeHtml(value) {
-    return String(value || '')
+    return String(value ?? '')
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
@@ -419,11 +395,6 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
-<<<<<<< HEAD
-window.openAccountModal = openAccountModal;
-window.viewProfile = viewProfile;
-window.deleteTrainee = deleteTrainee;
-=======
 function updateFilterStatus() {
     const statusEl = document.getElementById('filterStatus');
     if (!statusEl) return;
@@ -478,4 +449,3 @@ window.openAccountModal = openAccountModal;
 window.viewProfile = viewProfile;
 window.deleteTrainee = deleteTrainee;
 window.clearAllFilters = clearAllFilters;
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6

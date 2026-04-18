@@ -104,7 +104,6 @@
             </header>
 
             <main class="flex-1 overflow-y-auto bg-gradient-to-b from-blue-50/60 via-white to-slate-50 p-4 sm:p-6 lg:p-8">
-<<<<<<< HEAD
                 <div class="mx-auto w-full max-w-7xl space-y-6">
                     <section>
                         <h2 class="text-2xl font-semibold text-slate-900">Manage Schedules</h2>
@@ -187,108 +186,6 @@
                             </div>
                         </div>
                     </div>
-=======
-                <div class="mx-auto w-full space-y-6">
-                    <section>
-                        <div class="flex items-center justify-between">
-                            <h2 class="text-2xl font-semibold text-slate-900">Detailed Schedule Management</h2>
-                            <div class="flex gap-2">
-                                <button id="viewTableBtn" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-                                    <i class="fas fa-table"></i> Table View
-                                </button>
-                                <button id="viewScheduleBtn" class="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100">
-                                    <i class="fas fa-th"></i> Timetable View
-                                </button>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- Timetable Controls -->
-                    <section id="timetableSection" class="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm">
-                        <div class="border-b border-blue-100 bg-blue-50/50 px-6 py-4">
-                            <div class="mb-4 flex items-center justify-between">
-                                <h3 class="text-base font-semibold text-slate-900">Weekly Timetable</h3>
-                                <div id="roomFilterDisplay" class="text-sm font-medium text-blue-600 hidden">
-                                    <i class="fas fa-door-open mr-2"></i><span id="roomFilterName"></span>
-                                </div>
-                            </div>
-                            <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                                <div class="flex flex-col gap-3 sm:flex-row">
-                                    <div>
-                                        <label for="scheduleWeekSelect" class="mb-1 block text-sm font-medium text-slate-700">Week Starting:</label>
-                                        <input type="date" id="scheduleWeekSelect" class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-                                    </div>
-                                    <div>
-                                        <label for="filterRoom" class="mb-1 block text-sm font-medium text-slate-700">Filter by Room:</label>
-                                        <select id="filterRoom" class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-                                            <option value="">All Rooms</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label for="filterQual" class="mb-1 block text-sm font-medium text-slate-700">Filter by Qualification:</label>
-                                        <select id="filterQual" class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-                                            <option value="">All Qualifications</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="flex gap-2">
-                                    <button id="reloadScheduleBtn" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-                                        <i class="fas fa-sync"></i> Reload
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="p-4 sm:p-6">
-                            <div id="scheduleGrid" class="overflow-x-auto">
-                                <table class="min-w-full border-collapse border border-slate-300 bg-white text-sm" id="timetableTable">
-                                    <thead>
-                                        <tr class="bg-gradient-to-r from-blue-50 to-blue-50">
-                                            <th class="border border-slate-300 bg-blue-100 px-4 py-2 text-center font-semibold text-slate-800" style="width: 100px;">Time</th>
-                                            <th class="border border-slate-300 bg-blue-50 px-4 py-2 text-center font-semibold text-slate-800">Monday</th>
-                                            <th class="border border-slate-300 bg-blue-50 px-4 py-2 text-center font-semibold text-slate-800">Tuesday</th>
-                                            <th class="border border-slate-300 bg-blue-50 px-4 py-2 text-center font-semibold text-slate-800">Wednesday</th>
-                                            <th class="border border-slate-300 bg-blue-50 px-4 py-2 text-center font-semibold text-slate-800">Thursday</th>
-                                            <th class="border border-slate-300 bg-blue-50 px-4 py-2 text-center font-semibold text-slate-800">Friday</th>
-                                            <th class="border border-slate-300 bg-blue-50 px-4 py-2 text-center font-semibold text-slate-800">Saturday</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="scheduleBody">
-                                        <tr class="h-6">
-                                            <td colspan="7" class="text-center text-slate-500">Loading schedule...</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 pt-4 border-t border-slate-200">
-                                <div id="legendContainer"></div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- Table View (Hidden by default) -->
-                    <section id="tableSection" class="hidden overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm">
-                        <div class="border-b border-blue-100 bg-blue-50/50 px-6 py-4">
-                            <h3 class="text-base font-semibold text-slate-900">Open Batches - Table View</h3>
-                        </div>
-                        <div class="p-4 sm:p-6">
-                            <div class="overflow-x-auto">
-                                <table class="min-w-full divide-y divide-slate-200" id="schedulesTable" data-table-manager="true" data-filters="Qualification:1|Trainer:2" data-filter-auto-options="true">
-                                    <thead class="bg-slate-50">
-                                        <tr>
-                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Batch Name</th>
-                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Qualification</th>
-                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Trainer</th>
-                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Schedule</th>
-                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Room</th>
-                                            <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-600">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="schedulesTableBody" class="divide-y divide-slate-100 bg-white"></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </section>
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
                 </div>
             </main>
         </div>
@@ -296,23 +193,14 @@
 
     <div class="modal-root fixed inset-0 z-50 hidden items-center justify-center p-4" id="assignScheduleModal" tabindex="-1" aria-hidden="true">
         <div class="absolute inset-0 bg-slate-900/50" data-modal-hide="assignScheduleModal"></div>
-<<<<<<< HEAD
         <div class="relative z-10 w-full max-w-xl max-h-screen overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-2xl flex flex-col">
             <div class="flex items-center justify-between border-b border-blue-100 px-5 py-4 flex-shrink-0">
-=======
-        <div class="relative z-10 w-full max-w-xl overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-2xl">
-            <div class="flex items-center justify-between border-b border-blue-100 px-5 py-4">
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
                 <h5 class="text-lg font-semibold text-slate-900" id="assignModalTitle">Assign Schedule</h5>
                 <button type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800" data-modal-hide="assignScheduleModal" aria-label="Close modal">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-<<<<<<< HEAD
             <div class="p-5 sm:p-6 overflow-y-auto flex-1">
-=======
-            <div class="p-5 sm:p-6 max-h-[70vh] overflow-y-auto">
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
                 <form id="assignScheduleForm" class="space-y-4">
                     <input type="hidden" id="assignBatchId">
                     <div>
@@ -325,7 +213,6 @@
                             <option value="">Unassign</option>
                         </select>
                     </div>
-<<<<<<< HEAD
                     <!-- Schedule Type Selection -->
                     <div>
                         <label class="mb-2 block text-sm font-medium text-slate-700">Schedule Type</label>
@@ -402,77 +289,6 @@
                         <div>
                             <label for="customStartDate" class="mb-1 block text-sm font-medium text-slate-700">Start Date</label>
                             <input type="date" id="customStartDate" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-=======
-                    <div>
-                        <label class="mb-2 block text-sm font-medium text-slate-700">Training Schedule</label>
-                        <div class="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                            <!-- Date Range -->
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label for="scheduleStartDate" class="mb-1 block text-xs font-semibold text-slate-600">Start Date</label>
-                                    <input type="date" id="scheduleStartDate" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-                                </div>
-                                <div>
-                                    <label for="scheduleEndDate" class="mb-1 block text-xs font-semibold text-slate-600">End Date</label>
-                                    <input type="date" id="scheduleEndDate" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-                                </div>
-                            </div>
-
-                            <!-- Days of Week -->
-                            <div>
-                                <label class="mb-2 block text-xs font-semibold text-slate-600">Days of Week</label>
-                                <div class="grid grid-cols-4 gap-2 sm:grid-cols-7">
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" class="scheduleDayCheckbox" value="Mon" id="dayMon" class="rounded border-slate-300">
-                                        <span class="text-xs font-medium text-slate-700">Mon</span>
-                                    </label>
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" class="scheduleDayCheckbox" value="Tue" id="dayTue" class="rounded border-slate-300">
-                                        <span class="text-xs font-medium text-slate-700">Tue</span>
-                                    </label>
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" class="scheduleDayCheckbox" value="Wed" id="dayWed" class="rounded border-slate-300">
-                                        <span class="text-xs font-medium text-slate-700">Wed</span>
-                                    </label>
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" class="scheduleDayCheckbox" value="Thu" id="dayThu" class="rounded border-slate-300">
-                                        <span class="text-xs font-medium text-slate-700">Thu</span>
-                                    </label>
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" class="scheduleDayCheckbox" value="Fri" id="dayFri" class="rounded border-slate-300">
-                                        <span class="text-xs font-medium text-slate-700">Fri</span>
-                                    </label>
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" class="scheduleDayCheckbox" value="Sat" id="daySat" class="rounded border-slate-300">
-                                        <span class="text-xs font-medium text-slate-700">Sat</span>
-                                    </label>
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" class="scheduleDayCheckbox" value="Sun" id="daySun" class="rounded border-slate-300">
-                                        <span class="text-xs font-medium text-slate-700">Sun</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <!-- Time Range -->
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label for="scheduleStartTime" class="mb-1 block text-xs font-semibold text-slate-600">Start Time</label>
-                                    <input type="time" id="scheduleStartTime" value="08:00" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-                                </div>
-                                <div>
-                                    <label for="scheduleEndTime" class="mb-1 block text-xs font-semibold text-slate-600">End Time</label>
-                                    <input type="time" id="scheduleEndTime" value="17:00" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-                                </div>
-                            </div>
-
-                            <!-- Schedule Preview -->
-                            <div class="border-t border-slate-200 pt-3">
-                                <p class="mb-1 text-xs font-semibold text-slate-600">Schedule Summary:</p>
-                                <div id="schedulePreview" class="rounded-lg bg-white p-2 text-sm font-medium text-slate-800">
-                                    <span class="text-slate-500">Select dates, days, and times</span>
-                                </div>
-                            </div>
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
                         </div>
                     </div>
                     <div>

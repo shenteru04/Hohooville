@@ -1,6 +1,20 @@
 const API_BASE_URL = window.location.origin + '/Hohoo-ville/api';
 const UPLOADS_URL = window.location.origin + '/Hohoo-ville/uploads/';
+const LOGIN_URL = '/Hohoo-ville/frontend/login.html';
+
+async function ensureSwal() {
+    if (typeof window.Swal !== 'undefined') return;
+    await new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        script.onload = resolve;
+        script.onerror = resolve;
+        document.head.appendChild(script);
+    });
+}
+
 let lessonItemsModal, lessonContentModal, quizModal, quizResultModal;
+let authRedirectInProgress = false;
 
 // Simple Modal replacement for Tailwind (toggles hidden/flex classes)
 class SimpleModal {
@@ -91,14 +105,117 @@ function sanitizeLessonMaterialContent(rawHtml, options = {}) {
     return wrapper.innerHTML;
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (!user) {
-        window.location.href = '/Hohoo-ville/frontend/login.html';
+function getStoredUser() {
+    try {
+        return JSON.parse(localStorage.getItem('user') || 'null');
+    } catch (error) {
+        console.error('Failed to parse stored user session:', error);
+        return null;
+    }
+}
+
+function getAuthHeaders() {
+    const token = localStorage.getItem('token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function getRequestConfig(config = {}) {
+    return {
+        ...config,
+        headers: {
+            ...(config.headers || {}),
+            ...getAuthHeaders()
+        }
+    };
+}
+
+function encodeInlineValue(value) {
+    return encodeURIComponent(String(value ?? ''));
+}
+
+function decodeInlineValue(value) {
+    try {
+        return decodeURIComponent(String(value ?? ''));
+    } catch (error) {
+        return String(value ?? '');
+    }
+}
+
+function showPageAlert(message, tone = 'error') {
+    const alertEl = document.getElementById('trainingPageAlert');
+    if (!alertEl) {
         return;
     }
 
-    document.getElementById('traineeName').textContent = user.username || 'Trainee';
+    const variants = {
+        error: 'border-red-200 bg-red-50 text-red-700',
+        warning: 'border-yellow-200 bg-yellow-50 text-yellow-700',
+        info: 'border-blue-200 bg-blue-50 text-blue-700'
+    };
+
+    alertEl.className = `mb-6 rounded-xl border px-4 py-3 text-sm ${variants[tone] || variants.error}`;
+    alertEl.textContent = message;
+    alertEl.classList.remove('hidden');
+}
+
+function clearPageAlert() {
+    const alertEl = document.getElementById('trainingPageAlert');
+    if (!alertEl) {
+        return;
+    }
+
+    alertEl.textContent = '';
+    alertEl.classList.add('hidden');
+}
+
+function redirectToLogin(clearStoredSession = true) {
+    if (clearStoredSession) {
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        sessionStorage.clear();
+    }
+
+    window.location.href = LOGIN_URL;
+}
+
+function handleAuthError(error, fallbackMessage = 'Your session expired. Please log in again.') {
+    const status = error?.response?.status;
+    if (status !== 401 && status !== 403) {
+        return false;
+    }
+
+    const message = error?.response?.data?.message || fallbackMessage;
+    showPageAlert(message, 'warning');
+
+    if (authRedirectInProgress) {
+        return true;
+    }
+
+    authRedirectInProgress = true;
+
+    const completeRedirect = () => redirectToLogin(true);
+    if (typeof swal === 'function') {
+        swal({
+            title: 'Session expired',
+            text: message,
+            type: 'warning'
+        }, completeRedirect);
+    } else {
+        window.alert(message);
+        completeRedirect();
+    }
+
+    return true;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const user = getStoredUser();
+    if (!user || user.role !== 'trainee' || !user.trainee_id) {
+        redirectToLogin(true);
+        return;
+    }
+
+    document.getElementById('traineeName').textContent = user.username || user.full_name || 'Trainee';
 
     // Sidebar Logic (Tailwind)
     const sidebar = document.getElementById('sidebar');
@@ -145,29 +262,66 @@ document.addEventListener('DOMContentLoaded', function() {
     quizModal = new SimpleModal(document.getElementById('quizModal'));
     quizResultModal = new SimpleModal(document.getElementById('quizResultModal'));
 
-    const idToLoad = user.trainee_id || user.user_id;
-    if (idToLoad) {
-        loadTrainingData(idToLoad);
-    } else {
-        document.getElementById('accordionCore').innerHTML = `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">User ID not found. Please log in again.</div>`;
-    }
+    loadTrainingData();
 
     document.getElementById('submitQuizBtn').addEventListener('click', submitQuiz);
     document.getElementById('submitTaskSheetBtn').addEventListener('click', submitTaskSheet);
     document.getElementById('unsubmitTaskSheetBtn').addEventListener('click', unsubmitTaskSheet);
-    document.getElementById('logoutBtn').addEventListener('click', () => { localStorage.clear(); window.location.href = '../../../login.html'; });
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+        await logoutWithConfirmation();
+    });
 });
 
-async function loadTrainingData(traineeId) {
+async function ensureSwal() {
+    if (typeof window.Swal !== 'undefined') return;
+    await new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        script.onload = resolve;
+        script.onerror = resolve;
+        document.head.appendChild(script);
+    });
+}
+
+async function logoutWithConfirmation() {
+    await ensureSwal();
+    Swal.fire({
+        title: 'Logout Confirmation',
+        text: 'Are you sure you want to logout?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Logout',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        allowOutsideClick: false,
+        allowEscapeKey: false
+    }).then((result) => {
+        if (result.isConfirmed) {
+            redirectToLogin(true);
+        }
+    });
+}
+
+async function loadTrainingData() {
     try {
-        const response = await axios.get(`${API_BASE_URL}/role/trainee/training.php?action=get-lessons&trainee_id=${traineeId}`);
+        clearPageAlert();
+        const response = await axios.get(
+            `${API_BASE_URL}/role/trainee/training.php?action=get-lessons`,
+            getRequestConfig()
+        );
         if (response.data.success) {
             renderModules(response.data.data);
         } else {
+            showPageAlert(response.data.message, 'warning');
             document.getElementById('accordionCore').innerHTML = `<div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative">${response.data.message}</div>`;
         }
     } catch (error) {
+        if (handleAuthError(error)) {
+            return;
+        }
         console.error('Error loading training data:', error);
+        showPageAlert('Failed to load training modules.', 'error');
         document.getElementById('accordionCore').innerHTML = `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">Failed to load training modules.</div>`;
     }
 }
@@ -214,7 +368,7 @@ function renderModules(modules) {
                             <span class="text-gray-700 font-medium">${lesson.lesson_title}</span>
                         </div>
                         <div class="flex items-center gap-2 w-96">
-                            <button class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition flex-1" onclick="viewLessonItems(${lesson.lesson_id}, '${lesson.lesson_title}')">
+                            <button class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition flex-1" onclick="viewLessonItems(${lesson.lesson_id}, '${encodeInlineValue(lesson.lesson_title)}')">
                                 <i class="fas fa-folder-open mr-1"></i> View Materials
                             </button>
                             <div class="flex-1">
@@ -246,7 +400,8 @@ function renderModules(modules) {
     });
 }
 
-window.viewLessonItems = async function(lessonId, lessonTitle) {
+window.viewLessonItems = async function(lessonId, encodedLessonTitle) {
+    const lessonTitle = decodeInlineValue(encodedLessonTitle);
     document.getElementById('lessonItemsTitle').textContent = lessonTitle;
     const contentsList = document.getElementById('lessonItemsContentsList');
     const taskSheetsList = document.getElementById('lessonItemsTaskSheetsList');
@@ -258,8 +413,10 @@ window.viewLessonItems = async function(lessonId, lessonTitle) {
 
     try {
 
-        const user = JSON.parse(localStorage.getItem('user'));
-        const response = await axios.get(`${API_BASE_URL}/role/trainee/training.php?action=get-lessons&trainee_id=${user.trainee_id}`);
+        const response = await axios.get(
+            `${API_BASE_URL}/role/trainee/training.php?action=get-lessons`,
+            getRequestConfig()
+        );
         
         if (response.data.success) {
             let lesson = null;
@@ -279,6 +436,9 @@ window.viewLessonItems = async function(lessonId, lessonTitle) {
             }
         }
     } catch (error) {
+        if (handleAuthError(error)) {
+            return;
+        }
         console.error('Error loading lesson items:', error);
         contentsList.innerHTML = '<div class="bg-red-100 text-red-700 p-3 rounded">Error loading materials.</div>';
         taskSheetsList.innerHTML = '';
@@ -294,7 +454,7 @@ function renderLessonItems(lesson) {
     if (lesson.lesson_contents && lesson.lesson_contents.length > 0) {
         lesson.lesson_contents.forEach(item => {
             contentsList.innerHTML += `
-                <button class="w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors flex items-center" onclick="viewContent('content', ${item.content_id}, '${item.title}')">
+                <button class="w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors flex items-center" onclick="viewContent('content', ${item.content_id}, '${encodeInlineValue(item.title)}')">
                     <i class="fas fa-file-alt mr-3 text-blue-500"></i> <span class="text-gray-700">${item.title}</span>
                 </button>
             `;
@@ -310,7 +470,7 @@ function renderLessonItems(lesson) {
             const isSubmitted = item.is_submitted ? true : false;
             const statusBadge = isSubmitted ? '<span class="ml-auto inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Submitted</span>' : '';
             taskSheetsList.innerHTML += `
-                <button class="w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors flex items-center" onclick="viewContent('task', ${item.task_sheet_id}, '${item.title}', ${lesson.lesson_id}, ${isSubmitted})">
+                <button class="w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors flex items-center" onclick="viewContent('task', ${item.task_sheet_id}, '${encodeInlineValue(item.title)}', ${lesson.lesson_id}, ${isSubmitted})">
                     <i class="fas fa-tasks mr-3 ${isSubmitted ? 'text-green-500' : 'text-blue-500'}"></i> <span class="text-gray-700">${item.title}</span> ${statusBadge}
                 </button>
             `;
@@ -329,10 +489,11 @@ function renderLessonItems(lesson) {
     }
 }
 
-window.viewContent = async function(type, id, title, lessonId = null, isSubmitted = false) {
+window.viewContent = async function(type, id, encodedTitle, lessonId = null, isSubmitted = false) {
     const modalTitle = document.getElementById('lessonContentTitle');
     const modalBody = document.getElementById('lessonContentBody');
     const modalFooter = document.getElementById('lessonContentFooter');
+    const title = decodeInlineValue(encodedTitle);
     
     modalTitle.textContent = title;
     modalBody.innerHTML = '<div class="text-center p-10"><div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>';
@@ -345,7 +506,10 @@ window.viewContent = async function(type, id, title, lessonId = null, isSubmitte
 
     try {
         const action = type === 'content' ? 'get-lesson-content' : 'get-task-sheet';
-        const response = await axios.get(`${API_BASE_URL}/role/trainee/training.php?action=${action}&id=${id}`);
+        const response = await axios.get(
+            `${API_BASE_URL}/role/trainee/training.php?action=${action}&id=${id}`,
+            getRequestConfig()
+        );
         
         if (response.data.success) {
             const allowTaskCheckboxes = type === 'task' && !isSubmitted;
@@ -373,6 +537,10 @@ window.viewContent = async function(type, id, title, lessonId = null, isSubmitte
             modalBody.innerHTML = `<div class="bg-yellow-100 text-yellow-700 p-4 rounded">${response.data.message}</div>`;
         }
     } catch (error) {
+        if (handleAuthError(error)) {
+            lessonContentModal.hide();
+            return;
+        }
         console.error('Error loading content:', error);
         modalBody.innerHTML = '<div class="bg-red-100 text-red-700 p-4 rounded">Failed to load content.</div>';
     }
@@ -395,7 +563,10 @@ window.startQuiz = async function(lessonId) {
     quizModal.show();
 
     try {
-        const response = await axios.get(`${API_BASE_URL}/role/trainee/training.php?action=get-quiz&lesson_id=${lessonId}`);
+        const response = await axios.get(
+            `${API_BASE_URL}/role/trainee/training.php?action=get-quiz&lesson_id=${lessonId}`,
+            getRequestConfig()
+        );
         
         if (response.data.success) {
             const questions = response.data.data;
@@ -428,13 +599,16 @@ window.startQuiz = async function(lessonId) {
             container.innerHTML = `<div class="bg-yellow-100 text-yellow-700 p-4 rounded">${response.data.message}</div>`;
         }
     } catch (error) {
+        if (handleAuthError(error)) {
+            quizModal.hide();
+            return;
+        }
         console.error('Error loading quiz:', error);
         container.innerHTML = '<div class="bg-red-100 text-red-700 p-4 rounded">Failed to load quiz.</div>';
     }
 }
 
 function submitQuiz() {
-    const user = JSON.parse(localStorage.getItem('user'));
     const lessonId = document.getElementById('quizForm').dataset.lessonId;
     const container = document.getElementById('quizQuestionsContainer');
     
@@ -457,25 +631,28 @@ function submitQuiz() {
             confirmButtonText: 'Yes, submit'
         }, function(willSubmit) {
             if (willSubmit) {
-                performQuizSubmission(user, lessonId, answers);
+                performQuizSubmission(lessonId, answers);
             }
         });
     } else {
-        performQuizSubmission(user, lessonId, answers);
+        performQuizSubmission(lessonId, answers);
     }
 }
 
-async function performQuizSubmission(user, lessonId, answers) {
+async function performQuizSubmission(lessonId, answers) {
     const btn = document.getElementById('submitQuizBtn');
     btn.disabled = true;
     btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white rounded-full border-t-transparent mr-2"></span> Submitting...';
 
     try {
-        const response = await axios.post(`${API_BASE_URL}/role/trainee/training.php?action=submit-quiz`, {
-            trainee_id: user.trainee_id,
-            lesson_id: lessonId,
-            answers: answers
-        });
+        const response = await axios.post(
+            `${API_BASE_URL}/role/trainee/training.php?action=submit-quiz`,
+            {
+                lesson_id: lessonId,
+                answers: answers
+            },
+            getRequestConfig()
+        );
 
         if (response.data.success) {
             quizModal.hide();
@@ -498,11 +675,14 @@ async function performQuizSubmission(user, lessonId, answers) {
             quizResultModal.show();
             
             // Refresh the main list to update status
-            loadTrainingData(user.trainee_id);
+            loadTrainingData();
         } else {
             swal('Error', 'Error: ' + response.data.message, 'error');
         }
     } catch (error) {
+        if (handleAuthError(error)) {
+            return;
+        }
         console.error('Error submitting quiz:', error);
         swal('Error', 'Failed to submit quiz.', 'error');
     } finally {
@@ -515,7 +695,6 @@ async function submitTaskSheet() {
     const btn = document.getElementById('submitTaskSheetBtn');
     const lessonId = btn.dataset.lessonId;
     const taskSheetId = btn.dataset.taskSheetId;
-    const user = JSON.parse(localStorage.getItem('user'));
 
     // Capture the state of the task sheet
     const contentContainer = document.getElementById('lessonContentBody');
@@ -543,21 +722,27 @@ async function submitTaskSheet() {
     btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white rounded-full border-t-transparent mr-2"></span> Submitting...';
 
     try {
-        const response = await axios.post(`${API_BASE_URL}/role/trainee/training.php?action=submit-task-sheet`, {
-            trainee_id: user.trainee_id,
-            lesson_id: lessonId,
-            task_sheet_id: taskSheetId,
-            submitted_content: content
-        });
+        const response = await axios.post(
+            `${API_BASE_URL}/role/trainee/training.php?action=submit-task-sheet`,
+            {
+                lesson_id: lessonId,
+                task_sheet_id: taskSheetId,
+                submitted_content: content
+            },
+            getRequestConfig()
+        );
 
         if (response.data.success) {
             swal('Success', 'Task sheet submitted successfully!', 'success');
             lessonContentModal.hide();
-            loadTrainingData(user.trainee_id); // Refresh data to update status
+            loadTrainingData();
         } else {
             swal('Error', 'Error: ' + response.data.message, 'error');
         }
     } catch (error) {
+        if (handleAuthError(error)) {
+            return;
+        }
         console.error('Error submitting task sheet:', error);
         swal('Error', 'Failed to submit task sheet.', 'error');
     } finally {
@@ -570,9 +755,6 @@ function unsubmitTaskSheet() {
     const btn = document.getElementById('unsubmitTaskSheetBtn');
     const lessonId = btn.dataset.lessonId;
     const taskSheetId = btn.dataset.taskSheetId;
-    const user = JSON.parse(localStorage.getItem('user'));
-
-    console.log('Unsubmit params:', {lessonId, taskSheetId, trainee_id: user.trainee_id});
 
     swal({
         title: 'Unsubmit Task Sheet?',
@@ -592,25 +774,28 @@ function unsubmitTaskSheet() {
 
         try {
             const payload = {
-                trainee_id: parseInt(user.trainee_id),
                 lesson_id: parseInt(lessonId),
                 task_sheet_id: parseInt(taskSheetId)
             };
-            console.log('Sending payload:', payload);
 
-            axios.post(`${API_BASE_URL}/role/trainee/training.php?action=unsubmit-task-sheet`, payload)
+            axios.post(
+                `${API_BASE_URL}/role/trainee/training.php?action=unsubmit-task-sheet`,
+                payload,
+                getRequestConfig()
+            )
                 .then(response => {
-                    console.log('Response:', response.data);
-
                     if (response.data.success) {
                         swal('Success', 'Task sheet unsubmitted successfully.', 'success');
                         lessonContentModal.hide();
-                        loadTrainingData(user.trainee_id); // Refresh data to update status
+                        loadTrainingData();
                     } else {
                         swal('Error', 'Error: ' + response.data.message, 'error');
                     }
                 })
                 .catch(error => {
+                    if (handleAuthError(error)) {
+                        return;
+                    }
                     console.error('Error unsubmitting:', error.response?.data || error.message);
                     swal('Error', 'Failed to unsubmit: ' + (error.response?.data?.message || error.message), 'error');
                 })

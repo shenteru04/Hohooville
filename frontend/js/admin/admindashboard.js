@@ -27,6 +27,7 @@ const charts = {
 
 document.addEventListener('DOMContentLoaded', () => {
     setupHeaderControls();
+    loadUserProfileImage();
     loadDashboardData();
 
     const refreshBtn = document.getElementById('refreshDashboard');
@@ -65,6 +66,34 @@ function setupHeaderControls() {
             sessionStorage.clear();
             window.location.href = '/Hohoo-ville/frontend/login.html';
         });
+    }
+}
+
+async function loadUserProfileImage() {
+    try {
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user || !user.user_id) return;
+
+        const response = await apiClient.get(`/role/admin/profile.php?action=get&id=${user.user_id}`);
+        if (response.data.success && response.data.data) {
+            const profileData = response.data.data;
+            const userName = document.getElementById('userName');
+            const profileImg = document.getElementById('userProfileImage');
+
+            // Update user name
+            if (userName && profileData.first_name) {
+                userName.textContent = profileData.first_name;
+            }
+
+            // Update profile image
+            if (profileImg && profileData.profile_image) {
+                profileImg.src = `/Hohoo-ville/uploads/profile_images/${encodeURIComponent(profileData.profile_image)}`;
+            } else if (profileImg && profileData.first_name) {
+                profileImg.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(profileData.first_name)}&background=random`;
+            }
+        }
+    } catch (error) {
+        console.log('Profile image load skipped (not critical)');
     }
 }
 

@@ -71,17 +71,34 @@ function initUserDropdown() {
     });
 }
 
-function initLogout() {
+async function initLogout() {
     const logoutBtn = document.getElementById('logoutBtn');
     if (!logoutBtn) return;
-    logoutBtn.addEventListener('click', (event) => {
+    logoutBtn.addEventListener('click', async (event) => {
         event.preventDefault();
-        if (typeof window.logout === 'function') {
-            window.logout();
-            return;
-        }
-        localStorage.clear();
-        window.location.href = '/Hohoo-ville/frontend/login.html';
+        await ensureSwal();
+        
+        Swal.fire({
+            title: 'Logout Confirmation',
+            text: 'Are you sure you want to logout?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Logout',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                if (typeof window.logout === 'function') {
+                    window.logout();
+                    return;
+                }
+                localStorage.clear();
+                window.location.href = '/Hohoo-ville/frontend/login.html';
+            }
+        });
     });
 }
 
@@ -271,9 +288,21 @@ function renderTable(data) {
         const qualificationCount = getQualificationCount(trainer);
         const qualificationLabel = trainer.qualification_names || trainer.qualification_name || '-';
         const ncLevelLabel = trainer.nc_levels || trainer.nc_level_code || 'N/A';
+        
+        // Parse NC levels into array
+        const ncLevelsArray = (ncLevelLabel !== 'N/A' && ncLevelLabel !== '-') 
+            ? ncLevelLabel.split(',').map(level => level.trim()).filter(Boolean)
+            : [];
+        
         const countBadge = qualificationCount >= TOO_MANY_QUALIFICATIONS
             ? '<span class="inline-flex rounded-full bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-700">2+</span>'
             : `<span class="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">${qualificationCount}</span>`;
+        
+        // Display NC levels separated by comma when 2+ qualifications
+        const ncLevelDisplay = qualificationCount >= TOO_MANY_QUALIFICATIONS && ncLevelsArray.length > 0
+            ? `<span class="text-slate-700">${escapeHtml(ncLevelsArray.map(level => level.replace(/^NC\s*/i, '').trim()).join(', '))}</span>`
+            : `<span class="text-slate-700">${escapeHtml(ncLevelLabel)}</span>`;
+        
         const statusBadge = trainer.status === 'active'
             ? '<span class="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">active</span>'
             : '<span class="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">inactive</span>';
@@ -296,7 +325,11 @@ function renderTable(data) {
                         <span class="text-slate-700">${escapeHtml(qualificationLabel)}</span>
                     </div>
                 </td>
-                <td class="px-3 py-3 text-sm text-slate-700">${escapeHtml(ncLevelLabel)}</td>
+                <td class="px-3 py-3 text-sm">
+                    <div class="flex flex-wrap items-center gap-2">
+                        ${ncLevelDisplay}
+                    </div>
+                </td>
                 <td class="px-3 py-3 text-sm">${statusBadge}</td>
                 <td class="px-3 py-3 text-sm">
                     <div class="flex flex-wrap items-center gap-2">

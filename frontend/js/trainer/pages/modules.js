@@ -1,5 +1,17 @@
 const API_BASE_URL = window.location.origin + '/Hohoo-ville/api';
 const LESSON_UPLOADS_URL = window.location.origin + '/Hohoo-ville/uploads/lessons/';
+
+async function ensureSwal() {
+    if (typeof window.Swal !== 'undefined') return;
+    await new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        script.onload = resolve;
+        script.onerror = resolve;
+        document.head.appendChild(script);
+    });
+}
+
 let moduleModal, competencyModal, manageLessonModal, viewModuleModal, contentEditorModal;
 let currentModules = [];
 let currentCompetencyType = 'core';
@@ -123,13 +135,41 @@ function initUserMenu() {
     });
 }
 
-function initLogout() {
+async function ensureSwal() {
+    if (typeof window.Swal !== 'undefined') return;
+    await new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        script.onload = resolve;
+        script.onerror = resolve;
+        document.head.appendChild(script);
+    });
+}
+
+async function initLogout() {
     const logoutBtn = document.getElementById('logoutBtn');
     if (!logoutBtn) return;
-    logoutBtn.addEventListener('click', (event) => {
+    logoutBtn.addEventListener('click', async (event) => {
         event.preventDefault();
-        localStorage.clear();
-        window.location.href = '/Hohoo-ville/frontend/login.html';
+        await ensureSwal();
+        
+        Swal.fire({
+            title: 'Logout Confirmation',
+            text: 'Are you sure you want to logout?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Logout',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                localStorage.clear();
+                window.location.href = '/Hohoo-ville/frontend/login.html';
+            }
+        });
     });
 }
 
@@ -234,8 +274,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     if (viewModuleEl) {
         viewModuleModal = new SimpleModal(viewModuleEl, {
             onHide: () => { currentViewedModuleId = null; }
-<<<<<<< HEAD
-=======
         });
     }
 
@@ -245,13 +283,14 @@ document.addEventListener('DOMContentLoaded', async function () {
             onHide: () => {
                 document.getElementById('editorItemId').value = '';
                 document.getElementById('editorItemType').value = '';
+                document.getElementById('editorItemTitle').value = '';
+                const contentItemsContainer = document.getElementById('editorContentItems');
+                const noMessage = document.getElementById('noContentBlocksMessage');
+                if (contentItemsContainer) contentItemsContainer.innerHTML = '';
+                if (noMessage) noMessage.style.display = 'block';
             }
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
         });
     }
-
-    const contentEditorEl = document.getElementById('contentEditorModal');
-    if (contentEditorEl) contentEditorModal = new SimpleModal(contentEditorEl);
 
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
@@ -1140,17 +1179,13 @@ window.openContentEditor = async function(type, itemId = null) {
     document.getElementById('editorItemType').value = type;
     document.getElementById('editorItemId').value = itemId || '';
     document.getElementById('editorItemTitle').value = '';
-<<<<<<< HEAD
-    document.getElementById('editorContent').innerHTML = '<p data-editor-placeholder class="text-sm text-slate-400">Start writing content here...</p>';
-=======
-    
+
     // Clear content blocks
     const contentItemsContainer = document.getElementById('editorContentItems');
     const noMessage = document.getElementById('noContentBlocksMessage');
-    contentItemsContainer.innerHTML = '';
-    noMessage.style.display = 'block';
-    
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
+    if (contentItemsContainer) contentItemsContainer.innerHTML = '';
+    if (noMessage) noMessage.style.display = 'block';
+
     document.getElementById('contentEditorModalLabel').textContent = `${itemId ? 'Edit' : 'Add'} ${type === 'content' ? 'Information Sheet' : 'Task Sheet'}`;
 
     if (itemId) {
@@ -1358,11 +1393,7 @@ window.saveContent = async function() {
     const payload = {
         lesson_id: lessonId,
         title: title,
-<<<<<<< HEAD
-        content: content,
-=======
         content: fullContent,
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
         trainer_id: trainerId,
         user_id: user?.user_id
     };
@@ -1802,11 +1833,6 @@ function removeContentItem(outcomeId, itemId) {
  * Trigger image file upload dialog for rich text editor
  */
 function triggerImageUploadForEditor(itemId) {
-<<<<<<< HEAD
-    const contentItem = document.querySelector(`.content-item[data-item-id="${itemId}"]`);
-    const fileInput = contentItem.querySelector('.editor-image-file');
-    if (fileInput) fileInput.click();
-=======
     // Support both .content-item (learning outcomes) and .content-block (edit modal)
     let contentItem = document.querySelector(`.content-item[data-item-id="${itemId}"]`);
     if (!contentItem) {
@@ -1816,24 +1842,18 @@ function triggerImageUploadForEditor(itemId) {
         const fileInput = contentItem.querySelector('.editor-image-file');
         if (fileInput) fileInput.click();
     }
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
 }
 
 /**
  * Insert image into rich text editor
  */
 function insertImageIntoEditor(itemId, dataUrl, filename) {
-<<<<<<< HEAD
-    const contentItem = document.querySelector(`.content-item[data-item-id="${itemId}"]`);
-=======
     // Support both .content-item (learning outcomes) and .content-block (edit modal)
     let contentItem = document.querySelector(`.content-item[data-item-id="${itemId}"]`);
     if (!contentItem) {
         contentItem = document.querySelector(`.content-block[data-item-id="${itemId}"]`);
     }
     if (!contentItem) return;
-    
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
     const editor = contentItem.querySelector('.content-editor');
     
     // Create image wrapper with positioning - constrain to 40% of editor width
@@ -2157,12 +2177,6 @@ function setupContentDragDrop(outcomeId) {
 }
 
 /**
-<<<<<<< HEAD
-=======
- * Trigger image file upload dialog for main editor
- */
-/**
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
  * Get element after which to drop
  */
 function getDragAfterElement(container, y) {

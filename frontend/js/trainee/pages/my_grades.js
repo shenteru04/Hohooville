@@ -1,5 +1,16 @@
 const API_BASE_URL = window.location.origin + '/Hohoo-ville/api';
 
+async function ensureSwal() {
+    if (typeof window.Swal !== 'undefined') return;
+    await new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        script.onload = resolve;
+        script.onerror = resolve;
+        document.head.appendChild(script);
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
@@ -14,22 +25,46 @@ document.addEventListener('DOMContentLoaded', function() {
     const sidebarCollapse = document.getElementById('sidebarCollapse');
     const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
 
-    function toggleSidebar() {
-        const isClosed = sidebar.classList.contains('-translate-x-full');
-        if (isClosed) {
-            sidebar.classList.remove('-translate-x-full');
+    if (!sidebar) return;
+
+    function openSidebar() {
+        sidebar.classList.remove('-translate-x-full');
+        if (sidebarOverlay) {
             sidebarOverlay.classList.remove('hidden');
-            setTimeout(() => sidebarOverlay.classList.remove('opacity-0'), 10);
-        } else {
-            sidebar.classList.add('-translate-x-full');
+            requestAnimationFrame(() => sidebarOverlay.classList.remove('opacity-0'));
+        }
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function closeSidebar() {
+        sidebar.classList.add('-translate-x-full');
+        if (sidebarOverlay) {
             sidebarOverlay.classList.add('opacity-0');
             setTimeout(() => sidebarOverlay.classList.add('hidden'), 300);
+        }
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    function toggleSidebar() {
+        if (sidebar.classList.contains('-translate-x-full')) {
+            openSidebar();
+        } else {
+            closeSidebar();
         }
     }
 
     if (sidebarCollapse) sidebarCollapse.addEventListener('click', toggleSidebar);
-    if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', toggleSidebar);
-    if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+    if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', closeSidebar);
+    if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+
+    window.addEventListener('resize', () => {
+        if (window.innerWidth >= 1024) {
+            document.body.classList.remove('overflow-hidden');
+            if (sidebarOverlay) {
+                sidebarOverlay.classList.add('hidden', 'opacity-0');
+            }
+        }
+    });
 
     // User Dropdown Logic
     const userMenuBtn = document.getElementById('userMenuButton');
@@ -47,6 +82,29 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Logout button
+    document.getElementById('logoutBtn').addEventListener('click', async function() {
+        await ensureSwal();
+        
+        Swal.fire({
+            title: 'Logout Confirmation',
+            text: 'Are you sure you want to logout?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Logout',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                localStorage.clear();
+                window.location.href = '../../../../login.html';
+            }
+        });
+    });
 
     const idToLoad = user.trainee_id || user.user_id;
     if (idToLoad) {

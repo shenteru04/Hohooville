@@ -8,6 +8,15 @@ let inactivityTimer = null;
 let warningTimer = null;
 let lastActivityTime = Date.now();
 let isWarningShown = false;
+let isSessionExpired = false;
+
+function hasSweetAlert2() {
+    return typeof window.Swal !== 'undefined' && typeof window.Swal.fire === 'function';
+}
+
+function hasSweetAlert1() {
+    return typeof window.swal === 'function';
+}
 
 // Initialize session timeout on page load
 document.addEventListener('DOMContentLoaded', initializeSessionTimeout);
@@ -45,6 +54,10 @@ function startInactivityMonitoring() {
 }
 
 function resetInactivityTimer() {
+    if (isSessionExpired) {
+        return;
+    }
+
     // Clear existing timers
     if (inactivityTimer) clearTimeout(inactivityTimer);
     if (warningTimer) clearTimeout(warningTimer);
@@ -56,101 +69,84 @@ function resetInactivityTimer() {
     // Update last activity time
     lastActivityTime = Date.now();
     
-    // Calculate timeouts
-    const timeoutMs = sessionTimeoutMinutes * 60 * 1000;
-    const warningTimeMs = Math.max(
-        (sessionTimeoutMinutes - 1) * 60 * 1000,
-        timeoutMs - 60000 // Show warning 1 minute before logout
-    );
-    
-    // Set warning timer (1 minute before logout)
-    warningTimer = setTimeout(() => {
-        if (!isWarningShown) {
-            isWarningShown = true;
-            showTimeoutWarning();
-        }
-    }, warningTimeMs);
-    
-    // Set logout timer
+    // Use the configured value as the exact inactivity duration.
+    const timeoutMs = Math.max(sessionTimeoutMinutes, 1) * 60 * 1000;
+
     inactivityTimer = setTimeout(() => {
+        if (isSessionExpired) {
+            return;
+        }
+
+        isWarningShown = true;
         performLogout();
     }, timeoutMs);
 }
 
 function showTimeoutWarning() {
-    // Check if SweetAlert2 is available
-    if (typeof Swal !== 'undefined') {
-        Swal.fire({
-            title: 'Session Timeout Warning',
-            html: `Your session will expire in <strong>1 minute</strong> due to inactivity.<br>Click "Continue" to stay logged in.`,
-            icon: 'warning',
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            showCancelButton: true,
-            confirmButtonText: 'Continue',
-            cancelButtonText: 'Logout Now',
-            didOpen: (modal) => {
-                // Store modal reference for closing later
-                window.timeoutModalOpen = true;
-            },
-            willClose: (result) => {
-                window.timeoutModalOpen = false;
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // User clicked Continue - reset the timer
-                isWarningShown = false;
-                resetInactivityTimer();
-            } else {
-                // User clicked Logout Now or closed dialog
-                performLogout();
-            }
-        });
-    } else {
-        // Fallback if SweetAlert is not available
-        const userWantsToStay = confirm('Your session will expire in 1 minute due to inactivity. Click OK to stay logged in.');
-        if (userWantsToStay) {
-            isWarningShown = false;
-            resetInactivityTimer();
-        } else {
-            performLogout();
-        }
-    }
+    performLogout();
 }
 
 function closeWarning() {
     // Close any open warning dialogs
-    if (typeof Swal !== 'undefined' && window.timeoutModalOpen) {
+    if (hasSweetAlert2() && window.timeoutModalOpen) {
         Swal.close();
+        window.timeoutModalOpen = false;
+    } else if (hasSweetAlert1() && window.timeoutModalOpen && typeof window.swal.close === 'function') {
+        window.swal.close();
         window.timeoutModalOpen = false;
     }
 }
 
 function performLogout() {
+    if (isSessionExpired) {
+        return;
+    }
+
+    isSessionExpired = true;
+
+    if (inactivityTimer) clearTimeout(inactivityTimer);
+    if (warningTimer) clearTimeout(warningTimer);
+
     // Clear all local storage
     localStorage.clear();
     sessionStorage.clear();
     
+    const message = `Your ${sessionTimeoutMinutes}-minute session expired due to inactivity. Click OK to log in again.`;
+
     // Show logout message
-    if (typeof Swal !== 'undefined') {
+    if (hasSweetAlert2()) {
+        window.timeoutModalOpen = true;
         Swal.fire({
             title: 'Session Expired',
-            text: 'Your session has expired due to inactivity. You will be redirected to the login page.',
-            icon: 'info',
+            text: message,
+            icon: 'warning',
             allowOutsideClick: false,
-            allowEscapeKey: false
+            allowEscapeKey: false,
+            confirmButtonText: 'OK'
         }).then(() => {
+            window.timeoutModalOpen = false;
+            redirect();
+        });
+    } else if (hasSweetAlert1()) {
+        window.timeoutModalOpen = true;
+        swal({
+            title: 'Session Expired',
+            text: message,
+            type: 'warning',
+            confirmButtonText: 'OK'
+        }, function() {
+            window.timeoutModalOpen = false;
             redirect();
         });
     } else {
-        alert('Your session has expired due to inactivity.');
+        alert(message);
         redirect();
     }
 }
 
 function redirect() {
     // Redirect to login page
-    const loginUrl = window.location.origin + '/hohoo-ville/frontend/login.html';
+    const loginUrl = window.location.origin + '/Hohoo-ville/frontend/login.html';
     window.location.href = loginUrl;
 }
 

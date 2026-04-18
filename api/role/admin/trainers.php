@@ -162,7 +162,7 @@ function getTrainers($conn) {
             }
             
             $trainer['qualification_names'] = implode(', ', array_unique($qualNames));
-            $trainer['nc_levels'] = implode(', ', array_unique($ncLevels));
+            $trainer['nc_levels'] = implode(', ', $ncLevels);
         }
         unset($trainer);
         

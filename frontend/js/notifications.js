@@ -21,15 +21,11 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', function(e) {
         const btn = e.target.closest('#notificationBtn');
         const dropdown = document.getElementById('notificationDropdown');
-<<<<<<< HEAD
         const backdrop = document.getElementById('notificationBackdrop');
-=======
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
         
         if (btn) {
             if (dropdown) {
                 if (dropdown.classList.contains('hidden')) {
-<<<<<<< HEAD
                     dropdown.classList.remove('hidden', 'scale-95', 'opacity-0');
                     dropdown.classList.add('scale-100', 'opacity-100');
                     if (backdrop) {
@@ -41,35 +37,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 } else {
                     closeDropdown(dropdown, backdrop);
-=======
-                    dropdown.classList.remove('hidden');
-                    // Small delay to allow display:block to apply before transition
-                    requestAnimationFrame(() => {
-                        dropdown.classList.remove('scale-95', 'opacity-0');
-                        dropdown.classList.add('scale-100', 'opacity-100');
-                    });
-                } else {
-                    closeDropdown(dropdown);
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
                 }
             }
             e.stopPropagation();
         } else {
             // Close if clicked outside
-<<<<<<< HEAD
             if ((dropdown && !dropdown.classList.contains('hidden') && !e.target.closest('#notificationDropdown')) || 
                 (backdrop && e.target === backdrop)) {
                 closeDropdown(dropdown, backdrop);
-=======
-            if (dropdown && !dropdown.classList.contains('hidden') && !e.target.closest('#notificationDropdown')) {
-                closeDropdown(dropdown);
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
             }
         }
     });
 });
 
-<<<<<<< HEAD
 function closeDropdown(dropdown, backdrop) {
     if (dropdown) {
         dropdown.classList.remove('scale-100', 'opacity-100');
@@ -82,13 +62,6 @@ function closeDropdown(dropdown, backdrop) {
         if (dropdown) {
             dropdown.classList.add('hidden');
         }
-=======
-function closeDropdown(dropdown) {
-    dropdown.classList.remove('scale-100', 'opacity-100');
-    dropdown.classList.add('scale-95', 'opacity-0');
-    setTimeout(() => {
-        dropdown.classList.add('hidden');
->>>>>>> e4d81815babfc583ce81df77f2941dff0d144ca6
     }, 200);
 }
 

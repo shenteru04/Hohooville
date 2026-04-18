@@ -10,17 +10,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// Role Integration: Verify User is Trainee (Role ID 3)
-if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 3) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'message' => 'Unauthorized: Trainee access required.']);
-    exit();
-}
-
 require_once '../../database/db.php';
 
 $database = new Database();
 $conn = $database->getConnection();
+authenticateTrainee($conn);
 
 $action = $_GET['action'] ?? '';
 
@@ -55,6 +49,118 @@ switch ($action) {
     default:
         echo json_encode(['success' => false, 'message' => 'Invalid action.']);
         break;
+}
+
+function authenticateTrainee($conn) {
+    $token = getBearerToken();
+    if ($token !== '') {
+        $userId = validateToken($token);
+
+        if ($userId <= 0) {
+            sendUnauthorized('Unauthorized: Trainee access required.');
+        }
+
+        $stmt = $conn->prepare("
+            SELECT u.user_id, u.role_id, t.trainee_id
+            FROM tbl_users u
+            LEFT JOIN tbl_trainee_hdr t ON t.user_id = u.user_id
+            WHERE u.user_id = ? AND u.status = 'active'
+            LIMIT 1
+        ");
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$user || intval($user['role_id']) !== 3 || empty($user['trainee_id'])) {
+            sendUnauthorized('Unauthorized: Trainee access required.');
+        }
+
+        $_SESSION['user_id'] = intval($user['user_id']);
+        $_SESSION['role_id'] = intval($user['role_id']);
+        $_SESSION['trainee_id'] = intval($user['trainee_id']);
+
+        return intval($user['trainee_id']);
+    }
+
+    if (isset($_SESSION['user_id'], $_SESSION['role_id']) && intval($_SESSION['role_id']) === 3) {
+        if (!empty($_SESSION['trainee_id'])) {
+            return intval($_SESSION['trainee_id']);
+        }
+
+        $stmt = $conn->prepare("SELECT trainee_id FROM tbl_trainee_hdr WHERE user_id = ? LIMIT 1");
+        $stmt->execute([intval($_SESSION['user_id'])]);
+        $traineeId = intval($stmt->fetchColumn());
+
+        if ($traineeId > 0) {
+            $_SESSION['trainee_id'] = $traineeId;
+            return $traineeId;
+        }
+    }
+
+    sendUnauthorized('Unauthorized: Trainee access required.');
+}
+
+function sendUnauthorized($message) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => $message]);
+    exit();
+}
+
+function getBearerToken() {
+    $headers = function_exists('getallheaders') ? getallheaders() : [];
+    $authHeader = '';
+
+    if (isset($headers['Authorization'])) {
+        $authHeader = $headers['Authorization'];
+    } elseif (isset($headers['authorization'])) {
+        $authHeader = $headers['authorization'];
+    } elseif (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+        $authHeader = $_SERVER['HTTP_AUTHORIZATION'];
+    }
+
+    if (!$authHeader || stripos($authHeader, 'Bearer ') !== 0) {
+        return '';
+    }
+
+    return trim(substr($authHeader, 7));
+}
+
+function base64UrlEncode($text) {
+    return str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($text));
+}
+
+function validateToken($token) {
+    $parts = explode('.', (string)$token);
+    if (count($parts) !== 3) {
+        return 0;
+    }
+
+    $header = base64_decode($parts[0]);
+    $payload = base64_decode($parts[1]);
+    $providedSignature = $parts[2];
+
+    if ($header === false || $payload === false) {
+        return 0;
+    }
+
+    $base64UrlHeader = base64UrlEncode($header);
+    $base64UrlPayload = base64UrlEncode($payload);
+    $signature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, 'hohoo_ville_secret_key_2024', true);
+    $expectedSignature = base64UrlEncode($signature);
+
+    if (!hash_equals($expectedSignature, $providedSignature)) {
+        return 0;
+    }
+
+    $payloadData = json_decode($payload);
+    if (!$payloadData || !isset($payloadData->user_id) || !isset($payloadData->exp)) {
+        return 0;
+    }
+
+    if (intval($payloadData->exp) < time()) {
+        return 0;
+    }
+
+    return intval($payloadData->user_id);
 }
 
 function getLessonsForTrainee($conn) {

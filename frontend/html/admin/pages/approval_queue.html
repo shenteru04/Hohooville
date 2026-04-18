@@ -52,146 +52,159 @@
                 <button class="tab-main-btn rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" id="reserved-tab" data-tab-group="main" data-tab-target="#reserved" type="button" role="tab">Reserved Trainees</button>
             </section>
 
-                <div class="tab-content" id="approvalTabsContent">
-                    <div class="tab-pane fade show active" id="pending" role="tabpanel">
-                        <div class="table-responsive">
-                            <table class="table table-hover" id="approvalQueueTable" data-table-manager="true" data-filters="Course/Batch:2" data-filter-auto-options="true">
-                                <thead>
-                                    <tr>
-                                            <th>Photo</th>
-                                            <th>Trainee Name</th>
-                                            <th>Course/Batch</th>
-                                            <th>Date Applied</th>
-                                            <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="approvalQueueBody">
-                                    <!-- Data populated by JS -->
-                                </tbody>
-                            </table>
-                        </div>
+            <section class="tab-main-pane" id="pending" role="tabpanel">
+                <article class="rounded-2xl border border-blue-100 bg-white shadow-sm">
+                    <div class="border-b border-blue-100 px-5 py-4">
+                        <h2 class="text-base font-semibold text-slate-900">Pending Applications</h2>
                     </div>
-                </div>
-                    <div class="tab-pane fade" id="reserved" role="tabpanel">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="card-title">Reserved Trainees</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table table-hover" id="reservedQueueTable" data-table-manager="true" data-filters="Course/Batch:2" data-filter-auto-options="true">
-                                        <thead>
-                                            <tr>
-                                                <th>Photo</th>
-                                                <th>Trainee Name</th>
-                                                <th>Course/Batch</th>
-                                                <th>Date Reserved</th>
-                                                <th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="reservedQueueBody">
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="overflow-x-auto p-5">
+                        <table class="min-w-full divide-y divide-slate-200" id="approvalQueueTable" data-table-manager="true" data-filters="Course/Batch:2" data-filter-auto-options="true">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Photo</th>
+                                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Trainee Name</th>
+                                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Course/Batch</th>
+                                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Date Applied</th>
+                                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="approvalQueueBody" class="divide-y divide-slate-100 bg-white"></tbody>
+                        </table>
                     </div>
+                </article>
+            </section>
 
-                    <h5 class="mt-4 text-sm font-semibold uppercase tracking-wider text-blue-700">Contact & Address</h5>
-                    <div class="mt-2 grid grid-cols-1 gap-2 text-sm text-slate-700 sm:grid-cols-2">
-                        <p><span class="text-slate-500">Email:</span> <span id="reviewEmail"></span></p>
-                        <p><span class="text-slate-500">Phone:</span> <span id="reviewPhone"></span></p>
-                        <p class="sm:col-span-2"><span class="text-slate-500">Address:</span> <span id="reviewAddress"></span></p>
+            <section class="tab-main-pane hidden" id="reserved" role="tabpanel">
+                <article class="rounded-2xl border border-blue-100 bg-white shadow-sm">
+                    <div class="border-b border-blue-100 px-5 py-4">
+                        <h2 class="text-base font-semibold text-slate-900">Reserved Trainees</h2>
                     </div>
-                </div>
-
-                <div class="tab-review-pane hidden" id="reviewBackground" role="tabpanel">
-                    <h5 class="text-sm font-semibold uppercase tracking-wider text-blue-700">Education & Employment</h5>
-                    <div class="mt-2 space-y-2 text-sm text-slate-700">
-                        <p><span class="text-slate-500">Educational Attainment:</span> <span id="reviewEducation" class="font-semibold text-slate-900"></span></p>
-                        <p><span class="text-slate-500">Employment Status:</span> <span id="reviewEmploymentStatus" class="font-semibold text-slate-900"></span></p>
+                    <div class="overflow-x-auto p-5">
+                        <table class="min-w-full divide-y divide-slate-200" id="reservedQueueTable" data-table-manager="true" data-filters="Course/Batch:2" data-filter-auto-options="true">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Photo</th>
+                                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Trainee Name</th>
+                                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Course/Batch</th>
+                                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Date Reserved</th>
+                                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reservedQueueBody" class="divide-y divide-slate-100 bg-white"></tbody>
+                        </table>
                     </div>
-                    <h5 class="mt-4 text-sm font-semibold uppercase tracking-wider text-blue-700">Classification & Disability</h5>
-                    <div class="mt-2 space-y-2 text-sm text-slate-700">
-                        <p><span class="text-slate-500">Learner Classification:</span> <span id="reviewClassification"></span></p>
-                        <p><span class="text-slate-500">PWD:</span> <span id="reviewIsPwd"></span></p>
-                    </div>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" id="reviewEnrollmentId">
-                    <ul class="nav nav-tabs mb-3" id="reviewAppTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="review-personal-tab" data-bs-toggle="tab" data-bs-target="#reviewPersonal" type="button" role="tab">Personal Info</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="review-background-tab" data-bs-toggle="tab" data-bs-target="#reviewBackground" type="button" role="tab">Background</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="review-training-tab" data-bs-toggle="tab" data-bs-target="#reviewTraining" type="button" role="tab">Training & Approval</button>
-                        </li>
-                    </ul>
+                </article>
+            </section>
+        </main>
+    </div>
 
-                    <div class="tab-content" id="reviewAppTabsContent">
-                        <!-- Personal Info -->
-                        <div class="tab-pane fade show active" id="reviewPersonal" role="tabpanel">
-                            <div class="row">
-                                <div class="col-md-3 text-center mb-3">
-                                    <img id="reviewPhoto" src="" class="img-thumbnail" style="max-height: 150px; display:none;">
-                                    <div id="reviewNoPhoto" class="p-3 bg-light border text-muted">No Photo</div>
-                                </div>
-                                <div class="col-md-9">
-                                    <h5 id="reviewName" class="fw-bold"></h5>
-                                    <p class="mb-1 text-muted">Applicant</p>
-                                    <hr>
-                                    <div class="row g-2">
-                                        <div class="col-md-6"><small class="text-muted">Sex:</small> <span id="reviewSex"></span></div>
-                                        <div class="col-md-6"><small class="text-muted">Civil Status:</small> <span id="reviewCivilStatus"></span></div>
-                                        <div class="col-md-6"><small class="text-muted">Birthdate:</small> <span id="reviewBirthdate"></span></div>
-                                        <div class="col-md-6"><small class="text-muted">Age:</small> <span id="reviewAge"></span></div>
-                                        <div class="col-md-12"><small class="text-muted">Birthplace:</small> <span id="reviewBirthplace"></span></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <h6 class="mt-3 text-primary">Contact & Address</h6>
-                            <div class="row g-2">
-                                <div class="col-md-6"><small class="text-muted">Email:</small> <span id="reviewEmail"></span></div>
-                                <div class="col-md-6"><small class="text-muted">Phone:</small> <span id="reviewPhone"></span></div>
-                                <div class="col-md-12"><small class="text-muted">Address:</small> <span id="reviewAddress"></span></div>
-                            </div>
-                        </div>
+    <div class="fixed inset-0 z-50 hidden items-center justify-center p-4" id="reviewModal" aria-hidden="true">
+        <div class="absolute inset-0 bg-slate-900/50" data-modal-hide="reviewModal"></div>
+        <div class="relative z-10 flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-2xl">
+            <div class="flex items-center justify-between border-b border-blue-100 px-5 py-4">
+                <h3 class="text-lg font-semibold text-slate-900">Review Enrollment Application</h3>
+                <button type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800" data-modal-hide="reviewModal" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
 
-                        <!-- Background -->
-                        <div class="tab-pane fade" id="reviewBackground" role="tabpanel">
-                            <h6 class="text-primary">Education & Employment</h6>
-                            <p><small class="text-muted">Educational Attainment:</small> <span id="reviewEducation" class="fw-bold"></span></p>
-                            <p><small class="text-muted">Employment Status:</small> <span id="reviewEmploymentStatus" class="fw-bold"></span></p>
-                            
-                            <h6 class="text-primary mt-3">Classification & Disability</h6>
-                            <p><small class="text-muted">Learner Classification:</small> <span id="reviewClassification"></span></p>
-                            <p><small class="text-muted">PWD:</small> <span id="reviewIsPwd"></span></p>
-                        </div>
-
-                    <h5 class="mt-4 text-sm font-semibold uppercase tracking-wider text-blue-700">Uploaded Requirements</h5>
-                    <div class="mt-2 space-y-2">
-                        <a href="#" id="linkValidId" target="_blank" class="block rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"><i class="fas fa-id-card mr-2"></i> Valid ID</a>
-                        <a href="#" id="linkBirthCert" target="_blank" class="block rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"><i class="fas fa-file-alt mr-2"></i> Birth Certificate</a>
-                    </div>
-
-                    <h5 class="mt-4 text-sm font-semibold uppercase tracking-wider text-blue-700">Approval Action</h5>
-                    <div class="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                        <label class="mb-1 block text-sm font-semibold text-slate-700">Assign Financial Classification</label>
-                        <select class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="scholarshipSelect">
-                            <option value="">None (Private / Payee)</option>
-                            <option value="TWSP">TWSP</option>
-                            <option value="TTSP">TTSP</option>
-                            <option value="STEP">STEP</option>
-                            <option value="PESFA">PESFA</option>
-                            <option value="UaTP">UaTP</option>
-                        </select>
-                        <p class="mt-2 text-xs text-slate-500">The scholarship selected by the applicant is pre-selected. You can override it if necessary.</p>
-                    </div>
+            <div class="border-b border-blue-100 px-5 py-3">
+                <div class="flex flex-wrap gap-2" id="reviewTabs" role="tablist">
+                    <button class="active rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white" type="button" data-tab-group="review" data-tab-target="#reviewPersonal">Personal Info</button>
+                    <button class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" type="button" data-tab-group="review" data-tab-target="#reviewBackground">Background</button>
+                    <button class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" type="button" data-tab-group="review" data-tab-target="#reviewTraining">Training & Approval</button>
                 </div>
             </div>
+
+            <div class="flex-1 overflow-y-auto p-5">
+                <input type="hidden" id="reviewEnrollmentId">
+
+                <section class="tab-review-pane" id="reviewPersonal" role="tabpanel">
+                    <div class="grid grid-cols-1 gap-5 md:grid-cols-12">
+                        <div class="md:col-span-4">
+                            <img id="reviewPhoto" src="" class="hidden h-56 w-full rounded-xl border border-slate-200 object-cover" alt="Applicant Photo">
+                            <div id="reviewNoPhoto" class="flex h-56 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-500">No Photo</div>
+                        </div>
+                        <div class="space-y-4 md:col-span-8">
+                            <div>
+                                <h4 id="reviewName" class="text-xl font-semibold text-slate-900"></h4>
+                                <p class="text-sm text-slate-500">Applicant profile</p>
+                            </div>
+                            <div class="grid grid-cols-1 gap-3 text-sm text-slate-700 sm:grid-cols-2">
+                                <p><span class="text-slate-500">Sex:</span> <span id="reviewSex"></span></p>
+                                <p><span class="text-slate-500">Civil Status:</span> <span id="reviewCivilStatus"></span></p>
+                                <p><span class="text-slate-500">Birthdate:</span> <span id="reviewBirthdate"></span></p>
+                                <p><span class="text-slate-500">Age:</span> <span id="reviewAge"></span></p>
+                                <p class="sm:col-span-2"><span class="text-slate-500">Birthplace:</span> <span id="reviewBirthplace"></span></p>
+                            </div>
+                            <div>
+                                <h5 class="text-sm font-semibold uppercase tracking-wider text-blue-700">Contact & Address</h5>
+                                <div class="mt-2 grid grid-cols-1 gap-3 text-sm text-slate-700 sm:grid-cols-2">
+                                    <p><span class="text-slate-500">Email:</span> <span id="reviewEmail"></span></p>
+                                    <p><span class="text-slate-500">Phone:</span> <span id="reviewPhone"></span></p>
+                                    <p class="sm:col-span-2"><span class="text-slate-500">Address:</span> <span id="reviewAddress"></span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="tab-review-pane hidden" id="reviewBackground" role="tabpanel">
+                    <div class="space-y-4">
+                        <div>
+                            <h5 class="text-sm font-semibold uppercase tracking-wider text-blue-700">Education & Employment</h5>
+                            <div class="mt-2 space-y-2 text-sm text-slate-700">
+                                <p><span class="text-slate-500">Educational Attainment:</span> <span id="reviewEducation" class="font-semibold text-slate-900"></span></p>
+                                <p><span class="text-slate-500">Employment Status:</span> <span id="reviewEmploymentStatus" class="font-semibold text-slate-900"></span></p>
+                            </div>
+                        </div>
+                        <div>
+                            <h5 class="text-sm font-semibold uppercase tracking-wider text-blue-700">Classification & Disability</h5>
+                            <div class="mt-2 space-y-2 text-sm text-slate-700">
+                                <p><span class="text-slate-500">Learner Classification:</span> <span id="reviewClassification"></span></p>
+                                <p><span class="text-slate-500">PWD:</span> <span id="reviewIsPwd"></span></p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="tab-review-pane hidden" id="reviewTraining" role="tabpanel">
+                    <div class="space-y-5">
+                        <div>
+                            <h5 class="text-sm font-semibold uppercase tracking-wider text-blue-700">Training Assignment</h5>
+                            <div class="mt-2 grid grid-cols-1 gap-3 text-sm text-slate-700 sm:grid-cols-2">
+                                <p><span class="text-slate-500">Course:</span> <span id="reviewCourse"></span></p>
+                                <p><span class="text-slate-500">Batch:</span> <span id="reviewBatch"></span></p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h5 class="text-sm font-semibold uppercase tracking-wider text-blue-700">Uploaded Requirements</h5>
+                            <div class="mt-2 space-y-2">
+                                <a href="#" id="linkValidId" target="_blank" class="block rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"><i class="fas fa-id-card mr-2"></i> Valid ID</a>
+                                <a href="#" id="linkBirthCert" target="_blank" class="block rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"><i class="fas fa-file-alt mr-2"></i> Birth Certificate</a>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h5 class="text-sm font-semibold uppercase tracking-wider text-blue-700">Approval Action</h5>
+                            <div class="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                <label class="mb-1 block text-sm font-semibold text-slate-700">Assign Financial Classification</label>
+                                <select class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="scholarshipSelect">
+                                    <option value="">None (Private / Payee)</option>
+                                    <option value="TWSP">TWSP</option>
+                                    <option value="TTSP">TTSP</option>
+                                    <option value="STEP">STEP</option>
+                                    <option value="PESFA">PESFA</option>
+                                    <option value="UaTP">UaTP</option>
+                                </select>
+                                <p class="mt-2 text-xs text-slate-500">The scholarship selected by the applicant is pre-selected. You can override it if necessary.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
             <div class="flex flex-wrap items-center justify-end gap-2 border-t border-blue-100 px-5 py-4">
                 <button type="button" class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700" id="btnReject">Reject Application</button>
                 <button type="button" class="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600" id="btnReserve">Reserve (Batch Full)</button>
@@ -201,30 +214,30 @@
         </div>
     </div>
 
-    <!-- Reassign Batch Modal -->
-    <div class="modal fade" id="reassignBatchModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Assign to New Batch</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="fixed inset-0 z-50 hidden items-center justify-center p-4" id="reassignBatchModal" aria-hidden="true">
+        <div class="absolute inset-0 bg-slate-900/50" data-modal-hide="reassignBatchModal"></div>
+        <div class="relative z-10 w-full max-w-lg rounded-2xl border border-blue-100 bg-white shadow-2xl">
+            <div class="flex items-center justify-between border-b border-blue-100 px-5 py-4">
+                <h3 class="text-lg font-semibold text-slate-900">Assign to New Batch</h3>
+                <button type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800" data-modal-hide="reassignBatchModal" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="space-y-4 p-5">
+                <input type="hidden" id="reassignEnrollmentId">
+                <input type="hidden" id="reassignQualificationId">
+                <p class="text-sm text-slate-700">Trainee: <strong id="reassignTraineeName" class="text-slate-900"></strong></p>
+                <p class="text-sm text-slate-700">Course: <strong id="reassignCourseName" class="text-slate-900"></strong></p>
+                <div>
+                    <label for="reassignBatchSelect" class="mb-1 block text-sm font-medium text-slate-700">Select a New Batch</label>
+                    <select class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="reassignBatchSelect">
+                        <option>Loading batches...</option>
+                    </select>
                 </div>
-                <div class="modal-body">
-                    <input type="hidden" id="reassignEnrollmentId">
-                    <input type="hidden" id="reassignQualificationId">
-                    <p>Trainee: <strong id="reassignTraineeName"></strong></p>
-                    <p>Course: <strong id="reassignCourseName"></strong></p>
-                    <div class="mb-3">
-                        <label for="reassignBatchSelect" class="form-label">Select a New Batch</label>
-                        <select class="form-select" id="reassignBatchSelect">
-                            <option>Loading batches...</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="btnConfirmReassignment">Assign and Approve</button>
-                </div>
+            </div>
+            <div class="flex justify-end gap-2 border-t border-blue-100 px-5 py-4">
+                <button type="button" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" data-modal-hide="reassignBatchModal">Cancel</button>
+                <button type="button" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" id="btnConfirmReassignment">Assign and Approve</button>
             </div>
         </div>
     </div>

@@ -1,4 +1,16 @@
 ﻿const API_BASE_URL = window.location.origin + '/Hohoo-ville/api';
+
+async function ensureSwal() {
+    if (typeof window.Swal !== 'undefined') return;
+    await new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        script.onload = resolve;
+        script.onerror = resolve;
+        document.head.appendChild(script);
+    });
+}
+
 let selectedCell = null;
 let currentTrainerId = null;
 
@@ -27,7 +39,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     if (loadChartBtn) loadChartBtn.addEventListener('click', loadSelectedChart);
     if (generateTemplateBtn) generateTemplateBtn.addEventListener('click', generateEIMTemplate);
     if (saveChartBtn) saveChartBtn.addEventListener('click', saveChart);
-    if (insertCheckBtn) insertCheckBtn.addEventListener('click', () => insertSymbol('C'));
+    if (insertCheckBtn) insertCheckBtn.addEventListener('click', () => insertSymbol('✓'));
     if (insertIpBtn) insertIpBtn.addEventListener('click', () => insertSymbol('IP'));
     if (clearCellBtn) clearCellBtn.addEventListener('click', () => insertSymbol(''));
 
@@ -130,13 +142,42 @@ function initUserMenu() {
     });
 }
 
-function initLogout() {
+async function ensureSwal() {
+    if (typeof window.Swal !== 'undefined') return;
+    await new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        script.onload = resolve;
+        script.onerror = resolve;
+        document.head.appendChild(script);
+    });
+}
+
+async function initLogout() {
     const logoutBtn = document.getElementById('logoutBtn');
     if (!logoutBtn) return;
-    logoutBtn.addEventListener('click', function (event) {
+    
+    logoutBtn.addEventListener('click', async function (event) {
         event.preventDefault();
-        localStorage.clear();
-        window.location.href = '/Hohoo-ville/frontend/login.html';
+        await ensureSwal();
+        
+        Swal.fire({
+            title: 'Logout Confirmation',
+            text: 'Are you sure you want to logout?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Logout',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                localStorage.clear();
+                window.location.href = '/Hohoo-ville/frontend/login.html';
+            }
+        });
     });
 }
 
@@ -372,7 +413,7 @@ function normalizeMark(mark) {
     const raw = String(mark || '').toUpperCase();
     if (!raw) return '';
     if (raw.includes('IP')) return 'IP';
-    if (raw === 'C' || raw === 'CHECK' || /[\u00E2\u00C3\u0153\u2713]/.test(raw)) return 'C';
+    if (raw === 'C' || raw === 'CHECK' || /[\u00E2\u00C3\u0153\u2713]/.test(raw) || raw === '✓') return '✓';
     return raw;
 }
 
