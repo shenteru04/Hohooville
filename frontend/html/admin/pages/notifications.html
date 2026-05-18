@@ -38,7 +38,6 @@
                         </button>
                         <div id="userDropdownMenu" class="absolute right-0 top-full z-40 mt-2 hidden w-48 rounded-xl border border-blue-100 bg-white py-1 shadow-xl shadow-blue-100/40">
                             <a href="profile.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-user mr-2"></i> Profile</a>
-                            <a href="settings.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-cog mr-2"></i> Settings</a>
                             <div class="border-t border-blue-100"></div>
                             <a href="#" id="logoutBtn" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-sign-out-alt mr-2"></i> Logout</a>
                         </div>
@@ -64,8 +63,26 @@
     <script src="../../../js/session_timeout.js"></script>
     <script src="../../../js/sidebar.js"></script>
     <script>
-        const API_URL = `${window.location.origin}/Hohoo-ville/api/notifications.php?action=get&role=admin`;
-        const MARK_READ_BASE = `${window.location.origin}/Hohoo-ville/api/notifications.php?action=markRead&id=`;
+        const NOTIFICATION_API_BASE = `${window.location.origin}/Hohoo-ville/api/notifications.php`;
+
+        function getStoredUser() {
+            try {
+                const raw = JSON.parse(localStorage.getItem('user') || 'null');
+                if (raw && typeof raw === 'object' && raw.user && typeof raw.user === 'object') {
+                    return raw.user;
+                }
+                return raw;
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function getCurrentUserId() {
+            const user = getStoredUser();
+            const value = user?.user_id ?? user?.userId ?? user?.id ?? 0;
+            const userId = Number(value);
+            return Number.isFinite(userId) && userId > 0 ? userId : 0;
+        }
 
         function initUserDropdown() {
             const button = document.getElementById('userDropdown');
@@ -97,7 +114,7 @@
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             sessionStorage.clear();
-            window.location.href = '/hohoo-ville/frontend/login.html';
+            window.location.href = '/Hohoo-ville/frontend/login.html';
             });
         }
 
@@ -112,7 +129,13 @@
     }
 
         function loadAll() {
-        authenticatedFetch(API_URL)
+            const userId = getCurrentUserId();
+            if (!userId) {
+                renderAll([]);
+                return;
+            }
+
+            authenticatedFetch(`${NOTIFICATION_API_BASE}?action=get&user_id=${encodeURIComponent(userId)}`)
                 .then((response) => response.json())
                 .then((data) => renderAll(Array.isArray(data) ? data : []))
                 .catch(() => {
@@ -154,8 +177,11 @@
 
                 row.addEventListener('click', (event) => {
                     event.preventDefault();
+                    const userId = getCurrentUserId();
                     if (item.id) {
-                        authenticatedFetch(`${MARK_READ_BASE}${encodeURIComponent(item.id)}`).catch(() => {});
+                        authenticatedFetch(
+                            `${NOTIFICATION_API_BASE}?action=markRead&id=${encodeURIComponent(item.id)}&user_id=${encodeURIComponent(userId)}`
+                        ).catch(() => {});
                     }
                     if (item.link) {
                         window.location.href = item.link;

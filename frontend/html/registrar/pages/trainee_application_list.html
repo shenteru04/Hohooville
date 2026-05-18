@@ -195,99 +195,260 @@
         </div>
     </div>
 
-    <div class="modal-root fixed inset-0 z-50 hidden items-center justify-center p-4" id="viewApplicationModal" tabindex="-1" aria-hidden="true">
-        <div class="absolute inset-0 bg-slate-900/50" data-modal-hide="viewApplicationModal"></div>
-        <div class="relative z-10 w-full max-w-5xl overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-2xl">
-            <div class="flex items-center justify-between border-b border-blue-100 px-5 py-4">
-                <h5 class="text-lg font-semibold text-slate-900">Application Details</h5>
-                <button type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800" data-modal-hide="viewApplicationModal" aria-label="Close modal">
-                    <i class="fas fa-times"></i>
-                </button>
+    <div class="modal-root fixed inset-0 z-50 hidden items-center justify-center overflow-y-auto bg-slate-950/50 p-4 sm:p-6" id="viewApplicationModal" tabindex="-1" aria-hidden="true">
+        <div class="absolute inset-0 backdrop-blur-sm" data-modal-hide="viewApplicationModal"></div>
+        <div class="relative z-10 my-auto flex max-h-[calc(100vh-2rem)] w-full max-w-6xl flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl shadow-slate-900/20 sm:max-h-[calc(100vh-3rem)]">
+            <div class="border-b border-slate-200 bg-white px-5 py-4 sm:px-6">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.32em] text-blue-600">Trainee Applications</p>
+                        <h3 class="mt-1 text-xl font-semibold text-slate-900">Application Details</h3>
+                        <p class="mt-1 text-sm text-slate-500">Review the trainee profile, background, training assignment, and submitted requirements in one place.</p>
+                    </div>
+                    <button type="button" class="inline-flex self-end rounded-xl border border-slate-200 p-2.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 sm:self-auto" data-modal-hide="viewApplicationModal" aria-label="Close modal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
             </div>
 
-            <div class="max-h-[75vh] overflow-y-auto p-5 sm:p-6">
-                <div class="mb-4 flex flex-wrap gap-2" id="viewAppTabs" role="tablist">
-                    <button class="tab-btn rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white" id="personal-tab" data-target="viewPersonal" type="button" role="tab" aria-selected="true">Personal Info</button>
-                    <button class="tab-btn rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50" id="background-tab" data-target="viewBackground" type="button" role="tab" aria-selected="false">Background</button>
-                    <button class="tab-btn rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50" id="training-tab" data-target="viewTraining" type="button" role="tab" aria-selected="false">Training & Docs</button>
-                </div>
-
-                <div id="viewAppTabsContent">
-                    <div class="tab-panel" id="viewPersonal" role="tabpanel">
-                        <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
-                            <div class="md:col-span-3">
-                                <img id="appPhoto" src="" class="hidden w-full rounded-lg border border-slate-200 bg-white p-2" alt="Applicant photo">
-                                <div id="appNoPhoto" class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-center text-sm text-slate-500">No Photo</div>
-                            </div>
-                            <div class="md:col-span-9">
-                                <h5 id="appName" class="text-lg font-bold text-slate-900"></h5>
-                                <p class="mb-3 text-sm text-slate-500">Applicant</p>
-                                <div class="grid grid-cols-1 gap-2 text-sm text-slate-700 md:grid-cols-2">
-                                    <div><span class="font-medium text-slate-500">Sex:</span> <span id="appSex"></span></div>
-                                    <div><span class="font-medium text-slate-500">Civil Status:</span> <span id="appCivilStatus"></span></div>
-                                    <div><span class="font-medium text-slate-500">Birthdate:</span> <span id="appBirthdate"></span></div>
-                                    <div><span class="font-medium text-slate-500">Age:</span> <span id="appAge"></span></div>
-                                    <div><span class="font-medium text-slate-500">Nationality:</span> <span id="appNationality"></span></div>
-                                    <div class="md:col-span-2"><span class="font-medium text-slate-500">Birthplace:</span> <span id="appBirthplace"></span></div>
+            <div class="min-h-0 flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_35%),linear-gradient(180deg,_rgba(248,250,252,0.95),_rgba(255,255,255,1))] p-5 sm:p-6">
+                <div class="grid gap-6 xl:grid-cols-[320px,minmax(0,1fr)]">
+                    <aside class="rounded-[26px] bg-gradient-to-br from-blue-600 via-sky-500 to-cyan-400 p-[1px] shadow-xl shadow-sky-500/20">
+                        <div class="flex h-full flex-col rounded-[25px] bg-slate-950/15 p-5 text-white backdrop-blur">
+                            <div class="overflow-hidden rounded-3xl border border-white/20 bg-white/10">
+                                <img id="appPhoto" src="" class="hidden aspect-[4/5] w-full object-cover" alt="Applicant photo">
+                                <div id="appNoPhoto" class="flex aspect-[4/5] flex-col items-center justify-center gap-3 bg-slate-900/15 px-6 text-center">
+                                    <div id="appInitials" class="flex h-20 w-20 items-center justify-center rounded-full bg-white/15 text-2xl font-bold uppercase tracking-[0.18em] text-white">NA</div>
+                                    <p class="text-sm text-white/80">No profile photo available</p>
                                 </div>
                             </div>
-                        </div>
 
-                        <h6 class="mb-2 mt-5 text-sm font-semibold uppercase tracking-wide text-blue-700">Contact & Address</h6>
-                        <div class="grid grid-cols-1 gap-2 text-sm text-slate-700 md:grid-cols-2">
-                            <div><span class="font-medium text-slate-500">Email:</span> <span id="appEmail"></span></div>
-                            <div><span class="font-medium text-slate-500">Phone:</span> <span id="appPhone"></span></div>
-                            <div><span class="font-medium text-slate-500">Facebook:</span> <span id="appFacebook"></span></div>
-                            <div class="md:col-span-2"><span class="font-medium text-slate-500">Address:</span> <span id="appAddress"></span></div>
-                        </div>
-                    </div>
+                            <div class="mt-5">
+                                <p class="text-xs font-semibold uppercase tracking-[0.32em] text-white/70">Application Record</p>
+                                <h4 id="appName" class="mt-2 text-2xl font-bold leading-tight text-white"></h4>
+                                <p id="appProfileSummary" class="mt-2 text-sm text-white/85">Trainee applicant</p>
+                            </div>
 
-                    <div class="tab-panel hidden" id="viewBackground" role="tabpanel">
-                        <h6 class="mb-2 text-sm font-semibold uppercase tracking-wide text-blue-700">Education & Employment</h6>
-                        <div class="mb-4 grid grid-cols-1 gap-3 text-sm text-slate-700 md:grid-cols-2">
-                            <div class="md:col-span-2"><span class="font-medium text-slate-500">Educational Attainment:</span> <span id="appEducation" class="font-semibold text-slate-900"></span></div>
-                            <div><span class="font-medium text-slate-500">Employment Status:</span> <span id="appEmploymentStatus" class="font-semibold text-slate-900"></span></div>
-                            <div><span class="font-medium text-slate-500">Employment Type:</span> <span id="appEmploymentType" class="font-semibold text-slate-900"></span></div>
-                        </div>
-                        <h6 class="mb-2 text-sm font-semibold uppercase tracking-wide text-blue-700">Classification & Disability</h6>
-                        <div class="mb-3 text-sm text-slate-700">
-                            <span class="font-medium text-slate-500">Learner Classification:</span>
-                            <span id="appClassification"></span>
-                        </div>
-                        <div class="grid grid-cols-1 gap-2 text-sm text-slate-700 md:grid-cols-3">
-                            <div><span class="font-medium text-slate-500">PWD:</span> <span id="appIsPwd"></span></div>
-                            <div><span class="font-medium text-slate-500">Type:</span> <span id="appDisabilityType"></span></div>
-                            <div><span class="font-medium text-slate-500">Cause:</span> <span id="appDisabilityCause"></span></div>
-                        </div>
-                    </div>
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                <span id="appApplicationStatus" class="inline-flex rounded-full border border-white/20 bg-white/15 px-3 py-1 text-xs font-semibold text-white">Pending</span>
+                                <span id="appScholarshipBadge" class="inline-flex rounded-full border border-white/20 bg-white/15 px-3 py-1 text-xs font-semibold text-white">Private / Payee</span>
+                            </div>
 
-                    <div class="tab-panel hidden" id="viewTraining" role="tabpanel">
-                        <h6 class="mb-2 text-sm font-semibold uppercase tracking-wide text-blue-700">Training Details</h6>
-                        <p class="text-sm text-slate-700"><strong class="text-slate-900">Course:</strong> <span id="appCourse"></span></p>
-                        <p class="text-sm text-slate-700"><strong class="text-slate-900">Batch:</strong> <span id="appBatch"></span></p>
-                        <p class="text-sm text-slate-700"><strong class="text-slate-900">Scholarship Type:</strong> <span id="appScholarship"></span></p>
-
-                        <h6 class="mb-2 mt-5 text-sm font-semibold uppercase tracking-wide text-blue-700">Uploaded Requirements</h6>
-                        <div class="space-y-2">
-                            <a href="#" id="linkValidId" target="_blank" class="inline-flex w-full items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-                                <i class="fas fa-id-card"></i> Valid ID
-                            </a>
-                            <a href="#" id="linkBirthCert" target="_blank" class="inline-flex w-full items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-                                <i class="fas fa-file-alt"></i> Birth Certificate
-                            </a>
+                            <dl class="mt-6 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                                <div class="rounded-2xl bg-white/12 p-4 ring-1 ring-white/10">
+                                    <dt class="text-xs font-semibold uppercase tracking-[0.28em] text-white/65">Course</dt>
+                                    <dd id="appCourseStat" class="mt-1 text-sm font-semibold leading-6 text-white">Not Assigned</dd>
+                                </div>
+                                <div class="rounded-2xl bg-white/12 p-4 ring-1 ring-white/10">
+                                    <dt class="text-xs font-semibold uppercase tracking-[0.28em] text-white/65">Batch</dt>
+                                    <dd id="appBatchStat" class="mt-1 text-sm font-semibold leading-6 text-white">Not Assigned</dd>
+                                </div>
+                                <div class="rounded-2xl bg-white/12 p-4 ring-1 ring-white/10">
+                                    <dt class="text-xs font-semibold uppercase tracking-[0.28em] text-white/65">Applied On</dt>
+                                    <dd id="appAppliedAt" class="mt-1 text-sm font-semibold leading-6 text-white">N/A</dd>
+                                </div>
+                            </dl>
                         </div>
+                    </aside>
+
+                    <div class="space-y-6">
+                        <section class="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 sm:p-6">
+                            <div class="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-[0.32em] text-blue-600">Profile Overview</p>
+                                    <h5 class="mt-1 text-lg font-semibold text-slate-900">Personal Information</h5>
+                                </div>
+                                <span class="inline-flex w-fit rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">Registrar View</span>
+                            </div>
+
+                            <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Email Address</p>
+                                    <a id="appEmailLink" href="#" class="mt-2 block break-all text-sm font-semibold text-blue-700 hover:text-blue-800">
+                                        <span id="appEmail">N/A</span>
+                                    </a>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Phone Number</p>
+                                    <a id="appPhoneLink" href="#" class="mt-2 block text-sm font-semibold text-slate-900 hover:text-blue-700">
+                                        <span id="appPhone">N/A</span>
+                                    </a>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Facebook Account</p>
+                                    <a id="appFacebookLink" href="#" class="mt-2 block break-all text-sm font-semibold text-slate-900 hover:text-blue-700">
+                                        <span id="appFacebook">N/A</span>
+                                    </a>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Sex</p>
+                                    <p id="appSex" class="mt-2 text-sm font-semibold text-slate-900">N/A</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Civil Status</p>
+                                    <p id="appCivilStatus" class="mt-2 text-sm font-semibold text-slate-900">N/A</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Nationality</p>
+                                    <p id="appNationality" class="mt-2 text-sm font-semibold text-slate-900">N/A</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Birthdate</p>
+                                    <p id="appBirthdate" class="mt-2 text-sm font-semibold text-slate-900">N/A</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Age</p>
+                                    <p id="appAge" class="mt-2 text-sm font-semibold text-slate-900">N/A</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 xl:col-span-1">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Birthplace</p>
+                                    <p id="appBirthplace" class="mt-2 text-sm leading-6 text-slate-700">N/A</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 md:col-span-2 xl:col-span-3">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Home Address</p>
+                                    <p id="appAddress" class="mt-2 text-sm leading-6 text-slate-700">N/A</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 sm:p-6">
+                            <div class="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-[0.32em] text-blue-600">Applicant Background</p>
+                                    <h5 class="mt-1 text-lg font-semibold text-slate-900">Education, Employment, and Classification</h5>
+                                </div>
+                                <span class="inline-flex w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">Application Data</span>
+                            </div>
+
+                            <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 md:col-span-2 xl:col-span-3">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Educational Attainment</p>
+                                    <p id="appEducation" class="mt-2 text-sm font-semibold text-slate-900">N/A</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Employment Status</p>
+                                    <p id="appEmploymentStatus" class="mt-2 text-sm font-semibold text-slate-900">N/A</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Employment Type</p>
+                                    <p id="appEmploymentType" class="mt-2 text-sm font-semibold text-slate-900">N/A</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">PWD</p>
+                                    <p id="appIsPwd" class="mt-2 text-sm font-semibold text-slate-900">No</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 md:col-span-2 xl:col-span-3">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Learner Classification</p>
+                                    <p id="appClassification" class="mt-2 text-sm leading-6 text-slate-700">N/A</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Disability Type</p>
+                                    <p id="appDisabilityType" class="mt-2 text-sm leading-6 text-slate-700">N/A</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 md:col-span-2">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Disability Cause</p>
+                                    <p id="appDisabilityCause" class="mt-2 text-sm leading-6 text-slate-700">N/A</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 sm:p-6">
+                            <div class="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-[0.32em] text-blue-600">Training Assignment</p>
+                                    <h5 class="mt-1 text-lg font-semibold text-slate-900">Course, Batch, and Requirements</h5>
+                                </div>
+                                <span class="inline-flex w-fit rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Submitted Files</span>
+                            </div>
+
+                            <div class="mt-5 grid gap-4 md:grid-cols-3">
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Course</p>
+                                    <p id="appCourse" class="mt-2 text-sm font-semibold text-slate-900">N/A</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Batch</p>
+                                    <p id="appBatch" class="mt-2 text-sm font-semibold text-slate-900">N/A</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Scholarship Type</p>
+                                    <p id="appScholarship" class="mt-2 text-sm font-semibold text-slate-900">Private / Payee</p>
+                                </div>
+                            </div>
+
+                            <div class="mt-5 grid gap-4 lg:grid-cols-2">
+                                <a href="#" id="linkValidId" target="_blank" rel="noopener noreferrer" class="group rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50/60">
+                                    <div class="flex items-start gap-4">
+                                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
+                                            <i class="fas fa-id-card text-lg"></i>
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-base font-semibold text-slate-900">Valid ID</p>
+                                            <p id="linkValidIdStatus" class="mt-1 text-sm leading-6 text-slate-500">Not uploaded yet.</p>
+                                        </div>
+                                        <span id="linkValidIdAction" class="inline-flex shrink-0 rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-600">Missing</span>
+                                    </div>
+                                </a>
+
+                                <a href="#" id="linkBirthCert" target="_blank" rel="noopener noreferrer" class="group rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50/60">
+                                    <div class="flex items-start gap-4">
+                                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
+                                            <i class="fas fa-file-lines text-lg"></i>
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-base font-semibold text-slate-900">Birth Certificate</p>
+                                            <p id="linkBirthCertStatus" class="mt-1 text-sm leading-6 text-slate-500">Not uploaded yet.</p>
+                                        </div>
+                                        <span id="linkBirthCertAction" class="inline-flex shrink-0 rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-600">Missing</span>
+                                    </div>
+                                </a>
+                            </div>
+                        </section>
                     </div>
                 </div>
             </div>
 
-            <div class="flex flex-wrap justify-end gap-2 border-t border-blue-100 px-5 py-4">
-                <button type="button" id="modalQualifyBtn" class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
+            <div class="shrink-0 flex flex-wrap justify-end gap-2 border-t border-slate-200 bg-white px-5 py-4 sm:px-6">
+                <button type="button" id="modalQualifyBtn" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
                     <i class="fas fa-check"></i> Mark as Qualified
                 </button>
-                <button type="button" id="modalUnqualifyBtn" class="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500">
+                <button type="button" id="modalUnqualifyBtn" class="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500">
                     <i class="fas fa-times"></i> Mark as Unqualified
                 </button>
-                <button type="button" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" data-modal-hide="viewApplicationModal">
+                <button type="button" class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" data-modal-hide="viewApplicationModal">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-root fixed inset-0 z-[60] hidden items-center justify-center overflow-y-auto bg-slate-950/60 p-4 sm:p-6" id="documentPreviewModal" tabindex="-1" aria-hidden="true">
+        <div class="absolute inset-0 backdrop-blur-sm" data-modal-hide="documentPreviewModal"></div>
+        <div class="relative z-10 my-auto flex max-h-[calc(100vh-2rem)] w-full max-w-5xl flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl shadow-slate-900/25 sm:max-h-[calc(100vh-3rem)]">
+            <div class="shrink-0 border-b border-slate-200 bg-white px-5 py-4 sm:px-6">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.32em] text-blue-600">Submitted Requirement</p>
+                        <h3 id="documentPreviewTitle" class="mt-1 text-xl font-semibold text-slate-900">Document Preview</h3>
+                        <p id="documentPreviewSubtitle" class="mt-1 break-all text-sm text-slate-500">Preview the uploaded requirement here.</p>
+                    </div>
+                    <button type="button" class="inline-flex self-end rounded-xl border border-slate-200 p-2.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 sm:self-auto" data-modal-hide="documentPreviewModal" aria-label="Close document preview">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="documentPreviewBody" class="min-h-0 flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.10),_transparent_35%),linear-gradient(180deg,_rgba(248,250,252,0.98),_rgba(255,255,255,1))] p-4 sm:p-6">
+                <div class="flex min-h-full items-center justify-center rounded-[24px] border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">
+                    Select a submitted requirement to preview it here.
+                </div>
+            </div>
+
+            <div class="shrink-0 flex flex-wrap justify-end gap-2 border-t border-slate-200 bg-white px-5 py-4 sm:px-6">
+                <a href="#" id="documentPreviewOpenLink" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                    <i class="fas fa-arrow-up-right-from-square"></i> Open in New Tab
+                </a>
+                <button type="button" class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" data-modal-hide="documentPreviewModal">
                     Close
                 </button>
             </div>

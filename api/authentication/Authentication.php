@@ -10,6 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../database/db.php';
+require_once '../utils/PermissionChecker.php';
 // Load Composer's autoloader
 require_once '../../vendor/autoload.php';
 
@@ -467,9 +468,16 @@ class Authentication {
     }
 
     public function generateToken($userId) {
+        // Get user role_id for permission checking
+        $stmt = $this->conn->prepare("SELECT role_id FROM tbl_users WHERE user_id = ?");
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        $roleId = $user ? $user['role_id'] : null;
+
         $header = json_encode(['typ' => 'JWT', 'alg' => 'HS256']);
         $payload = json_encode([
             'user_id' => $userId,
+            'role_id' => $roleId,
             'exp' => time() + (86400 * 7) // 7 days
         ]);
 
@@ -489,9 +497,21 @@ class Authentication {
             return false;
         }
 
-        $header = base64_decode($tokenParts[0]);
-        $payload = base64_decode($tokenParts[1]);
+        // Convert base64url to standard base64 for decoding
+        $base64Header = str_replace(['-', '_'], ['+', '/'], $tokenParts[0]);
+        $base64Payload = str_replace(['-', '_'], ['+', '/'], $tokenParts[1]);
+        
+        // Add padding if necessary
+        $base64Header .= str_repeat('=', (4 - (strlen($base64Header) % 4)) % 4);
+        $base64Payload .= str_repeat('=', (4 - (strlen($base64Payload) % 4)) % 4);
+        
+        $header = base64_decode($base64Header, true);
+        $payload = base64_decode($base64Payload, true);
         $signatureProvided = $tokenParts[2];
+
+        if ($header === false || $payload === false) {
+            return false;
+        }
 
         $base64UrlHeader = $this->base64UrlEncode($header);
         $base64UrlPayload = $this->base64UrlEncode($payload);
@@ -525,8 +545,20 @@ class Authentication {
     private function decodeJwt($token) {
         $tokenParts = explode('.', $token);
         if (count($tokenParts) !== 3) return false;
-        $header = base64_decode($tokenParts[0]);
-        $payload = base64_decode($tokenParts[1]);
+        
+        // Convert base64url to standard base64 for decoding
+        $base64Header = str_replace(['-', '_'], ['+', '/'], $tokenParts[0]);
+        $base64Payload = str_replace(['-', '_'], ['+', '/'], $tokenParts[1]);
+        
+        // Add padding if necessary
+        $base64Header .= str_repeat('=', (4 - (strlen($base64Header) % 4)) % 4);
+        $base64Payload .= str_repeat('=', (4 - (strlen($base64Payload) % 4)) % 4);
+        
+        $header = base64_decode($base64Header, true);
+        $payload = base64_decode($base64Payload, true);
+        
+        if ($header === false || $payload === false) return false;
+        
         $signatureProvided = $tokenParts[2];
         $base64UrlHeader = $this->base64UrlEncode($header);
         $base64UrlPayload = $this->base64UrlEncode($payload);

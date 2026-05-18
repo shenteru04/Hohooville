@@ -23,7 +23,7 @@ apiClient.interceptors.response.use(
         if (error.response?.status === 401) {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            window.location.href = '../../../login.html';
+            window.location.href = '/Hohoo-ville/frontend/login.html';
         }
         return Promise.reject(error);
     }
@@ -209,7 +209,7 @@ function renderTable(data) {
     if (!tbody) return;
 
     if (!data.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-sm text-slate-500">No qualifications found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-sm text-slate-500">No qualifications found</td></tr>';
         return;
     }
 
@@ -218,7 +218,6 @@ function renderTable(data) {
             <td class="px-3 py-3 text-sm text-slate-900">${escapeHtml(item.qualification_name || '')}</td>
             <td class="px-3 py-3 text-sm text-slate-700"><span class="inline-flex rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700">${formatNCLevel(item.nc_level_code || item.nc_level_name)}</span></td>
             <td class="px-3 py-3 text-sm text-slate-700">${escapeHtml(item.ctpr_number || '-')}</td>
-            <td class="px-3 py-3 text-sm text-slate-700">${item.training_cost ? `PHP ${escapeHtml(String(item.training_cost))}` : 'Free'}</td>
             <td class="px-3 py-3 text-sm text-slate-700">${escapeHtml(item.duration || 'N/A')}</td>
             <td class="px-3 py-3 text-sm">${statusBadge(item.status)}</td>
             <td class="px-3 py-3 text-sm">
@@ -240,7 +239,6 @@ async function addQualification() {
         qualification_name: document.getElementById('qualificationName')?.value?.trim(),
         nc_level_id: document.getElementById('ncLevel')?.value?.trim(),
         ctpr_number: document.getElementById('ctprNumber')?.value?.trim() || '',
-        training_cost: document.getElementById('trainingCost')?.value || '',
         duration: document.getElementById('duration')?.value?.trim(),
         description: document.getElementById('description')?.value?.trim() || '',
         status: document.getElementById('qualificationStatus')?.value || 'active'
@@ -269,7 +267,6 @@ async function updateQualification(id) {
         qualification_name: document.getElementById('qualificationName')?.value?.trim(),
         nc_level_id: document.getElementById('ncLevel')?.value?.trim(),
         ctpr_number: document.getElementById('ctprNumber')?.value?.trim() || '',
-        training_cost: document.getElementById('trainingCost')?.value || '',
         duration: document.getElementById('duration')?.value?.trim(),
         description: document.getElementById('description')?.value?.trim() || '',
         status: document.getElementById('qualificationStatus')?.value || existing?.status || 'active'
@@ -393,7 +390,6 @@ function editQualification(id) {
     setValue('qualificationName', item.qualification_name || '');
     setValue('ncLevel', item.nc_level_id || '');
     setValue('ctprNumber', item.ctpr_number || '');
-    setValue('trainingCost', item.training_cost || '');
     setValue('duration', item.duration || '');
     setValue('qualificationStatus', item.status || 'active');
     setValue('description', item.description || '');

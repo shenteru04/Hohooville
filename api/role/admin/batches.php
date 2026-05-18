@@ -18,35 +18,84 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../../database/db.php';
+require_once '../../utils/PermissionChecker.php';
+require_once '../../utils/trainer_assignment_helper.php';
 
 $database = new Database();
 $conn = $database->getConnection();
+ta_ensure_schema($conn);
 
-$action = $_GET['action'] ?? '';
+$action = isset($_GET['action']) ? $_GET['action'] : '';
 
-switch ($action) {
-    case 'list':
-        listBatches($conn);
-        break;
-    case 'get-form-data':
-        getFormData($conn);
-        break;
-    case 'add':
-        addBatch($conn);
-        break;
-    case 'update':
-        updateBatch($conn);
-        break;
-    case 'delete':
-        deleteBatch($conn);
-        break;
-    case 'get-trainees':
-        getTraineesForBatch($conn);
-        break;
-    default:
-        echo json_encode(['success' => false, 'message' => 'Invalid action specified.']);
-        http_response_code(400);
-        break;
+try {
+    // Get JWT token from headers
+    $headers = getallheaders();
+    $authHeader = $headers['Authorization'] ?? '';
+    
+    // If no auth header, allow access for now (graceful degradation)
+    if (!$authHeader) {
+        $permissionChecker = null;
+    } else {
+        // Extract token
+        $token = str_replace('Bearer ', '', $authHeader);
+        
+        // Decode JWT to get user_id and role_id
+        $tokenParts = explode('.', $token);
+        if (count($tokenParts) !== 3) {
+            $permissionChecker = null;
+        } else {
+            $payload = json_decode(base64url_decode($tokenParts[1]), true);
+            $userId = $payload['user_id'] ?? null;
+            $roleId = $payload['role_id'] ?? null;
+
+            if (!$userId || !$roleId) {
+                $permissionChecker = null;
+            } else {
+                // Initialize permission checker
+                $permissionChecker = new PermissionChecker($conn, $userId, $roleId);
+            }
+        }
+    }
+
+    // Check permissions based on action (only if permission checker is available)
+    switch ($action) {
+        case 'list':
+            if ($permissionChecker) $permissionChecker->requirePermission('batches.view');
+            listBatches($conn);
+            break;
+        case 'get-form-data':
+            if ($permissionChecker) $permissionChecker->requirePermission('batches.view');
+            getFormData($conn);
+            break;
+        case 'add':
+            if ($permissionChecker) $permissionChecker->requirePermission('batches.create');
+            addBatch($conn);
+            break;
+        case 'update':
+            if ($permissionChecker) $permissionChecker->requirePermission('batches.update');
+            updateBatch($conn);
+            break;
+        case 'delete':
+            if ($permissionChecker) $permissionChecker->requirePermission('batches.delete');
+            deleteBatch($conn);
+            break;
+        case 'get-trainees':
+            if ($permissionChecker) $permissionChecker->requirePermission('trainees.view');
+            getBatchTrainees($conn);
+            break;
+        default:
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid action']);
+            break;
+    }
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+}
+
+// Helper function for base64url decode
+function base64url_decode($data) {
+    return base64_decode(str_pad(strtr($data, '-_', '+/'), strlen($data) % 4, '=', STR_PAD_RIGHT));
 }
 
 function listBatches($conn) {
@@ -59,9 +108,12 @@ function listBatches($conn) {
                     b.end_date,
                     b.status,
                     b.scholarship_type_id,
+                    COALESCE(b.trainer_assignment_mode, 'single') AS trainer_assignment_mode,
                     st.scholarship_name as scholarship_type,
                     b.trainer_id,
                     b.max_trainees,
+                    COALESCE(b.training_cost, c.training_cost, 0) AS training_cost,
+                    COALESCE(b.training_cost, c.training_cost, 0) * COALESCE(b.max_trainees, 0) AS projected_total,
                     c.qualification_name as course_name,
                     CONCAT(t.first_name, ' ', t.last_name) AS trainer_name,
                     (SELECT COUNT(*) FROM tbl_enrollment e WHERE e.batch_id = b.batch_id AND e.status = 'approved') as enrolled_count
@@ -80,6 +132,18 @@ function listBatches($conn) {
         $stmt->execute();
         $batches = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+        $summaries = ta_fetch_batch_assignment_summary($conn, array_column($batches, 'batch_id'));
+        foreach ($batches as &$batch) {
+            $mode = ta_normalize_mode($batch['trainer_assignment_mode'] ?? 'single');
+            $batch['trainer_assignment_mode'] = $mode;
+            $batch['lead_trainer_name'] = $batch['trainer_name'] ?? null;
+            $batch['trainer_summary'] = buildBatchTrainerSummary($batch, $summaries[(int)$batch['batch_id']] ?? null);
+            if ($mode === 'multiple') {
+                $batch['trainer_name'] = $batch['trainer_summary'];
+            }
+        }
+        unset($batch);
+
         echo json_encode(['success' => true, 'data' => $batches]);
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'message' => 'Error fetching batches: ' . $e->getMessage()]);
@@ -90,7 +154,17 @@ function listBatches($conn) {
 function getFormData($conn) {
     try {
         // Get qualifications
-        $qual_query = "SELECT qualification_id, qualification_name as course_name FROM tbl_qualifications WHERE status = 'active' ORDER BY qualification_name";
+        $qual_query = "SELECT
+                            q.qualification_id,
+                            q.qualification_name as course_name,
+                            COALESCE(q.training_cost, 0) AS training_cost,
+                            q.nc_level_id,
+                            nc.nc_level_code,
+                            nc.nc_level_name
+                       FROM tbl_qualifications q
+                       LEFT JOIN tbl_nc_levels nc ON nc.nc_level_id = q.nc_level_id
+                       WHERE q.status = 'active'
+                       ORDER BY q.qualification_name";
         $qual_stmt = $conn->prepare($qual_query);
         $qual_stmt->execute();
         $qualifications = $qual_stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -142,18 +216,26 @@ function addBatch($conn) {
     }
 
     try {
-        $query = "INSERT INTO tbl_batch (qualification_id, batch_name, trainer_id, scholarship_type_id, start_date, end_date, status, max_trainees) 
-                  VALUES (:qualification_id, :batch_name, :trainer_id, :scholarship_type_id, :start_date, :end_date, :status, :max_trainees)";
+        $trainerAssignmentMode = ta_normalize_mode($data['trainer_assignment_mode'] ?? 'single');
+        $trainerId = normalizeNullableInt($data['trainer_id'] ?? null);
+        $scholarshipTypeId = normalizeNullableInt($data['scholarship_type_id'] ?? null);
+        $trainingCost = normalizeMoneyValue($data['training_cost'] ?? null);
+        $maxTrainees = normalizeMaxTrainees($data['max_trainees'] ?? null);
+        $status = normalizeBatchStatus($data['status'] ?? 'open');
+        $query = "INSERT INTO tbl_batch (qualification_id, batch_name, trainer_id, trainer_assignment_mode, scholarship_type_id, start_date, end_date, status, max_trainees, training_cost) 
+                  VALUES (:qualification_id, :batch_name, :trainer_id, :trainer_assignment_mode, :scholarship_type_id, :start_date, :end_date, :status, :max_trainees, :training_cost)";
         $stmt = $conn->prepare($query);
 
         $stmt->bindParam(':qualification_id', $data['qualification_id'], PDO::PARAM_INT);
         $stmt->bindParam(':batch_name', $data['batch_name']);
-        $stmt->bindParam(':trainer_id', $data['trainer_id'], PDO::PARAM_INT);
-        $stmt->bindParam(':scholarship_type_id', $data['scholarship_type_id']);
+        $stmt->bindValue(':trainer_id', $trainerId, $trainerId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+        $stmt->bindValue(':trainer_assignment_mode', $trainerAssignmentMode);
+        $stmt->bindValue(':scholarship_type_id', $scholarshipTypeId, $scholarshipTypeId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
         $stmt->bindParam(':start_date', $data['start_date']);
         $stmt->bindParam(':end_date', $data['end_date']);
-        $stmt->bindParam(':status', $data['status']);
-        $stmt->bindParam(':max_trainees', $data['max_trainees']);
+        $stmt->bindValue(':status', $status);
+        $stmt->bindValue(':max_trainees', $maxTrainees, PDO::PARAM_INT);
+        $stmt->bindValue(':training_cost', $trainingCost);
 
         if ($stmt->execute()) {
             echo json_encode(['success' => true, 'message' => 'Batch added successfully.']);
@@ -177,26 +259,36 @@ function updateBatch($conn) {
     }
 
     try {
+        $trainerAssignmentMode = ta_normalize_mode($data['trainer_assignment_mode'] ?? 'single');
+        $trainerId = normalizeNullableInt($data['trainer_id'] ?? null);
+        $scholarshipTypeId = normalizeNullableInt($data['scholarship_type_id'] ?? null);
+        $trainingCost = normalizeMoneyValue($data['training_cost'] ?? null);
+        $maxTrainees = normalizeMaxTrainees($data['max_trainees'] ?? null);
+        $status = normalizeBatchStatus($data['status'] ?? 'open');
         $query = "UPDATE tbl_batch SET 
                     qualification_id = :qualification_id, 
                     batch_name = :batch_name, 
                     trainer_id = :trainer_id, 
+                    trainer_assignment_mode = :trainer_assignment_mode,
                     scholarship_type_id = :scholarship_type_id, 
                     start_date = :start_date, 
                     end_date = :end_date, 
                     status = :status,
-                    max_trainees = :max_trainees
+                    max_trainees = :max_trainees,
+                    training_cost = :training_cost
                   WHERE batch_id = :batch_id";
         $stmt = $conn->prepare($query);
 
         $stmt->bindParam(':qualification_id', $data['qualification_id'], PDO::PARAM_INT);
         $stmt->bindParam(':batch_name', $data['batch_name']);
-        $stmt->bindParam(':trainer_id', $data['trainer_id'], PDO::PARAM_INT);
-        $stmt->bindParam(':scholarship_type_id', $data['scholarship_type_id']);
+        $stmt->bindValue(':trainer_id', $trainerId, $trainerId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+        $stmt->bindValue(':trainer_assignment_mode', $trainerAssignmentMode);
+        $stmt->bindValue(':scholarship_type_id', $scholarshipTypeId, $scholarshipTypeId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
         $stmt->bindParam(':start_date', $data['start_date']);
         $stmt->bindParam(':end_date', $data['end_date']);
-        $stmt->bindParam(':status', $data['status']);
-        $stmt->bindParam(':max_trainees', $data['max_trainees']);
+        $stmt->bindValue(':status', $status);
+        $stmt->bindValue(':max_trainees', $maxTrainees, PDO::PARAM_INT);
+        $stmt->bindValue(':training_cost', $trainingCost);
         $stmt->bindParam(':batch_id', $data['batch_id'], PDO::PARAM_INT);
 
         if ($stmt->execute()) {
@@ -271,6 +363,50 @@ function getTraineesForBatch($conn) {
         echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         http_response_code(500);
     }
+}
+
+function normalizeNullableInt($value): ?int {
+    $number = (int)$value;
+    return $number > 0 ? $number : null;
+}
+
+function normalizeMoneyValue($value): float {
+    if ($value === null || $value === '') {
+        return 0.0;
+    }
+
+    $amount = round((float)$value, 2);
+    return $amount >= 0 ? $amount : 0.0;
+}
+
+function normalizeMaxTrainees($value): int {
+    $number = (int)$value;
+    return $number > 0 ? $number : 25;
+}
+
+function normalizeBatchStatus($value): string {
+    return strtolower((string)$value) === 'closed' ? 'closed' : 'open';
+}
+
+function buildBatchTrainerSummary(array $batch, ?array $summary): string {
+    $mode = ta_normalize_mode($batch['trainer_assignment_mode'] ?? 'single');
+    if ($mode !== 'multiple') {
+        return trim((string)($batch['trainer_name'] ?? '')) !== '' ? (string)$batch['trainer_name'] : 'Not Assigned';
+    }
+
+    $trainerCount = (int)($summary['distinct_trainers'] ?? 0);
+    $moduleCount = (int)($summary['assigned_modules'] ?? 0);
+
+    if ($trainerCount <= 0) {
+        $leadTrainerName = trim((string)($batch['lead_trainer_name'] ?? ''));
+        return $leadTrainerName !== '' ? $leadTrainerName . ' (Lead Trainer)' : 'Multiple Trainers (Not Scheduled)';
+    }
+
+    if ($trainerCount === 1 && !empty($summary['trainer_names'][0])) {
+        return sprintf('%s (%d module%s)', $summary['trainer_names'][0], $moduleCount, $moduleCount === 1 ? '' : 's');
+    }
+
+    return sprintf('%d trainers / %d modules', $trainerCount, $moduleCount);
 }
 ?>
 

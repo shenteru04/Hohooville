@@ -25,7 +25,7 @@ apiClient.interceptors.response.use(
         if (error.response && error.response.status === 401) {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            window.location.href = '../../../login.html';
+            window.location.href = '/Hohoo-ville/frontend/login.html';
         }
         return Promise.reject(error);
     }
@@ -77,7 +77,7 @@ function bindHeaderEvents() {
         logoutBtn.addEventListener('click', (event) => {
             event.preventDefault();
             localStorage.clear();
-            window.location.href = '/hohoo-ville/frontend/login.html';
+            window.location.href = '/Hohoo-ville/frontend/login.html';
         });
     }
 
@@ -264,7 +264,7 @@ function renderRoleUsersTable(role) {
     tbody.innerHTML = '';
 
     if (!data.length) {
-        tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-sm text-slate-500">No ${role}s found</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-sm text-slate-500">No ${role}s found</td></tr>`;
         return;
     }
 
@@ -277,18 +277,28 @@ function renderRoleUsersTable(role) {
             ? '<span class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">Active</span>'
             : '<span class="inline-flex items-center rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-700">Inactive</span>';
 
-        const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username || 'User')}&background=2563eb&color=ffffff&size=32`;
+        // Check if user has a profile image, otherwise use UI Avatar
+        let avatarUrl;
+        if (user.profile_image) {
+            // photo_* files are 2x2 photos stored in uploads/trainees/, profile images in uploads/profile_images/
+            const isPhotoFile = user.profile_image.startsWith('photo_');
+            const imagePath = isPhotoFile ? 'trainees' : 'profile_images';
+            avatarUrl = `${window.location.origin}/hohoo-ville/uploads/${imagePath}/${user.profile_image}`;
+        } else {
+            avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username || 'User')}&background=2563eb&color=ffffff&size=40`;
+        }
         const safeUsername = escapeHtml(user.username || 'Unknown User');
         const safeEmail = escapeHtml(user.email || 'No email');
+        const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username || 'User')}&background=2563eb&color=ffffff&size=40`;
 
         row.innerHTML = `
             <td class="px-4 py-3">
-                <div class="flex items-center gap-3">
-                    <img src="${avatarUrl}" class="h-8 w-8 rounded-full object-cover" width="32" height="32" alt="${safeUsername}">
-                    <div>
-                        <div class="text-sm font-semibold text-slate-900">${safeUsername}</div>
-                        <div class="text-xs text-slate-500">${safeEmail}</div>
-                    </div>
+                <img src="${avatarUrl}" class="h-10 w-10 rounded-full object-cover" width="40" height="40" alt="${safeUsername}" onerror="this.src='${fallbackAvatar}'">
+            </td>
+            <td class="px-4 py-3">
+                <div>
+                    <div class="text-sm font-semibold text-slate-900">${safeUsername}</div>
+                    <div class="text-xs text-slate-500">${safeEmail}</div>
                 </div>
             </td>
             <td class="px-4 py-3">${statusBadge}</td>

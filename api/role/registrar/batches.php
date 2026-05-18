@@ -11,9 +11,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../../database/db.php';
+require_once '../../utils/trainer_assignment_helper.php';
 
 $database = new Database();
 $conn = $database->getConnection();
+ta_ensure_schema($conn);
 
 $action = $_GET['action'] ?? '';
 
@@ -23,6 +25,12 @@ switch ($action) {
         break;
     case 'get-form-data':
         getFormData($conn);
+        break;
+    case 'get-qualification-units':
+        getQualificationUnits($conn);
+        break;
+    case 'save-unit-assignments':
+        saveUnitAssignments($conn);
         break;
     case 'add':
         addBatch($conn);
@@ -58,9 +66,12 @@ function listBatches($conn) {
                     b.end_date,
                     b.status,
                     b.scholarship_type_id,
+                    COALESCE(b.trainer_assignment_mode, 'single') AS trainer_assignment_mode,
                     st.scholarship_name as scholarship_type,
                     b.trainer_id,
                     b.max_trainees,
+                    COALESCE(b.training_cost, c.training_cost, 0) AS training_cost,
+                    COALESCE(b.training_cost, c.training_cost, 0) * COALESCE(b.max_trainees, 0) AS projected_total,
                     c.qualification_name as course_name,
                     CONCAT(t.first_name, ' ', t.last_name) AS trainer_name
                 FROM
@@ -77,6 +88,18 @@ function listBatches($conn) {
         $stmt = $conn->prepare($query);
         $stmt->execute();
         $batches = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $summaries = ta_fetch_batch_assignment_summary($conn, array_column($batches, 'batch_id'));
+        foreach ($batches as &$batch) {
+            $mode = ta_normalize_mode($batch['trainer_assignment_mode'] ?? 'single');
+            $batch['trainer_assignment_mode'] = $mode;
+            $batch['lead_trainer_name'] = $batch['trainer_name'] ?? null;
+            $batch['trainer_summary'] = buildBatchTrainerSummary($batch, $summaries[(int)$batch['batch_id']] ?? null);
+            if ($mode === 'multiple') {
+                $batch['trainer_name'] = $batch['trainer_summary'];
+            }
+        }
+        unset($batch);
 
         echo json_encode(['success' => true, 'data' => $batches]);
     } catch (Exception $e) {
@@ -123,6 +146,125 @@ function getFormData($conn) {
     }
 }
 
+function getQualificationUnits(PDO $conn): void
+{
+    $qualificationId = (int)($_GET['qualification_id'] ?? 0);
+    $batchId = (int)($_GET['batch_id'] ?? 0);
+
+    if ($qualificationId <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Qualification ID is required.']);
+        http_response_code(400);
+        return;
+    }
+
+    try {
+        $groups = ta_fetch_qualification_unit_groups($conn, $qualificationId, true);
+        $existingAssignments = $batchId > 0 ? ta_fetch_batch_module_assignments($conn, $batchId) : [];
+        $assignmentByGroup = [];
+
+        foreach ($existingAssignments as $assignment) {
+            $groupKey = ta_build_module_group_key($assignment);
+            if (!isset($assignmentByGroup[$groupKey])) {
+                $assignmentByGroup[$groupKey] = $assignment;
+            }
+        }
+
+        $units = array_map(static function (array $group) use ($assignmentByGroup): array {
+            $existing = $assignmentByGroup[$group['group_key']] ?? null;
+            $selectedModuleId = !empty($existing['module_id']) ? (int)$existing['module_id'] : null;
+            $selectedTrainerId = !empty($existing['trainer_id']) ? (int)$existing['trainer_id'] : null;
+            $selectedTrainerName = trim((string)($existing['trainer_name'] ?? ''));
+            $selectedSchedule = trim((string)($existing['schedule'] ?? ''));
+            $selectedRoomId = !empty($existing['room_id']) ? (int)$existing['room_id'] : null;
+            $selectedRoomName = trim((string)($existing['room'] ?? ''));
+            $type = strtolower(trim((string)($group['competency_type'] ?? '')));
+            $typeLabel = ucfirst($type !== '' ? $type : 'unit');
+
+            return [
+                'group_key' => $group['group_key'],
+                'qualification_id' => (int)($group['qualification_id'] ?? 0),
+                'competency_type' => $type,
+                'competency_label' => $typeLabel,
+                'module_title' => (string)($group['module_title'] ?? ''),
+                'unit_code' => (string)($group['unit_code'] ?? ''),
+                'scope_label' => buildBatchUnitScopeLabel($group),
+                'assignable' => !empty($group['trainer_options']),
+                'trainer_options' => array_values($group['trainer_options'] ?? []),
+                'selected_module_id' => $selectedModuleId,
+                'selected_trainer_id' => $selectedTrainerId,
+                'selected_trainer_name' => $selectedTrainerName !== '' ? $selectedTrainerName : null,
+                'selected_schedule' => $selectedSchedule !== '' ? $selectedSchedule : null,
+                'selected_room_id' => $selectedRoomId,
+                'selected_room' => $selectedRoomName !== '' ? $selectedRoomName : null,
+                'has_saved_assignment' => !empty($existing)
+            ];
+        }, $groups);
+
+        echo json_encode([
+            'success' => true,
+            'data' => [
+                'units' => $units
+            ]
+        ]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => 'Error fetching qualification units: ' . $e->getMessage()]);
+        http_response_code(500);
+    }
+}
+
+function saveUnitAssignments(PDO $conn): void
+{
+    $data = json_decode(file_get_contents("php://input"));
+    $batchId = (int)($data->batch_id ?? 0);
+
+    if ($batchId <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Batch ID is required.']);
+        http_response_code(400);
+        return;
+    }
+
+    try {
+        $batchStmt = $conn->prepare("
+            SELECT
+                batch_id,
+                qualification_id,
+                COALESCE(trainer_assignment_mode, 'single') AS trainer_assignment_mode
+            FROM tbl_batch
+            WHERE batch_id = ?
+            LIMIT 1
+        ");
+        $batchStmt->execute([$batchId]);
+        $batch = $batchStmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$batch) {
+            echo json_encode(['success' => false, 'message' => 'Batch not found.']);
+            http_response_code(404);
+            return;
+        }
+
+        if (ta_normalize_mode($batch['trainer_assignment_mode'] ?? 'single') !== 'multiple') {
+            echo json_encode(['success' => false, 'message' => 'Unit trainer assignment is only available for multiple-mode batches.']);
+            http_response_code(400);
+            return;
+        }
+
+        $unitAssignments = normalizeUnitAssignments($data->unit_assignments ?? []);
+
+        $conn->beginTransaction();
+        syncBatchUnitAssignments($conn, $batchId, (int)$batch['qualification_id'], $unitAssignments);
+        $conn->commit();
+
+        echo json_encode(['success' => true, 'message' => 'Unit trainer assignments saved successfully.']);
+    } catch (Exception $e) {
+        if ($conn->inTransaction()) {
+            $conn->rollBack();
+        }
+
+        echo json_encode(['success' => false, 'message' => 'Error saving unit trainer assignments: ' . $e->getMessage()]);
+        http_response_code(500);
+    }
+}
+
 function addBatch($conn) {
     $data = json_decode(file_get_contents("php://input"));
 
@@ -133,26 +275,49 @@ function addBatch($conn) {
     }
 
     try {
-        $query = "INSERT INTO tbl_batch (qualification_id, batch_name, trainer_id, scholarship_type_id, start_date, end_date, status, max_trainees) 
-                  VALUES (:qualification_id, :batch_name, :trainer_id, :scholarship_type_id, :start_date, :end_date, :status, :max_trainees)";
+        $trainerAssignmentMode = ta_normalize_mode($data->trainer_assignment_mode ?? 'single');
+        $trainerId = normalizeNullableInt($data->trainer_id ?? null);
+        $scholarshipTypeId = normalizeNullableInt($data->scholarship_type_id ?? null);
+        $trainingCost = normalizeMoneyValue($data->training_cost ?? null);
+        $maxTrainees = normalizeMaxTrainees($data->max_trainees ?? null);
+        $status = normalizeBatchStatus($data->status ?? 'open');
+        $unitAssignments = normalizeUnitAssignments($data->unit_assignments ?? []);
+
+        $conn->beginTransaction();
+
+        $query = "INSERT INTO tbl_batch (qualification_id, batch_name, trainer_id, trainer_assignment_mode, scholarship_type_id, start_date, end_date, status, max_trainees, training_cost) 
+                  VALUES (:qualification_id, :batch_name, :trainer_id, :trainer_assignment_mode, :scholarship_type_id, :start_date, :end_date, :status, :max_trainees, :training_cost)";
         $stmt = $conn->prepare($query);
 
         $stmt->bindParam(':qualification_id', $data->qualification_id, PDO::PARAM_INT);
         $stmt->bindParam(':batch_name', $data->batch_name);
-        $stmt->bindParam(':trainer_id', $data->trainer_id, PDO::PARAM_INT);
-        $stmt->bindParam(':scholarship_type_id', $data->scholarship_type_id);
+        $stmt->bindValue(':trainer_id', $trainerId, $trainerId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+        $stmt->bindValue(':trainer_assignment_mode', $trainerAssignmentMode);
+        $stmt->bindValue(':scholarship_type_id', $scholarshipTypeId, $scholarshipTypeId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
         $stmt->bindParam(':start_date', $data->start_date);
         $stmt->bindParam(':end_date', $data->end_date);
-        $stmt->bindParam(':status', $data->status);
-        $stmt->bindParam(':max_trainees', $data->max_trainees);
+        $stmt->bindValue(':status', $status);
+        $stmt->bindValue(':max_trainees', $maxTrainees, PDO::PARAM_INT);
+        $stmt->bindValue(':training_cost', $trainingCost);
 
         if ($stmt->execute()) {
+            $batchId = (int)$conn->lastInsertId();
+            if ($trainerAssignmentMode === 'multiple') {
+                syncBatchUnitAssignments($conn, $batchId, (int)$data->qualification_id, $unitAssignments);
+            }
+            $conn->commit();
             echo json_encode(['success' => true, 'message' => 'Batch added successfully.']);
         } else {
+            if ($conn->inTransaction()) {
+                $conn->rollBack();
+            }
             echo json_encode(['success' => false, 'message' => 'Failed to add batch.']);
             http_response_code(500);
         }
     } catch (Exception $e) {
+        if ($conn->inTransaction()) {
+            $conn->rollBack();
+        }
         echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         http_response_code(500);
     }
@@ -168,35 +333,62 @@ function updateBatch($conn) {
     }
 
     try {
+        $trainerAssignmentMode = ta_normalize_mode($data->trainer_assignment_mode ?? 'single');
+        $trainerId = normalizeNullableInt($data->trainer_id ?? null);
+        $scholarshipTypeId = normalizeNullableInt($data->scholarship_type_id ?? null);
+        $trainingCost = normalizeMoneyValue($data->training_cost ?? null);
+        $maxTrainees = normalizeMaxTrainees($data->max_trainees ?? null);
+        $status = normalizeBatchStatus($data->status ?? 'open');
+        $unitAssignments = normalizeUnitAssignments($data->unit_assignments ?? []);
+
+        $conn->beginTransaction();
+
         $query = "UPDATE tbl_batch SET 
                     qualification_id = :qualification_id, 
                     batch_name = :batch_name, 
                     trainer_id = :trainer_id, 
+                    trainer_assignment_mode = :trainer_assignment_mode,
                     scholarship_type_id = :scholarship_type_id, 
                     start_date = :start_date, 
                     end_date = :end_date, 
                     status = :status,
-                    max_trainees = :max_trainees
+                    max_trainees = :max_trainees,
+                    training_cost = :training_cost
                   WHERE batch_id = :batch_id";
         $stmt = $conn->prepare($query);
 
         $stmt->bindParam(':qualification_id', $data->qualification_id, PDO::PARAM_INT);
         $stmt->bindParam(':batch_name', $data->batch_name);
-        $stmt->bindParam(':trainer_id', $data->trainer_id, PDO::PARAM_INT);
-        $stmt->bindParam(':scholarship_type_id', $data->scholarship_type_id);
+        $stmt->bindValue(':trainer_id', $trainerId, $trainerId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+        $stmt->bindValue(':trainer_assignment_mode', $trainerAssignmentMode);
+        $stmt->bindValue(':scholarship_type_id', $scholarshipTypeId, $scholarshipTypeId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
         $stmt->bindParam(':start_date', $data->start_date);
         $stmt->bindParam(':end_date', $data->end_date);
-        $stmt->bindParam(':status', $data->status);
-        $stmt->bindParam(':max_trainees', $data->max_trainees);
+        $stmt->bindValue(':status', $status);
+        $stmt->bindValue(':max_trainees', $maxTrainees, PDO::PARAM_INT);
+        $stmt->bindValue(':training_cost', $trainingCost);
         $stmt->bindParam(':batch_id', $data->batch_id, PDO::PARAM_INT);
 
         if ($stmt->execute()) {
+            if ($trainerAssignmentMode === 'multiple') {
+                syncBatchUnitAssignments($conn, (int)$data->batch_id, (int)$data->qualification_id, $unitAssignments);
+            } else {
+                $clearStmt = $conn->prepare("DELETE FROM tbl_batch_trainer_assignments WHERE batch_id = ?");
+                $clearStmt->execute([(int)$data->batch_id]);
+            }
+            $conn->commit();
             echo json_encode(['success' => true, 'message' => 'Batch updated successfully.']);
         } else {
+            if ($conn->inTransaction()) {
+                $conn->rollBack();
+            }
             echo json_encode(['success' => false, 'message' => 'Failed to update batch.']);
             http_response_code(500);
         }
     } catch (Exception $e) {
+        if ($conn->inTransaction()) {
+            $conn->rollBack();
+        }
         echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         http_response_code(500);
     }
@@ -313,5 +505,157 @@ function closeExpiredBatches($conn) {
     } catch (Exception $e) {
         error_log("Error closing expired batches: " . $e->getMessage());
     }
+}
+
+function normalizeNullableInt($value): ?int {
+    $number = (int)$value;
+    return $number > 0 ? $number : null;
+}
+
+function normalizeMoneyValue($value): float {
+    if ($value === null || $value === '') {
+        return 0.0;
+    }
+
+    $amount = round((float)$value, 2);
+    return $amount >= 0 ? $amount : 0.0;
+}
+
+function normalizeMaxTrainees($value): int {
+    $number = (int)$value;
+    return $number > 0 ? $number : 25;
+}
+
+function normalizeBatchStatus($value): string {
+    return strtolower((string)$value) === 'closed' ? 'closed' : 'open';
+}
+
+function normalizeUnitAssignments($value): array
+{
+    if (!is_array($value)) {
+        return [];
+    }
+
+    return array_values(array_filter(array_map(static function ($item): ?array {
+        if (is_array($item)) {
+            return $item;
+        }
+
+        if ($item instanceof stdClass) {
+            return get_object_vars($item);
+        }
+
+        return null;
+    }, $value)));
+}
+
+function syncBatchUnitAssignments(PDO $conn, int $batchId, int $qualificationId, array $unitAssignments): void
+{
+    $groups = ta_fetch_qualification_unit_groups($conn, $qualificationId, true);
+    $groupMap = [];
+    foreach ($groups as $group) {
+        $groupMap[$group['group_key']] = $group;
+    }
+
+    $existingByGroup = [];
+    foreach (ta_fetch_batch_module_assignments($conn, $batchId) as $assignment) {
+        $groupKey = ta_build_module_group_key($assignment);
+        if (!isset($existingByGroup[$groupKey])) {
+            $existingByGroup[$groupKey] = $assignment;
+        }
+    }
+
+    $selectedByGroup = [];
+    foreach ($unitAssignments as $assignment) {
+        $groupKey = trim((string)($assignment['group_key'] ?? ''));
+        $moduleId = normalizeNullableInt($assignment['module_id'] ?? null);
+
+        if ($groupKey === '') {
+            continue;
+        }
+
+        if (!isset($groupMap[$groupKey])) {
+            throw new Exception('One of the selected unit assignments is no longer available.');
+        }
+
+        if ($moduleId === null) {
+            $selectedByGroup[$groupKey] = null;
+            continue;
+        }
+
+        $selectedOption = null;
+        foreach (($groupMap[$groupKey]['trainer_options'] ?? []) as $option) {
+            if ((int)($option['module_id'] ?? 0) === $moduleId) {
+                $selectedOption = $option;
+                break;
+            }
+        }
+
+        if ($selectedOption === null) {
+            throw new Exception('Selected trainer assignment is no longer available for ' . buildBatchUnitScopeLabel($groupMap[$groupKey]) . '.');
+        }
+
+        $selectedByGroup[$groupKey] = $selectedOption;
+    }
+
+    $deleteStmt = $conn->prepare("DELETE FROM tbl_batch_trainer_assignments WHERE batch_id = ?");
+    $deleteStmt->execute([$batchId]);
+
+    if (empty($selectedByGroup)) {
+        return;
+    }
+
+    $insertStmt = $conn->prepare("
+        INSERT INTO tbl_batch_trainer_assignments (batch_id, module_id, trainer_id, schedule, room_id, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+    ");
+
+    foreach ($groupMap as $groupKey => $group) {
+        $selectedOption = $selectedByGroup[$groupKey] ?? null;
+        if (!is_array($selectedOption)) {
+            continue;
+        }
+
+        $previousAssignment = $existingByGroup[$groupKey] ?? null;
+        $roomId = normalizeNullableInt($previousAssignment['room_id'] ?? null);
+        $schedule = $previousAssignment['schedule'] ?? null;
+
+        $insertStmt->execute([
+            $batchId,
+            (int)$selectedOption['module_id'],
+            (int)$selectedOption['trainer_id'],
+            $schedule !== '' ? $schedule : null,
+            $roomId
+        ]);
+    }
+}
+
+function buildBatchUnitScopeLabel(array $group): string
+{
+    $moduleTitle = trim((string)($group['module_title'] ?? 'Untitled Unit'));
+    $competencyType = ucfirst(strtolower(trim((string)($group['competency_type'] ?? ''))));
+
+    return $competencyType !== '' ? $moduleTitle . ' (' . $competencyType . ')' : $moduleTitle;
+}
+
+function buildBatchTrainerSummary(array $batch, ?array $summary): string {
+    $mode = ta_normalize_mode($batch['trainer_assignment_mode'] ?? 'single');
+    if ($mode !== 'multiple') {
+        return trim((string)($batch['trainer_name'] ?? '')) !== '' ? (string)$batch['trainer_name'] : 'Not Assigned';
+    }
+
+    $trainerCount = (int)($summary['distinct_trainers'] ?? 0);
+    $moduleCount = (int)($summary['assigned_modules'] ?? 0);
+
+    if ($trainerCount <= 0) {
+        $leadTrainerName = trim((string)($batch['lead_trainer_name'] ?? ''));
+        return $leadTrainerName !== '' ? $leadTrainerName . ' (Lead Trainer)' : 'Multiple Trainers (Not Scheduled)';
+    }
+
+    if ($trainerCount === 1 && !empty($summary['trainer_names'][0])) {
+        return sprintf('%s (%d module%s)', $summary['trainer_names'][0], $moduleCount, $moduleCount === 1 ? '' : 's');
+    }
+
+    return sprintf('%d trainers / %d modules', $trainerCount, $moduleCount);
 }
 ?>

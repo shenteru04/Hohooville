@@ -99,7 +99,7 @@ function updateUserProfile($conn) {
         } else {
             // Create new employee record
             $stmtInsert = $conn->prepare("INSERT INTO tbl_employee (user_id, first_name, last_name, email, phone_number, profile_image) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmtInsert->execute([$userId, $data['first_name'], $data['last_name'], $data['email'], $data['phone'], $data['profile_image'] ?? null]);
+            $stmtInsert->execute([$userId, $data['first_name'] ?? '', $data['last_name'] ?? '', $data['email'] ?? '', $data['phone'] ?? '', $data['profile_image'] ?? null]);
         }
 
         $conn->commit();

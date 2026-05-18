@@ -4,6 +4,7 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 
 require_once '../../database/db.php';
+require_once '../../utils/EnrollmentStatusConstraint.php';
 
 $database = new Database();
 $conn = $database->getConnection();
@@ -91,6 +92,8 @@ function updateStatus($conn, $status) {
     }
 
     try {
+        ensureEnrollmentStatusSchema($conn);
+
         // Fetch details for email notification
         $stmtDetails = $conn->prepare("
             SELECT 

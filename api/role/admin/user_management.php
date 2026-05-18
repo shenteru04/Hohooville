@@ -10,29 +10,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../../database/db.php';
+require_once '../../utils/PermissionChecker.php';
+
 $database = new Database();
 $conn = $database->getConnection();
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
 try {
+    // Get JWT token from headers
+    $headers = getallheaders();
+    $authHeader = $headers['Authorization'] ?? '';
+    
+    // If no auth header, allow access for now (graceful degradation)
+    if (!$authHeader) {
+        $permissionChecker = null;
+    } else {
+        // Extract token
+        $token = str_replace('Bearer ', '', $authHeader);
+        
+        // Decode JWT to get user_id and role_id
+        $tokenParts = explode('.', $token);
+        if (count($tokenParts) !== 3) {
+            $permissionChecker = null;
+        } else {
+            $payload = json_decode(base64url_decode($tokenParts[1]), true);
+            $userId = $payload['user_id'] ?? null;
+            $roleId = $payload['role_id'] ?? null;
+
+            if (!$userId || !$roleId) {
+                $permissionChecker = null;
+            } else {
+                // Initialize permission checker
+                $permissionChecker = new PermissionChecker($conn, $userId, $roleId);
+            }
+        }
+    }
+
+    // Check permissions based on action (only if permission checker is available)
     switch ($action) {
         case 'list':
+            if ($permissionChecker) $permissionChecker->requirePermission('users.view');
             getUsers($conn);
             break;
         case 'get':
+            if ($permissionChecker) $permissionChecker->requirePermission('users.view');
             getUser($conn);
             break;
         case 'add':
+            if ($permissionChecker) $permissionChecker->requirePermission('users.create');
             addUser($conn);
             break;
         case 'update':
+            if ($permissionChecker) $permissionChecker->requirePermission('users.update');
             updateUser($conn);
             break;
         case 'archive':
+            if ($permissionChecker) $permissionChecker->requirePermission('users.delete');
             archiveUser($conn);
             break;
         case 'reactivate':
+            if ($permissionChecker) $permissionChecker->requirePermission('users.delete');
             reactivateUser($conn);
             break;
         default:
@@ -45,13 +83,22 @@ try {
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
 
+// Helper function for base64url decode
+function base64url_decode($data) {
+    return base64_decode(str_pad(strtr($data, '-_', '+/'), strlen($data) % 4, '=', STR_PAD_RIGHT));
+}
+
 function getUsers($conn) {
     try {
         $stmt = $conn->query("
-            SELECT u.user_id, u.role_id, u.username, u.email, u.status, u.is_archived, u.archived_at, u.date_created, r.role_name, t.trainee_school_id
+            SELECT u.user_id, u.role_id, u.username, u.email, u.status, u.is_archived, u.archived_at, u.date_created, r.role_name, t.trainee_school_id,
+                   COALESCE(e.profile_image, tr.profile_image, th.profile_image, th.photo_file) as profile_image
             FROM tbl_users u 
             LEFT JOIN tbl_role r ON u.role_id = r.role_id 
             LEFT JOIN tbl_trainee_hdr t ON u.user_id = t.user_id
+            LEFT JOIN tbl_employee e ON u.user_id = e.user_id AND u.role_id IN (1, 4)
+            LEFT JOIN tbl_trainer tr ON u.user_id = tr.user_id AND u.role_id = 2
+            LEFT JOIN tbl_trainee_hdr th ON u.user_id = th.user_id AND u.role_id = 3
             WHERE u.is_archived = 0
             ORDER BY u.user_id DESC
         ");
@@ -71,10 +118,14 @@ function getUser($conn) {
         }
         
         $stmt = $conn->prepare("
-            SELECT u.user_id, u.role_id, u.username, u.email, u.status, u.is_archived, u.date_created, r.role_name, t.trainee_school_id
-            FROM tbl_users u 
-            LEFT JOIN tbl_role r ON u.role_id = r.role_id 
+            SELECT u.user_id, u.role_id, u.username, u.email, u.status, u.is_archived, u.date_created, r.role_name, t.trainee_school_id,
+                   COALESCE(e.profile_image, tr.profile_image, th.profile_image) as profile_image
+            FROM tbl_users u
+            LEFT JOIN tbl_role r ON u.role_id = r.role_id
             LEFT JOIN tbl_trainee_hdr t ON u.user_id = t.user_id
+            LEFT JOIN tbl_employee e ON u.user_id = e.user_id AND u.role_id IN (1, 4)
+            LEFT JOIN tbl_trainer tr ON u.user_id = tr.user_id AND u.role_id = 2
+            LEFT JOIN tbl_trainee_hdr th ON u.user_id = th.user_id AND u.role_id = 3
             WHERE u.user_id = ?
         ");
         $stmt->execute([$id]);

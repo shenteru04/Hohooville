@@ -123,17 +123,6 @@ function initUserMenu() {
     });
 }
 
-async function ensureSwal() {
-    if (typeof window.Swal !== 'undefined') return;
-    await new Promise((resolve) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
-        script.onload = resolve;
-        script.onerror = resolve;
-        document.head.appendChild(script);
-    });
-}
-
 async function initLogout() {
     const logoutBtn = document.getElementById('logoutBtn');
     if (!logoutBtn) return;

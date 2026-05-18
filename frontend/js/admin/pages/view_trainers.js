@@ -1,15 +1,28 @@
 const API_BASE_URL = `${window.location.origin}/Hohoo-ville/api`;
+const TRAINER_UPLOADS_URL = `${window.location.origin}/Hohoo-ville/api/uploads/trainers/`;
+const PROFILE_IMAGE_UPLOADS_URL = `${window.location.origin}/Hohoo-ville/uploads/profile_images/`;
 const TOO_MANY_QUALIFICATIONS = 2;
 
 let accountModal;
 let editModal;
 let createTrainerModal;
+let profileModal;
+let documentModal;
 let trainersData = [];
 let filterTooManyOnly = false;
 let availableQualifications = [];
 let phAddressData = {};
 let pendingCreateAddress = '';
 let isCreateModalEditMode = false;
+let documentZoom = 1;
+
+function refreshBodyScrollLock() {
+    const hasOpenModal = Array.from(document.querySelectorAll('[id$="Modal"]')).some((element) => {
+        return element.classList.contains('flex') && !element.classList.contains('hidden');
+    });
+
+    document.body.classList.toggle('overflow-hidden', hasOpenModal);
+}
 
 class SimpleModal {
     constructor(element) {
@@ -20,14 +33,19 @@ class SimpleModal {
         if (!this.element) return;
         this.element.classList.remove('hidden');
         this.element.classList.add('flex');
-        document.body.classList.add('overflow-hidden');
+        this.element.setAttribute('aria-hidden', 'false');
+        refreshBodyScrollLock();
     }
 
     hide() {
         if (!this.element) return;
         this.element.classList.add('hidden');
         this.element.classList.remove('flex');
-        document.body.classList.remove('overflow-hidden');
+        this.element.setAttribute('aria-hidden', 'true');
+        if (this.element.id === 'documentModal') {
+            resetDocumentPreview();
+        }
+        refreshBodyScrollLock();
     }
 }
 
@@ -36,6 +54,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initUserDropdown();
     initLogout();
     initModals();
+    initDocumentZoomControls();
     initEvents();
     loadQualifications();
     loadQualificationsForCreate();
@@ -106,6 +125,8 @@ function initModals() {
     accountModal = new SimpleModal(document.getElementById('accountModal'));
     editModal = new SimpleModal(document.getElementById('editModal'));
     createTrainerModal = new SimpleModal(document.getElementById('createTrainerModal'));
+    profileModal = new SimpleModal(document.getElementById('viewProfileModal'));
+    documentModal = new SimpleModal(document.getElementById('documentModal'));
 
     document.querySelectorAll('[data-modal-hide]').forEach((button) => {
         button.addEventListener('click', () => {
@@ -113,8 +134,20 @@ function initModals() {
             if (modalId === 'accountModal' && accountModal) accountModal.hide();
             if (modalId === 'editModal' && editModal) editModal.hide();
             if (modalId === 'createTrainerModal' && createTrainerModal) createTrainerModal.hide();
+            if (modalId === 'viewProfileModal' && profileModal) profileModal.hide();
+            if (modalId === 'documentModal' && documentModal) documentModal.hide();
         });
     });
+}
+
+function initDocumentZoomControls() {
+    const zoomInBtn = document.getElementById('docZoomInBtn');
+    const zoomOutBtn = document.getElementById('docZoomOutBtn');
+    const zoomResetBtn = document.getElementById('docZoomResetBtn');
+
+    if (zoomInBtn) zoomInBtn.addEventListener('click', () => setDocumentZoom(documentZoom + 0.1));
+    if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => setDocumentZoom(documentZoom - 0.1));
+    if (zoomResetBtn) zoomResetBtn.addEventListener('click', () => setDocumentZoom(1));
 }
 
 function initEvents() {
@@ -156,10 +189,10 @@ function addQualificationRow(data = {}, options = {}) {
     const showRemove = options.allowRemove !== false && index > 0;
     const shouldRequireNc = options.requiredNcFile !== false ? true : !data.nc_file;
     const ncExistingLink = data.nc_file
-        ? `<div class="mt-1 text-xs text-slate-500">Current: <a class="text-blue-600 underline" href="${window.location.origin}/Hohoo-ville/uploads/trainers/${encodeURIComponent(data.nc_file)}" target="_blank">${data.nc_file}</a></div>`
+        ? `<div class="mt-1 text-xs text-slate-500">Current: <a class="text-blue-600 underline" href="${TRAINER_UPLOADS_URL}${encodeURIComponent(data.nc_file)}" target="_blank">${data.nc_file}</a></div>`
         : '';
     const expExistingLink = data.experience_file
-        ? `<div class="mt-1 text-xs text-slate-500">Current: <a class="text-blue-600 underline" href="${window.location.origin}/Hohoo-ville/uploads/trainers/${encodeURIComponent(data.experience_file)}" target="_blank">${data.experience_file}</a></div>`
+        ? `<div class="mt-1 text-xs text-slate-500">Current: <a class="text-blue-600 underline" href="${TRAINER_UPLOADS_URL}${encodeURIComponent(data.experience_file)}" target="_blank">${data.experience_file}</a></div>`
         : '';
 
     const row = document.createElement('div');
@@ -244,6 +277,165 @@ async function loadTrainers() {
     }
 }
 
+function getFullName(person) {
+    const firstName = String(person?.first_name || '').trim();
+    const lastName = String(person?.last_name || '').trim();
+    const fullName = `${firstName} ${lastName}`.trim();
+    return fullName || 'Unnamed Trainer';
+}
+
+function getInitials(name) {
+    const parts = String(name || '')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2);
+
+    if (!parts.length) return 'NA';
+    return parts.map((part) => part.charAt(0)).join('').toUpperCase();
+}
+
+function getTrainerImageUrl(trainer) {
+    if (!trainer?.profile_image) return '';
+    return `${PROFILE_IMAGE_UPLOADS_URL}${encodeURIComponent(trainer.profile_image)}`;
+}
+
+function getStatusMeta(status) {
+    const normalizedStatus = String(status || 'unknown').toLowerCase();
+
+    if (normalizedStatus === 'active') {
+        return {
+            label: 'Active',
+            className: 'inline-flex rounded-full border border-emerald-300/30 bg-emerald-400/20 px-3 py-1 text-xs font-semibold text-white'
+        };
+    }
+
+    if (normalizedStatus === 'inactive') {
+        return {
+            label: 'Inactive',
+            className: 'inline-flex rounded-full border border-white/20 bg-slate-900/20 px-3 py-1 text-xs font-semibold text-white'
+        };
+    }
+
+    return {
+        label: 'Unknown',
+        className: 'inline-flex rounded-full border border-white/20 bg-white/15 px-3 py-1 text-xs font-semibold text-white'
+    };
+}
+
+function getAccountMeta(trainer) {
+    if (trainer?.user_id) {
+        return {
+            badgeLabel: 'Account Ready',
+            badgeClassName: 'inline-flex rounded-full border border-emerald-300/30 bg-emerald-400/20 px-3 py-1 text-xs font-semibold text-white',
+            detail: 'A login account is already linked to this trainer profile.'
+        };
+    }
+
+    return {
+        badgeLabel: 'Setup Pending',
+        badgeClassName: 'inline-flex rounded-full border border-amber-200/30 bg-amber-300/20 px-3 py-1 text-xs font-semibold text-white',
+        detail: 'No login account has been created for this trainer yet.'
+    };
+}
+
+function setContactLink(elementId, text, href, enabledClassName) {
+    const link = document.getElementById(elementId);
+    if (!link) return;
+
+    if (text && href) {
+        link.href = href;
+        link.className = enabledClassName;
+        return;
+    }
+
+    link.href = '#';
+    link.className = 'mt-2 block cursor-default text-sm font-semibold text-slate-400 pointer-events-none';
+}
+
+function setDocumentZoom(value) {
+    const zoomLayer = document.getElementById('documentZoomLayer');
+    const zoomLabel = document.getElementById('docZoomLabel');
+    if (!zoomLayer) return;
+
+    documentZoom = Math.max(0.5, Math.min(3, Number(value.toFixed(2))));
+    zoomLayer.style.transform = `scale(${documentZoom})`;
+    if (zoomLabel) zoomLabel.textContent = `${Math.round(documentZoom * 100)}%`;
+}
+
+function resetDocumentPreview() {
+    const imageEl = document.getElementById('documentPreviewImage');
+    const frameEl = document.getElementById('documentPreviewFrame');
+    const fallbackEl = document.getElementById('documentPreviewFallback');
+    const downloadLink = document.getElementById('documentPreviewDownloadLink');
+    const openBtn = document.getElementById('docOpenNewTabBtn');
+
+    if (imageEl) {
+        imageEl.classList.add('hidden');
+        imageEl.removeAttribute('src');
+        imageEl.onerror = null;
+    }
+
+    if (frameEl) {
+        frameEl.classList.add('hidden');
+        frameEl.removeAttribute('src');
+        frameEl.onerror = null;
+    }
+
+    if (fallbackEl) fallbackEl.classList.add('hidden');
+    if (downloadLink) downloadLink.setAttribute('href', '#');
+    if (openBtn) openBtn.setAttribute('href', '#');
+
+    setDocumentZoom(1);
+}
+
+function openDocumentModal(url, title) {
+    if (!documentModal || !url) return;
+
+    const modalTitle = document.getElementById('documentModalTitle');
+    const openBtn = document.getElementById('docOpenNewTabBtn');
+    const imageEl = document.getElementById('documentPreviewImage');
+    const frameEl = document.getElementById('documentPreviewFrame');
+    const fallbackEl = document.getElementById('documentPreviewFallback');
+    const downloadLink = document.getElementById('documentPreviewDownloadLink');
+
+    resetDocumentPreview();
+
+    if (modalTitle) modalTitle.textContent = title || 'Submitted Document';
+    if (openBtn) openBtn.href = url;
+    if (downloadLink) downloadLink.href = url;
+
+    const cleanUrl = url.split('?')[0].toLowerCase();
+    const isImage = /\.(png|jpg|jpeg|gif|webp|bmp|svg|avif)$/i.test(cleanUrl);
+    const isPdf = /\.pdf$/i.test(cleanUrl);
+    const likelyUnsupportedInline = /\.(doc|docx|ppt|pptx|xls|xlsx|csv)$/i.test(cleanUrl);
+
+    if (isImage && imageEl) {
+        imageEl.src = url;
+        imageEl.classList.remove('hidden');
+        imageEl.onerror = () => {
+            imageEl.classList.add('hidden');
+            if (fallbackEl) fallbackEl.classList.remove('hidden');
+        };
+    } else if (isPdf && frameEl) {
+        frameEl.src = url;
+        frameEl.classList.remove('hidden');
+    } else if (likelyUnsupportedInline) {
+        if (fallbackEl) fallbackEl.classList.remove('hidden');
+    } else if (frameEl) {
+        frameEl.src = url;
+        frameEl.classList.remove('hidden');
+        frameEl.onerror = () => {
+            frameEl.classList.add('hidden');
+            if (fallbackEl) fallbackEl.classList.remove('hidden');
+        };
+    } else if (fallbackEl) {
+        fallbackEl.classList.remove('hidden');
+    }
+
+    documentModal.show();
+}
+
 function getQualificationCount(trainer) {
     const count = Number(trainer.qualification_count);
     if (!Number.isNaN(count) && count >= 0) return count;
@@ -266,7 +458,7 @@ function renderTable(data) {
         : data;
 
     if (!filtered.length) {
-        tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-sm text-slate-500">No trainers found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-sm text-slate-500">No trainers found</td></tr>';
         return;
     }
 
@@ -285,6 +477,16 @@ function renderTable(data) {
     });
 
     tbody.innerHTML = sorted.map((trainer) => {
+        // Profile image with fallback to avatar
+        let profileImageHtml = '';
+        if (trainer.profile_image) {
+            profileImageHtml = `<img src="/Hohoo-ville/uploads/profile_images/${encodeURIComponent(trainer.profile_image)}" alt="Profile" class="h-8 w-8 rounded-full border border-slate-200 object-cover" />`;
+        } else if (trainer.first_name) {
+            profileImageHtml = `<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(trainer.first_name)}&background=random" alt="Avatar" class="h-8 w-8 rounded-full border border-slate-200 object-cover" />`;
+        } else {
+            profileImageHtml = `<div class="h-8 w-8 rounded-full border border-slate-200 bg-slate-100 flex items-center justify-center"><i class="fas fa-user text-slate-400 text-xs"></i></div>`;
+        }
+
         const qualificationCount = getQualificationCount(trainer);
         const qualificationLabel = trainer.qualification_names || trainer.qualification_name || '-';
         const ncLevelLabel = trainer.nc_levels || trainer.nc_level_code || 'N/A';
@@ -317,6 +519,7 @@ function renderTable(data) {
 
         return `
             <tr class="hover:bg-slate-50">
+                <td class="px-3 py-3 text-sm text-slate-700">${profileImageHtml}</td>
                 <td class="px-3 py-3 text-sm text-slate-900">${escapeHtml(`${trainer.last_name || ''}, ${trainer.first_name || ''}`)}</td>
                 <td class="px-3 py-3 text-sm text-slate-700">${escapeHtml(trainer.email || 'N/A')}</td>
                 <td class="px-3 py-3 text-sm">
@@ -334,12 +537,272 @@ function renderTable(data) {
                 <td class="px-3 py-3 text-sm">
                     <div class="flex flex-wrap items-center gap-2">
                         ${accountAction}
+                        <button type="button" class="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100" onclick="openViewProfileModal(${trainer.trainer_id})"><i class="fas fa-eye"></i> View Data</button>
                         <button type="button" class="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100" onclick="openEditModal(${trainer.trainer_id})"><i class="fas fa-edit"></i> Edit</button>
                     </div>
                 </td>
             </tr>
         `;
     }).join('');
+}
+
+function getTrainerQualifications(trainer) {
+    if (Array.isArray(trainer?.qualifications) && trainer.qualifications.length) {
+        return trainer.qualifications.filter((item) => {
+            return item && (item.qualification_name || item.nc_level_code || item.nc_file || item.experience_file);
+        });
+    }
+
+    const fallbackName = trainer?.qualification_names || trainer?.qualification_name || '';
+    if (!fallbackName) return [];
+
+    return [{
+        qualification_name: fallbackName,
+        nc_level_code: trainer?.nc_level || trainer?.nc_level_code || '',
+        nc_level_name: trainer?.nc_level || trainer?.nc_level_code || '',
+        nc_file: trainer?.nc_file || '',
+        experience_file: trainer?.experience_file || ''
+    }];
+}
+
+function getQualificationSummaryLabel(trainer, qualifications) {
+    const labels = qualifications
+        .map((item) => String(item.qualification_name || '').trim())
+        .filter(Boolean);
+
+    if (labels.length) return Array.from(new Set(labels)).join(', ');
+    return trainer?.qualification_names || trainer?.qualification_name || 'Not Assigned';
+}
+
+function getNcLevelSummary(qualifications, trainer) {
+    const labels = qualifications
+        .map((item) => String(item.nc_level_code || item.nc_level_name || '').trim())
+        .filter(Boolean);
+
+    if (labels.length) return Array.from(new Set(labels)).join(', ');
+    return trainer?.nc_levels || trainer?.nc_level_code || trainer?.nc_level || 'Not Available';
+}
+
+function buildEmptyCardHtml(message) {
+    return `
+        <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+            ${escapeHtml(message)}
+        </div>
+    `;
+}
+
+function renderQualificationList(qualifications) {
+    const container = document.getElementById('viewQualificationList');
+    if (!container) return;
+
+    if (!qualifications.length) {
+        container.innerHTML = buildEmptyCardHtml('No qualifications recorded for this trainer.');
+        return;
+    }
+
+    container.innerHTML = qualifications.map((item) => {
+        const qualificationName = item.qualification_name || 'Qualification';
+        const levelLabel = item.nc_level_code || item.nc_level_name || 'NC level not provided';
+        const fileCount = (item.nc_file ? 1 : 0) + (item.experience_file ? 1 : 0);
+        const badgeClass = fileCount > 0
+            ? 'inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700'
+            : 'inline-flex rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-600';
+
+        return `
+            <article class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div class="flex items-start gap-4">
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600">
+                        <i class="fas fa-graduation-cap text-lg"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-base font-semibold text-slate-900">${escapeHtml(qualificationName)}</p>
+                        <p class="mt-1 text-sm leading-6 text-slate-600">${escapeHtml(levelLabel)}</p>
+                    </div>
+                    <span class="${badgeClass}">${fileCount} file${fileCount === 1 ? '' : 's'}</span>
+                </div>
+            </article>
+        `;
+    }).join('');
+}
+
+function renderQualificationDocuments(qualifications) {
+    const container = document.getElementById('viewQualificationDocuments');
+    const summary = document.getElementById('viewQualificationDocumentSummary');
+    if (!container) return 0;
+
+    const cards = [];
+    qualifications.forEach((item, index) => {
+        const qualificationName = item.qualification_name || `Qualification ${index + 1}`;
+        const levelLabel = item.nc_level_code || item.nc_level_name || 'NC level not provided';
+
+        if (item.nc_file) {
+            cards.push(`
+                <a href="#" class="group rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50/60" data-document-url="${escapeHtml(`${TRAINER_UPLOADS_URL}${encodeURIComponent(item.nc_file)}`)}" data-document-title="${escapeHtml(`${qualificationName} - NC Certificate`)}">
+                    <div class="flex items-start gap-4">
+                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
+                            <i class="fas fa-id-badge text-lg"></i>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-base font-semibold text-slate-900">${escapeHtml(`${qualificationName} - NC Certificate`)}</p>
+                            <p class="mt-1 text-sm leading-6 text-slate-500">${escapeHtml(levelLabel)}</p>
+                        </div>
+                        <span class="inline-flex shrink-0 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Preview</span>
+                    </div>
+                </a>
+            `);
+        }
+
+        if (item.experience_file) {
+            cards.push(`
+                <a href="#" class="group rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50/60" data-document-url="${escapeHtml(`${TRAINER_UPLOADS_URL}${encodeURIComponent(item.experience_file)}`)}" data-document-title="${escapeHtml(`${qualificationName} - Experience File`)}">
+                    <div class="flex items-start gap-4">
+                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
+                            <i class="fas fa-file-lines text-lg"></i>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-base font-semibold text-slate-900">${escapeHtml(`${qualificationName} - Experience File`)}</p>
+                            <p class="mt-1 text-sm leading-6 text-slate-500">${escapeHtml(levelLabel)}</p>
+                        </div>
+                        <span class="inline-flex shrink-0 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Preview</span>
+                    </div>
+                </a>
+            `);
+        }
+    });
+
+    if (!cards.length) {
+        container.innerHTML = buildEmptyCardHtml('No qualification files uploaded.');
+        if (summary) summary.textContent = 'No qualification files uploaded';
+        return 0;
+    }
+
+    container.innerHTML = cards.join('');
+    Array.from(container.querySelectorAll('[data-document-url]')).forEach((link) => {
+        link.addEventListener('click', (event) => {
+            event.preventDefault();
+            openDocumentModal(link.getAttribute('data-document-url'), link.getAttribute('data-document-title'));
+        });
+    });
+
+    if (summary) summary.textContent = `${cards.length} qualification file${cards.length === 1 ? '' : 's'} uploaded`;
+    return cards.length;
+}
+
+function setupDocumentLink(elementId, filename, title) {
+    const link = document.getElementById(elementId);
+    const status = document.getElementById(`${elementId}Status`);
+    const action = document.getElementById(`${elementId}Action`);
+    if (!link || !status || !action) return false;
+
+    if (filename) {
+        const fileUrl = `${TRAINER_UPLOADS_URL}${encodeURIComponent(filename)}`;
+        link.href = fileUrl;
+        link.onclick = (event) => {
+            event.preventDefault();
+            openDocumentModal(fileUrl, title);
+        };
+        link.className = 'group rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 transition hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-50';
+        status.textContent = 'Click to preview this document in a modal.';
+        action.textContent = 'Preview';
+        action.className = 'inline-flex shrink-0 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700';
+        return true;
+    }
+
+    link.href = '#';
+    link.onclick = null;
+    link.className = 'group rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 opacity-80 pointer-events-none';
+    status.textContent = 'Not uploaded yet.';
+    action.textContent = 'Missing';
+    action.className = 'inline-flex shrink-0 rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-600';
+    return false;
+}
+
+function populateTrainerProfile(trainer) {
+    const qualifications = getTrainerQualifications(trainer);
+    const fullName = getFullName(trainer);
+    const email = trainer.email || '';
+    const phoneNumber = trainer.phone_number || '';
+    const address = trainer.address || 'No address provided';
+    const statusMeta = getStatusMeta(trainer.status);
+    const accountMeta = getAccountMeta(trainer);
+    const qualificationSummary = getQualificationSummaryLabel(trainer, qualifications);
+    const ncLevelSummary = getNcLevelSummary(qualifications, trainer);
+    const qualificationCount = qualifications.length || getQualificationCount(trainer);
+    const uploadedMainDocs = [
+        setupDocumentLink('viewNttcFile', trainer.nttc_file, 'NTTC Certificate'),
+        setupDocumentLink('viewTmFile', trainer.tm_file, 'TM Certificate'),
+        setupDocumentLink('viewNcFile', trainer.nc_file, 'NC Certificate')
+    ].filter(Boolean).length;
+    const uploadedQualificationDocs = renderQualificationDocuments(qualifications);
+
+    setText('viewName', fullName);
+    setText('viewInitials', getInitials(fullName));
+    setText('viewProfileSummary', qualificationSummary === 'Not Assigned' ? 'Trainer profile' : qualificationSummary);
+    setText('viewEmail', email || 'No email address provided');
+    setText('viewPhone', phoneNumber || 'No phone number provided');
+    setText('viewAddress', address);
+    setText('viewQualificationSummary', qualificationSummary);
+    setText('viewAccountDetail', accountMeta.detail);
+    setText('viewQualificationCount', String(qualificationCount || 0));
+    setText('viewNcLevels', ncLevelSummary || 'Not Available');
+    setText('viewNttcNo', trainer.nttc_no || 'Not Provided');
+    setText('viewQualificationsSummary', `${qualificationCount || 0} qualification${qualificationCount === 1 ? '' : 's'} listed`);
+    setText('viewDocumentSummary', `${uploadedMainDocs + uploadedQualificationDocs} document${uploadedMainDocs + uploadedQualificationDocs === 1 ? '' : 's'} uploaded`);
+
+    setContactLink('viewEmailLink', email, email ? `mailto:${email}` : '', 'mt-2 block break-all text-sm font-semibold text-blue-700 hover:text-blue-800');
+    setContactLink('viewPhoneLink', phoneNumber, phoneNumber ? `tel:${String(phoneNumber).replace(/\s+/g, '')}` : '', 'mt-2 block text-sm font-semibold text-slate-900 hover:text-blue-700');
+
+    const statusBadge = document.getElementById('viewStatus');
+    if (statusBadge) {
+        statusBadge.textContent = statusMeta.label;
+        statusBadge.className = statusMeta.className;
+    }
+
+    const accountBadge = document.getElementById('viewAccountStatus');
+    if (accountBadge) {
+        accountBadge.textContent = accountMeta.badgeLabel;
+        accountBadge.className = accountMeta.badgeClassName;
+    }
+
+    renderQualificationList(qualifications);
+
+    const photoImg = document.getElementById('viewPhoto');
+    const noPhoto = document.getElementById('noPhoto');
+    const photoUrl = getTrainerImageUrl(trainer);
+    if (photoImg && noPhoto) {
+        photoImg.alt = `${fullName} profile photo`;
+
+        if (photoUrl) {
+            photoImg.src = photoUrl;
+            photoImg.classList.remove('hidden');
+            noPhoto.classList.add('hidden');
+            photoImg.onerror = () => {
+                photoImg.removeAttribute('src');
+                photoImg.classList.add('hidden');
+                noPhoto.classList.remove('hidden');
+            };
+        } else {
+            photoImg.removeAttribute('src');
+            photoImg.classList.add('hidden');
+            noPhoto.classList.remove('hidden');
+        }
+    }
+}
+
+async function openViewProfileModal(id) {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/role/admin/trainers.php?action=get&id=${id}`);
+        if (!response.data.success) {
+            Swal.fire('Error', response.data.message || 'Failed to load trainer details', 'error');
+            return;
+        }
+
+        populateTrainerProfile(response.data.data || {});
+        if (profileModal) profileModal.show();
+    } catch (error) {
+        console.error('Error loading trainer profile:', error);
+        Swal.fire('Error', 'Failed to load trainer details', 'error');
+    }
 }
 
 function openAccountModal(id) {
@@ -352,10 +815,18 @@ function openAccountModal(id) {
 
 async function handleCreateAccount(event) {
     event.preventDefault();
+    const username = String(document.getElementById('accUsername')?.value || '').trim();
+    const password = String(document.getElementById('accPassword')?.value || '');
+
+    if (!/^[A-Za-z0-9_]+$/.test(username)) {
+        Swal.fire('Invalid Username', 'Use letters, numbers, and underscores only.', 'warning');
+        return;
+    }
+
     const payload = {
         trainer_id: document.getElementById('accTrainerId')?.value,
-        username: document.getElementById('accUsername')?.value,
-        password: document.getElementById('accPassword')?.value
+        username,
+        password
     };
 
     try {
@@ -369,7 +840,8 @@ async function handleCreateAccount(event) {
         loadTrainers();
     } catch (error) {
         console.error('Error creating account:', error);
-        Swal.fire('Error', 'Failed to create account.', 'error');
+        const message = error.response?.data?.message ? `Failed to create account: ${error.response.data.message}` : 'Failed to create account.';
+        Swal.fire('Error', message, 'error');
     }
 }
 
@@ -412,7 +884,7 @@ function setCurrentFileLink(containerId, fileName) {
         container.innerHTML = '';
         return;
     }
-    container.innerHTML = `Current: <a class="text-blue-600 underline" href="${window.location.origin}/Hohoo-ville/uploads/trainers/${encodeURIComponent(fileName)}" target="_blank">${escapeHtml(fileName)}</a>`;
+    container.innerHTML = `Current: <a class="text-blue-600 underline" href="${TRAINER_UPLOADS_URL}${encodeURIComponent(fileName)}" target="_blank">${escapeHtml(fileName)}</a>`;
 }
 
 function getCreateAddressValue() {
@@ -552,6 +1024,11 @@ async function openEditModal(id) {
 function setValue(id, value) {
     const element = document.getElementById(id);
     if (element) element.value = value;
+}
+
+function setText(id, value) {
+    const element = document.getElementById(id);
+    if (element) element.textContent = value;
 }
 
 function escapeHtml(value) {

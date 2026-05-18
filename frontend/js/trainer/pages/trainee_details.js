@@ -16,6 +16,8 @@ let contentModal = null;
 let documentModal = null;
 let documentZoom = 1;
 let activeDocumentUrl = '';
+let currentTraineeId = 0;
+let currentTaskSheetModalContext = null;
 
 class SimpleModal {
     constructor(element) {
@@ -50,6 +52,10 @@ class SimpleModal {
         this.element.classList.add('hidden');
         this.element.classList.remove('flex');
         document.body.classList.remove('overflow-hidden');
+        if (this.element.id === 'contentModal') {
+            currentTaskSheetModalContext = null;
+            updateTaskSheetModalFooter(null);
+        }
         if (this.element.id === 'documentModal') {
             resetDocumentPreview();
             activeDocumentUrl = '';
@@ -152,17 +158,6 @@ function initUserMenu() {
         if (!event.target.closest('#userMenuDropdown')) {
             userMenuDropdown.classList.add('hidden');
         }
-    });
-}
-
-async function ensureSwal() {
-    if (typeof window.Swal !== 'undefined') return;
-    await new Promise((resolve) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
-        script.onload = resolve;
-        script.onerror = resolve;
-        document.head.appendChild(script);
     });
 }
 
@@ -354,6 +349,84 @@ function setDocumentLink(linkEl, fileName, title) {
     };
 }
 
+function buildAvatarDataUri(name) {
+    const safeName = String(name || 'Trainee').trim();
+    const initials = safeName
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(part => part.charAt(0).toUpperCase())
+        .join('') || 'T';
+
+    const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+            <rect width="120" height="120" rx="20" fill="#dbeafe" />
+            <circle cx="60" cy="46" r="22" fill="#60a5fa" />
+            <path d="M28 103c5-20 20-31 32-31s27 11 32 31" fill="#60a5fa" />
+            <text x="60" y="110" font-family="Arial, sans-serif" font-size="18" text-anchor="middle" fill="#1d4ed8">${initials}</text>
+        </svg>
+    `.trim();
+
+    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+function isReviewedTaskSheetStatus(status) {
+    const normalized = String(status || '').toLowerCase();
+    return normalized === 'approved' || normalized === 'recorded';
+}
+
+function isPendingTaskSheetStatus(status) {
+    return String(status || '').toLowerCase() === 'submitted';
+}
+
+function getTaskSheetStatusLabel(status) {
+    if (isReviewedTaskSheetStatus(status)) return 'Submitted';
+    if (isPendingTaskSheetStatus(status)) return 'Pending';
+    if (String(status || '').toLowerCase() === 'rejected') return 'Rejected';
+    return status || 'N/A';
+}
+
+function getTaskSheetStatusClass(status) {
+    if (isReviewedTaskSheetStatus(status)) return 'bg-emerald-100 text-emerald-700';
+    if (isPendingTaskSheetStatus(status)) return 'bg-amber-100 text-amber-700';
+    if (String(status || '').toLowerCase() === 'rejected') return 'bg-red-100 text-red-700';
+    return 'bg-slate-100 text-slate-700';
+}
+
+function updateTaskSheetModalFooter(context) {
+    const footer = document.getElementById('contentModalFooter');
+    const statusBadge = document.getElementById('contentModalStatusBadge');
+    const doneButton = document.getElementById('contentModalDoneBtn');
+
+    if (!footer || !statusBadge || !doneButton) {
+        return;
+    }
+
+    if (!context) {
+        footer.classList.add('hidden');
+        footer.classList.remove('flex');
+        doneButton.classList.add('hidden');
+        doneButton.onclick = null;
+        statusBadge.textContent = 'N/A';
+        statusBadge.className = 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-700';
+        return;
+    }
+
+    footer.classList.remove('hidden');
+    footer.classList.add('flex');
+    statusBadge.textContent = getTaskSheetStatusLabel(context.status);
+    statusBadge.className = `inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${getTaskSheetStatusClass(context.status)}`;
+
+    if (isPendingTaskSheetStatus(context.status)) {
+        doneButton.classList.remove('hidden');
+        doneButton.classList.add('inline-flex');
+        doneButton.onclick = () => markTaskSheetDone(context.lessonId, context.taskSheetId, context.title);
+    } else {
+        doneButton.classList.add('hidden');
+        doneButton.onclick = null;
+    }
+}
+
 async function loadTraineeDetails(traineeId) {
     try {
         const response = await axios.get(`${API_BASE_URL}/role/trainer/trainee_details.php?trainee_id=${traineeId}`);
@@ -386,16 +459,22 @@ function populateTraineeData(details) {
     const fullName = `${profile.first_name || ''} ${profile.middle_name || ''} ${profile.last_name || ''} ${profile.extension_name || ''}`
         .replace(/\s+/g, ' ')
         .trim();
+    currentTraineeId = Number(profile.trainee_id || 0);
 
     setText('headerTraineeName', fullName);
     setText('headerTraineeCourse', profile.course_name);
 
     const photoEl = document.getElementById('headerTraineePhoto');
     if (photoEl) {
+        const avatarFallback = buildAvatarDataUri(fullName);
+        photoEl.onerror = () => {
+            photoEl.onerror = null;
+            photoEl.src = avatarFallback;
+        };
         if (profile.photo_file) {
             photoEl.src = UPLOADS_URL + encodeURIComponent(profile.photo_file);
         } else {
-            photoEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=random`;
+            photoEl.src = avatarFallback;
         }
     }
 
@@ -468,19 +547,28 @@ function renderProgressAccordion(containerId, modules, competencyName) {
                     tasksHtml = '<ul class="space-y-2">';
                     lesson.task_sheets.forEach(task => {
                         const content = task.submitted_content ? btoa(unescape(encodeURIComponent(task.submitted_content))) : '';
-                        let statusClass = 'bg-slate-100 text-slate-700';
-                        if (task.status === 'submitted') statusClass = 'bg-blue-100 text-blue-700';
-                        if (task.status === 'approved') statusClass = 'bg-emerald-100 text-emerald-700';
-                        if (task.status === 'rejected') statusClass = 'bg-red-100 text-red-700';
+                        const statusClass = getTaskSheetStatusClass(task.status);
                         const grade = task.grade ? ` | Grade: <strong>${task.grade}</strong>` : '';
+                        const doneButton = isPendingTaskSheetStatus(task.status)
+                            ? `
+                                <button
+                                    type="button"
+                                    class="ml-2 inline-flex items-center rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                    onclick="markTaskSheetDone(${lesson.lesson_id}, ${task.task_sheet_id}, '${escapeSingleQuote(task.title || 'Task Sheet')}')"
+                                >
+                                    Done
+                                </button>
+                            `
+                            : '';
 
                         tasksHtml += `
                             <li class="text-sm text-slate-700">
-                                <a href="#" class="text-blue-700 hover:underline" onclick="showTaskSheetContent(event, '${content}', '${escapeSingleQuote(task.title || '')}')">
+                                <a href="#" class="text-blue-700 hover:underline" onclick="showTaskSheetContent(event, '${content}', '${escapeSingleQuote(task.title || '')}', ${lesson.lesson_id}, ${task.task_sheet_id}, '${escapeSingleQuote(task.status || '')}')">
                                     <i class="fas fa-file-alt mr-1 text-slate-500"></i>${task.title || 'Task Sheet'}
                                 </a>
-                                <span class="ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${statusClass}">${task.status || 'N/A'}</span>
+                                <span class="ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${statusClass}">${getTaskSheetStatusLabel(task.status)}</span>
                                 <span class="text-slate-500">${grade}</span>
+                                ${doneButton}
                             </li>
                         `;
                     });
@@ -520,7 +608,7 @@ function renderProgressAccordion(containerId, modules, competencyName) {
     });
 }
 
-function showTaskSheetContent(event, contentBase64, title) {
+function showTaskSheetContent(event, contentBase64, title, lessonId = 0, taskSheetId = 0, status = '') {
     event.preventDefault();
 
     const modalTitle = document.getElementById('contentModalTitle');
@@ -540,6 +628,13 @@ function showTaskSheetContent(event, contentBase64, title) {
         modalBody.innerHTML = '<div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">Could not display content. It might be corrupted.</div>';
     }
 
+    currentTaskSheetModalContext = {
+        lessonId: Number(lessonId || 0),
+        taskSheetId: Number(taskSheetId || 0),
+        title: title || 'Task Sheet',
+        status: status || ''
+    };
+    updateTaskSheetModalFooter(currentTaskSheetModalContext);
     contentModal.show();
 }
 
@@ -547,4 +642,68 @@ function escapeSingleQuote(text) {
     return String(text || '').replace(/'/g, "\\'");
 }
 
+async function markTaskSheetDone(lessonId, taskSheetId, title) {
+    if (!currentTraineeId || !lessonId || !taskSheetId) {
+        return;
+    }
+
+    await ensureSwal();
+    const result = await Swal.fire({
+        title: 'Mark Task Sheet as Done?',
+        text: `This will approve "${title || 'Task Sheet'}" and count it toward the trainee's progress.`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Mark as Done',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#16a34a',
+        cancelButtonColor: '#64748b'
+    });
+
+    if (!result.isConfirmed) {
+        return;
+    }
+
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    try {
+        const response = await axios.post(
+            `${API_BASE_URL}/role/trainer/trainee_details.php?action=approve-task-sheet`,
+            {
+                trainee_id: currentTraineeId,
+                lesson_id: lessonId,
+                task_sheet_id: taskSheetId,
+                trainer_user_id: Number(user.user_id || 0)
+            }
+        );
+
+        if (response.data?.success) {
+            if (contentModal && currentTaskSheetModalContext && Number(currentTaskSheetModalContext.lessonId) === Number(lessonId) && Number(currentTaskSheetModalContext.taskSheetId) === Number(taskSheetId)) {
+                contentModal.hide();
+            }
+            currentTaskSheetModalContext = null;
+            updateTaskSheetModalFooter(null);
+            await Swal.fire({
+                icon: 'success',
+                title: 'Marked as Done',
+                text: response.data.message || 'The task sheet has been approved.',
+                confirmButtonColor: '#2563eb'
+            });
+            loadTraineeDetails(currentTraineeId);
+            setActiveTopTab('progress');
+            return;
+        }
+
+        throw new Error(response.data?.message || 'Failed to approve task sheet.');
+    } catch (error) {
+        console.error('Error approving task sheet:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Approval Failed',
+            text: error.response?.data?.message || error.message || 'Could not approve the task sheet.',
+            confirmButtonColor: '#2563eb'
+        });
+    }
+}
+
 window.showTaskSheetContent = showTaskSheetContent;
+window.markTaskSheetDone = markTaskSheetDone;

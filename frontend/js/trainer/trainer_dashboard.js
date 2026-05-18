@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check Auth
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user || user.role_id != 2) {
-        window.location.href = '../../login.html';
+        window.location.href = '/Hohoo-ville/frontend/login.html';
         return;
     }
 
@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('logoutBtn').addEventListener('click', () => {
         localStorage.clear();
-        window.location.href = '../../login.html';
+        window.location.href = '/Hohoo-ville/frontend/login.html';
     });
 });
 

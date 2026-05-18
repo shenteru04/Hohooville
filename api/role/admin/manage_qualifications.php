@@ -95,12 +95,11 @@ function addQualification($conn) {
         
         $conn->beginTransaction();
 
-        $stmt = $conn->prepare("INSERT INTO tbl_qualifications (qualification_name, nc_level_id, ctpr_number, training_cost, description, duration, status) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO tbl_qualifications (qualification_name, nc_level_id, ctpr_number, description, duration, status) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $data['qualification_name'],
             $data['nc_level_id'] ?? null,
             $data['ctpr_number'] ?? null,
-            $data['training_cost'] ?? 0,
             $data['description'] ?? null, 
             $data['duration'] ?? null, 
             $data['status'] ?? 'active'
@@ -129,12 +128,11 @@ function updateQualification($conn) {
         
         if (!$id) throw new Exception('ID required');
         
-        $stmt = $conn->prepare("UPDATE tbl_qualifications SET qualification_name = ?, nc_level_id = ?, ctpr_number = ?, training_cost = ?, description = ?, duration = ?, status = ? WHERE qualification_id = ?");
+        $stmt = $conn->prepare("UPDATE tbl_qualifications SET qualification_name = ?, nc_level_id = ?, ctpr_number = ?, description = ?, duration = ?, status = ? WHERE qualification_id = ?");
         $stmt->execute([
             $data['qualification_name'], 
             $data['nc_level_id'] ?? null,
             $data['ctpr_number'] ?? null,
-            $data['training_cost'] ?? 0,
             $data['description'] ?? null, 
             $data['duration'] ?? null, 
             $data['status'], 

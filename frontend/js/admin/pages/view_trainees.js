@@ -3,8 +3,18 @@ const UPLOADS_URL = `${window.location.origin}/Hohoo-ville/uploads/trainees/`;
 
 let accountModal;
 let profileModal;
+let documentModal;
 let sendingModal;
 let traineesData = [];
+let documentZoom = 1;
+
+function refreshBodyScrollLock() {
+    const hasOpenModal = Array.from(document.querySelectorAll('[id$="Modal"]')).some((element) => {
+        return element.classList.contains('flex') && !element.classList.contains('hidden');
+    });
+
+    document.body.classList.toggle('overflow-hidden', hasOpenModal);
+}
 
 class SimpleModal {
     constructor(element) {
@@ -15,14 +25,19 @@ class SimpleModal {
         if (!this.element) return;
         this.element.classList.remove('hidden');
         this.element.classList.add('flex');
-        document.body.classList.add('overflow-hidden');
+        this.element.setAttribute('aria-hidden', 'false');
+        refreshBodyScrollLock();
     }
 
     hide() {
         if (!this.element) return;
         this.element.classList.add('hidden');
         this.element.classList.remove('flex');
-        document.body.classList.remove('overflow-hidden');
+        this.element.setAttribute('aria-hidden', 'true');
+        if (this.element.id === 'documentModal') {
+            resetDocumentPreview();
+        }
+        refreshBodyScrollLock();
     }
 }
 
@@ -31,6 +46,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initUserDropdown();
     initLogout();
     initModals();
+    initDocumentZoomControls();
     initFilterStatusHandlers();
     loadTrainees();
 
@@ -100,6 +116,7 @@ async function initLogout() {
 function initModals() {
     accountModal = new SimpleModal(document.getElementById('createAccountModal'));
     profileModal = new SimpleModal(document.getElementById('viewProfileModal'));
+    documentModal = new SimpleModal(document.getElementById('documentModal'));
     sendingModal = new SimpleModal(document.getElementById('sendingEmailModal'));
 
     document.querySelectorAll('[data-modal-hide]').forEach((button) => {
@@ -107,8 +124,19 @@ function initModals() {
             const modalId = button.getAttribute('data-modal-hide');
             if (modalId === 'createAccountModal' && accountModal) accountModal.hide();
             if (modalId === 'viewProfileModal' && profileModal) profileModal.hide();
+            if (modalId === 'documentModal' && documentModal) documentModal.hide();
         });
     });
+}
+
+function initDocumentZoomControls() {
+    const zoomInBtn = document.getElementById('docZoomInBtn');
+    const zoomOutBtn = document.getElementById('docZoomOutBtn');
+    const zoomResetBtn = document.getElementById('docZoomResetBtn');
+
+    if (zoomInBtn) zoomInBtn.addEventListener('click', () => setDocumentZoom(documentZoom + 0.1));
+    if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => setDocumentZoom(documentZoom - 0.1));
+    if (zoomResetBtn) zoomResetBtn.addEventListener('click', () => setDocumentZoom(1));
 }
 
 function initFilterStatusHandlers() {
@@ -136,8 +164,178 @@ async function loadTrainees() {
         renderTraineesTable(traineesData);
     } catch (error) {
         console.error('Error loading trainees:', error);
-        Swal.fire('Error', 'Failed to load trainees.', 'error');
+        Swal.fire('Error', `Failed to load trainees: ${error.message}`, 'error');
     }
+}
+
+function getFullName(trainee) {
+    const firstName = String(trainee?.first_name || '').trim();
+    const lastName = String(trainee?.last_name || '').trim();
+    const fullName = `${firstName} ${lastName}`.trim();
+    return fullName || 'Unnamed Trainee';
+}
+
+function getInitials(name) {
+    const parts = String(name || '')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2);
+
+    if (parts.length === 0) return 'NA';
+    return parts.map((part) => part.charAt(0)).join('').toUpperCase();
+}
+
+function getEnrollmentLabel(trainee) {
+    return trainee?.formatted_enrollment_date || trainee?.enrollment_date || 'Not Available';
+}
+
+function getProgramLabel(trainee) {
+    return trainee?.course_name || 'Not Assigned';
+}
+
+function getTraineeImageUrl(trainee) {
+    const imageFile = trainee?.profile_image || trainee?.photo_file;
+    if (!imageFile) return '';
+
+    const imagePath = String(imageFile).startsWith('photo_') ? 'trainees' : 'profile_images';
+    return `${window.location.origin}/Hohoo-ville/uploads/${imagePath}/${encodeURIComponent(imageFile)}`;
+}
+
+function getStatusMeta(status) {
+    const normalizedStatus = String(status || 'unknown').toLowerCase();
+
+    if (normalizedStatus === 'active') {
+        return {
+            label: 'Active',
+            className: 'inline-flex rounded-full border border-emerald-300/30 bg-emerald-400/20 px-3 py-1 text-xs font-semibold text-white'
+        };
+    }
+
+    if (normalizedStatus === 'inactive') {
+        return {
+            label: 'Inactive',
+            className: 'inline-flex rounded-full border border-white/20 bg-slate-900/20 px-3 py-1 text-xs font-semibold text-white'
+        };
+    }
+
+    return {
+        label: 'Unknown',
+        className: 'inline-flex rounded-full border border-white/20 bg-white/15 px-3 py-1 text-xs font-semibold text-white'
+    };
+}
+
+function getAccountMeta(trainee) {
+    if (trainee?.user_id) {
+        return {
+            badgeLabel: 'Account Ready',
+            badgeClassName: 'inline-flex rounded-full border border-emerald-300/30 bg-emerald-400/20 px-3 py-1 text-xs font-semibold text-white',
+            detail: 'A login account is already linked to this trainee profile.'
+        };
+    }
+
+    return {
+        badgeLabel: 'Setup Pending',
+        badgeClassName: 'inline-flex rounded-full border border-amber-200/30 bg-amber-300/20 px-3 py-1 text-xs font-semibold text-white',
+        detail: 'No login account has been created for this trainee yet.'
+    };
+}
+
+function setContactLink(elementId, text, href, enabledClassName) {
+    const link = document.getElementById(elementId);
+    if (!link) return;
+
+    if (text && href) {
+        link.href = href;
+        link.className = enabledClassName;
+        return;
+    }
+
+    link.href = '#';
+    link.className = 'mt-2 block cursor-default text-sm font-semibold text-slate-400 pointer-events-none';
+}
+
+function setDocumentZoom(value) {
+    const zoomLayer = document.getElementById('documentZoomLayer');
+    const zoomLabel = document.getElementById('docZoomLabel');
+    if (!zoomLayer) return;
+
+    documentZoom = Math.max(0.5, Math.min(3, Number(value.toFixed(2))));
+    zoomLayer.style.transform = `scale(${documentZoom})`;
+    if (zoomLabel) zoomLabel.textContent = `${Math.round(documentZoom * 100)}%`;
+}
+
+function resetDocumentPreview() {
+    const imageEl = document.getElementById('documentPreviewImage');
+    const frameEl = document.getElementById('documentPreviewFrame');
+    const fallbackEl = document.getElementById('documentPreviewFallback');
+    const downloadLink = document.getElementById('documentPreviewDownloadLink');
+    const openBtn = document.getElementById('docOpenNewTabBtn');
+
+    if (imageEl) {
+        imageEl.classList.add('hidden');
+        imageEl.removeAttribute('src');
+        imageEl.onerror = null;
+    }
+
+    if (frameEl) {
+        frameEl.classList.add('hidden');
+        frameEl.removeAttribute('src');
+        frameEl.onerror = null;
+    }
+
+    if (fallbackEl) fallbackEl.classList.add('hidden');
+    if (downloadLink) downloadLink.setAttribute('href', '#');
+    if (openBtn) openBtn.setAttribute('href', '#');
+
+    setDocumentZoom(1);
+}
+
+function openDocumentModal(url, title) {
+    if (!documentModal || !url) return;
+
+    const modalTitle = document.getElementById('documentModalTitle');
+    const openBtn = document.getElementById('docOpenNewTabBtn');
+    const imageEl = document.getElementById('documentPreviewImage');
+    const frameEl = document.getElementById('documentPreviewFrame');
+    const fallbackEl = document.getElementById('documentPreviewFallback');
+    const downloadLink = document.getElementById('documentPreviewDownloadLink');
+
+    resetDocumentPreview();
+
+    if (modalTitle) modalTitle.textContent = title || 'Submitted Document';
+    if (openBtn) openBtn.href = url;
+    if (downloadLink) downloadLink.href = url;
+
+    const cleanUrl = url.split('?')[0].toLowerCase();
+    const isImage = /\.(png|jpg|jpeg|gif|webp|bmp|svg|avif)$/i.test(cleanUrl);
+    const isPdf = /\.pdf$/i.test(cleanUrl);
+    const likelyUnsupportedInline = /\.(doc|docx|ppt|pptx|xls|xlsx|csv)$/i.test(cleanUrl);
+
+    if (isImage && imageEl) {
+        imageEl.src = url;
+        imageEl.classList.remove('hidden');
+        imageEl.onerror = () => {
+            imageEl.classList.add('hidden');
+            if (fallbackEl) fallbackEl.classList.remove('hidden');
+        };
+    } else if (isPdf && frameEl) {
+        frameEl.src = url;
+        frameEl.classList.remove('hidden');
+    } else if (likelyUnsupportedInline) {
+        if (fallbackEl) fallbackEl.classList.remove('hidden');
+    } else if (frameEl) {
+        frameEl.src = url;
+        frameEl.classList.remove('hidden');
+        frameEl.onerror = () => {
+            frameEl.classList.add('hidden');
+            if (fallbackEl) fallbackEl.classList.remove('hidden');
+        };
+    } else if (fallbackEl) {
+        fallbackEl.classList.remove('hidden');
+    }
+
+    documentModal.show();
 }
 
 function renderTraineesTable(data) {
@@ -145,11 +343,11 @@ function renderTraineesTable(data) {
     if (!tbody) return;
 
     if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-6 text-center text-sm text-slate-500">No trainees found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" class="px-4 py-6 text-center text-sm text-slate-500">No trainees found</td></tr>';
         return;
     }
 
-    tbody.innerHTML = data.map((trainee) => {
+    const html = data.map((trainee) => {
         const statusBadge = trainee.status === 'active'
             ? '<span class="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">active</span>'
             : '<span class="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">inactive</span>';
@@ -164,9 +362,25 @@ function renderTraineesTable(data) {
 
         const qualification = trainee.course_name || '<span class="text-slate-400">Not Assigned</span>';
 
+        // Profile image with fallback to avatar
+        let profileImageHtml = '';
+        let imageFile = trainee.profile_image || trainee.photo_file;
+        if (imageFile) {
+            const isPhotoFile = imageFile.startsWith('photo_');
+            const imagePath = isPhotoFile ? 'trainees' : 'profile_images';
+            const avatarUrl = `${window.location.origin}/hohoo-ville/uploads/${imagePath}/${imageFile}`;
+            const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(trainee.first_name || 'User')}&background=2563eb&color=ffffff&size=32`;
+            profileImageHtml = `<img src="${avatarUrl}" alt="Profile" class="h-8 w-8 rounded-full border border-slate-200 object-cover" onerror="this.src='${fallbackAvatar}'" />`;
+        } else if (trainee.first_name) {
+            profileImageHtml = `<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(trainee.first_name)}&background=2563eb&color=ffffff&size=32" alt="Avatar" class="h-8 w-8 rounded-full border border-slate-200 object-cover" />`;
+        } else {
+            profileImageHtml = `<div class="h-8 w-8 rounded-full border border-slate-200 bg-slate-100 flex items-center justify-center"><i class="fas fa-user text-slate-400 text-xs"></i></div>`;
+        }
+
         return `
             <tr class="hover:bg-slate-50">
                 <td class="px-3 py-3 text-sm text-slate-700">${escapeHtml(trainee.trainee_school_id || 'N/A')}</td>
+                <td class="px-3 py-3 text-sm text-slate-700">${profileImageHtml}</td>
                 <td class="px-3 py-3 text-sm text-slate-900">${escapeHtml(`${trainee.last_name || ''}, ${trainee.first_name || ''}`)}</td>
                 <td class="px-3 py-3 text-sm text-slate-700">${escapeHtml(trainee.email || 'N/A')}</td>
                 <td class="px-3 py-3 text-sm text-slate-700">${escapeHtml(trainee.phone_number || '-')}</td>
@@ -189,6 +403,8 @@ function renderTraineesTable(data) {
             </tr>
         `;
     }).join('');
+    
+    tbody.innerHTML = html;
     
     updateFilterStatus();
 }
@@ -262,10 +478,18 @@ function openAccountModal(id) {
 
 async function handleCreateAccount(event) {
     event.preventDefault();
+    const username = String(document.getElementById('accountUsername')?.value || '').trim();
+    const password = String(document.getElementById('accountPassword')?.value || '');
+
+    if (!/^[A-Za-z0-9_]+$/.test(username)) {
+        Swal.fire('Invalid Username', 'Use letters, numbers, and underscores only.', 'warning');
+        return;
+    }
+
     const payload = {
         trainee_id: document.getElementById('accountTraineeId')?.value,
-        username: document.getElementById('accountUsername')?.value,
-        password: document.getElementById('accountPassword')?.value
+        username,
+        password
     };
 
     try {
@@ -293,62 +517,103 @@ function viewProfile(id) {
     const trainee = traineesData.find((item) => String(item.trainee_id) === String(id));
     if (!trainee) return;
 
-    setText('viewName', `${trainee.first_name || ''} ${trainee.last_name || ''}`.trim());
-    setText('viewSchoolId', trainee.trainee_school_id || 'N/A');
-    setText('viewEmail', trainee.email || 'N/A');
-    setText('viewPhone', trainee.phone_number || 'N/A');
-    setText('viewAddress', trainee.address || 'N/A');
-    setText('viewBatch', trainee.batch_name || 'Not Enrolled');
+    const fullName = getFullName(trainee);
+    const schoolId = trainee.trainee_school_id || 'N/A';
+    const email = trainee.email || '';
+    const phoneNumber = trainee.phone_number || '';
+    const batchName = trainee.batch_name || 'Not Enrolled';
+    const address = trainee.address || 'No address provided';
+    const program = getProgramLabel(trainee);
+    const enrollmentDate = getEnrollmentLabel(trainee);
+    const statusMeta = getStatusMeta(trainee.status);
+    const accountMeta = getAccountMeta(trainee);
+
+    setText('viewName', fullName);
+    setText('viewInitials', getInitials(fullName));
+    setText('viewSchoolId', schoolId);
+    setText('viewProfileSchoolId', schoolId === 'N/A' ? 'School ID not available' : `School ID: ${schoolId}`);
+    setText('viewEmail', email || 'No email address provided');
+    setText('viewPhone', phoneNumber || 'No phone number provided');
+    setText('viewAddress', address);
+    setText('viewBatch', batchName);
+    setText('viewProgram', program);
+    setText('viewEnrollmentDate', enrollmentDate);
+    setText('viewAccountDetail', accountMeta.detail);
+
+    setContactLink('viewEmailLink', email, email ? `mailto:${email}` : '', 'mt-2 block break-all text-sm font-semibold text-blue-700 hover:text-blue-800');
+    setContactLink('viewPhoneLink', phoneNumber, phoneNumber ? `tel:${String(phoneNumber).replace(/\s+/g, '')}` : '', 'mt-2 block text-sm font-semibold text-slate-900 hover:text-blue-700');
 
     const statusBadge = document.getElementById('viewStatus');
     if (statusBadge) {
-        statusBadge.textContent = String(trainee.status || 'unknown').toUpperCase();
-        statusBadge.className = trainee.status === 'active'
-            ? 'inline-flex rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700'
-            : 'inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700';
+        statusBadge.textContent = statusMeta.label;
+        statusBadge.className = statusMeta.className;
+    }
+
+    const accountBadge = document.getElementById('viewAccountStatus');
+    if (accountBadge) {
+        accountBadge.textContent = accountMeta.badgeLabel;
+        accountBadge.className = accountMeta.badgeClassName;
     }
 
     const photoImg = document.getElementById('viewPhoto');
     const noPhoto = document.getElementById('noPhoto');
+    const photoUrl = getTraineeImageUrl(trainee);
     if (photoImg && noPhoto) {
-        if (trainee.photo_file) {
-            photoImg.src = `${UPLOADS_URL}${encodeURIComponent(trainee.photo_file)}`;
+        photoImg.alt = `${fullName} profile photo`;
+
+        if (photoUrl) {
+            photoImg.src = photoUrl;
             photoImg.classList.remove('hidden');
             noPhoto.classList.add('hidden');
             photoImg.onerror = () => {
+                photoImg.removeAttribute('src');
                 photoImg.classList.add('hidden');
                 noPhoto.classList.remove('hidden');
             };
         } else {
+            photoImg.removeAttribute('src');
             photoImg.classList.add('hidden');
             noPhoto.classList.remove('hidden');
         }
     }
 
-    setupDocLink('viewValidId', trainee.valid_id_file, 'Valid ID');
-    setupDocLink('viewBirthCert', trainee.birth_cert_file, 'Birth Certificate');
+    const uploadedDocs = [
+        setupDocLink('viewValidId', trainee.valid_id_file, 'Valid ID'),
+        setupDocLink('viewBirthCert', trainee.birth_cert_file, 'Birth Certificate')
+    ].filter(Boolean).length;
+
+    setText('viewDocumentSummary', `${uploadedDocs} of 2 documents uploaded`);
 
     if (profileModal) profileModal.show();
 }
 
-function setupDocLink(elementId, filename, label) {
+function setupDocLink(elementId, filename, title) {
     const link = document.getElementById(elementId);
-    if (!link) return;
+    const status = document.getElementById(`${elementId}Status`);
+    const action = document.getElementById(`${elementId}Action`);
+    if (!link || !status || !action) return false;
 
     if (filename) {
-        link.href = `${UPLOADS_URL}${encodeURIComponent(filename)}`;
-        link.classList.remove('pointer-events-none', 'opacity-50');
-        link.innerHTML = link.innerHTML.includes('id-card')
-            ? `<i class="fas fa-id-card mr-2"></i> ${label} (Click to View)`
-            : `<i class="fas fa-file-alt mr-2"></i> ${label} (Click to View)`;
-        return;
+        const fileUrl = `${UPLOADS_URL}${encodeURIComponent(filename)}`;
+        link.href = fileUrl;
+        link.onclick = (event) => {
+            event.preventDefault();
+            openDocumentModal(fileUrl, title);
+        };
+        link.className = 'group rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 transition hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-50';
+        status.textContent = 'Click to preview this document in a modal.';
+        action.textContent = 'Preview';
+        action.className = 'inline-flex shrink-0 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700';
+        return true;
     }
 
     link.href = '#';
-    link.classList.add('pointer-events-none', 'opacity-50');
-    link.innerHTML = link.innerHTML.includes('id-card')
-        ? `<i class="fas fa-id-card mr-2"></i> ${label} (Not Uploaded)`
-        : `<i class="fas fa-file-alt mr-2"></i> ${label} (Not Uploaded)`;
+    link.onclick = null;
+    link.className = 'group rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 opacity-80 pointer-events-none';
+    status.textContent = 'Not uploaded yet.';
+    action.textContent = 'Missing';
+    action.className = 'inline-flex shrink-0 rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-600';
+    return false;
 }
 
 async function deleteTrainee(id) {

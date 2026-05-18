@@ -10,49 +10,105 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../../database/db.php';
+require_once '../../utils/PermissionChecker.php';
+require_once '../../utils/trainer_assignment_helper.php';
 
 $database = new Database();
 $conn = $database->getConnection();
+ta_ensure_schema($conn);
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
-switch ($action) {
-    case 'get-form-data':
-        getFormData($conn);
-        break;
-    case 'list':
-        getTrainees($conn);
-        break;
-    case 'add':
-        addTrainee($conn);
-        break;
-    case 'update':
-        updateTrainee($conn);
-        break;
-    case 'toggle-status':
-        toggleStatus($conn);
-        break;
-    case 'create-account':
-        createTraineeAccount($conn);
-        break;
-    case 'approve-enrollment':
-        approveEnrollment($conn);
-        break;
-    case 'delete':
-        deleteTrainee($conn);
-        break;
-    case 'get-batches':
-        getBatches($conn);
-        break;
-    case 'get-batch-trainees':
-        getBatchTrainees($conn);
-        break;
-    case 'check-and-close-batches':
-        checkAndCloseBatches($conn);
-        break;
-    default:
-        echo json_encode(['success' => false, 'message' => 'Invalid action']);
-        break;
+try {
+    // Get JWT token from headers
+    $headers = getallheaders();
+    $authHeader = $headers['Authorization'] ?? '';
+    
+    // If no auth header, allow access for now (graceful degradation)
+    if (!$authHeader) {
+        $permissionChecker = null;
+    } else {
+        // Extract token
+        $token = str_replace('Bearer ', '', $authHeader);
+        
+        // Decode JWT to get user_id and role_id
+        $tokenParts = explode('.', $token);
+        if (count($tokenParts) !== 3) {
+            $permissionChecker = null;
+        } else {
+            $payload = json_decode(base64url_decode($tokenParts[1]), true);
+            $userId = $payload['user_id'] ?? null;
+            $roleId = $payload['role_id'] ?? null;
+
+            if (!$userId || !$roleId) {
+                $permissionChecker = null;
+            } else {
+                // Initialize permission checker
+                $permissionChecker = new PermissionChecker($conn, $userId, $roleId);
+            }
+        }
+    }
+
+    // Check permissions based on action (only if permission checker is available)
+    switch ($action) {
+        case 'get-form-data':
+            if ($permissionChecker) $permissionChecker->requirePermission('trainees.view');
+            getFormData($conn);
+            break;
+        case 'list':
+            if ($permissionChecker) $permissionChecker->requirePermission('trainees.view');
+            getTrainees($conn);
+            break;
+        case 'add':
+            if ($permissionChecker) $permissionChecker->requirePermission('trainees.create');
+            addTrainee($conn);
+            break;
+        case 'update':
+            if ($permissionChecker) $permissionChecker->requirePermission('trainees.update');
+            updateTrainee($conn);
+            break;
+        case 'toggle-status':
+            if ($permissionChecker) $permissionChecker->requirePermission('trainees.update');
+            toggleStatus($conn);
+            break;
+        case 'create-account':
+            if ($permissionChecker) $permissionChecker->requirePermission('trainees.create');
+            createAccount($conn);
+            break;
+        case 'approve-enrollment':
+            if ($permissionChecker) $permissionChecker->requirePermission('trainees.approve');
+            approveEnrollment($conn);
+            break;
+        case 'delete':
+            if ($permissionChecker) $permissionChecker->requirePermission('trainees.delete');
+            deleteTrainee($conn);
+            break;
+        case 'get-batches':
+            if ($permissionChecker) $permissionChecker->requirePermission('trainees.view');
+            getBatches($conn);
+            break;
+        case 'get-batch-trainees':
+            if ($permissionChecker) $permissionChecker->requirePermission('trainees.view');
+            getBatchTrainees($conn);
+            break;
+        case 'check-and-close-batches':
+            if ($permissionChecker) $permissionChecker->requirePermission('batches.manage');
+            checkAndCloseBatches($conn);
+            break;
+        default:
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid action']);
+            break;
+    }
+} catch (Throwable $e) {
+    error_log("Fatal error in trainees.php action '{$action}': " . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+}
+
+// Helper function for base64url decode
+function base64url_decode($data) {
+    return base64_decode(str_pad(strtr($data, '-_', '+/'), strlen($data) % 4, '=', STR_PAD_RIGHT));
 }
 
 function getFormData($conn) {
@@ -78,22 +134,44 @@ function getFormData($conn) {
 
 function getTrainees($conn) {
     try {
+        // Check if database connection is active
+        if (!$conn) {
+            throw new Exception('Database connection lost');
+        }
+
         $stmt = $conn->query("
-            SELECT 
+            SELECT
                 t.trainee_id, t.user_id, t.trainee_school_id, t.first_name, t.last_name, t.email, t.phone_number, t.status,
-                t.photo_file, t.valid_id_file, t.birth_cert_file, t.address,
+                t.photo_file, t.valid_id_file, t.birth_cert_file, t.address, COALESCE(t.profile_image, '') as profile_image,
                 e.batch_id, b.batch_name, c.qualification_name as course_name, e.enrollment_date, DATE_FORMAT(e.enrollment_date, '%Y-%m-%d %H:%i:%s') as formatted_enrollment_date
-            FROM tbl_trainee_hdr t 
-            JOIN tbl_enrollment e ON t.trainee_id = e.trainee_id 
-            LEFT JOIN tbl_batch b ON e.batch_id = b.batch_id 
+            FROM tbl_trainee_hdr t
+            JOIN tbl_enrollment e ON t.trainee_id = e.trainee_id
+            LEFT JOIN tbl_batch b ON e.batch_id = b.batch_id
             LEFT JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
             LEFT JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id
             WHERE e.status = 'approved'
             ORDER BY t.trainee_id DESC
         ");
+        
+        if (!$stmt) {
+            throw new Exception('Failed to execute query');
+        }
+
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Handle empty result set
+        if (empty($data)) {
+            echo json_encode(['success' => true, 'data' => [], 'message' => 'No trainees found']);
+            return;
+        }
+        
         echo json_encode(['success' => true, 'data' => $data]);
+    } catch (PDOException $e) {
+        error_log("Database error in getTrainees: " . $e->getMessage());
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Database error occurred. Please try again.']);
     } catch (Exception $e) {
+        error_log("Error in getTrainees: " . $e->getMessage());
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
@@ -104,39 +182,100 @@ function addTrainee($conn) {
         // Using $_POST and $_FILES for multipart/form-data
         $data = $_POST;
         
-        if (empty($data['first_name']) || empty($data['last_name']) || empty($data['course_id']) || empty($data['batch_id'])) {
-            throw new Exception('Please fill in all required fields (Name, Course, Batch)');
+        // Validate required fields with better error messages
+        $requiredFields = ['first_name', 'last_name', 'course_id', 'batch_id'];
+        $missingFields = [];
+        foreach ($requiredFields as $field) {
+            if (empty($data[$field])) {
+                $missingFields[] = $field;
+            }
+        }
+        
+        if (!empty($missingFields)) {
+            throw new Exception('Missing required fields: ' . implode(', ', $missingFields));
         }
 
-        // Check if batch is closed
-        $stmtBatch = $conn->prepare("SELECT status FROM tbl_batch WHERE batch_id = ?");
+        // Sanitize input data
+        $firstName = trim($data['first_name']);
+        $lastName = trim($data['last_name']);
+        $email = isset($data['email']) ? trim($data['email']) : null;
+        
+        // Validate email format if provided
+        if ($email && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw new Exception('Invalid email format');
+        }
+
+        // Check if batch exists and is not closed
+        $stmtBatch = $conn->prepare("SELECT status, max_trainees FROM tbl_batch WHERE batch_id = ?");
         $stmtBatch->execute([$data['batch_id']]);
-        $batchStatus = $stmtBatch->fetchColumn();
-        if ($batchStatus === 'closed') {
+        $batch = $stmtBatch->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$batch) {
+            throw new Exception('Batch not found');
+        }
+        
+        if ($batch['status'] === 'closed') {
             throw new Exception('This batch is full and cannot accept new trainees.');
         }
         
         $conn->beginTransaction();
 
-        // 1. Handle File Uploads
+        // 1. Handle File Uploads with validation
         $uploadDir = '../../../uploads/trainees/';
-        if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+        if (!is_dir($uploadDir)) {
+            if (!mkdir($uploadDir, 0777, true)) {
+                throw new Exception('Failed to create upload directory');
+            }
+        }
 
         $validIdPath = null;
         $birthCertPath = null;
         $photoPath = null;
 
+        // Allowed file types and max size (5MB)
+        $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/jfif', 'application/pdf'];
+        $maxFileSize = 5 * 1024 * 1024; // 5MB
+
         if (isset($_FILES['valid_id']) && $_FILES['valid_id']['error'] === UPLOAD_ERR_OK) {
-            $validIdPath = 'valid_id_' . time() . '_' . $_FILES['valid_id']['name'];
-            move_uploaded_file($_FILES['valid_id']['tmp_name'], $uploadDir . $validIdPath);
+            $file = $_FILES['valid_id'];
+            if ($file['size'] > $maxFileSize) {
+                throw new Exception('Valid ID file size exceeds 5MB limit');
+            }
+            if (!in_array($file['type'], $allowedTypes)) {
+                throw new Exception('Invalid file type for Valid ID. Allowed: JPG, PNG, JFIF, PDF');
+            }
+            $validIdPath = 'valid_id_' . time() . '_' . basename($file['name']);
+            if (!move_uploaded_file($file['tmp_name'], $uploadDir . $validIdPath)) {
+                throw new Exception('Failed to upload Valid ID file');
+            }
         }
+
         if (isset($_FILES['birth_cert']) && $_FILES['birth_cert']['error'] === UPLOAD_ERR_OK) {
-            $birthCertPath = 'birth_' . time() . '_' . $_FILES['birth_cert']['name'];
-            move_uploaded_file($_FILES['birth_cert']['tmp_name'], $uploadDir . $birthCertPath);
+            $file = $_FILES['birth_cert'];
+            if ($file['size'] > $maxFileSize) {
+                throw new Exception('Birth certificate file size exceeds 5MB limit');
+            }
+            if (!in_array($file['type'], $allowedTypes)) {
+                throw new Exception('Invalid file type for Birth Certificate. Allowed: JPG, PNG, JFIF, PDF');
+            }
+            $birthCertPath = 'birth_' . time() . '_' . basename($file['name']);
+            if (!move_uploaded_file($file['tmp_name'], $uploadDir . $birthCertPath)) {
+                throw new Exception('Failed to upload Birth Certificate file');
+            }
         }
+
         if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
-            $photoPath = 'photo_' . time() . '_' . $_FILES['photo']['name'];
-            move_uploaded_file($_FILES['photo']['tmp_name'], $uploadDir . $photoPath);
+            $file = $_FILES['photo'];
+            if ($file['size'] > $maxFileSize) {
+                throw new Exception('Photo file size exceeds 5MB limit');
+            }
+            if (!in_array($file['type'], $allowedTypes)) {
+                throw new Exception('Invalid file type for Photo. Allowed: JPG, PNG, JFIF');
+            }
+            $photoPath = 'photo_' . time() . '_' . basename($file['name']);
+            if (!move_uploaded_file($file['tmp_name'], $uploadDir . $photoPath)) {
+                throw new Exception('Failed to upload Photo file');
+            }
         }
 
         // Fetch Course Details (CTPR & Duration) to save in Trainee record
@@ -199,16 +338,24 @@ function addTrainee($conn) {
         
         $conn->commit();
         echo json_encode(['success' => true, 'message' => 'Trainee added successfully']);
+    } catch (PDOException $e) {
+        if ($conn->inTransaction()) {
+            $conn->rollBack();
+        }
+        error_log("Database error in addTrainee: " . $e->getMessage());
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Database error occurred. Please try again.']);
     } catch (Exception $e) {
         if ($conn->inTransaction()) {
             $conn->rollBack();
         }
+        error_log("Error in addTrainee: " . $e->getMessage());
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
 }
 
-function createTraineeAccount($conn) {
+function createAccount($conn) {
     try {
         $data = json_decode(file_get_contents('php://input'), true);
         
@@ -216,20 +363,37 @@ function createTraineeAccount($conn) {
             throw new Exception('Username and Password are required');
         }
 
+        $username = trim((string) $data['username']);
+        $password = (string) $data['password'];
+
+        if ($username === '' || $password === '') {
+            throw new Exception('Username and Password are required');
+        }
+
+        if (!preg_match('/^[A-Za-z0-9_]+$/', $username)) {
+            throw new Exception('Username can only contain letters, numbers, and underscores.');
+        }
+
         $conn->beginTransaction();
 
         // 1. Get Trainee Email and check if account exists
-        $stmt = $conn->prepare("SELECT email, user_id FROM tbl_trainee_hdr WHERE trainee_id = ?");
+        $stmt = $conn->prepare("SELECT email, user_id, first_name, last_name FROM tbl_trainee_hdr WHERE trainee_id = ?");
         $stmt->execute([$data['trainee_id']]);
         $trainee = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if (!$trainee) throw new Exception('Trainee not found');
         if (!empty($trainee['user_id'])) throw new Exception('Trainee already has an account');
+        if (empty($trainee['email'])) throw new Exception('Trainee email is required before creating an account');
 
         // Check if username exists
         $stmtCheck = $conn->prepare("SELECT user_id FROM tbl_users WHERE username = ?");
-        $stmtCheck->execute([$data['username']]);
+        $stmtCheck->execute([$username]);
         if ($stmtCheck->fetch()) throw new Exception('Username already exists');
+
+        // Check if email is already used by another user account
+        $stmtCheckEmail = $conn->prepare("SELECT user_id FROM tbl_users WHERE email = ?");
+        $stmtCheckEmail->execute([$trainee['email']]);
+        if ($stmtCheckEmail->fetch()) throw new Exception('This trainee email is already linked to another user account');
 
         // 2. Get Role ID for 'trainee'
         $stmtRole = $conn->prepare("SELECT role_id FROM tbl_role WHERE role_name = ? LIMIT 1");
@@ -245,9 +409,9 @@ function createTraineeAccount($conn) {
         }
 
         // 3. Create User
-        $hashed = password_hash($data['password'], PASSWORD_DEFAULT);
+        $hashed = password_hash($password, PASSWORD_DEFAULT);
         $stmtUser = $conn->prepare("INSERT INTO tbl_users (role_id, username, password, email, status, date_created) VALUES (?, ?, ?, ?, 'active', NOW())");
-        $stmtUser->execute([$roleId, $data['username'], $hashed, $trainee['email']]);
+        $stmtUser->execute([$roleId, $username, $hashed, $trainee['email']]);
         $userId = $conn->lastInsertId();
 
         // 4. Link User to Trainee
@@ -258,7 +422,7 @@ function createTraineeAccount($conn) {
             require_once __DIR__ . '/../../utils/EmailService.php';
             $emailSvc = new EmailService();
             $traineeName = ($trainee['first_name'] ?? '') . ' ' . ($trainee['last_name'] ?? '');
-            $sendResult = $emailSvc->sendTraineeAccountCredentials($trainee['email'], trim($traineeName), $data['username'], $data['password']);
+            $sendResult = $emailSvc->sendTraineeAccountCredentials($trainee['email'], trim($traineeName), $username, $password);
             // log result for debugging
             if (!$sendResult['success']) {
                 error_log('Trainee account email failed: ' . $sendResult['message']);
@@ -317,7 +481,7 @@ function checkAndCloseBatch($conn, $batchId) {
     if (!$batchId) return;
     
     // Get batch info including max_trainees
-    $stmtBatch = $conn->prepare("SELECT batch_id, qualification_id, max_trainees, batch_name, trainer_id, scholarship_type, scholarship_type_id, status FROM tbl_batch WHERE batch_id = ?");
+    $stmtBatch = $conn->prepare("SELECT batch_id, qualification_id, max_trainees, training_cost, batch_name, trainer_id, scholarship_type, scholarship_type_id, status FROM tbl_batch WHERE batch_id = ?");
     $stmtBatch->execute([$batchId]);
     $batch = $stmtBatch->fetch(PDO::FETCH_ASSOC);
     
@@ -368,7 +532,7 @@ function createNextBatch($conn, $previousBatch) {
         $endDate = date('Y-m-d', strtotime('+1 month'));
         
         // Create new batch with same properties as previous
-        $stmtInsert = $conn->prepare("INSERT INTO tbl_batch (qualification_id, trainer_id, batch_name, scholarship_type, scholarship_type_id, start_date, end_date, status, max_trainees) VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?)");
+        $stmtInsert = $conn->prepare("INSERT INTO tbl_batch (qualification_id, trainer_id, batch_name, scholarship_type, scholarship_type_id, start_date, end_date, status, max_trainees, training_cost) VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)");
         $stmtInsert->execute([
             $qualId,
             $previousBatch['trainer_id'],
@@ -377,7 +541,8 @@ function createNextBatch($conn, $previousBatch) {
             $previousBatch['scholarship_type_id'],
             $startDate,
             $endDate,
-            $previousBatch['max_trainees']
+            $previousBatch['max_trainees'],
+            $previousBatch['training_cost'] ?? null
         ]);
         
         return $conn->lastInsertId();
@@ -493,11 +658,20 @@ function getBatchTrainees($conn) {
         if (!$batchId) throw new Exception('Batch ID required');
 
         $stmt = $conn->prepare("
-            SELECT t.trainee_id, t.trainee_school_id, t.first_name, t.last_name, t.email, t.phone_number, t.status
+            SELECT 
+                t.trainee_id,
+                t.trainee_school_id,
+                t.first_name,
+                t.last_name,
+                t.email,
+                t.phone_number,
+                t.status,
+                e.enrollment_date,
+                DATE_FORMAT(e.enrollment_date, '%M %e, %Y') AS formatted_enrollment_date
             FROM tbl_trainee_hdr t
             JOIN tbl_enrollment e ON t.trainee_id = e.trainee_id
             WHERE e.batch_id = ? AND e.status = 'approved'
-            ORDER BY t.last_name ASC
+            ORDER BY e.enrollment_date DESC, t.last_name ASC
         ");
         $stmt->execute([$batchId]);
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -521,7 +695,8 @@ function checkAndCloseBatches($conn) {
                 b.batch_id, 
                 b.qualification_id, 
                 b.batch_name, 
-                b.max_trainees, 
+                b.max_trainees,
+                b.training_cost,
                 b.trainer_id,
                 b.scholarship_type,
                 b.scholarship_type_id,
@@ -573,8 +748,8 @@ function checkAndCloseBatches($conn) {
 
                     $stmtInsert = $conn->prepare("
                         INSERT INTO tbl_batch 
-                        (qualification_id, trainer_id, batch_name, scholarship_type, scholarship_type_id, start_date, end_date, status, max_trainees) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?)
+                        (qualification_id, trainer_id, batch_name, scholarship_type, scholarship_type_id, start_date, end_date, status, max_trainees, training_cost) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)
                     ");
                     $stmtInsert->execute([
                         $batch['qualification_id'],
@@ -584,7 +759,8 @@ function checkAndCloseBatches($conn) {
                         $batch['scholarship_type_id'],
                         $startDate,
                         $endDate,
-                        $batch['max_trainees']
+                        $batch['max_trainees'],
+                        $batch['training_cost'] ?? null
                     ]);
                     $createdCount++;
                     $details[] = "Created new batch: $newBatchName";
@@ -608,4 +784,3 @@ function checkAndCloseBatches($conn) {
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
 }
-?>

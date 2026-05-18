@@ -5,7 +5,7 @@ let trendChartInstance = null;
 document.addEventListener('DOMContentLoaded', function () {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
-        window.location.href = '../../login.html';
+        window.location.href = '/Hohoo-ville/frontend/login.html';
         return;
     }
 
@@ -137,7 +137,7 @@ function initLogout() {
             if (result.isConfirmed) {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
-                window.location.href = '../../login.html';
+                window.location.href = '/Hohoo-ville/frontend/login.html';
             }
         });
     });

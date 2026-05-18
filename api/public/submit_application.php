@@ -4,6 +4,7 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 
 require_once '../database/db.php';
+require_once '../utils/EnrollmentStatusConstraint.php';
 
 $database = new Database();
 $conn = $database->getConnection();
@@ -30,7 +31,17 @@ function getOptions($conn) {
         // Close batches that have passed their enrollment deadline (start_date)
         closeExpiredBatches($conn);
         
-        $courses = $conn->query("SELECT qualification_id, qualification_name AS course_name FROM tbl_qualifications WHERE status = 'active' ORDER BY qualification_name ASC")->fetchAll(PDO::FETCH_ASSOC);
+        $courses = $conn->query("
+            SELECT
+                q.qualification_id,
+                q.qualification_name AS course_name,
+                q.nc_level_id,
+                COALESCE(NULLIF(nc.nc_level_code, ''), nc.nc_level_name, '') AS nc_level
+            FROM tbl_qualifications q
+            LEFT JOIN tbl_nc_levels nc ON q.nc_level_id = nc.nc_level_id
+            WHERE q.status = 'active'
+            ORDER BY q.qualification_name ASC
+        ")->fetchAll(PDO::FETCH_ASSOC);
         // Include scholarship type for auto-population on batch selection
         $batches = $conn->query("
             SELECT 
@@ -288,7 +299,7 @@ function updateApplicationStatus($conn) {
     // Note: In a production environment, ensure this action is protected by Admin/Registrar authentication.
     
     $enrollmentId = $_POST['enrollment_id'] ?? null;
-    $status = $_POST['status'] ?? null; // Expected values: 'reserved', 'rejected', 'qualified'
+    $status = strtolower(trim((string) ($_POST['status'] ?? ''))); // Expected values: 'reserved', 'rejected', 'qualified'
     $remarks = $_POST['remarks'] ?? '';
 
     if (!$enrollmentId || !$status) {
@@ -296,7 +307,14 @@ function updateApplicationStatus($conn) {
         return;
     }
 
+    if (!in_array($status, ['reserved', 'rejected', 'qualified'], true)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid status value']);
+        return;
+    }
+
     try {
+        ensureEnrollmentStatusSchema($conn);
+
         // 1. Fetch trainee email and course details
         $stmt = $conn->prepare("
             SELECT t.email, t.first_name, t.last_name, q.qualification_name

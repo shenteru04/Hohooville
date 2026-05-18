@@ -130,6 +130,13 @@
             border-color: #ef4444 !important;
             box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
         }
+        .field-error {
+            display: none;
+            margin-top: 0.25rem;
+            color: #dc2626;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
         .alert {
             padding: 0.875rem 1rem;
             border-radius: 0.75rem;
@@ -475,11 +482,13 @@
                         <div class="row mb-3">
                             <div class="col-md-4">
                                 <label class="form-label">Contact Number <span class="text-danger">*</span></label>
-                                <input type="tel" class="form-control" name="phone" id="phoneInput" pattern="[0-9]+" inputmode="numeric" placeholder="Enter numbers only" required>
+                                <input type="tel" class="form-control" name="phone" id="phoneInput" inputmode="numeric" autocomplete="tel" maxlength="11" minlength="11" pattern="09[0-9]{9}" placeholder="09XXXXXXXXX" title="Enter a valid Philippine mobile number with 11 digits." required>
+                                <div id="phoneError" class="field-error">Enter a valid Philippine mobile number in 11 digits, starting with 09.</div>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Email Address <span class="text-danger">*</span></label>
-                                <input type="email" class="form-control" name="email" required>
+                                <input type="email" class="form-control" name="email" id="emailInput" autocomplete="email" placeholder="name@example.com" required>
+                                <div id="emailError" class="field-error">Enter a valid email address.</div>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Facebook Account</label>
@@ -627,6 +636,7 @@
                                 <select class="form-select" id="courseSelect" name="qualification_id" required>
                                     <option value="">Loading courses...</option>
                                 </select>
+                                <div id="courseNcLevelHint" class="mt-2 text-sm text-muted">NC level will appear here after you choose a qualification.</div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Training Batch <span class="text-danger">*</span></label>

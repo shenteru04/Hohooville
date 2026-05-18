@@ -59,7 +59,7 @@ function openNotificationModal(notification) {
     if (description) description.textContent = notification.description || '';
     
     // Set timestamp
-    if (time) time.textContent = formatNotificationTime(notification.created_at);
+    if (time) time.textContent = formatNotificationTime(notification.created_at || notification.time);
     
     // Set icon based on notification type
     if (icon) {
@@ -147,16 +147,34 @@ function formatNotificationTime(timestamp) {
 
 function markNotificationAsRead(notificationId) {
     if (!notificationId) return;
-    
-    fetch('/Hohoo-ville/api/notifications.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            action: 'mark_as_read',
-            notification_id: notificationId
-        })
+
+    let userId = '';
+    try {
+        const storedUser = JSON.parse(localStorage.getItem('user') || 'null');
+        const normalizedUser = storedUser && typeof storedUser === 'object' && storedUser.user
+            ? storedUser.user
+            : storedUser;
+        userId = normalizedUser?.user_id || normalizedUser?.userId || normalizedUser?.id || '';
+    } catch (error) {
+        console.debug('Could not parse stored user for notifications modal:', error);
+    }
+
+    const token = localStorage.getItem('token');
+    const headers = {
+        'Content-Type': 'application/json'
+    };
+
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+
+    const query = userId
+        ? `action=markRead&id=${encodeURIComponent(notificationId)}&user_id=${encodeURIComponent(userId)}`
+        : `action=markRead&id=${encodeURIComponent(notificationId)}`;
+
+    fetch(`/Hohoo-ville/api/notifications.php?${query}`, {
+        method: 'GET',
+        headers
     })
     .then(response => response.json())
     .then(data => {

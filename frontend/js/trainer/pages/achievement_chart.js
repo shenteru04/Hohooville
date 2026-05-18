@@ -115,17 +115,6 @@ function initUserMenu() {
     });
 }
 
-async function ensureSwal() {
-    if (typeof window.Swal !== 'undefined') return;
-    await new Promise((resolve) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
-        script.onload = resolve;
-        script.onerror = resolve;
-        document.head.appendChild(script);
-    });
-}
-
 async function initLogout() {
     const logoutBtn = document.getElementById('logoutBtn');
     if (!logoutBtn) return;
@@ -202,13 +191,24 @@ async function generateLiveChart() {
     }
 }
 
+function sortTraineesAlphabetically(trainees) {
+    return [...trainees].sort((left, right) => {
+        const leftName = String(left?.full_name || '').trim();
+        const rightName = String(right?.full_name || '').trim();
+        return leftName.localeCompare(rightName, undefined, {
+            sensitivity: 'base',
+            numeric: true
+        });
+    });
+}
+
 function renderLiveChart(data) {
     if (!data || typeof data !== 'object') {
         document.getElementById('chartContainer').innerHTML =
             '<div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">Invalid chart data received.</div>';
         return;
     }
-    const trainees = Array.isArray(data.trainees) ? data.trainees : [];
+    const trainees = sortTraineesAlphabetically(Array.isArray(data.trainees) ? data.trainees : []);
     const outcomes = Array.isArray(data.outcomes) ? data.outcomes : [];
     const completion_status = Array.isArray(data.completion_status) ? data.completion_status : [];
     const batch_info = data.batch_info || {};
@@ -265,7 +265,7 @@ function renderLiveChart(data) {
                         String(s.trainee_id) === String(trainee.trainee_id) &&
                         String(s.outcome_id) === String(outcome.outcome_id)
                     );
-                    mark = normalizeMark(status ? status.mark : '');
+                    mark = formatAchievementMark(status ? status.mark : '');
                 }
                 html += `<td>${mark}</td>`;
             });
@@ -288,7 +288,7 @@ function renderLiveChart(data) {
             <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div>Training Duration: <span class="font-bold">${escapeHtml(batch_info?.duration || '_______')}</span></div>
                 <div>Date Started: <span class="font-bold">${escapeHtml(startDate)}</span></div>
-                <div class="font-bold">C - COMPETENT</div>
+                <div class="font-bold inline-flex items-center gap-2"><i class="fas fa-check text-emerald-600" aria-hidden="true"></i> COMPETENT</div>
                 <div>Trainer: <span class="font-bold underline">${escapeHtml(trainerName)}</span></div>
                 <div>Date Finished: <span class="font-bold">${escapeHtml(endDate)}</span></div>
                 <div class="font-bold">NYC - NOT YET COMPETENT</div>
@@ -303,8 +303,18 @@ function normalizeMark(mark) {
     const raw = String(mark || '').toUpperCase();
     if (!raw) return '';
     if (raw.includes('IP')) return 'IP';
-    if (raw === 'C' || raw === 'CHECK' || /[\u00E2\u00C3\u0153\u2713]/.test(raw)) return 'C';
+    if (raw === 'C' || raw === 'CHECK' || /[\u00E2\u00C3\u0153\u2713]/.test(raw)) return 'CHECK';
     return raw;
+}
+
+function formatAchievementMark(mark) {
+    const normalizedMark = normalizeMark(mark);
+
+    if (normalizedMark === 'CHECK') {
+        return '<i class="fas fa-check text-emerald-600" aria-label="Competent"></i>';
+    }
+
+    return escapeHtml(normalizedMark);
 }
 
 function notify(type, message) {
@@ -323,4 +333,3 @@ function escapeHtml(value) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
 }
-

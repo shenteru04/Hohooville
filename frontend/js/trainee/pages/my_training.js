@@ -15,6 +15,8 @@ async function ensureSwal() {
 
 let lessonItemsModal, lessonContentModal, quizModal, quizResultModal;
 let authRedirectInProgress = false;
+let lessonFileReadingCleanup = null;
+let trainingModulesState = [];
 
 // Simple Modal replacement for Tailwind (toggles hidden/flex classes)
 class SimpleModal {
@@ -105,6 +107,45 @@ function sanitizeLessonMaterialContent(rawHtml, options = {}) {
     return wrapper.innerHTML;
 }
 
+function enhanceLessonPreviewLayout(root) {
+    if (!root) {
+        return;
+    }
+
+    root.querySelectorAll('table').forEach((table) => {
+        table.classList.add('lesson-preview-table');
+
+        if (!table.parentElement || !table.parentElement.classList.contains('lesson-preview-table-wrap')) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'lesson-preview-table-wrap';
+            table.parentNode.insertBefore(wrapper, table);
+            wrapper.appendChild(table);
+        }
+    });
+
+    root.querySelectorAll('img').forEach((image) => {
+        image.loading = 'lazy';
+        image.classList.add('h-auto', 'max-w-full');
+    });
+
+    root.querySelectorAll('a').forEach((link) => {
+        link.classList.add('break-all');
+    });
+}
+
+function wrapLessonPreviewContent(contentHtml, extraClasses = '') {
+    const classes = ['lesson-preview-prose'];
+    if (extraClasses) {
+        classes.push(extraClasses);
+    }
+
+    return `
+        <div class="lesson-preview-shell rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-sm sm:px-6 sm:py-5">
+            <article class="${classes.join(' ')}" data-lesson-preview="true">${contentHtml}</article>
+        </div>
+    `;
+}
+
 function getStoredUser() {
     try {
         return JSON.parse(localStorage.getItem('user') || 'null');
@@ -139,6 +180,632 @@ function decodeInlineValue(value) {
     } catch (error) {
         return String(value ?? '');
     }
+}
+
+function escapeHtml(value = '') {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function formatQuizScoreValue(value) {
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) {
+        return '0';
+    }
+
+    return Number.isInteger(numericValue) ? String(numericValue) : numericValue.toFixed(2);
+}
+
+function formatRetryLabel(count) {
+    const retries = Math.max(0, Number(count || 0));
+    return `${retries} ${retries === 1 ? 'retry' : 'retries'} left`;
+}
+
+function getQuizMeta(lesson = {}) {
+    const hasScore = lesson.score !== null && lesson.score !== undefined && lesson.score !== '';
+    const score = hasScore ? Number(lesson.score) : null;
+    const totalQuestions = Number(lesson.total_questions || 0);
+    const attemptsUsed = Number(lesson.quiz_attempts_used || 0);
+    const attemptsLeft = Number(lesson.quiz_attempts_left || 0);
+    const maxAttempts = Number(lesson.quiz_max_attempts || 0);
+    const isDeadlinePassed = Boolean(lesson.is_deadline_passed)
+        || Boolean(lesson.deadline && new Date(lesson.deadline) < new Date());
+    const isPerfectScore = Boolean(lesson.quiz_is_perfect)
+        || (score !== null && totalQuestions > 0 && score >= totalQuestions);
+    const canRetry = Boolean(lesson.can_retry_quiz);
+
+    return {
+        hasScore,
+        score,
+        totalQuestions,
+        attemptsUsed,
+        attemptsLeft,
+        maxAttempts,
+        isDeadlinePassed,
+        isPerfectScore,
+        canRetry
+    };
+}
+
+function buildQuizActionButton(lesson) {
+    if (!lesson.has_quiz) {
+        return '';
+    }
+
+    const quizMeta = getQuizMeta(lesson);
+    const scoreText = quizMeta.hasScore
+        ? `${formatQuizScoreValue(quizMeta.score)}/${quizMeta.totalQuestions || 'N/A'}`
+        : '';
+
+    if (quizMeta.hasScore && quizMeta.isPerfectScore) {
+        return `<button class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 cursor-not-allowed opacity-80"><i class="fas fa-check-circle mr-1"></i> Perfect Score (${scoreText})</button>`;
+    }
+
+    if (quizMeta.isDeadlinePassed) {
+        const deadlineLabel = quizMeta.hasScore ? `Best ${scoreText}` : 'Deadline Passed';
+        return `<button class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-red-600 cursor-not-allowed opacity-80"><i class="fas fa-times-circle mr-1"></i> ${deadlineLabel}</button>`;
+    }
+
+    if (quizMeta.hasScore && quizMeta.canRetry) {
+        return `<button class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-amber-500 hover:bg-amber-600 focus:outline-none transition" onclick="startQuiz(${lesson.lesson_id})"><i class="fas fa-rotate-right mr-1"></i> Retake Quiz (${scoreText}) - ${formatRetryLabel(quizMeta.attemptsLeft)}</button>`;
+    }
+
+    if (quizMeta.hasScore) {
+        return `<button class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-slate-500 cursor-not-allowed opacity-80"><i class="fas fa-flag-checkered mr-1"></i> Best Score (${scoreText})</button>`;
+    }
+
+    return `<button class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none transition" onclick="startQuiz(${lesson.lesson_id})"><i class="fas fa-question-circle mr-1"></i> Take Quiz</button>`;
+}
+
+function resolveQuizState(lesson) {
+    const quizMeta = getQuizMeta(lesson);
+
+    if (!lesson.has_quiz) {
+        return 'none';
+    }
+
+    if (quizMeta.hasScore && quizMeta.isPerfectScore) {
+        return 'perfect';
+    }
+
+    if (quizMeta.isDeadlinePassed) {
+        return 'expired';
+    }
+
+    if (!quizMeta.canRetry && quizMeta.hasScore) {
+        return 'attempts-finished';
+    }
+
+    return 'available';
+}
+
+function findLessonById(lessonId, modules = trainingModulesState) {
+    const normalizedLessonId = Number(lessonId);
+    if (!Array.isArray(modules) || !Number.isFinite(normalizedLessonId)) {
+        return null;
+    }
+
+    for (const module of modules) {
+        const lessons = Array.isArray(module?.lessons) ? module.lessons : [];
+        const match = lessons.find((lesson) => Number(lesson.lesson_id) === normalizedLessonId);
+        if (match) {
+            return match;
+        }
+    }
+
+    return null;
+}
+
+function patchLessonQuizState(lessonId, result = {}) {
+    const lesson = findLessonById(lessonId);
+    if (!lesson) {
+        return false;
+    }
+
+    lesson.score = result.best_score;
+    lesson.total_questions = result.total_questions;
+    lesson.quiz_attempts_used = result.attempts_used;
+    lesson.quiz_attempts_left = result.attempts_left;
+    lesson.quiz_max_attempts = result.max_attempts;
+    lesson.quiz_is_perfect = Boolean(result.is_perfect);
+    lesson.can_retry_quiz = Boolean(result.can_retry);
+
+    return true;
+}
+
+function getLessonFileUrl(filePath = '') {
+    const normalized = String(filePath || '')
+        .split('/')
+        .filter(Boolean)
+        .map(part => encodeURIComponent(part))
+        .join('/');
+    return `${UPLOADS_URL}lessons/${normalized}`;
+}
+
+function getLessonFileName(filePath = '') {
+    const fileName = String(filePath || '').split('/').pop().split('\\').pop();
+    return fileName || 'Uploaded learning material';
+}
+
+function getLessonFileExtension(filePath = '') {
+    const fileName = getLessonFileName(filePath);
+    const lastDot = fileName.lastIndexOf('.');
+    return lastDot >= 0 ? fileName.slice(lastDot + 1).toLowerCase() : '';
+}
+
+function normalizeLessonResourceUrl(resourceUrl = '') {
+    const trimmedValue = String(resourceUrl || '').trim();
+    if (!trimmedValue) {
+        return '';
+    }
+
+    const normalizedValue = /^[a-z][a-z0-9+\-.]*:\/\//i.test(trimmedValue)
+        ? trimmedValue
+        : `https://${trimmedValue.replace(/^\/+/, '')}`;
+
+    try {
+        const parsedUrl = new URL(normalizedValue);
+        if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+            return '';
+        }
+        return parsedUrl.toString();
+    } catch (error) {
+        return '';
+    }
+}
+
+function extractYouTubeVideoId(parsedUrl) {
+    const host = parsedUrl.hostname.replace(/^www\./i, '').toLowerCase();
+    const pathSegments = parsedUrl.pathname.split('/').filter(Boolean);
+
+    if (host === 'youtu.be') {
+        return pathSegments[0] || '';
+    }
+
+    if (host.endsWith('youtube.com')) {
+        if (parsedUrl.pathname === '/watch') {
+            return parsedUrl.searchParams.get('v') || '';
+        }
+
+        if (['embed', 'shorts', 'live'].includes(pathSegments[0])) {
+            return pathSegments[1] || '';
+        }
+    }
+
+    return '';
+}
+
+function extractVimeoVideoId(parsedUrl) {
+    const pathSegments = parsedUrl.pathname.split('/').filter(Boolean);
+    for (let index = pathSegments.length - 1; index >= 0; index -= 1) {
+        if (/^\d+$/.test(pathSegments[index])) {
+            return pathSegments[index];
+        }
+    }
+    return '';
+}
+
+function getLessonResourceInfo(resourceUrl = '') {
+    const normalizedUrl = normalizeLessonResourceUrl(resourceUrl);
+    if (!normalizedUrl) {
+        return {
+            url: '',
+            host: '',
+            displayName: '',
+            type: 'link',
+            label: 'Lesson Link',
+            openLabel: 'Open Link',
+            embedUrl: ''
+        };
+    }
+
+    try {
+        const parsedUrl = new URL(normalizedUrl);
+        const host = parsedUrl.hostname.replace(/^www\./i, '');
+        const pathText = parsedUrl.pathname && parsedUrl.pathname !== '/' ? parsedUrl.pathname : '';
+        const displayName = `${host}${pathText}` || normalizedUrl;
+        const youtubeVideoId = extractYouTubeVideoId(parsedUrl);
+        const vimeoVideoId = extractVimeoVideoId(parsedUrl);
+
+        if (youtubeVideoId) {
+            return {
+                url: normalizedUrl,
+                host,
+                displayName,
+                type: 'youtube',
+                label: 'Video Lesson',
+                openLabel: 'Open Video',
+                embedUrl: `https://www.youtube.com/embed/${encodeURIComponent(youtubeVideoId)}?rel=0`
+            };
+        }
+
+        if (vimeoVideoId && /(^|\.)vimeo\.com$/i.test(parsedUrl.hostname)) {
+            return {
+                url: normalizedUrl,
+                host,
+                displayName,
+                type: 'vimeo',
+                label: 'Video Lesson',
+                openLabel: 'Open Video',
+                embedUrl: `https://player.vimeo.com/video/${encodeURIComponent(vimeoVideoId)}`
+            };
+        }
+
+        if (/\.(mp4|webm|ogg|mov)(?:$|\?)/i.test(parsedUrl.pathname)) {
+            return {
+                url: normalizedUrl,
+                host,
+                displayName,
+                type: 'direct-video',
+                label: 'Video Lesson',
+                openLabel: 'Open Video',
+                embedUrl: ''
+            };
+        }
+
+        return {
+            url: normalizedUrl,
+            host,
+            displayName,
+            type: 'link',
+            label: 'Lesson Link',
+            openLabel: 'Open Link',
+            embedUrl: ''
+        };
+    } catch (error) {
+        return {
+            url: '',
+            host: '',
+            displayName: '',
+            type: 'link',
+            label: 'Lesson Link',
+            openLabel: 'Open Link',
+            embedUrl: ''
+        };
+    }
+}
+
+function clearLessonFileReadingCleanup() {
+    if (typeof lessonFileReadingCleanup === 'function') {
+        lessonFileReadingCleanup();
+    }
+    lessonFileReadingCleanup = null;
+}
+
+function resetLessonContentPresentation() {
+    clearLessonFileReadingCleanup();
+
+    const footer = document.getElementById('lessonContentFooter');
+    const submitBtn = document.getElementById('submitTaskSheetBtn');
+    const unsubmitBtn = document.getElementById('unsubmitTaskSheetBtn');
+    const answerQuizBtn = document.getElementById('answerQuizNowBtn');
+    const openLessonFileBtn = document.getElementById('openLessonFileBtn');
+    const statusNote = document.getElementById('lessonContentStatusNote');
+
+    if (footer) footer.style.display = 'none';
+    if (submitBtn) submitBtn.style.display = 'none';
+    if (unsubmitBtn) {
+        unsubmitBtn.style.display = 'none';
+        unsubmitBtn.classList.add('hidden');
+    }
+    if (answerQuizBtn) {
+        answerQuizBtn.style.display = 'none';
+        answerQuizBtn.classList.add('hidden');
+        answerQuizBtn.dataset.lessonId = '';
+    }
+    if (openLessonFileBtn) {
+        openLessonFileBtn.classList.add('hidden');
+        openLessonFileBtn.removeAttribute('href');
+        openLessonFileBtn.textContent = 'Open File';
+    }
+    if (statusNote) {
+        statusNote.classList.add('hidden');
+        statusNote.textContent = '';
+    }
+}
+
+function unlockAnswerQuizButton() {
+    const answerQuizBtn = document.getElementById('answerQuizNowBtn');
+    const statusNote = document.getElementById('lessonContentStatusNote');
+    if (!answerQuizBtn) return;
+
+    answerQuizBtn.classList.remove('hidden');
+    answerQuizBtn.style.display = 'inline-flex';
+    if (statusNote) {
+        statusNote.textContent = 'You reached the end of the material. You can answer the quiz now.';
+        statusNote.classList.remove('hidden');
+    }
+}
+
+function setupLessonFileReadingGate(lessonId, quizState) {
+    clearLessonFileReadingCleanup();
+
+    const answerQuizBtn = document.getElementById('answerQuizNowBtn');
+    const statusNote = document.getElementById('lessonContentStatusNote');
+    const modalBody = document.getElementById('lessonContentBody');
+
+    if (!answerQuizBtn || !modalBody) return;
+
+    answerQuizBtn.classList.add('hidden');
+    answerQuizBtn.style.display = 'none';
+    answerQuizBtn.dataset.lessonId = String(lessonId || '');
+
+    if (quizState === 'perfect') {
+        if (statusNote) {
+            statusNote.textContent = 'You already reached a perfect score for this quiz.';
+            statusNote.classList.remove('hidden');
+        }
+        return;
+    }
+
+    if (quizState === 'attempts-finished') {
+        if (statusNote) {
+            statusNote.textContent = 'You already used all available quiz attempts for this lesson.';
+            statusNote.classList.remove('hidden');
+        }
+        return;
+    }
+
+    if (quizState === 'expired') {
+        if (statusNote) {
+            statusNote.textContent = 'The quiz deadline for this lesson has already passed.';
+            statusNote.classList.remove('hidden');
+        }
+        return;
+    }
+
+    if (quizState !== 'available') {
+        return;
+    }
+
+    if (statusNote) {
+        statusNote.textContent = 'Scroll to the bottom of the material to unlock the quiz.';
+        statusNote.classList.remove('hidden');
+    }
+
+    const maybeUnlock = () => {
+        const remaining = modalBody.scrollHeight - modalBody.scrollTop - modalBody.clientHeight;
+        if (remaining <= 24) {
+            unlockAnswerQuizButton();
+            clearLessonFileReadingCleanup();
+        }
+    };
+
+    modalBody.addEventListener('scroll', maybeUnlock);
+    const timeoutId = window.setTimeout(maybeUnlock, 150);
+    requestAnimationFrame(maybeUnlock);
+
+    lessonFileReadingCleanup = () => {
+        modalBody.removeEventListener('scroll', maybeUnlock);
+        window.clearTimeout(timeoutId);
+    };
+}
+
+function renderUnsupportedLessonFilePreview(fileUrl, extension) {
+    return `
+        <div class="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
+            Inline preview for .${escapeHtml(extension || 'file')} is limited on this device. Use <strong>Open File</strong> below to view the original document.
+        </div>
+        <div class="mt-4 rounded-xl border border-slate-200 bg-white px-5 py-8 text-center text-sm text-slate-500">
+            Preview unavailable for this file type.
+            <div class="mt-4">
+                <a href="${fileUrl}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-md border border-blue-300 bg-white px-4 py-2 font-semibold text-blue-700 hover:bg-blue-50">
+                    <i class="fas fa-arrow-up-right-from-square"></i> Open Original File
+                </a>
+            </div>
+        </div>
+    `;
+}
+
+function extractPlainTextFromLegacyDoc(arrayBuffer) {
+    const bytes = new Uint8Array(arrayBuffer);
+    let raw = '';
+
+    for (let index = 0; index < bytes.length; index += 1) {
+        const code = bytes[index];
+        raw += (code === 9 || code === 10 || code === 13 || (code >= 32 && code <= 126))
+            ? String.fromCharCode(code)
+            : ' ';
+    }
+
+    const segments = raw
+        .replace(/\0/g, ' ')
+        .split(/[\r\n]+/)
+        .map(segment => segment.replace(/\s+/g, ' ').trim())
+        .filter(segment => segment.length >= 25);
+
+    return segments.join('\n\n').trim();
+}
+
+async function renderPdfPreview(fileUrl) {
+    const modalBody = document.getElementById('lessonContentBody');
+    if (!modalBody) return;
+
+    if (!window.pdfjsLib) {
+        modalBody.innerHTML = renderUnsupportedLessonFilePreview(fileUrl, 'pdf');
+        return;
+    }
+
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    modalBody.innerHTML = '<div class="rounded-xl border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">Loading PDF preview...</div>';
+
+    const pdf = await window.pdfjsLib.getDocument(fileUrl).promise;
+    const pagesContainer = document.createElement('div');
+    pagesContainer.className = 'space-y-5';
+    modalBody.innerHTML = '';
+    modalBody.appendChild(pagesContainer);
+
+    const availableWidth = Math.max(Math.min(modalBody.clientWidth - 32, 900), 280);
+
+    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+        const page = await pdf.getPage(pageNumber);
+        const baseViewport = page.getViewport({ scale: 1 });
+        const scale = availableWidth / baseViewport.width;
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        canvas.className = 'w-full rounded-lg border border-slate-200 shadow-sm';
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-200';
+        wrapper.innerHTML = `<p class="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Page ${pageNumber}</p>`;
+        wrapper.appendChild(canvas);
+        pagesContainer.appendChild(wrapper);
+
+        await page.render({ canvasContext: context, viewport }).promise;
+    }
+}
+
+async function renderDocxPreview(fileUrl) {
+    const modalBody = document.getElementById('lessonContentBody');
+    if (!modalBody) return;
+
+    if (!window.mammoth) {
+        modalBody.innerHTML = renderUnsupportedLessonFilePreview(fileUrl, 'docx');
+        return;
+    }
+
+    const response = await fetch(fileUrl);
+    if (!response.ok) {
+        throw new Error('Failed to load the DOCX file.');
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const result = await window.mammoth.convertToHtml({ arrayBuffer });
+    const previewHtml = result.value && result.value.trim()
+        ? result.value
+        : '<p class="text-slate-500">This document does not contain previewable text.</p>';
+
+    modalBody.innerHTML = wrapLessonPreviewContent(sanitizeLessonMaterialContent(previewHtml));
+    enhanceLessonPreviewLayout(modalBody);
+}
+
+async function renderLegacyDocPreview(fileUrl) {
+    const modalBody = document.getElementById('lessonContentBody');
+    if (!modalBody) return;
+
+    const response = await fetch(fileUrl);
+    if (!response.ok) {
+        throw new Error('Failed to load the DOC file.');
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const extractedText = extractPlainTextFromLegacyDoc(arrayBuffer);
+
+    if (!extractedText) {
+        modalBody.innerHTML = renderUnsupportedLessonFilePreview(fileUrl, 'doc');
+        return;
+    }
+
+    modalBody.innerHTML = `
+        <div class="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
+            Legacy .doc preview is shown as simplified text. If the formatting looks incomplete, use <strong>Open File</strong>.
+        </div>
+        ${wrapLessonPreviewContent(`<pre>${escapeHtml(extractedText)}</pre>`)}
+    `;
+    enhanceLessonPreviewLayout(modalBody);
+}
+
+async function renderLessonFilePreview(filePath) {
+    const fileUrl = getLessonFileUrl(filePath);
+    const extension = getLessonFileExtension(filePath);
+    const modalBody = document.getElementById('lessonContentBody');
+
+    if (!modalBody) return;
+
+    if (extension === 'pdf') {
+        await renderPdfPreview(fileUrl);
+        return;
+    }
+
+    if (extension === 'docx') {
+        await renderDocxPreview(fileUrl);
+        return;
+    }
+
+    if (extension === 'doc') {
+        await renderLegacyDocPreview(fileUrl);
+        return;
+    }
+
+    modalBody.innerHTML = renderUnsupportedLessonFilePreview(fileUrl, extension);
+}
+
+async function renderLessonResourcePreview(resourceUrl) {
+    const modalBody = document.getElementById('lessonContentBody');
+    if (!modalBody) return;
+
+    const resourceInfo = getLessonResourceInfo(resourceUrl);
+    if (!resourceInfo.url) {
+        modalBody.innerHTML = `
+            <div class="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+                The saved lesson link is invalid or unavailable.
+            </div>
+        `;
+        return;
+    }
+
+    if (resourceInfo.type === 'youtube' || resourceInfo.type === 'vimeo') {
+        modalBody.innerHTML = `
+            <div class="space-y-4">
+                <div class="aspect-video overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 shadow-sm">
+                    <iframe
+                        src="${escapeHtml(resourceInfo.embedUrl)}"
+                        title="${escapeHtml(resourceInfo.displayName || 'Lesson video')}"
+                        class="h-full w-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowfullscreen
+                        referrerpolicy="strict-origin-when-cross-origin"></iframe>
+                </div>
+                <div class="rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-600 shadow-sm">
+                    <p class="font-semibold text-slate-900">${escapeHtml(resourceInfo.label)}</p>
+                    <p class="mt-1 break-all">${escapeHtml(resourceInfo.displayName || resourceInfo.url)}</p>
+                    <p class="mt-2 text-xs text-slate-500">If the provider blocks embedded playback, use the button below to open the original video.</p>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    if (resourceInfo.type === 'direct-video') {
+        modalBody.innerHTML = `
+            <div class="space-y-4">
+                <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 shadow-sm">
+                    <video class="h-auto w-full" controls playsinline preload="metadata">
+                        <source src="${escapeHtml(resourceInfo.url)}">
+                        Your browser does not support inline video playback.
+                    </video>
+                </div>
+                <div class="rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-600 shadow-sm">
+                    <p class="font-semibold text-slate-900">${escapeHtml(resourceInfo.displayName || 'Linked video lesson')}</p>
+                    <p class="mt-1 text-xs text-slate-500">Use the button below if you want to open the video in a separate tab.</p>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    modalBody.innerHTML = `
+        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-5 shadow-sm">
+            <div class="flex items-start gap-4">
+                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white text-emerald-600 shadow-sm">
+                    <i class="fas fa-link text-lg"></i>
+                </div>
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-slate-900">${escapeHtml(resourceInfo.label)}</p>
+                    <p class="mt-1 break-all text-sm text-slate-700">${escapeHtml(resourceInfo.displayName || resourceInfo.url)}</p>
+                    <p class="mt-2 text-xs text-slate-500">This learning material is hosted externally. Open the link below to continue reading or watching it.</p>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 function showPageAlert(message, tone = 'error') {
@@ -267,21 +934,17 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('submitQuizBtn').addEventListener('click', submitQuiz);
     document.getElementById('submitTaskSheetBtn').addEventListener('click', submitTaskSheet);
     document.getElementById('unsubmitTaskSheetBtn').addEventListener('click', unsubmitTaskSheet);
+    document.getElementById('answerQuizNowBtn').addEventListener('click', () => {
+        const lessonId = document.getElementById('answerQuizNowBtn').dataset.lessonId;
+        if (!lessonId) return;
+        lessonContentModal.hide();
+        startQuiz(lessonId);
+    });
+    document.getElementById('lessonContentModal').addEventListener('hidden.bs.modal', resetLessonContentPresentation);
     document.getElementById('logoutBtn').addEventListener('click', async () => {
         await logoutWithConfirmation();
     });
 });
-
-async function ensureSwal() {
-    if (typeof window.Swal !== 'undefined') return;
-    await new Promise((resolve) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
-        script.onload = resolve;
-        script.onerror = resolve;
-        document.head.appendChild(script);
-    });
-}
 
 async function logoutWithConfirmation() {
     await ensureSwal();
@@ -303,27 +966,57 @@ async function logoutWithConfirmation() {
     });
 }
 
-async function loadTrainingData() {
+async function loadTrainingData(options = {}) {
+    const { forceFresh = false, suppressAlerts = false } = options;
+
     try {
-        clearPageAlert();
+        if (!suppressAlerts) {
+            clearPageAlert();
+        }
+
+        const params = new URLSearchParams({ action: 'get-lessons' });
+        const requestConfig = forceFresh
+            ? getRequestConfig({
+                headers: {
+                    'Cache-Control': 'no-cache',
+                    Pragma: 'no-cache',
+                    Expires: '0'
+                }
+            })
+            : getRequestConfig();
+
+        if (forceFresh) {
+            params.set('_ts', Date.now().toString());
+        }
+
         const response = await axios.get(
-            `${API_BASE_URL}/role/trainee/training.php?action=get-lessons`,
-            getRequestConfig()
+            `${API_BASE_URL}/role/trainee/training.php?${params.toString()}`,
+            requestConfig
         );
         if (response.data.success) {
-            renderModules(response.data.data);
+            trainingModulesState = Array.isArray(response.data.data) ? response.data.data : [];
+            renderModules(trainingModulesState);
+            return trainingModulesState;
         } else {
-            showPageAlert(response.data.message, 'warning');
+            trainingModulesState = [];
+            if (!suppressAlerts) {
+                showPageAlert(response.data.message, 'warning');
+            }
             document.getElementById('accordionCore').innerHTML = `<div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative">${response.data.message}</div>`;
         }
     } catch (error) {
         if (handleAuthError(error)) {
-            return;
+            return [];
         }
         console.error('Error loading training data:', error);
-        showPageAlert('Failed to load training modules.', 'error');
+        trainingModulesState = [];
+        if (!suppressAlerts) {
+            showPageAlert('Failed to load training modules.', 'error');
+        }
         document.getElementById('accordionCore').innerHTML = `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">Failed to load training modules.</div>`;
     }
+
+    return trainingModulesState;
 }
 
 function renderModules(modules) {
@@ -344,22 +1037,7 @@ function renderModules(modules) {
         let lessonsHtml = '';
         if (module.lessons && module.lessons.length > 0) {
             module.lessons.forEach(lesson => {
-                const hasQuiz = lesson.has_quiz;
-                const score = lesson.score;
-                const totalQuestions = lesson.total_questions;
-                const deadline = lesson.deadline;
-                const isDeadlinePassed = deadline && new Date(deadline) < new Date();
-
-                let quizButtonHtml = '';
-                if (hasQuiz) {
-                    if (score !== null) {
-                        quizButtonHtml = `<button class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 cursor-not-allowed opacity-75"><i class="fas fa-check-circle mr-1"></i> Quiz Taken (${score}/${totalQuestions})</button>`;
-                    } else if (isDeadlinePassed) {
-                        quizButtonHtml = `<button class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-red-600 cursor-not-allowed opacity-75"><i class="fas fa-times-circle mr-1"></i> Deadline Passed</button>`;
-                    } else {
-                        quizButtonHtml = `<button class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none transition" onclick="startQuiz(${lesson.lesson_id})"><i class="fas fa-question-circle mr-1"></i> Take Quiz</button>`;
-                    }
-                }
+                const quizButtonHtml = buildQuizActionButton(lesson);
 
                 lessonsHtml += `
                     <div class="p-4 border-b border-gray-100 last:border-0 flex justify-between items-center hover:bg-gray-50 transition-colors">
@@ -412,28 +1090,17 @@ window.viewLessonItems = async function(lessonId, encodedLessonTitle) {
     lessonItemsModal.show();
 
     try {
+        let lesson = findLessonById(lessonId);
+        if (!lesson) {
+            await loadTrainingData({ forceFresh: true, suppressAlerts: true });
+            lesson = findLessonById(lessonId);
+        }
 
-        const response = await axios.get(
-            `${API_BASE_URL}/role/trainee/training.php?action=get-lessons`,
-            getRequestConfig()
-        );
-        
-        if (response.data.success) {
-            let lesson = null;
-            for (const module of response.data.data) {
-                const found = module.lessons.find(l => l.lesson_id == lessonId);
-                if (found) {
-                    lesson = found;
-                    break;
-                }
-            }
-
-            if (lesson) {
-                renderLessonItems(lesson);
-            } else {
-                contentsList.innerHTML = '<div class="bg-yellow-100 text-yellow-700 p-3 rounded">Lesson not found.</div>';
-                taskSheetsList.innerHTML = '';
-            }
+        if (lesson) {
+            renderLessonItems(lesson);
+        } else {
+            contentsList.innerHTML = '<div class="bg-yellow-100 text-yellow-700 p-3 rounded">Lesson not found.</div>';
+            taskSheetsList.innerHTML = '';
         }
     } catch (error) {
         if (handleAuthError(error)) {
@@ -448,9 +1115,34 @@ window.viewLessonItems = async function(lessonId, encodedLessonTitle) {
 function renderLessonItems(lesson) {
     const contentsList = document.getElementById('lessonItemsContentsList');
     const taskSheetsList = document.getElementById('lessonItemsTaskSheetsList');
+    const quizState = resolveQuizState(lesson);
+    const lessonResourceInfo = getLessonResourceInfo(lesson.lesson_resource_url);
 
     // Render Information Sheets
     contentsList.innerHTML = '';
+    if (lesson.lesson_file_path) {
+        const uploadedFileName = getLessonFileName(lesson.lesson_file_path);
+        contentsList.innerHTML += `
+            <button class="w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-blue-50 transition-colors flex items-center gap-3" onclick="viewLessonFile(${lesson.lesson_id}, '${encodeInlineValue(uploadedFileName)}', '${encodeInlineValue(lesson.lesson_file_path)}', '${quizState}')">
+                <i class="fas fa-file-lines text-blue-500"></i>
+                <span class="text-gray-700">${escapeHtml(uploadedFileName)}</span>
+                <span class="ml-auto inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">Uploaded File</span>
+            </button>
+        `;
+    }
+
+    if (lessonResourceInfo.url) {
+        const resourceIcon = lessonResourceInfo.label === 'Video Lesson' ? 'fa-circle-play text-emerald-500' : 'fa-link text-emerald-500';
+        const resourceBadge = lessonResourceInfo.label === 'Video Lesson' ? 'Video Link' : 'External Link';
+        contentsList.innerHTML += `
+            <button class="w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-emerald-50 transition-colors flex items-center gap-3" onclick="viewLessonResourceLink(${lesson.lesson_id}, '${encodeInlineValue(lessonResourceInfo.displayName || lessonResourceInfo.url)}', '${encodeInlineValue(lessonResourceInfo.url)}', '${quizState}')">
+                <i class="fas ${resourceIcon}"></i>
+                <span class="text-gray-700">${escapeHtml(lessonResourceInfo.displayName || lessonResourceInfo.url)}</span>
+                <span class="ml-auto inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">${escapeHtml(resourceBadge)}</span>
+            </button>
+        `;
+    }
+
     if (lesson.lesson_contents && lesson.lesson_contents.length > 0) {
         lesson.lesson_contents.forEach(item => {
             contentsList.innerHTML += `
@@ -459,8 +1151,8 @@ function renderLessonItems(lesson) {
                 </button>
             `;
         });
-    } else {
-        contentsList.innerHTML = '<div class="text-gray-500 text-sm p-3 italic">No information sheets available.</div>';
+    } else if (!lesson.lesson_file_path && !lessonResourceInfo.url) {
+        contentsList.innerHTML = '<div class="text-gray-500 text-sm p-3 italic">No learning materials available.</div>';
     }
 
     // Render Task Sheets
@@ -479,14 +1171,6 @@ function renderLessonItems(lesson) {
         taskSheetsList.innerHTML = '<div class="text-gray-500 text-sm p-3 italic">No task sheets available.</div>';
     }
 
-    // Also show file download if available (for basic/common)
-    if (lesson.lesson_file_path) {
-        contentsList.innerHTML += `
-            <a href="${UPLOADS_URL}lessons/${lesson.lesson_file_path}" target="_blank" class="block w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors flex items-center">
-                <i class="fas fa-download mr-3 text-blue-400"></i> <span class="text-blue-600 hover:underline">Download Lesson File</span>
-            </a>
-        `;
-    }
 }
 
 window.viewContent = async function(type, id, encodedTitle, lessonId = null, isSubmitted = false) {
@@ -497,9 +1181,8 @@ window.viewContent = async function(type, id, encodedTitle, lessonId = null, isS
     
     modalTitle.textContent = title;
     modalBody.innerHTML = '<div class="text-center p-10"><div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>';
-    
-    // Hide footer by default (only for task sheets)
-    modalFooter.style.display = 'none';
+    modalBody.scrollTop = 0;
+    resetLessonContentPresentation();
     
     lessonItemsModal.hide();
     lessonContentModal.show();
@@ -513,10 +1196,13 @@ window.viewContent = async function(type, id, encodedTitle, lessonId = null, isS
         
         if (response.data.success) {
             const allowTaskCheckboxes = type === 'task' && !isSubmitted;
-            modalBody.innerHTML = sanitizeLessonMaterialContent(response.data.data.content, { allowTaskCheckboxes });
+            modalBody.innerHTML = wrapLessonPreviewContent(
+                sanitizeLessonMaterialContent(response.data.data.content, { allowTaskCheckboxes })
+            );
+            enhanceLessonPreviewLayout(modalBody);
             
             if (type === 'task') {
-                modalFooter.style.display = 'block';
+                modalFooter.style.display = 'flex';
                 const submitBtn = document.getElementById('submitTaskSheetBtn');
                 const unsubmitBtn = document.getElementById('unsubmitTaskSheetBtn');
                 
@@ -527,10 +1213,14 @@ window.viewContent = async function(type, id, encodedTitle, lessonId = null, isS
 
                 if (isSubmitted) {
                     submitBtn.style.display = 'none';
-                    unsubmitBtn.style.display = 'inline-block';
+                    submitBtn.classList.add('hidden');
+                    unsubmitBtn.style.display = 'inline-flex';
+                    unsubmitBtn.classList.remove('hidden');
                 } else {
-                    submitBtn.style.display = 'inline-block';
+                    submitBtn.style.display = 'inline-flex';
+                    submitBtn.classList.remove('hidden');
                     unsubmitBtn.style.display = 'none';
+                    unsubmitBtn.classList.add('hidden');
                 }
             }
         } else {
@@ -553,9 +1243,91 @@ window.viewContent = async function(type, id, encodedTitle, lessonId = null, isS
     }, { once: true });
 }
 
+window.viewLessonFile = async function(lessonId, encodedTitle, encodedFilePath, quizState = 'none') {
+    const modalTitle = document.getElementById('lessonContentTitle');
+    const modalBody = document.getElementById('lessonContentBody');
+    const modalFooter = document.getElementById('lessonContentFooter');
+    const openLessonFileBtn = document.getElementById('openLessonFileBtn');
+    const title = decodeInlineValue(encodedTitle);
+    const filePath = decodeInlineValue(encodedFilePath);
+    const fileUrl = getLessonFileUrl(filePath);
+
+    modalTitle.textContent = title;
+    modalBody.innerHTML = '<div class="text-center p-10"><div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>';
+    modalBody.scrollTop = 0;
+    resetLessonContentPresentation();
+
+    if (openLessonFileBtn) {
+        openLessonFileBtn.href = fileUrl;
+        openLessonFileBtn.textContent = 'Open File';
+        openLessonFileBtn.classList.remove('hidden');
+    }
+
+    modalFooter.style.display = 'flex';
+    lessonItemsModal.hide();
+    lessonContentModal.show();
+
+    try {
+        await renderLessonFilePreview(filePath);
+        setupLessonFileReadingGate(lessonId, quizState);
+    } catch (error) {
+        console.error('Error loading lesson file preview:', error);
+        modalBody.innerHTML = `
+            <div class="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+                Failed to load the uploaded material preview. You can still use <strong>Open File</strong> below to view the original document.
+            </div>
+        `;
+    }
+}
+
+window.viewLessonResourceLink = async function(lessonId, encodedTitle, encodedResourceUrl, quizState = 'none') {
+    const modalTitle = document.getElementById('lessonContentTitle');
+    const modalBody = document.getElementById('lessonContentBody');
+    const modalFooter = document.getElementById('lessonContentFooter');
+    const openLessonFileBtn = document.getElementById('openLessonFileBtn');
+    const title = decodeInlineValue(encodedTitle);
+    const resourceUrl = decodeInlineValue(encodedResourceUrl);
+    const resourceInfo = getLessonResourceInfo(resourceUrl);
+
+    modalTitle.textContent = title;
+    modalBody.innerHTML = '<div class="text-center p-10"><div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>';
+    modalBody.scrollTop = 0;
+    resetLessonContentPresentation();
+
+    if (openLessonFileBtn && resourceInfo.url) {
+        openLessonFileBtn.href = resourceInfo.url;
+        openLessonFileBtn.textContent = resourceInfo.openLabel;
+        openLessonFileBtn.classList.remove('hidden');
+    }
+
+    modalFooter.style.display = 'flex';
+    lessonItemsModal.hide();
+    lessonContentModal.show();
+
+    try {
+        await renderLessonResourcePreview(resourceUrl);
+        setupLessonFileReadingGate(lessonId, quizState);
+    } catch (error) {
+        console.error('Error loading lesson resource preview:', error);
+        const fallbackAction = resourceInfo.openLabel || 'Open Link';
+        modalBody.innerHTML = `
+            <div class="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+                Failed to load the lesson link preview. You can still use <strong>${escapeHtml(fallbackAction)}</strong> below to view the original resource.
+            </div>
+        `;
+    }
+}
+
 window.startQuiz = async function(lessonId) {
     const container = document.getElementById('quizQuestionsContainer');
+    const quizTitle = document.getElementById('quizTitle');
+    const quizAttemptMeta = document.getElementById('quizAttemptMeta');
     container.innerHTML = '<div class="text-center p-10"><div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>';
+    quizTitle.textContent = 'Quiz';
+    if (quizAttemptMeta) {
+        quizAttemptMeta.textContent = '';
+        quizAttemptMeta.classList.add('hidden');
+    }
     
     // Store lessonId for submission
     document.getElementById('quizForm').dataset.lessonId = lessonId;
@@ -569,7 +1341,37 @@ window.startQuiz = async function(lessonId) {
         );
         
         if (response.data.success) {
-            const questions = response.data.data;
+            const quizPayload = response.data.data || {};
+            const questions = Array.isArray(quizPayload.questions) ? quizPayload.questions : [];
+            const quizStatus = quizPayload.quiz_status || {};
+            const attemptsUsed = Number(quizStatus.attempts_used || 0);
+            const attemptsLeft = Number(quizStatus.attempts_left || 0);
+            const maxAttempts = Number(quizStatus.max_attempts || 0);
+            const bestScore = quizStatus.best_score;
+            const totalQuestions = Number(quizStatus.total_questions || questions.length || 0);
+
+            if (maxAttempts > 0) {
+                quizTitle.textContent = `Quiz - Attempt ${Math.min(attemptsUsed + 1, maxAttempts)} of ${maxAttempts}`;
+            }
+
+            if (quizAttemptMeta) {
+                const metaParts = [];
+                if (bestScore !== null && bestScore !== undefined) {
+                    metaParts.push(`Best score: ${formatQuizScoreValue(bestScore)} / ${totalQuestions || 'N/A'}`);
+                }
+                if (maxAttempts > 0) {
+                    metaParts.push(`Attempts used: ${attemptsUsed} of ${maxAttempts}`);
+                }
+                if (attemptsUsed > 0) {
+                    metaParts.push(formatRetryLabel(attemptsLeft));
+                }
+
+                if (metaParts.length > 0) {
+                    quizAttemptMeta.textContent = metaParts.join(' | ');
+                    quizAttemptMeta.classList.remove('hidden');
+                }
+            }
+
             container.innerHTML = '';
             
             if (questions.length === 0) {
@@ -659,9 +1461,15 @@ async function performQuizSubmission(lessonId, answers) {
             
             // Show result modal
             const result = response.data.data;
-            document.getElementById('quizResultScore').textContent = `${result.score} / ${result.total_questions}`;
+            const numericLessonId = Number(lessonId);
+            if (patchLessonQuizState(numericLessonId, result)) {
+                renderModules(trainingModulesState);
+            }
+
+            document.getElementById('quizResultScore').textContent = `${formatQuizScoreValue(result.score)} / ${result.total_questions}`;
             
             const percentageEl = document.getElementById('quizResultPercentage');
+            const attemptNoteEl = document.getElementById('quizResultAttemptNote');
             percentageEl.textContent = `${result.percentage}%`;
             
             if (result.percentage >= 80) {
@@ -671,11 +1479,21 @@ async function performQuizSubmission(lessonId, answers) {
                 percentageEl.className = 'text-xl text-red-600 font-bold';
                 percentageEl.innerHTML += ' <br><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Failed</span>';
             }
+
+            if (attemptNoteEl) {
+                if (result.is_perfect) {
+                    attemptNoteEl.textContent = 'Perfect score reached. This quiz is now complete.';
+                } else if (Number(result.attempts_left) > 0) {
+                    attemptNoteEl.textContent = `Best score so far: ${formatQuizScoreValue(result.best_score)} / ${result.total_questions}. You still have ${formatRetryLabel(result.attempts_left)}.`;
+                } else {
+                    attemptNoteEl.textContent = `Best score recorded: ${formatQuizScoreValue(result.best_score)} / ${result.total_questions}. You already used all ${result.max_attempts} attempts.`;
+                }
+            }
             
             quizResultModal.show();
             
-            // Refresh the main list to update status
-            loadTrainingData();
+            // Refresh the main list with a fresh request to confirm server-side quiz state.
+            loadTrainingData({ forceFresh: true, suppressAlerts: true });
         } else {
             swal('Error', 'Error: ' + response.data.message, 'error');
         }

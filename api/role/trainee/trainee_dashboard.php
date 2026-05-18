@@ -11,6 +11,155 @@ class TraineeDashboard {
         $this->conn = $db;
     }
 
+    private function moduleStatusColumnExists(): bool {
+        static $exists = null;
+        if ($exists !== null) {
+            return $exists;
+        }
+
+        try {
+            $stmt = $this->conn->prepare("SHOW COLUMNS FROM `tbl_module` LIKE 'module_status'");
+            $stmt->execute();
+            $exists = (bool)$stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            $exists = false;
+        }
+
+        return $exists;
+    }
+
+    private function publishedModuleFilter(string $alias = 'm'): string {
+        return $this->moduleStatusColumnExists()
+            ? " AND COALESCE($alias.module_status, 'published') = 'published'"
+            : '';
+    }
+
+    private function normalizedScoreExpression(
+        string $gradeAlias = 'g',
+        string $testAlias = 't',
+        string $questionCountAlias = 'qc'
+    ): string {
+        return "CASE
+                    WHEN COALESCE(NULLIF($testAlias.max_score, 0), $questionCountAlias.question_count, 0) > 0
+                        THEN ($gradeAlias.score / COALESCE(NULLIF($testAlias.max_score, 0), $questionCountAlias.question_count)) * 100
+                    ELSE $gradeAlias.score
+                END";
+    }
+
+    private function getGradeSummary($traineeId, $qualificationId): ?array {
+        if (!$qualificationId) {
+            return null;
+        }
+
+        $normalizedScore = $this->normalizedScoreExpression();
+        $gradeQuery = "SELECT
+                            ROUND(AVG($normalizedScore), 2) AS total_grade,
+                            CASE
+                                WHEN COUNT(g.trainee_id) = 0 THEN 'Pending'
+                                WHEN AVG($normalizedScore) >= 80 THEN 'Competent'
+                                ELSE 'Not Yet Competent'
+                            END AS remarks
+                       FROM tbl_grades g
+                       LEFT JOIN tbl_test t ON g.test_id = t.test_id
+                       LEFT JOIN (
+                            SELECT test_id, COUNT(*) AS question_count
+                            FROM tbl_quiz_questions
+                            GROUP BY test_id
+                       ) qc ON qc.test_id = t.test_id
+                       WHERE g.trainee_id = ? AND g.qualification_id = ?";
+
+        $stmt = $this->conn->prepare($gradeQuery);
+        $stmt->execute([$traineeId, $qualificationId]);
+        $grade = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $grade ?: null;
+    }
+
+    private function hasReachedEndDate(?string $endDate): bool {
+        $normalized = trim((string)$endDate);
+        if ($normalized === '') {
+            return false;
+        }
+
+        $timestamp = strtotime($normalized . ' 23:59:59');
+        if ($timestamp === false) {
+            return false;
+        }
+
+        return $timestamp <= time();
+    }
+
+    private function repairPrematureAutoArchivedEnrollments($traineeId): void {
+        try {
+            $repairQuery = "UPDATE tbl_enrollment e
+                            JOIN tbl_batch b ON b.batch_id = e.batch_id
+                            SET e.status = 'approved',
+                                e.completion_date = NULL,
+                                e.is_archived = 0,
+                                e.archive_date = NULL
+                            WHERE e.trainee_id = ?
+                              AND e.status = 'completed'
+                              AND e.is_archived = 1
+                              AND e.completion_date IS NOT NULL
+                              AND b.end_date IS NOT NULL
+                              AND b.end_date > CURDATE()
+                              AND b.end_date > e.completion_date
+                              AND NOT EXISTS (
+                                  SELECT 1
+                                  FROM tbl_enrollment e2
+                                  WHERE e2.trainee_id = e.trainee_id
+                                    AND e2.enrollment_id <> e.enrollment_id
+                                    AND COALESCE(e2.is_archived, 0) = 0
+                                    AND e2.status = 'approved'
+                              )";
+            $stmt = $this->conn->prepare($repairQuery);
+            $stmt->execute([$traineeId]);
+        } catch (Exception $e) {
+            error_log('Failed to repair premature archived enrollments in trainee_dashboard.php: ' . $e->getMessage());
+        }
+    }
+
+    private function canArchiveActiveCourse(?array $activeCourse, ?array $grade): bool {
+        if (!$activeCourse || !$grade) {
+            return false;
+        }
+
+        if (($grade['remarks'] ?? '') !== 'Competent') {
+            return false;
+        }
+
+        return $this->hasReachedEndDate($activeCourse['end_date'] ?? null);
+    }
+
+    private function buildDashboardAssessment(?array $grade, float $progressRate): array {
+        $rawGrade = $grade['total_grade'] ?? null;
+        $numericGrade = ($rawGrade !== null && $rawGrade !== '')
+            ? (float)$rawGrade
+            : null;
+
+        if ($numericGrade === null) {
+            return [
+                'current_grade' => null,
+                'current_grade_display' => 'Pending',
+                'competency_status' => 'Pending'
+            ];
+        }
+
+        if ($progressRate < 100) {
+            return [
+                'current_grade' => round($numericGrade, 2),
+                'current_grade_display' => null,
+                'competency_status' => 'In Progress'
+            ];
+        }
+
+        return [
+            'current_grade' => round($numericGrade, 2),
+            'current_grade_display' => null,
+            'competency_status' => $grade['remarks'] ?? 'Pending'
+        ];
+    }
+
     public function handleRequest() {
         $traineeId = $_GET['trainee_id'] ?? null;
         if (!$traineeId) {
@@ -19,7 +168,9 @@ class TraineeDashboard {
         }
 
         try {
-            // 1. Get Active Course/Batch (not archived and batch is open)
+            $this->repairPrematureAutoArchivedEnrollments($traineeId);
+
+            // 1. Get Active Course/Batch (not archived and still active, or completed but not archived after end date)
             $courseQuery = "SELECT th.trainee_school_id, c.qualification_id AS course_id, c.qualification_name AS course_name, 
                                 b.batch_name, b.start_date, b.end_date, 
                                 COALESCE(s.schedule, oc.schedule) as schedule, 
@@ -33,11 +184,20 @@ class TraineeDashboard {
                             JOIN tbl_trainee_hdr th ON e.trainee_id = th.trainee_id
                             JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
                             JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id
-                            WHERE e.trainee_id = ? AND e.status IN ('approved', 'completed') AND b.status = 'open' AND (e.is_archived = 0 OR e.is_archived IS NULL)
+                            WHERE e.trainee_id = ?
+                              AND (e.is_archived = 0 OR e.is_archived IS NULL)
+                              AND (
+                                  e.status = 'approved'
+                                  OR (e.status = 'completed' AND (b.end_date IS NULL OR b.end_date <= CURDATE()))
+                              )
+                            ORDER BY
+                              CASE WHEN e.status = 'approved' THEN 0 ELSE 1 END,
+                              COALESCE(b.end_date, '9999-12-31') DESC,
+                              e.enrollment_id DESC
                             LIMIT 1";
             $stmt = $this->conn->prepare($courseQuery);
             $stmt->execute([$traineeId]);
-            $activeCourse = $stmt->fetch(PDO::FETCH_ASSOC);
+            $activeCourse = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
             // DEBUG OUTPUT
             file_put_contents(__DIR__ . '/debug_active_course.log', print_r($activeCourse, true));
 
@@ -47,22 +207,12 @@ class TraineeDashboard {
             $progressRate = $this->calculateProgressRate($traineeId, $qualificationId);
 
             // 3. Get Average Grade (Current Course)
-            $gradeQuery = "SELECT AVG(score) as total_grade,
-                                  (CASE WHEN AVG(score) >= 80 THEN 'Competent' ELSE 'Not Yet Competent' END) as remarks 
-                           FROM tbl_grades 
-                           WHERE trainee_id = ? AND qualification_id = ?";
-            $stmt = $this->conn->prepare($gradeQuery);
-            $stmt->execute([$traineeId, $qualificationId]);
-            $grade = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            // Check if trainee is competent and auto-archive if needed
-            if ($activeCourse && $grade && $grade['total_grade'] >= 80 && $grade['remarks'] === 'Competent') {
-                $this->autoArchiveCompletedCourse($activeCourse['enrollment_id'], $traineeId, $qualificationId);
-                // After auto-archiving, clear active course since it's now archived
-                $activeCourse = null;
-                $qualificationId = null;
-                $grade = null;
-            }
+            $grade = $this->getGradeSummary($traineeId, $qualificationId);
+            $assessment = $this->buildDashboardAssessment($grade, $progressRate);
+            $canArchive = $this->canArchiveActiveCourse(
+                $activeCourse,
+                ($assessment['competency_status'] ?? '') === 'Competent' ? $grade : null
+            );
 
             // 4. Get Upcoming Schedule (Mock logic based on batch schedule string)
             // In a real app, this would query a calendar table.
@@ -74,8 +224,7 @@ class TraineeDashboard {
 
             // 5. Get Archived Courses
             $archivedQuery = "SELECT c.qualification_id AS course_id, c.qualification_name AS course_name, b.batch_name, 
-                                     b.start_date, b.end_date, e.completion_date, e.archive_date, e.enrollment_id,
-                                     (SELECT AVG(score) FROM tbl_grades WHERE trainee_id = ? AND qualification_id = c.qualification_id) as final_score
+                                     b.start_date, b.end_date, e.completion_date, e.archive_date, e.enrollment_id
                               FROM tbl_enrollment e
                               JOIN tbl_batch b ON e.batch_id = b.batch_id
                               JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
@@ -83,36 +232,27 @@ class TraineeDashboard {
                               WHERE e.trainee_id = ? AND e.is_archived = 1
                               ORDER BY e.completion_date DESC, e.archive_date DESC";
             $archivedStmt = $this->conn->prepare($archivedQuery);
-            $archivedStmt->execute([$traineeId, $traineeId]);
+            $archivedStmt->execute([$traineeId]);
             $archivedCourses = $archivedStmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($archivedCourses as &$course) {
+                $archivedGrade = $this->getGradeSummary($traineeId, $course['course_id'] ?? null);
+                $course['final_score'] = $archivedGrade['total_grade'] ?? null;
+            }
+            unset($course);
 
             echo json_encode(['success' => true, 'data' => [
                 'active_course' => $activeCourse,
                 'progress_rate' => $progressRate,
-                'current_grade' => $grade['total_grade'] ?? 'N/A',
-                'competency_status' => $grade['remarks'] ?? 'Pending',
+                'current_grade' => $assessment['current_grade'],
+                'current_grade_display' => $assessment['current_grade_display'],
+                'competency_status' => $assessment['competency_status'],
+                'can_archive' => $canArchive,
                 'schedule' => $schedule,
                 'archived_courses' => $archivedCourses
             ]]);
 
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
-        }
-    }
-
-    private function autoArchiveCompletedCourse($enrollmentId, $traineeId, $qualificationId) {
-        try {
-            $updateQuery = "UPDATE tbl_enrollment 
-                           SET status = 'completed', 
-                               completion_date = CURDATE(),
-                               is_archived = 1,
-                               archive_date = CURDATE()
-                           WHERE enrollment_id = ? AND trainee_id = ? AND is_archived = 0";
-            $stmt = $this->conn->prepare($updateQuery);
-            $stmt->execute([$enrollmentId, $traineeId]);
-        } catch (Exception $e) {
-            // Log error but don't throw - auto-archive is non-critical
-            error_log("Auto-archive failed for enrollment $enrollmentId: " . $e->getMessage());
         }
     }
 
@@ -127,7 +267,7 @@ class TraineeDashboard {
                             FROM tbl_module m
                             JOIN tbl_lessons l ON m.module_id = l.module_id
                             LEFT JOIN tbl_test t ON l.lesson_id = t.lesson_id AND t.activity_type_id = 1
-                            WHERE m.qualification_id = ? AND (l.posting_date IS NULL OR l.posting_date <= NOW())
+                            WHERE m.qualification_id = ? AND (l.posting_date IS NULL OR l.posting_date <= NOW())" . $this->publishedModuleFilter('m') . "
                             ORDER BY m.module_id, l.lesson_id";
             $stmt = $this->conn->prepare($lessonQuery);
             $stmt->execute([$qualificationId]);
@@ -153,7 +293,7 @@ class TraineeDashboard {
             $taskStmt = $this->conn->prepare(
                 "SELECT lesson_id, COUNT(DISTINCT task_sheet_id) as submitted_count
                  FROM tbl_task_sheet_submissions
-                 WHERE trainee_id = ? AND status IN ('submitted', 'approved') AND lesson_id IN ($in)
+                 WHERE trainee_id = ? AND status IN ('approved', 'recorded') AND lesson_id IN ($in)
                  GROUP BY lesson_id"
             );
             $taskStmt->execute(array_merge([$traineeId], $lessonIds));

@@ -41,7 +41,6 @@
                         </button>
                         <div id="userDropdownMenu" class="absolute right-0 top-full z-40 mt-2 hidden w-48 rounded-xl border border-blue-100 bg-white py-1 shadow-xl shadow-blue-100/40">
                             <a href="pages/profile.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-user mr-2"></i> Profile</a>
-                            <a href="pages/settings.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-cog mr-2"></i> Settings</a>
                             <div class="border-t border-blue-100"></div>
                             <a href="#" id="logoutBtn" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-sign-out-alt mr-2"></i> Logout</a>
                         </div>
@@ -91,11 +90,17 @@
                     <div class="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
                         <div class="rounded-xl border border-emerald-100 bg-emerald-50/50 p-4">
                             <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Total Collected</p>
-                            <p class="mt-2 text-2xl font-bold text-slate-900" id="totalCollected">PHP 0</p>
+                            <div class="mt-3 flex flex-wrap items-end gap-x-2 gap-y-1 text-slate-900">
+                                <span class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">PHP</span>
+                                <span class="text-[clamp(1.75rem,2.5vw,2.3rem)] font-bold leading-none tracking-tight whitespace-nowrap" id="totalCollected">0.00</span>
+                            </div>
                         </div>
                         <div class="rounded-xl border border-amber-100 bg-amber-50/50 p-4">
                             <p class="text-xs font-semibold uppercase tracking-wide text-amber-700">Total Pending</p>
-                            <p class="mt-2 text-2xl font-bold text-slate-900" id="totalPending">PHP 0</p>
+                            <div class="mt-3 flex flex-wrap items-end gap-x-2 gap-y-1 text-slate-900">
+                                <span class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">PHP</span>
+                                <span class="text-[clamp(1.75rem,2.5vw,2.3rem)] font-bold leading-none tracking-tight whitespace-nowrap" id="totalPending">0.00</span>
+                            </div>
                         </div>
                     </div>
                 </article>

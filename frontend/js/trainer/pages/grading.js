@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user || !user.trainer_id) {
         Swal.fire({title: 'Error', text: 'Could not identify the trainer. Please log in again.', icon: 'error'});
-        window.location.href = '../../../login.html';
+        window.location.href = '/Hohoo-ville/frontend/login.html';
         return;
     }
     const trainerId = user.trainer_id;
@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', function() {
         logoutBtn.addEventListener('click', (e) => {
             e.preventDefault();
             localStorage.clear();
-            window.location.href = '../../../login.html';
+            window.location.href = '/Hohoo-ville/frontend/login.html';
         });
     }
 

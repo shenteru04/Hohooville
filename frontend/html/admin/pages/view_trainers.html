@@ -37,7 +37,6 @@
                         </button>
                         <div id="userDropdownMenu" class="absolute right-0 top-full z-40 mt-2 hidden w-48 rounded-xl border border-blue-100 bg-white py-1 shadow-xl shadow-blue-100/40">
                             <a href="profile.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-user mr-2"></i> Profile</a>
-                            <a href="settings.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-cog mr-2"></i> Settings</a>
                             <div class="border-t border-blue-100"></div>
                             <a href="#" id="logoutBtn" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-sign-out-alt mr-2"></i> Logout</a>
                         </div>
@@ -68,9 +67,10 @@
                         </p>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-slate-200" id="trainersTable" data-table-manager="true" data-filters="Status:3" data-filter-auto-options="true">
+                        <table class="min-w-full divide-y divide-slate-200" id="trainersTable" data-table-manager="true" data-filters="Status:4" data-filter-auto-options="true">
                             <thead class="bg-slate-50">
                                 <tr>
+                                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Photo</th>
                                     <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Name</th>
                                     <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Email</th>
                                     <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Qualifications</th>
@@ -101,7 +101,8 @@
                     <input type="hidden" id="accTrainerId">
                     <div>
                         <label class="mb-1 block text-sm font-medium text-slate-700">Username <span class="text-rose-600">*</span></label>
-                        <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="accUsername" required>
+                        <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="accUsername" required pattern="[A-Za-z0-9_]+" title="Use letters, numbers, and underscores only.">
+                        <p class="mt-1 text-xs text-slate-500">Use letters, numbers, and underscores only.</p>
                     </div>
                     <div>
                         <label class="mb-1 block text-sm font-medium text-slate-700">Password <span class="text-rose-600">*</span></label>
@@ -155,6 +156,218 @@
                         <i class="fas fa-save"></i> Update Trainer
                     </button>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/50 p-4 sm:p-6" id="viewProfileModal" aria-hidden="true">
+        <div class="absolute inset-0 backdrop-blur-sm" data-modal-hide="viewProfileModal"></div>
+        <div class="relative z-10 w-full max-w-6xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl shadow-slate-900/20">
+            <div class="border-b border-slate-200 bg-white px-5 py-4 sm:px-6">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.32em] text-blue-600">Trainer Directory</p>
+                        <h3 class="mt-1 text-xl font-semibold text-slate-900">Trainer Profile</h3>
+                        <p class="mt-1 text-sm text-slate-500">Review trainer contact details, qualifications, and submitted certifications in one place.</p>
+                    </div>
+                    <button type="button" class="inline-flex self-end rounded-xl border border-slate-200 p-2.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 sm:self-auto" data-modal-hide="viewProfileModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="max-h-[85vh] overflow-y-auto bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_35%),linear-gradient(180deg,_rgba(248,250,252,0.95),_rgba(255,255,255,1))] p-5 sm:p-6">
+                <div class="grid gap-6 xl:grid-cols-[320px,minmax(0,1fr)]">
+                    <aside class="rounded-[26px] bg-gradient-to-br from-blue-600 via-sky-500 to-cyan-400 p-[1px] shadow-xl shadow-sky-500/20">
+                        <div class="flex h-full flex-col rounded-[25px] bg-slate-950/15 p-5 text-white backdrop-blur">
+                            <div class="overflow-hidden rounded-3xl border border-white/20 bg-white/10">
+                                <img id="viewPhoto" src="" class="hidden aspect-[4/5] w-full object-cover" alt="Trainer Photo">
+                                <div id="noPhoto" class="flex aspect-[4/5] flex-col items-center justify-center gap-3 bg-slate-900/15 px-6 text-center">
+                                    <div id="viewInitials" class="flex h-20 w-20 items-center justify-center rounded-full bg-white/15 text-2xl font-bold uppercase tracking-[0.18em] text-white">NA</div>
+                                    <p class="text-sm text-white/80">No profile photo available</p>
+                                </div>
+                            </div>
+
+                            <div class="mt-5">
+                                <p class="text-xs font-semibold uppercase tracking-[0.32em] text-white/70">Trainer Record</p>
+                                <h4 id="viewName" class="mt-2 text-2xl font-bold leading-tight text-white"></h4>
+                                <p id="viewProfileSummary" class="mt-2 text-sm text-white/85"></p>
+                            </div>
+
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                <span id="viewStatus" class="inline-flex rounded-full border border-white/20 bg-white/15 px-3 py-1 text-xs font-semibold text-white"></span>
+                                <span id="viewAccountStatus" class="inline-flex rounded-full border border-white/20 bg-white/15 px-3 py-1 text-xs font-semibold text-white"></span>
+                            </div>
+
+                            <dl class="mt-6 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                                <div class="rounded-2xl bg-white/12 p-4 ring-1 ring-white/10">
+                                    <dt class="text-xs font-semibold uppercase tracking-[0.28em] text-white/65">Qualifications</dt>
+                                    <dd id="viewQualificationCount" class="mt-1 text-sm font-semibold leading-6 text-white">0</dd>
+                                </div>
+                                <div class="rounded-2xl bg-white/12 p-4 ring-1 ring-white/10">
+                                    <dt class="text-xs font-semibold uppercase tracking-[0.28em] text-white/65">NC Levels</dt>
+                                    <dd id="viewNcLevels" class="mt-1 text-sm font-semibold leading-6 text-white">Not Available</dd>
+                                </div>
+                                <div class="rounded-2xl bg-white/12 p-4 ring-1 ring-white/10">
+                                    <dt class="text-xs font-semibold uppercase tracking-[0.28em] text-white/65">NTTC No.</dt>
+                                    <dd id="viewNttcNo" class="mt-1 text-sm font-semibold leading-6 text-white">Not Provided</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </aside>
+
+                    <div class="space-y-6">
+                        <section class="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 sm:p-6">
+                            <div class="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-[0.32em] text-blue-600">Profile Overview</p>
+                                    <h5 class="mt-1 text-lg font-semibold text-slate-900">Personal Information</h5>
+                                </div>
+                                <span class="inline-flex w-fit rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">Admin View</span>
+                            </div>
+
+                            <div class="mt-5 grid gap-4 md:grid-cols-2">
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Email Address</p>
+                                    <a id="viewEmailLink" href="#" class="mt-2 block break-all text-sm font-semibold text-blue-700 hover:text-blue-800">
+                                        <span id="viewEmail">N/A</span>
+                                    </a>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Phone Number</p>
+                                    <a id="viewPhoneLink" href="#" class="mt-2 block text-sm font-semibold text-slate-900 hover:text-blue-700">
+                                        <span id="viewPhone">N/A</span>
+                                    </a>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Qualification Summary</p>
+                                    <p id="viewQualificationSummary" class="mt-2 text-sm leading-6 text-slate-700">Not Assigned</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Account Access</p>
+                                    <p id="viewAccountDetail" class="mt-2 text-sm font-semibold text-slate-900">Pending account setup</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 md:col-span-2">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Home Address</p>
+                                    <p id="viewAddress" class="mt-2 text-sm leading-6 text-slate-700">N/A</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 sm:p-6">
+                            <div class="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-[0.32em] text-blue-600">Teaching Scope</p>
+                                    <h5 class="mt-1 text-lg font-semibold text-slate-900">Qualifications</h5>
+                                </div>
+                                <p id="viewQualificationsSummary" class="text-sm font-medium text-slate-500">0 qualifications listed</p>
+                            </div>
+                            <div id="viewQualificationList" class="mt-5 grid gap-4 lg:grid-cols-2"></div>
+                        </section>
+
+                        <section class="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 sm:p-6">
+                            <div class="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-[0.32em] text-blue-600">Submitted Files</p>
+                                    <h5 class="mt-1 text-lg font-semibold text-slate-900">Documents</h5>
+                                </div>
+                                <p id="viewDocumentSummary" class="text-sm font-medium text-slate-500">0 documents uploaded</p>
+                            </div>
+
+                            <div class="mt-5 grid gap-4 lg:grid-cols-3">
+                                <a href="#" id="viewNttcFile" class="group rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50/60">
+                                    <div class="flex items-start gap-4">
+                                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
+                                            <i class="fas fa-certificate text-lg"></i>
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-base font-semibold text-slate-900">NTTC Certificate</p>
+                                            <p id="viewNttcFileStatus" class="mt-1 text-sm leading-6 text-slate-500">Not uploaded yet</p>
+                                        </div>
+                                        <span id="viewNttcFileAction" class="inline-flex shrink-0 rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-600">Missing</span>
+                                    </div>
+                                </a>
+
+                                <a href="#" id="viewTmFile" class="group rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50/60">
+                                    <div class="flex items-start gap-4">
+                                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
+                                            <i class="fas fa-chalkboard-teacher text-lg"></i>
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-base font-semibold text-slate-900">TM Certificate</p>
+                                            <p id="viewTmFileStatus" class="mt-1 text-sm leading-6 text-slate-500">Not uploaded yet</p>
+                                        </div>
+                                        <span id="viewTmFileAction" class="inline-flex shrink-0 rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-600">Missing</span>
+                                    </div>
+                                </a>
+
+                                <a href="#" id="viewNcFile" class="group rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50/60">
+                                    <div class="flex items-start gap-4">
+                                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
+                                            <i class="fas fa-id-badge text-lg"></i>
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-base font-semibold text-slate-900">NC Certificate</p>
+                                            <p id="viewNcFileStatus" class="mt-1 text-sm leading-6 text-slate-500">Not uploaded yet</p>
+                                        </div>
+                                        <span id="viewNcFileAction" class="inline-flex shrink-0 rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-600">Missing</span>
+                                    </div>
+                                </a>
+                            </div>
+
+                            <div class="mt-5">
+                                <div class="mb-3 flex items-center justify-between gap-3">
+                                    <h6 class="text-sm font-semibold uppercase tracking-[0.22em] text-slate-500">Qualification Files</h6>
+                                    <p id="viewQualificationDocumentSummary" class="text-sm font-medium text-slate-400">No qualification files uploaded</p>
+                                </div>
+                                <div id="viewQualificationDocuments" class="grid gap-4 lg:grid-cols-2"></div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="fixed inset-0 z-[70] hidden items-center justify-center p-4 sm:p-6" id="documentModal" aria-hidden="true">
+        <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" data-modal-hide="documentModal"></div>
+        <div class="relative z-10 w-full max-w-5xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl shadow-slate-900/20">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4 sm:px-6">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.32em] text-blue-600">Document Preview</p>
+                    <h5 class="mt-1 text-lg font-semibold text-slate-900" id="documentModalTitle">Submitted Document</h5>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="docZoomOutBtn" type="button" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">
+                        <i class="fas fa-magnifying-glass-minus"></i>
+                    </button>
+                    <span id="docZoomLabel" class="min-w-[52px] text-center text-xs font-semibold text-slate-500">100%</span>
+                    <button id="docZoomInBtn" type="button" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">
+                        <i class="fas fa-magnifying-glass-plus"></i>
+                    </button>
+                    <button id="docZoomResetBtn" type="button" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">
+                        Reset
+                    </button>
+                    <a id="docOpenNewTabBtn" href="#" target="_blank" rel="noopener noreferrer" class="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100">
+                        Open
+                    </a>
+                    <button type="button" class="rounded-xl border border-slate-200 p-2.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800" data-modal-hide="documentModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-5 sm:p-6">
+                <div id="documentViewport" class="h-[72vh] overflow-auto rounded-2xl border border-slate-200 bg-slate-100 p-3 sm:p-4">
+                    <div id="documentZoomLayer" class="origin-top transition-transform duration-150 ease-out">
+                        <img id="documentPreviewImage" alt="Submitted document preview" class="hidden max-w-none rounded-xl border border-slate-200 bg-white">
+                        <iframe id="documentPreviewFrame" class="hidden h-[68vh] w-full rounded-xl border border-slate-200 bg-white" title="Submitted document preview"></iframe>
+                    </div>
+                    <div id="documentPreviewFallback" class="hidden py-20 text-center text-slate-600">
+                        <p class="mb-3 text-sm">Preview is not available for this file type.</p>
+                        <a id="documentPreviewDownloadLink" href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50">
+                            <i class="fas fa-arrow-up-right-from-square"></i> Open File
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

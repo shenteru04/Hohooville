@@ -306,6 +306,37 @@ This is an automated email. Please do not reply to this message.
     }
 
     /**
+     * Plain text template for trainer credentials
+     */
+    private function getTrainerCredentialsPlainText($trainerName, $username, $password) {
+        $loginUrl = 'http://localhost/Hohoo-ville/frontend/login.html';
+
+        return "
+Welcome to Hohoo-ville! - Trainer Portal
+
+Hello {$trainerName},
+
+Your trainer account has been created by the administrator. Below are your login credentials:
+
+Username: {$username}
+Password: {$password}
+
+IMPORTANT SECURITY NOTES:
+- Keep your credentials confidential and do not share them with anyone
+- We recommend changing your password on your first login
+- If you did not request this account, please contact the administrator immediately
+
+Login to your account: {$loginUrl}
+
+If you have any issues logging in or need assistance, please contact the administrator.
+
+---
+© 2026 Hohoo-ville Training System. All rights reserved.
+This is an automated email. Please do not reply to this message.
+        ";
+    }
+
+    /**
      * Send learning material notification email to trainee
      */
     public function sendLearningMaterialNotification($traineeEmail, $traineeName, $contentType, $contentTitle, $lessonTitle) {
@@ -444,6 +475,216 @@ What to do next:
 View in Training Portal: {$portalUrl}
 
 If you have any questions or need assistance, please contact your trainer or the support team.
+
+---
+© 2026 Hohoo-ville Training System. All rights reserved.
+This is an automated notification email. Please do not reply to this message.
+        ";
+    }
+
+    /**
+     * Send module publication notification email to trainee
+     */
+    public function sendModulePublishedNotification($traineeEmail, $traineeName, $moduleTitle, $isUpdated = false) {
+        try {
+            $this->mailer->addAddress($traineeEmail);
+            $this->mailer->Subject = $isUpdated
+                ? 'Updated Training Module Available - Hohoo-ville'
+                : 'New Training Module Available - Hohoo-ville';
+
+            $htmlBody = $this->getModulePublishedTemplate($traineeName, $moduleTitle, $isUpdated);
+            $this->mailer->isHTML(true);
+            $this->mailer->Body = $htmlBody;
+            $this->mailer->AltBody = $this->getModulePublishedPlainText($traineeName, $moduleTitle, $isUpdated);
+
+            $this->mailer->send();
+
+            return [
+                'success' => true,
+                'message' => 'Email sent successfully'
+            ];
+        } catch (Exception $e) {
+            error_log('Module Notification Email Error: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Email could not be sent. Reason: ' . $this->mailer->ErrorInfo
+            ];
+        } finally {
+            $this->mailer->clearAddresses();
+        }
+    }
+
+    /**
+     * Send trainer submission alert email
+     */
+    public function sendTrainerSubmissionNotification($trainerEmail, $trainerName, $traineeName, $submissionType, $itemTitle, $lessonTitle, $traineeId = null) {
+        try {
+            $this->mailer->addAddress($trainerEmail);
+            $this->mailer->Subject = "{$submissionType} Submitted - Hohoo-ville";
+
+            $htmlBody = $this->getTrainerSubmissionTemplate($trainerName, $traineeName, $submissionType, $itemTitle, $lessonTitle, $traineeId);
+            $this->mailer->isHTML(true);
+            $this->mailer->Body = $htmlBody;
+            $this->mailer->AltBody = $this->getTrainerSubmissionPlainText($trainerName, $traineeName, $submissionType, $itemTitle, $lessonTitle, $traineeId);
+
+            $this->mailer->send();
+
+            return [
+                'success' => true,
+                'message' => 'Email sent successfully'
+            ];
+        } catch (Exception $e) {
+            error_log('Trainer Submission Email Error: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Email could not be sent. Reason: ' . $this->mailer->ErrorInfo
+            ];
+        } finally {
+            $this->mailer->clearAddresses();
+        }
+    }
+
+    private function getModulePublishedTemplate($traineeName, $moduleTitle, $isUpdated) {
+        $portalUrl = 'http://localhost/Hohoo-ville/frontend/html/trainee/pages/my_training.html';
+        $headline = $isUpdated ? 'Updated Module Available' : 'New Module Available';
+        $intro = $isUpdated
+            ? 'Your trainer updated a module in your training portal.'
+            : 'Your trainer uploaded a new module in your training portal.';
+
+        return "
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='UTF-8'>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; }
+                .header { background-color: #16a34a; color: white; padding: 20px; text-align: center; }
+                .content { padding: 24px; background-color: #f9fafb; }
+                .box { background: white; border-left: 4px solid #16a34a; padding: 16px; border-radius: 4px; margin: 20px 0; }
+                .button { display: inline-block; background-color: #16a34a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin-top: 20px; }
+                .footer { background-color: #f3f4f6; padding: 14px; text-align: center; font-size: 12px; color: #666; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h1>{$headline}</h1>
+                    <p>Hohoo-ville Training System</p>
+                </div>
+                <div class='content'>
+                    <p>Hello <strong>{$traineeName}</strong>,</p>
+                    <p>{$intro}</p>
+                    <div class='box'>
+                        <p style='margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #64748b;'>Module</p>
+                        <p style='margin: 10px 0 0; font-size: 20px; font-weight: bold; color: #16a34a;'>{$moduleTitle}</p>
+                    </div>
+                    <p>Please open your trainee portal to review the module, read the materials, and complete any required quiz or task sheet.</p>
+                    <p style='text-align: center;'>
+                        <a href='{$portalUrl}' class='button'>Open My Training</a>
+                    </p>
+                </div>
+                <div class='footer'>
+                    <p>&copy; 2026 Hohoo-ville Training System. All rights reserved.</p>
+                    <p>This is an automated notification email. Please do not reply to this message.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        ";
+    }
+
+    private function getModulePublishedPlainText($traineeName, $moduleTitle, $isUpdated) {
+        $portalUrl = 'http://localhost/Hohoo-ville/frontend/html/trainee/pages/my_training.html';
+        $intro = $isUpdated
+            ? 'Your trainer updated a module in your training portal.'
+            : 'Your trainer uploaded a new module in your training portal.';
+
+        return "
+MODULE NOTIFICATION - Hohoo-ville Training System
+
+Hello {$traineeName},
+
+{$intro}
+
+Module: {$moduleTitle}
+
+Please open your trainee portal to review the module, read the materials, and complete any required quiz or task sheet.
+
+Open My Training: {$portalUrl}
+
+---
+© 2026 Hohoo-ville Training System. All rights reserved.
+This is an automated notification email. Please do not reply to this message.
+        ";
+    }
+
+    private function getTrainerSubmissionTemplate($trainerName, $traineeName, $submissionType, $itemTitle, $lessonTitle, $traineeId) {
+        $portalUrl = $traineeId
+            ? "http://localhost/Hohoo-ville/frontend/html/trainer/pages/trainee_details.html?trainee_id={$traineeId}&tab=progress"
+            : 'http://localhost/Hohoo-ville/frontend/html/trainer/pages/trainee_management.html';
+        $itemLine = $itemTitle !== '' ? "<p><strong>Submitted item:</strong> {$itemTitle}</p>" : '';
+        $lessonLine = $lessonTitle !== '' ? "<p><strong>Lesson:</strong> {$lessonTitle}</p>" : '';
+
+        return "
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='UTF-8'>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; }
+                .header { background-color: #2563eb; color: white; padding: 20px; text-align: center; }
+                .content { padding: 24px; background-color: #f8fafc; }
+                .box { background: white; border-left: 4px solid #2563eb; padding: 16px; border-radius: 4px; margin: 20px 0; }
+                .button { display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin-top: 20px; }
+                .footer { background-color: #f3f4f6; padding: 14px; text-align: center; font-size: 12px; color: #666; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h1>{$submissionType} Submitted</h1>
+                    <p>Hohoo-ville Training System</p>
+                </div>
+                <div class='content'>
+                    <p>Hello <strong>{$trainerName}</strong>,</p>
+                    <p><strong>{$traineeName}</strong> submitted a {$submissionType}.</p>
+                    <div class='box'>
+                        {$itemLine}
+                        {$lessonLine}
+                    </div>
+                    <p>Open the trainer portal to review the trainee submission.</p>
+                    <p style='text-align: center;'>
+                        <a href='{$portalUrl}' class='button'>Review Submission</a>
+                    </p>
+                </div>
+                <div class='footer'>
+                    <p>&copy; 2026 Hohoo-ville Training System. All rights reserved.</p>
+                    <p>This is an automated notification email. Please do not reply to this message.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        ";
+    }
+
+    private function getTrainerSubmissionPlainText($trainerName, $traineeName, $submissionType, $itemTitle, $lessonTitle, $traineeId) {
+        $portalUrl = $traineeId
+            ? "http://localhost/Hohoo-ville/frontend/html/trainer/pages/trainee_details.html?trainee_id={$traineeId}&tab=progress"
+            : 'http://localhost/Hohoo-ville/frontend/html/trainer/pages/trainee_management.html';
+
+        return "
+TRAINER ALERT - Hohoo-ville Training System
+
+Hello {$trainerName},
+
+{$traineeName} submitted a {$submissionType}.
+
+Submitted item: {$itemTitle}
+Lesson: {$lessonTitle}
+
+Review submission: {$portalUrl}
 
 ---
 © 2026 Hohoo-ville Training System. All rights reserved.

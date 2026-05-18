@@ -1,14 +1,14 @@
 Array
 (
-    [trainee_school_id] => 2-2026-0001
-    [course_id] => 1
-    [course_name] => Electrical Installation and Maintenance
-    [batch_name] => Electrical Installation and Maintenance NC II - Batch 1
-    [start_date] => 2027-02-01
-    [end_date] => 2027-02-24
-    [schedule] => Day Shift (8:00 AM - 5:00 PM)
-    [room_id] => 3
-    [room_name] => Room 2
-    [enrollment_id] => 4
+    [trainee_school_id] => 3-2026-0003
+    [course_id] => 3
+    [course_name] => Electronic Products Assembly and Servicing (EPAS)
+    [batch_name] => Electronic Products Assembly and Servicing (EPAS) NC II - Batch 1
+    [start_date] => 2026-10-01
+    [end_date] => 2026-10-20
+    [schedule] => Night Shift (6:00 PM - 10:00 PM)
+    [room_id] => 4
+    [room_name] => Room 3
+    [enrollment_id] => 6
     [enrollment_status] => approved
 )

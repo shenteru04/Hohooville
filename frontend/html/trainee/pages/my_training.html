@@ -14,6 +14,68 @@
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         details > summary { list-style: none; }
         details > summary::-webkit-details-marker { display: none; }
+        .lesson-preview-shell { min-width: 0; }
+        .lesson-preview-prose {
+            color: #334155;
+            font-size: 0.9375rem;
+            line-height: 1.75;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+        .lesson-preview-prose > * + * { margin-top: 1rem; }
+        .lesson-preview-prose img,
+        .lesson-preview-prose canvas,
+        .lesson-preview-prose svg,
+        .lesson-preview-prose video,
+        .lesson-preview-prose iframe {
+            max-width: 100%;
+            height: auto;
+        }
+        .lesson-preview-prose pre {
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+        .lesson-preview-table-wrap {
+            margin: 1rem -0.125rem 0;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 0 0.125rem 0.25rem;
+            -webkit-overflow-scrolling: touch;
+        }
+        .lesson-preview-table-wrap:first-child { margin-top: 0; }
+        .lesson-preview-table {
+            width: max-content;
+            min-width: 100%;
+            border-collapse: collapse;
+        }
+        .lesson-preview-table th,
+        .lesson-preview-table td {
+            min-width: 8rem;
+            border: 1px solid #e2e8f0;
+            padding: 0.625rem 0.75rem;
+            vertical-align: top;
+            background: #fff;
+        }
+        .lesson-preview-table th {
+            background: #f8fafc;
+            color: #0f172a;
+            font-weight: 700;
+        }
+        @media (max-width: 640px) {
+            .lesson-preview-prose {
+                font-size: 0.875rem;
+                line-height: 1.65;
+            }
+            .lesson-preview-table {
+                min-width: max(100%, 34rem);
+            }
+            .lesson-preview-table th,
+            .lesson-preview-table td {
+                min-width: 7.5rem;
+                padding: 0.5rem 0.625rem;
+            }
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-700">
@@ -144,29 +206,35 @@
 
     <!-- Lesson Content Modal -->
     <div id="lessonContentModal" class="fixed inset-0 z-50 hidden items-center justify-center overflow-y-auto">
-        <div class="relative bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-4xl w-full mx-4 h-[90vh] flex flex-col">
-            <div class="bg-white px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-                <h3 class="text-lg leading-6 font-medium text-gray-900" id="lessonContentTitle">Content</h3>
+        <div class="relative flex h-[calc(100vh-1rem)] w-[calc(100vw-1rem)] max-w-4xl flex-col overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:mx-4 sm:my-8 sm:h-[90vh] sm:w-full">
+            <div class="flex items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-3">
+                <h3 class="min-w-0 flex-1 truncate text-base font-medium leading-6 text-gray-900 sm:text-lg" id="lessonContentTitle">Content</h3>
                 <button type="button" class="text-gray-400 hover:text-gray-500 focus:outline-none" onclick="lessonContentModal.hide()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="flex-1 overflow-y-auto p-6" id="lessonContentBody">
+            <div class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 py-4 sm:p-6" id="lessonContentBody">
                 <!-- Content loaded here -->
             </div>
-            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-200" id="lessonContentFooter" style="display: none;">
-                <button type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm" id="submitTaskSheetBtn">Submit Task Sheet</button>
-                <button type="button" class="w-full inline-flex justify-center rounded-md border border-red-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-red-700 hover:bg-red-50 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm hidden" id="unsubmitTaskSheetBtn">Unsubmit</button>
-                <button type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm" onclick="lessonContentModal.hide()">Close</button>
+            <div class="flex flex-col gap-3 border-t border-gray-200 bg-gray-50 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between" id="lessonContentFooter" style="display: none;">
+                <p id="lessonContentStatusNote" class="hidden text-sm text-slate-500 lg:max-w-sm">Scroll to the bottom of the material to unlock the quiz.</p>
+                <div class="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:w-auto lg:flex lg:flex-wrap lg:justify-end">
+                    <button type="button" class="hidden inline-flex min-h-[44px] w-full justify-center rounded-md border border-transparent bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 focus:outline-none lg:w-auto" id="answerQuizNowBtn">Answer Quiz Now</button>
+                    <a href="#" target="_blank" rel="noopener" class="hidden inline-flex min-h-[44px] w-full justify-center rounded-md border border-blue-300 bg-white px-4 py-2 text-sm font-medium text-blue-700 shadow-sm hover:bg-blue-50 focus:outline-none lg:w-auto" id="openLessonFileBtn">Open File</a>
+                    <button type="button" class="inline-flex min-h-[44px] w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none lg:w-auto" id="submitTaskSheetBtn">Submit Task Sheet</button>
+                    <button type="button" class="hidden inline-flex min-h-[44px] w-full justify-center rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 shadow-sm hover:bg-red-50 focus:outline-none lg:w-auto" id="unsubmitTaskSheetBtn">Unsubmit</button>
+                    <button type="button" class="inline-flex min-h-[44px] w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none lg:w-auto" onclick="lessonContentModal.hide()">Close</button>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Quiz Modal -->
-    <div id="quizModal" class="fixed inset-0 z-50 hidden items-center justify-center overflow-y-auto">
+        <div id="quizModal" class="fixed inset-0 z-50 hidden items-center justify-center overflow-y-auto">
         <div class="relative bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col">
             <div class="bg-white px-4 py-3 border-b border-gray-200">
                 <h3 class="text-lg leading-6 font-medium text-gray-900" id="quizTitle">Quiz</h3>
+                <p id="quizAttemptMeta" class="mt-1 hidden text-sm text-slate-500"></p>
             </div>
             <div class="flex-1 overflow-y-auto p-6">
                 <form id="quizForm">
@@ -188,6 +256,7 @@
                 <p class="text-sm text-gray-500">Your Score:</p>
                 <h1 id="quizResultScore" class="text-5xl font-bold text-gray-900 my-2"></h1>
                 <p id="quizResultPercentage" class="text-lg"></p>
+                <p id="quizResultAttemptNote" class="mt-3 text-sm text-slate-500"></p>
             </div>
             <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                 <button type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:text-sm" onclick="quizResultModal.hide()">Close</button>
@@ -196,6 +265,8 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.7.2/mammoth.browser.min.js"></script>
     <script src="../../../js/session_timeout.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>

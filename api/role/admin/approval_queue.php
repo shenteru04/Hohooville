@@ -11,6 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once __DIR__ . '/../../utils/EmailService.php';
 require_once '../../database/db.php';
+require_once '../../utils/EnrollmentStatusConstraint.php';
 
 $database = new Database();
 $conn = $database->getConnection();
@@ -121,6 +122,8 @@ function processEnrollment($conn, $status) {
         if (!$enrollmentId) {
             throw new Exception('Enrollment ID is required');
         }
+
+        ensureEnrollmentStatusSchema($conn);
 
         // Fetch trainee details for email notification
         $stmtDetails = $conn->prepare("

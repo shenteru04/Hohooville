@@ -51,6 +51,7 @@ function listTrainers($conn) {
                                         t.trainer_nc_level_id,
                                         t.status,
                                         t.qualification_id,
+                                        COALESCE(t.profile_image, '') as profile_image,
                                         q_primary.qualification_name,
                                         COALESCE(nc_trainer.nc_level_code, nc_q.nc_level_code, t.nc_level) AS nc_level_code,
                                         COALESCE(nc_trainer.nc_level_name, nc_q.nc_level_name, t.nc_level) AS nc_level_name
@@ -72,6 +73,7 @@ function listTrainers($conn) {
                                         NULL AS trainer_nc_level_id,
                                         t.status,
                                         t.qualification_id,
+                                        COALESCE(t.profile_image, '') as profile_image,
                                         q_primary.qualification_name,
                                         t.nc_level AS nc_level_code,
                                         t.nc_level AS nc_level_name

@@ -12,13 +12,22 @@ async function ensureSwal() {
     });
 }
 
-let moduleModal, competencyModal, manageLessonModal, viewModuleModal, contentEditorModal;
+let moduleModal, competencyModal, manageLessonModal, viewModuleModal, contentEditorModal, unifiedModuleUploadModal, moduleTraineeStatusModal;
 let currentModules = [];
 let currentCompetencyType = 'core';
 let currentViewedModuleId = null;
 let fieldCounter = 0;
+let runtimeIdCounter = 0;
 let trainerId = null;
+let traineeProgressRoster = [];
+let selectedProgressTraineeId = null;
+const traineeProgressCache = new Map();
 const modalStack = [];
+
+function nextRuntimeId() {
+    runtimeIdCounter += 1;
+    return runtimeIdCounter;
+}
 
 class SimpleModal {
     constructor(element, options = {}) {
@@ -135,17 +144,6 @@ function initUserMenu() {
     });
 }
 
-async function ensureSwal() {
-    if (typeof window.Swal !== 'undefined') return;
-    await new Promise((resolve) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
-        script.onload = resolve;
-        script.onerror = resolve;
-        document.head.appendChild(script);
-    });
-}
-
 async function initLogout() {
     const logoutBtn = document.getElementById('logoutBtn');
     if (!logoutBtn) return;
@@ -174,7 +172,7 @@ async function initLogout() {
 }
 
 function initModuleTabs() {
-    ['core', 'common', 'basic'].forEach(type => {
+    ['core', 'common', 'basic', 'trainees'].forEach(type => {
         const tabBtn = document.getElementById(`${type}-tab`);
         if (!tabBtn) return;
         tabBtn.addEventListener('click', () => {
@@ -186,7 +184,7 @@ function initModuleTabs() {
 }
 
 function setActiveModuleTab(type) {
-    const target = type === 'common' || type === 'basic' ? type : 'core';
+    const target = ['core', 'common', 'basic', 'trainees'].includes(type) ? type : 'core';
     currentCompetencyType = target;
 
     document.querySelectorAll('.module-tab-btn').forEach(button => {
@@ -219,8 +217,26 @@ function initLessonTabs() {
     setActiveLessonTab('content');
 }
 
+function competencyTypeSupportsTaskSheets(type = 'core') {
+    return String(type || 'core').toLowerCase() === 'core';
+}
+
+function updateLessonTaskSheetVisibility(competencyType = 'core') {
+    const supportsTaskSheets = competencyTypeSupportsTaskSheets(competencyType);
+    const taskTab = document.getElementById('task-sheet-tab');
+    const taskPane = document.getElementById('task-sheet-pane');
+
+    if (taskTab) taskTab.classList.toggle('hidden', !supportsTaskSheets);
+    if (taskPane) taskPane.classList.toggle('hidden', !supportsTaskSheets);
+
+    if (!supportsTaskSheets && document.querySelector('.lesson-tab-btn[aria-selected="true"]')?.dataset.lessonTab === 'task-sheet') {
+        setActiveLessonTab('content');
+    }
+}
+
 function setActiveLessonTab(type) {
-    const allowed = ['content', 'quiz', 'task-sheet'];
+    const taskSheetAllowed = !document.getElementById('task-sheet-tab')?.classList.contains('hidden');
+    const allowed = taskSheetAllowed ? ['content', 'quiz', 'task-sheet'] : ['content', 'quiz'];
     const target = allowed.includes(type) ? type : 'content';
 
     document.querySelectorAll('.lesson-tab-btn').forEach(button => {
@@ -246,12 +262,39 @@ function setActiveLessonTab(type) {
 function loadDataForTab(type) {
     const qualificationSelect = document.getElementById('qualificationSelect');
     const qualificationId = qualificationSelect ? qualificationSelect.value : '';
+    if (!qualificationId || !trainerId) {
+        if (type === 'trainees') {
+            resetTraineeProgressTab('Select a qualification to load trainees.');
+        } else {
+            const emptyMessage = 'Select a qualification to see modules.';
+            const targets = {
+                core: 'modulesListCore',
+                common: 'modulesListCommon',
+                basic: 'modulesListBasic'
+            };
+            const container = document.getElementById(targets[type] || 'modulesListCore');
+            if (container) {
+                container.innerHTML = `
+                    <div class="col-span-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                        ${emptyMessage}
+                    </div>
+                `;
+            }
+        }
+        return Promise.resolve();
+    }
+
+    if (type === 'trainees') {
+        return loadTraineeProgressRoster(qualificationId);
+    }
+
     document.getElementById('modulesListCore').innerHTML = '';
     document.getElementById('modulesListCommon').innerHTML = '';
     document.getElementById('modulesListBasic').innerHTML = '';
     if (qualificationId && trainerId) {
-        loadModules(qualificationId, type, trainerId);
+        return loadModules(qualificationId, type, trainerId);
     }
+    return Promise.resolve();
 }
 
 document.addEventListener('DOMContentLoaded', async function () {
@@ -277,6 +320,15 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
     }
 
+    const moduleTraineeStatusEl = document.getElementById('moduleTraineeStatusModal');
+    if (moduleTraineeStatusEl) {
+        moduleTraineeStatusModal = new SimpleModal(moduleTraineeStatusEl, {
+            onHide: () => {
+                resetModuleTraineeStatusModal();
+            }
+        });
+    }
+
     const contentEditorEl = document.getElementById('contentEditorModal');
     if (contentEditorEl) {
         contentEditorModal = new SimpleModal(contentEditorEl, {
@@ -288,6 +340,15 @@ document.addEventListener('DOMContentLoaded', async function () {
                 const noMessage = document.getElementById('noContentBlocksMessage');
                 if (contentItemsContainer) contentItemsContainer.innerHTML = '';
                 if (noMessage) noMessage.style.display = 'block';
+            }
+        });
+    }
+
+    const unifiedModuleUploadEl = document.getElementById('unifiedModuleUploadModal');
+    if (unifiedModuleUploadEl) {
+        unifiedModuleUploadModal = new SimpleModal(unifiedModuleUploadEl, {
+            onHide: () => {
+                resetUnifiedModuleUploadForm();
             }
         });
     }
@@ -822,11 +883,23 @@ async function loadModules(qualificationId, competencyType = 'core') {
         container.innerHTML = '';
 
         if (response.data.success && response.data.data.length > 0) {
-            currentModules = response.data.data;
+            currentModules = [...response.data.data].sort((left, right) => {
+                const leftDraft = (left.module_status || 'published') === 'draft' ? 0 : 1;
+                const rightDraft = (right.module_status || 'published') === 'draft' ? 0 : 1;
+                if (leftDraft !== rightDraft) return leftDraft - rightDraft;
+                return (Number(left.module_order) || 0) - (Number(right.module_order) || 0)
+                    || Number(left.module_id) - Number(right.module_id);
+            });
             const spineColors = ['#34495e', '#2980b9', '#27ae60', '#8e44ad', '#c0392b', '#d35400'];
 
-            response.data.data.forEach((module, index) => {
+            currentModules.forEach((module, index) => {
                 const color = spineColors[index % spineColors.length];
+                const moduleStatus = getModuleWorkflowMeta(module);
+                const primaryAction = moduleStatus.status === 'draft'
+                    ? `openUnifiedModuleUploadModal('${competencyType}', ${module.module_id})`
+                    : `openViewModuleModal(${module.module_id})`;
+                const primaryLabel = moduleStatus.status === 'draft' ? 'Continue Draft' : 'Open';
+                const editLabel = moduleStatus.status === 'draft' ? 'Continue editing draft' : 'Edit module';
 
                 container.innerHTML += `
                 <article class="min-w-0 overflow-hidden rounded-xl border border-blue-100 bg-white shadow-sm">
@@ -841,16 +914,24 @@ async function loadModules(qualificationId, competencyType = 'core') {
                                 <h5 class="truncate text-base font-semibold text-slate-900">${module.module_title}</h5>
                                 <div class="my-2 h-[3px] w-10 rounded-full" style="background-color: ${color};"></div>
                                 <p class="min-h-[3.5rem] text-sm text-slate-600" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">${module.module_description || 'No description available.'}</p>
-                                <div class="mt-3 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
-                                    <i class="fas fa-bookmark"></i> ${module.lessons ? module.lessons.length : 0} Outcomes
+                                <div class="mt-3 flex flex-wrap items-center gap-2">
+                                    <div class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
+                                        <i class="fas fa-bookmark"></i> ${module.lessons ? module.lessons.length : 0} Outcomes
+                                    </div>
+                                    <div class="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold ${moduleStatus.badgeClasses}">
+                                        <i class="${moduleStatus.icon}"></i> ${moduleStatus.label}
+                                    </div>
                                 </div>
                             </div>
                             <div class="flex items-center justify-between gap-2 border-t border-slate-100 bg-slate-50 px-4 py-3">
-                                <button class="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onclick="openViewModuleModal(${module.module_id})" title="Open module">
-                                    <i class="fas fa-book-open"></i> Open
+                                <button class="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onclick="${primaryAction}" title="${primaryLabel}">
+                                    <i class="fas ${moduleStatus.status === 'draft' ? 'fa-pen-to-square' : 'fa-book-open'}"></i> ${primaryLabel}
                                 </button>
                                 <div class="flex items-center gap-1">
-                                    <button class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-blue-200 text-blue-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onclick="editModule(${module.module_id})" title="Edit module">
+                                    <button class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-emerald-200 text-emerald-700 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500" onclick="openModuleTraineeStatusModal(${module.module_id})" title="View trainee quiz status" aria-label="View trainee quiz status">
+                                        <i class="fas fa-user text-xs"></i>
+                                    </button>
+                                    <button class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-blue-200 text-blue-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onclick="editModule(${module.module_id})" title="${editLabel}">
                                         <i class="fas fa-edit text-xs"></i>
                                     </button>
                                     <button class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-200 text-red-700 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500" onclick="deleteModule(${module.module_id})" title="Delete module">
@@ -877,6 +958,484 @@ async function loadModules(qualificationId, competencyType = 'core') {
     } catch (error) {
         console.error('Error loading modules:', error);
         container.innerHTML = '<div class="col-span-full rounded-xl border border-red-100 bg-red-50 px-4 py-5 text-sm text-red-700">Error loading modules.</div>';
+    }
+}
+
+function getSelectedQualificationName() {
+    const select = document.getElementById('qualificationSelect');
+    const option = select?.options?.[select.selectedIndex];
+    if (option && option.value) {
+        return option.textContent.trim();
+    }
+    return 'Selected Qualification';
+}
+
+function resetTraineeProgressTab(message = 'Select a qualification to load trainees.') {
+    traineeProgressRoster = [];
+    selectedProgressTraineeId = null;
+    traineeProgressCache.clear();
+
+    const rosterEl = document.getElementById('traineeProgressRoster');
+    const titleEl = document.getElementById('traineeProgressDetailTitle');
+    const subtitleEl = document.getElementById('traineeProgressDetailSubtitle');
+    const summaryEl = document.getElementById('traineeProgressSummary');
+    const emptyEl = document.getElementById('traineeProgressEmpty');
+    const timelineEl = document.getElementById('traineeProgressTimeline');
+
+    if (rosterEl) {
+        rosterEl.innerHTML = `
+            <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                ${escapeHtml(message)}
+            </div>
+        `;
+    }
+    if (titleEl) titleEl.textContent = 'Trainee Progress Details';
+    if (subtitleEl) subtitleEl.textContent = 'Select a trainee to inspect their module sequence.';
+    if (summaryEl) summaryEl.innerHTML = '';
+    if (emptyEl) {
+        emptyEl.textContent = 'Select a trainee from the list to view completed outcomes and current lackings.';
+        emptyEl.classList.remove('hidden');
+    }
+    if (timelineEl) {
+        timelineEl.innerHTML = '';
+        timelineEl.classList.add('hidden');
+    }
+}
+
+function showTraineeProgressRosterLoading() {
+    const rosterEl = document.getElementById('traineeProgressRoster');
+    if (rosterEl) {
+        rosterEl.innerHTML = `
+            <div class="rounded-xl border border-slate-200 bg-white px-4 py-6 text-center text-sm text-slate-500">
+                <i class="fas fa-circle-notch mr-2 animate-spin text-blue-500"></i> Loading trainees...
+            </div>
+        `;
+    }
+
+    const summaryEl = document.getElementById('traineeProgressSummary');
+    const emptyEl = document.getElementById('traineeProgressEmpty');
+    const timelineEl = document.getElementById('traineeProgressTimeline');
+    if (summaryEl) summaryEl.innerHTML = '';
+    if (emptyEl) {
+        emptyEl.textContent = 'Preparing trainee progress details...';
+        emptyEl.classList.remove('hidden');
+    }
+    if (timelineEl) {
+        timelineEl.innerHTML = '';
+        timelineEl.classList.add('hidden');
+    }
+}
+
+function showTraineeProgressDetailLoading(trainee = null) {
+    const titleEl = document.getElementById('traineeProgressDetailTitle');
+    const subtitleEl = document.getElementById('traineeProgressDetailSubtitle');
+    const summaryEl = document.getElementById('traineeProgressSummary');
+    const emptyEl = document.getElementById('traineeProgressEmpty');
+    const timelineEl = document.getElementById('traineeProgressTimeline');
+    const traineeName = trainee ? getModuleTraineeDisplayName(trainee) : 'Trainee Progress Details';
+
+    if (titleEl) titleEl.textContent = traineeName;
+    if (subtitleEl) subtitleEl.textContent = `Loading sequenced module progress for ${getSelectedQualificationName()}...`;
+    if (summaryEl) {
+        summaryEl.innerHTML = [
+            buildModuleTraineeSummaryCard({
+                title: 'Completed Modules',
+                value: '...',
+                subtitle: 'Checking finished modules',
+                classes: 'border-emerald-100 bg-emerald-50'
+            }),
+            buildModuleTraineeSummaryCard({
+                title: 'In Progress',
+                value: '...',
+                subtitle: 'Checking active work',
+                classes: 'border-blue-100 bg-blue-50'
+            }),
+            buildModuleTraineeSummaryCard({
+                title: 'Locked / Pending',
+                value: '...',
+                subtitle: 'Reviewing remaining modules',
+                classes: 'border-amber-100 bg-amber-50'
+            }),
+            buildModuleTraineeSummaryCard({
+                title: 'Outcome Completion',
+                value: '...',
+                subtitle: 'Calculating tracked outcomes',
+                classes: 'border-slate-200 bg-slate-50'
+            })
+        ].join('');
+    }
+    if (emptyEl) {
+        emptyEl.textContent = 'Loading trainee progress details...';
+        emptyEl.classList.remove('hidden');
+    }
+    if (timelineEl) {
+        timelineEl.innerHTML = '';
+        timelineEl.classList.add('hidden');
+    }
+}
+
+function renderTraineeProgressRoster() {
+    const rosterEl = document.getElementById('traineeProgressRoster');
+    if (!rosterEl) return;
+
+    if (!Array.isArray(traineeProgressRoster) || traineeProgressRoster.length === 0) {
+        rosterEl.innerHTML = `
+            <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                No trainees are assigned to this qualification yet.
+            </div>
+        `;
+        return;
+    }
+
+    rosterEl.innerHTML = traineeProgressRoster.map((trainee, index) => {
+        const active = Number(trainee.trainee_id) === Number(selectedProgressTraineeId);
+        return `
+            <button
+                type="button"
+                class="w-full rounded-xl border px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                    active
+                        ? 'border-blue-200 bg-blue-50 shadow-sm'
+                        : 'border-slate-200 bg-white hover:border-blue-200 hover:bg-blue-50/60'
+                }"
+                data-trainee-progress-item="${Number(trainee.trainee_id) || 0}"
+                onclick="selectTraineeProgressTrainee(${Number(trainee.trainee_id) || 0})"
+            >
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="truncate text-sm font-semibold ${active ? 'text-blue-900' : 'text-slate-900'}">${escapeHtml(getModuleTraineeDisplayName(trainee))}</p>
+                        ${trainee.email ? `<p class="mt-1 truncate text-xs ${active ? 'text-blue-700' : 'text-slate-500'}">${escapeHtml(trainee.email)}</p>` : ''}
+                    </div>
+                    <span class="inline-flex h-7 min-w-[1.75rem] shrink-0 items-center justify-center rounded-full ${active ? 'bg-white text-blue-700' : 'bg-slate-100 text-slate-600'} px-2 text-xs font-semibold">
+                        ${index + 1}
+                    </span>
+                </div>
+                <div class="mt-3 flex items-center justify-between gap-2">
+                    <span class="text-xs ${active ? 'text-blue-700' : 'text-slate-500'}">Click to inspect status</span>
+                    ${trainee.trainee_school_id ? `<span class="inline-flex items-center rounded-full px-2 py-1 text-[11px] font-semibold ${active ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}">${escapeHtml(trainee.trainee_school_id)}</span>` : ''}
+                </div>
+            </button>
+        `;
+    }).join('');
+}
+
+function getTraineeProgressModuleStatusMeta(status = 'not_started') {
+    const map = {
+        completed: {
+            badge: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+            card: 'border-emerald-200 bg-emerald-50/50',
+            label: 'Completed'
+        },
+        in_progress: {
+            badge: 'border-blue-200 bg-blue-50 text-blue-700',
+            card: 'border-blue-200 bg-blue-50/50',
+            label: 'In Progress'
+        },
+        locked: {
+            badge: 'border-amber-200 bg-amber-50 text-amber-700',
+            card: 'border-amber-200 bg-amber-50/50',
+            label: 'Locked'
+        },
+        not_started: {
+            badge: 'border-slate-200 bg-slate-100 text-slate-700',
+            card: 'border-slate-200 bg-white',
+            label: 'Not Started'
+        }
+    };
+
+    return map[status] || map.not_started;
+}
+
+function getTraineeProgressOutcomeStatusMeta(status = 'not_started') {
+    const map = {
+        completed: {
+            badge: 'bg-emerald-100 text-emerald-700',
+            label: 'Completed'
+        },
+        in_progress: {
+            badge: 'bg-blue-100 text-blue-700',
+            label: 'Partial'
+        },
+        not_started: {
+            badge: 'bg-amber-100 text-amber-700',
+            label: 'Lacking'
+        },
+        not_tracked: {
+            badge: 'bg-slate-100 text-slate-600',
+            label: 'No Activity'
+        }
+    };
+
+    return map[status] || map.not_started;
+}
+
+async function loadTraineeProgressRoster(qualificationId) {
+    const parsedQualificationId = Number(qualificationId || 0);
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    if (!parsedQualificationId || !user?.user_id) {
+        resetTraineeProgressTab('Select a qualification to load trainees.');
+        return;
+    }
+
+    showTraineeProgressRosterLoading();
+    selectedProgressTraineeId = null;
+    traineeProgressRoster = [];
+    traineeProgressCache.clear();
+
+    try {
+        const response = await axios.get(`${API_BASE_URL}/role/trainer/modules.php?action=get-qualification-trainee-roster`, {
+            params: {
+                qualification_id: parsedQualificationId,
+                user_id: user.user_id
+            }
+        });
+
+        if (!response.data?.success) {
+            throw new Error(response.data?.message || 'Failed to load trainees.');
+        }
+
+        traineeProgressRoster = Array.isArray(response.data.data) ? response.data.data : [];
+        renderTraineeProgressRoster();
+
+        if (!traineeProgressRoster.length) {
+            const titleEl = document.getElementById('traineeProgressDetailTitle');
+            const subtitleEl = document.getElementById('traineeProgressDetailSubtitle');
+            const emptyEl = document.getElementById('traineeProgressEmpty');
+            const timelineEl = document.getElementById('traineeProgressTimeline');
+            const summaryEl = document.getElementById('traineeProgressSummary');
+
+            if (titleEl) titleEl.textContent = 'Trainee Progress Details';
+            if (subtitleEl) subtitleEl.textContent = `No trainees found for ${getSelectedQualificationName()}.`;
+            if (summaryEl) summaryEl.innerHTML = '';
+            if (emptyEl) {
+                emptyEl.textContent = 'No trainees are assigned to this qualification yet.';
+                emptyEl.classList.remove('hidden');
+            }
+            if (timelineEl) {
+                timelineEl.innerHTML = '';
+                timelineEl.classList.add('hidden');
+            }
+            return;
+        }
+
+        await window.selectTraineeProgressTrainee(traineeProgressRoster[0].trainee_id);
+    } catch (error) {
+        console.error('Error loading trainee progress roster:', error);
+        resetTraineeProgressTab(error.response?.data?.message || error.message || 'Unable to load trainees.');
+    }
+}
+
+function renderTraineeProgressDetail(data = {}) {
+    const trainee = data.trainee || {};
+    const summary = data.summary || {};
+    const modules = Array.isArray(data.modules) ? data.modules : [];
+
+    const titleEl = document.getElementById('traineeProgressDetailTitle');
+    const subtitleEl = document.getElementById('traineeProgressDetailSubtitle');
+    const summaryEl = document.getElementById('traineeProgressSummary');
+    const emptyEl = document.getElementById('traineeProgressEmpty');
+    const timelineEl = document.getElementById('traineeProgressTimeline');
+
+    if (titleEl) titleEl.textContent = getModuleTraineeDisplayName(trainee);
+    if (subtitleEl) {
+        const subtitleParts = [
+            getSelectedQualificationName(),
+            `${Number(summary.total_modules || 0)} published ${Number(summary.total_modules || 0) === 1 ? 'module' : 'modules'} in sequence`
+        ];
+        if (trainee.trainee_school_id) subtitleParts.unshift(trainee.trainee_school_id);
+        if (trainee.email) subtitleParts.push(trainee.email);
+        subtitleEl.textContent = subtitleParts.join(' - ');
+    }
+
+    if (summaryEl) {
+        summaryEl.innerHTML = [
+            buildModuleTraineeSummaryCard({
+                title: 'Completed Modules',
+                value: String(summary.completed_modules || 0),
+                subtitle: `${summary.total_modules || 0} total modules`,
+                classes: 'border-emerald-100 bg-emerald-50'
+            }),
+            buildModuleTraineeSummaryCard({
+                title: 'In Progress',
+                value: String(summary.in_progress_modules || 0),
+                subtitle: `${summary.not_started_modules || 0} not started`,
+                classes: 'border-blue-100 bg-blue-50'
+            }),
+            buildModuleTraineeSummaryCard({
+                title: 'Locked Modules',
+                value: String(summary.locked_modules || 0),
+                subtitle: 'Waiting on earlier sequence items',
+                classes: 'border-amber-100 bg-amber-50'
+            }),
+            buildModuleTraineeSummaryCard({
+                title: 'Outcome Completion',
+                value: `${summary.completed_outcomes || 0}/${summary.tracked_outcomes || 0}`,
+                subtitle: `${summary.completion_percentage || 0}% of tracked outcomes completed`,
+                classes: 'border-slate-200 bg-slate-50'
+            })
+        ].join('');
+    }
+
+    if (!modules.length) {
+        if (emptyEl) {
+            emptyEl.textContent = 'No published modules were found for this qualification yet.';
+            emptyEl.classList.remove('hidden');
+        }
+        if (timelineEl) {
+            timelineEl.innerHTML = '';
+            timelineEl.classList.add('hidden');
+        }
+        return;
+    }
+
+    if (emptyEl) emptyEl.classList.add('hidden');
+    if (timelineEl) timelineEl.classList.remove('hidden');
+
+    timelineEl.innerHTML = modules.map((module) => {
+        const statusMeta = getTraineeProgressModuleStatusMeta(module.progress_status);
+        const competencyLabel = `${String(module.competency_type || 'core').charAt(0).toUpperCase()}${String(module.competency_type || 'core').slice(1)}`;
+        const trackedLabel = Number(module.tracked_outcomes || 0) > 0
+            ? `${module.completed_outcomes || 0}/${module.tracked_outcomes || 0} tracked outcomes completed`
+            : 'No quiz or task sheet attached yet';
+        const untrackedLabel = Number(module.untracked_outcomes || 0) > 0
+            ? `${module.untracked_outcomes} outcome${Number(module.untracked_outcomes) === 1 ? '' : 's'} without tracked activity`
+            : 'All outcomes have tracked activity';
+
+        const outcomesHtml = Array.isArray(module.outcomes) && module.outcomes.length
+            ? module.outcomes.map((outcome) => {
+                const outcomeMeta = getTraineeProgressOutcomeStatusMeta(outcome.status);
+                const completedLine = Array.isArray(outcome.completed_items) && outcome.completed_items.length
+                    ? `<p class="mt-2 text-xs text-emerald-700"><span class="font-semibold">Completed:</span> ${escapeHtml(outcome.completed_items.join(', '))}</p>`
+                    : '';
+                const missingLine = Array.isArray(outcome.missing_items) && outcome.missing_items.length
+                    ? `<p class="mt-1 text-xs text-amber-700"><span class="font-semibold">Lacking:</span> ${escapeHtml(outcome.missing_items.join(', '))}</p>`
+                    : '';
+                const noActivityLine = !outcome.tracked
+                    ? '<p class="mt-2 text-xs text-slate-500">No quiz or task sheet attached to this outcome yet.</p>'
+                    : '';
+
+                return `
+                    <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-slate-900">Outcome ${Number(outcome.sequence_no || 0)}: ${escapeHtml(outcome.lesson_title || 'Untitled Outcome')}</p>
+                                ${completedLine}
+                                ${missingLine}
+                                ${noActivityLine}
+                            </div>
+                            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${outcomeMeta.badge}">
+                                ${escapeHtml(outcomeMeta.label)}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }).join('')
+            : `
+                <div class="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-5 text-center text-sm text-slate-500">
+                    No learning outcomes found in this module.
+                </div>
+            `;
+
+        return `
+            <article class="overflow-hidden rounded-2xl border ${statusMeta.card} shadow-sm">
+                <div class="border-b border-slate-200/80 px-4 py-4 sm:px-5">
+                    <div class="flex flex-wrap items-start justify-between gap-4">
+                        <div class="flex items-start gap-3">
+                            <div class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-bold text-white">
+                                ${Number(module.sequence_no || 0)}
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h5 class="text-base font-semibold text-slate-900">${escapeHtml(module.module_title || 'Untitled Module')}</h5>
+                                    <span class="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600">${escapeHtml(competencyLabel)}</span>
+                                    <span class="inline-flex items-center rounded-full border px-2 py-1 text-[11px] font-semibold ${statusMeta.badge}">${escapeHtml(statusMeta.label)}</span>
+                                </div>
+                                ${module.module_description ? `<p class="mt-2 text-sm text-slate-600">${escapeHtml(module.module_description)}</p>` : ''}
+                            </div>
+                        </div>
+                        <div class="min-w-[180px] rounded-xl border border-white/70 bg-white/80 px-3 py-2 text-right">
+                            <p class="text-lg font-bold text-slate-900">${Number(module.completion_percentage || 0)}%</p>
+                            <p class="text-xs text-slate-500">${escapeHtml(trackedLabel)}</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <div class="rounded-xl border border-slate-200 bg-white px-3 py-2">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Tracked Progress</p>
+                            <p class="mt-1 text-sm font-semibold text-slate-900">${escapeHtml(trackedLabel)}</p>
+                        </div>
+                        <div class="rounded-xl border border-slate-200 bg-white px-3 py-2">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Remaining Lackings</p>
+                            <p class="mt-1 text-sm font-semibold text-slate-900">${Number(module.lacking_outcomes || 0)} outcome${Number(module.lacking_outcomes || 0) === 1 ? '' : 's'} lacking</p>
+                        </div>
+                        <div class="rounded-xl border border-slate-200 bg-white px-3 py-2">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Extra Context</p>
+                            <p class="mt-1 text-sm font-semibold text-slate-900">${escapeHtml(untrackedLabel)}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-3 bg-slate-50 px-4 py-4 sm:px-5">
+                    ${outcomesHtml}
+                </div>
+            </article>
+        `;
+    }).join('');
+}
+
+window.selectTraineeProgressTrainee = async function(traineeId) {
+    const parsedTraineeId = Number(traineeId || 0);
+    const qualificationId = Number(document.getElementById('qualificationSelect')?.value || 0);
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    if (!parsedTraineeId || !qualificationId || !user?.user_id) return;
+
+    selectedProgressTraineeId = parsedTraineeId;
+    renderTraineeProgressRoster();
+
+    const selectedTrainee = traineeProgressRoster.find((trainee) => Number(trainee.trainee_id) === parsedTraineeId) || null;
+    const cacheKey = `${qualificationId}:${parsedTraineeId}`;
+
+    if (traineeProgressCache.has(cacheKey)) {
+        renderTraineeProgressDetail(traineeProgressCache.get(cacheKey));
+        return;
+    }
+
+    showTraineeProgressDetailLoading(selectedTrainee);
+
+    try {
+        const response = await axios.get(`${API_BASE_URL}/role/trainer/modules.php?action=get-trainee-sequenced-progress`, {
+            params: {
+                qualification_id: qualificationId,
+                trainee_id: parsedTraineeId,
+                user_id: user.user_id
+            }
+        });
+
+        if (!response.data?.success) {
+            throw new Error(response.data?.message || 'Failed to load trainee progress.');
+        }
+
+        traineeProgressCache.set(cacheKey, response.data.data || {});
+        renderTraineeProgressDetail(response.data.data || {});
+    } catch (error) {
+        console.error('Error loading trainee sequenced progress:', error);
+
+        const titleEl = document.getElementById('traineeProgressDetailTitle');
+        const subtitleEl = document.getElementById('traineeProgressDetailSubtitle');
+        const summaryEl = document.getElementById('traineeProgressSummary');
+        const emptyEl = document.getElementById('traineeProgressEmpty');
+        const timelineEl = document.getElementById('traineeProgressTimeline');
+
+        if (titleEl) titleEl.textContent = selectedTrainee ? getModuleTraineeDisplayName(selectedTrainee) : 'Trainee Progress Details';
+        if (subtitleEl) subtitleEl.textContent = 'Unable to load trainee progress.';
+        if (summaryEl) summaryEl.innerHTML = '';
+        if (emptyEl) {
+            emptyEl.textContent = error.response?.data?.message || error.message || 'Unable to load trainee progress.';
+            emptyEl.classList.remove('hidden');
+        }
+        if (timelineEl) {
+            timelineEl.innerHTML = '';
+            timelineEl.classList.add('hidden');
+        }
     }
 }
 
@@ -1026,16 +1585,7 @@ window.openCreateModuleModal = function(type = 'core') {
 }
 
 window.editModule = function(id) {
-    if (!moduleModal) return;
-    const module = currentModules.find(m => m.module_id == id);
-    if (!module) return;
-
-    document.getElementById('moduleId').value = module.module_id;
-    document.getElementById('moduleTitle').value = module.module_title;
-    document.getElementById('moduleDescription').value = module.module_description || '';
-    const typeName = currentCompetencyType.charAt(0).toUpperCase() + currentCompetencyType.slice(1);
-    document.getElementById('moduleModalTitle').textContent = `Edit ${typeName} Competency Module`;
-    moduleModal.show();
+    openUnifiedModuleUploadModal(currentCompetencyType, id);
 }
 
 window.openCreateCompetencyModal = function(moduleId) {
@@ -1067,13 +1617,17 @@ window.openManageLessonModal = async function(lessonId) {
     if (!manageLessonModal) return;
     document.getElementById('manageLessonId').value = lessonId;
     setActiveLessonTab('content');
+    updateLessonTaskSheetVisibility('core');
     
     // Reset all panes
     document.getElementById('lessonContentsList').innerHTML = '';
     document.getElementById('taskSheetsList').innerHTML = '';
     document.getElementById('questionsContainer').innerHTML = '';
     document.getElementById('lessonFileUpload').value = '';
+    document.getElementById('lessonResourceUrl').value = '';
     document.getElementById('postingDate').value = '';
+    document.getElementById('currentLessonFileContainer').classList.add('hidden');
+    document.getElementById('currentLessonResourceContainer').classList.add('hidden');
     const deadlineInput = document.getElementById('quizDeadline');
     if (deadlineInput) deadlineInput.value = '';
 
@@ -1083,26 +1637,36 @@ window.openManageLessonModal = async function(lessonId) {
             const data = response.data.data;
             const competencyType = data.competency_type;
             document.getElementById('manageLessonModal').dataset.competencyType = competencyType;
+            updateLessonTaskSheetVisibility(competencyType);
 
             const coreManager = document.getElementById('coreContentManager');
             const fileManager = document.getElementById('fileContentManager');
+            const fileContainer = document.getElementById('currentLessonFileContainer');
+            const fileLink = document.getElementById('currentLessonFileLink');
+            const resourceContainer = document.getElementById('currentLessonResourceContainer');
+            const resourceLink = document.getElementById('currentLessonResourceLink');
+            const resourceInput = document.getElementById('lessonResourceUrl');
 
-            if (competencyType === 'core') {
-                coreManager.classList.remove('hidden');
-                fileManager.classList.add('hidden');
-                renderLessonContentsList(data.contents || []);
-            } else { // basic or common
-                coreManager.classList.add('hidden');
-                fileManager.classList.remove('hidden');
-                const fileContainer = document.getElementById('currentLessonFileContainer');
-                const fileLink = document.getElementById('currentLessonFileLink');
-                if (data.lesson_file_path) {
-                    fileLink.href = LESSON_UPLOADS_URL + data.lesson_file_path;
-                    fileLink.textContent = data.lesson_file_path;
-                    fileContainer.classList.remove('hidden');
-                } else {
-                    fileContainer.classList.add('hidden');
-                }
+            coreManager.classList.remove('hidden');
+            fileManager.classList.remove('hidden');
+            renderLessonContentsList(data.contents || [], data.lesson_file_path || '', data.lesson_resource_url || '');
+            if (resourceInput) resourceInput.value = data.lesson_resource_url || '';
+
+            if (data.lesson_file_path) {
+                fileLink.href = getLessonMaterialFileUrl(data.lesson_file_path);
+                fileLink.textContent = formatLessonMaterialFileName(data.lesson_file_path);
+                fileContainer.classList.remove('hidden');
+            } else {
+                fileContainer.classList.add('hidden');
+            }
+
+            if (data.lesson_resource_url) {
+                const resourceMeta = getLessonResourceDisplayMeta(data.lesson_resource_url);
+                resourceLink.href = resourceMeta.url;
+                resourceLink.textContent = resourceMeta.displayText;
+                resourceContainer.classList.remove('hidden');
+            } else {
+                resourceContainer.classList.add('hidden');
             }
 
             renderTaskSheetsList(data.task_sheets || []);
@@ -1114,8 +1678,8 @@ window.openManageLessonModal = async function(lessonId) {
             }
         } else {
             // Still show the modal but with empty lists on failure
-            renderLessonContentsList([]);
-            document.getElementById('fileContentManager').classList.add('hidden');
+            renderLessonContentsList([], '', '');
+            document.getElementById('fileContentManager').classList.remove('hidden');
             renderTaskSheetsList([]);
             Swal.fire('Error', 'Could not load lesson details: ' + response.data.message, 'error');
         }
@@ -1127,13 +1691,113 @@ window.openManageLessonModal = async function(lessonId) {
     manageLessonModal.show();
 }
 
-function renderLessonContentsList(contents) {
+function formatLessonMaterialFileName(filePath = '') {
+    const cleaned = String(filePath || '').split('/').pop().split('\\').pop();
+    return cleaned || 'Uploaded learning material';
+}
+
+function getLessonMaterialFileUrl(filePath = '') {
+    const cleaned = String(filePath || '').split('/').filter(Boolean).map(part => encodeURIComponent(part)).join('/');
+    return `${LESSON_UPLOADS_URL}${cleaned}`;
+}
+
+function normalizeLessonResourceUrlInput(value = '') {
+    const trimmedValue = String(value || '').trim();
+    if (!trimmedValue) return '';
+
+    const normalizedValue = /^[a-z][a-z0-9+\-.]*:\/\//i.test(trimmedValue)
+        ? trimmedValue
+        : `https://${trimmedValue.replace(/^\/+/, '')}`;
+
+    try {
+        const parsedUrl = new URL(normalizedValue);
+        if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+            return '';
+        }
+        return parsedUrl.toString();
+    } catch (error) {
+        return '';
+    }
+}
+
+function getLessonResourceDisplayMeta(resourceUrl = '') {
+    const normalizedUrl = normalizeLessonResourceUrlInput(resourceUrl);
+    if (!normalizedUrl) {
+        return {
+            url: '',
+            label: 'Lesson Link',
+            helper: 'External lesson resource',
+            displayText: ''
+        };
+    }
+
+    try {
+        const parsedUrl = new URL(normalizedUrl);
+        const host = parsedUrl.hostname.replace(/^www\./i, '');
+        const isVideoResource = /(^|\.)youtube\.com$/i.test(parsedUrl.hostname)
+            || /(^|\.)youtu\.be$/i.test(parsedUrl.hostname)
+            || /(^|\.)vimeo\.com$/i.test(parsedUrl.hostname)
+            || /\.(mp4|webm|ogg|mov)(?:$|\?)/i.test(parsedUrl.pathname);
+
+        const pathText = parsedUrl.pathname && parsedUrl.pathname !== '/' ? parsedUrl.pathname : '';
+        const displayText = `${host}${pathText}` || normalizedUrl;
+
+        return {
+            url: normalizedUrl,
+            label: isVideoResource ? 'Video Lesson' : 'Lesson Link',
+            helper: host || 'External lesson resource',
+            displayText
+        };
+    } catch (error) {
+        return {
+            url: normalizedUrl,
+            label: 'Lesson Link',
+            helper: 'External lesson resource',
+            displayText: normalizedUrl
+        };
+    }
+}
+
+function renderLessonContentsList(contents, lessonFilePath = '', lessonResourceUrl = '') {
     const container = document.getElementById('lessonContentsList');
     container.innerHTML = '';
-    if (contents.length === 0) {
-        container.innerHTML = '<div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm text-slate-500">No information sheets added yet.</div>';
+    if (lessonFilePath) {
+        const displayName = formatLessonMaterialFileName(lessonFilePath);
+        container.innerHTML += `
+            <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2">
+                <div class="min-w-0">
+                    <span class="inline-flex items-center gap-2 text-sm font-semibold text-slate-800"><i class="fas fa-file-lines text-blue-600"></i>${escapeHtml(displayName)}</span>
+                    <p class="mt-1 text-xs text-slate-500">Uploaded learning material</p>
+                </div>
+                <a href="${getLessonMaterialFileUrl(lessonFilePath)}" target="_blank" class="inline-flex items-center gap-1 rounded-md border border-blue-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                    <i class="fas fa-eye"></i> Open File
+                </a>
+            </div>
+        `;
+    }
+
+    const resourceMeta = getLessonResourceDisplayMeta(lessonResourceUrl);
+    if (resourceMeta.url) {
+        const resourceIcon = resourceMeta.label === 'Video Lesson' ? 'fa-circle-play text-emerald-600' : 'fa-link text-emerald-600';
+        const resourceActionLabel = resourceMeta.label === 'Video Lesson' ? 'Open Video' : 'Open Link';
+        container.innerHTML += `
+            <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+                <div class="min-w-0">
+                    <span class="inline-flex items-center gap-2 text-sm font-semibold text-slate-800"><i class="fas ${resourceIcon}"></i>${escapeHtml(resourceMeta.displayText)}</span>
+                    <p class="mt-1 text-xs text-slate-500">${escapeHtml(resourceMeta.label)} from ${escapeHtml(resourceMeta.helper)}</p>
+                </div>
+                <a href="${escapeHtml(resourceMeta.url)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
+                    <i class="fas fa-arrow-up-right-from-square"></i> ${resourceActionLabel}
+                </a>
+            </div>
+        `;
+    }
+
+    if (contents.length === 0 && !lessonFilePath && !resourceMeta.url) {
+        container.innerHTML = '<div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm text-slate-500">No learning materials or information sheets added yet.</div>';
         return;
     }
+
     contents.forEach(item => {
         container.innerHTML += `
             <div class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2">
@@ -1222,7 +1886,7 @@ window.addContentBlockItem = function() {
     
     if (noMessage) noMessage.style.display = 'none';
 
-    const itemId = Date.now();
+    const itemId = nextRuntimeId();
     const html = `
         <div class="content-block bg-white p-3 rounded-md border border-slate-200 space-y-2" data-item-id="${itemId}">
             <div class="flex items-center justify-between mb-2">
@@ -1279,51 +1943,124 @@ window.removeContentBlockItem = function(itemId) {
     }
 }
 
+function normalizeLessonQuestionData(data = null) {
+    const questionText = String(data?.question_text ?? data?.text ?? '').trim();
+    const questionType = String(data?.question_type ?? data?.type ?? 'multiple_choice').trim() === 'true_false'
+        ? 'true_false'
+        : 'multiple_choice';
+
+    let options = Array.isArray(data?.options)
+        ? data.options.map(option => ({
+            option_text: String(option?.option_text ?? option?.text ?? '').trim(),
+            is_correct: option?.is_correct == 1 || option?.is_correct === true
+        })).filter(option => option.option_text !== '')
+        : [];
+
+    if (questionType === 'true_false') {
+        const normalizedCorrect = options.find(option => option.is_correct)?.option_text?.trim().toLowerCase() || '';
+        return {
+            questionText,
+            questionType,
+            options: [
+                { option_text: 'TRUE', is_correct: normalizedCorrect === 'true' },
+                { option_text: 'FALSE', is_correct: normalizedCorrect === 'false' }
+            ]
+        };
+    }
+
+    if (!options.length) {
+        options = [
+            { option_text: '', is_correct: false },
+            { option_text: '', is_correct: false }
+        ];
+    }
+
+    return { questionText, questionType, options };
+}
+
+function renderLessonTrueFalseOptions(optionsList, qIndex, correctAnswer = '') {
+    const normalizedCorrect = String(correctAnswer || '').trim().toLowerCase();
+    optionsList.innerHTML = `
+        ${createOptionHtml(qIndex, 0, 'TRUE', normalizedCorrect === 'true')}
+        ${createOptionHtml(qIndex, 1, 'FALSE', normalizedCorrect === 'false')}
+    `;
+}
+
+function refreshLessonQuestionIndices() {
+    const container = document.getElementById('questionsContainer');
+    if (!container) return;
+
+    Array.from(container.querySelectorAll('.question-item')).forEach((questionItem, index) => {
+        const title = questionItem.querySelector('.lesson-question-label');
+        if (title) title.textContent = `Question ${index + 1}`;
+
+        const addButton = questionItem.querySelector('.add-option-btn');
+        if (addButton) addButton.setAttribute('onclick', `addOption(this, ${index})`);
+
+        questionItem.querySelectorAll('.option-item input[type="radio"]').forEach(radio => {
+            radio.name = `correct_answer_${index}`;
+        });
+    });
+}
+
+window.removeLessonQuestion = function(button) {
+    button.closest('.question-item')?.remove();
+    refreshLessonQuestionIndices();
+}
+
 window.addQuestion = function(data = null) {
     const container = document.getElementById('questionsContainer');
-    const qIndex = container.children.length;
+    if (!container) return;
 
-    const questionText = data ? data.question_text : '';
-    const questionType = data ? data.question_type : 'multiple_choice';
+    const qIndex = container.children.length;
+    const normalized = normalizeLessonQuestionData(data);
 
     let optionsHtml = '';
-    if (data && data.options) {
-        data.options.forEach((opt, oIndex) => {
-            optionsHtml += createOptionHtml(qIndex, oIndex, opt.option_text, opt.is_correct == 1);
-        });
-    } else {
-        optionsHtml += createOptionHtml(qIndex, 0, '', false);
-        optionsHtml += createOptionHtml(qIndex, 1, '', false);
-    }
+    normalized.options.forEach((opt, oIndex) => {
+        optionsHtml += createOptionHtml(qIndex, oIndex, opt.option_text, opt.is_correct);
+    });
 
     const qDiv = document.createElement('div');
     qDiv.className = 'question-item mb-3 overflow-hidden rounded-xl border border-slate-200 bg-white';
     qDiv.innerHTML = `
         <div class="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-3 py-2">
-            <strong class="text-sm font-semibold text-slate-800">Question ${qIndex + 1}</strong>
-            <button type="button" class="inline-flex items-center gap-1 rounded-md border border-red-200 px-2.5 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500" onclick="this.closest('.question-item').remove()">Remove</button>
+            <strong class="lesson-question-label text-sm font-semibold text-slate-800">Question ${qIndex + 1}</strong>
+            <button type="button" class="inline-flex items-center gap-1 rounded-md border border-red-200 px-2.5 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500" onclick="removeLessonQuestion(this)">Remove</button>
         </div>
         <div class="question-body space-y-2 p-3">
-            <input type="text" class="question-text w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" placeholder="Enter question" value="${questionText}">
+            <input type="text" class="question-text w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" placeholder="Enter question" value="${escapeHtml(normalized.questionText)}">
             <select class="question-type w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onchange="toggleOptions(this)">
-                <option value="multiple_choice" ${questionType === 'multiple_choice' ? 'selected' : ''}>Multiple Choice</option>
-                <option value="true_false" ${questionType === 'true_false' ? 'selected' : ''}>True/False</option>
+                <option value="multiple_choice" ${normalized.questionType === 'multiple_choice' ? 'selected' : ''}>Multiple Choice</option>
+                <option value="true_false" ${normalized.questionType === 'true_false' ? 'selected' : ''}>True/False</option>
             </select>
             <div class="options-list space-y-2">
                 ${optionsHtml}
             </div>
-            <button type="button" class="add-option-btn inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${questionType === 'true_false' ? 'hidden' : ''}" onclick="addOption(this, ${qIndex})">+ Add Option</button>
+            <button type="button" class="add-option-btn inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${normalized.questionType === 'true_false' ? 'hidden' : ''}" onclick="addOption(this, ${qIndex})">+ Add Option</button>
         </div>
     `;
 
     container.appendChild(qDiv);
+
+    if (normalized.questionType === 'true_false') {
+        const optionsList = qDiv.querySelector('.options-list');
+        const correctAnswer = normalized.options.find(option => option.is_correct)?.option_text || '';
+        renderLessonTrueFalseOptions(optionsList, qIndex, correctAnswer);
+        const addButton = qDiv.querySelector('.add-option-btn');
+        if (addButton) {
+            addButton.classList.add('hidden');
+            addButton.style.display = 'none';
+        }
+    }
+
+    refreshLessonQuestionIndices();
 }
 
 window.createOptionHtml = function(qIndex, oIndex, text, isCorrect) {
     return `
         <div class="option-item flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2">
             <button class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-red-200 text-red-700 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500" type="button" onclick="this.closest('.option-item').remove()">X</button>
-            <input type="text" class="option-text w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm text-slate-700 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" placeholder="Option text" value="${text}">
+            <input type="text" class="option-text w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm text-slate-700 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" placeholder="Option text" value="${escapeHtml(text)}">
             <div class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-2 py-1.5" title="Mark as correct answer">
                 <input class="h-4 w-4 border-slate-300 text-blue-600 focus-visible:ring-blue-500" type="radio" name="correct_answer_${qIndex}" ${isCorrect ? 'checked' : ''}>
             </div>
@@ -1343,18 +2080,352 @@ window.toggleOptions = function(select) {
     const questionBody = select.closest('.question-body');
     const addBtn = questionBody.querySelector('.add-option-btn');
     const optionsList = questionBody.querySelector('.options-list');
+    const qIndex = Array.from(document.getElementById('questionsContainer').children).indexOf(select.closest('.question-item'));
 
     if (select.value === 'true_false') {
         addBtn.classList.add('hidden');
-        optionsList.innerHTML = `
-            ${createOptionHtml(0, 0, 'True', false)}
-            ${createOptionHtml(0, 1, 'False', false)}
-        `;
-
-        const qIndex = Array.from(document.getElementById('questionsContainer').children).indexOf(select.closest('.question-item'));
-        optionsList.querySelectorAll('input[type="radio"]').forEach(r => r.name = `correct_answer_${qIndex}`);
+        addBtn.style.display = 'none';
+        renderLessonTrueFalseOptions(optionsList, qIndex);
     } else {
         addBtn.classList.remove('hidden');
+        addBtn.style.display = '';
+        if (optionsList.children.length < 2) {
+            optionsList.innerHTML = `
+                ${createOptionHtml(qIndex, 0, '', false)}
+                ${createOptionHtml(qIndex, 1, '', false)}
+            `;
+        }
+    }
+
+    refreshLessonQuestionIndices();
+}
+
+function getQuizTemplateCsv() {
+    return [
+        'question_text,question_type,option_1,option_2,option_3,option_4,correct_answer',
+        '"What should a trainee wear before welding?","multiple_choice","Welding helmet","Slippers","Loose scarf","Open sandals","1"',
+        '"Safety goggles protect the eyes.","true_false","TRUE","FALSE","","","TRUE"'
+    ].join('\r\n');
+}
+
+window.downloadQuizTemplate = function() {
+    const blob = new Blob([getQuizTemplateCsv()], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'quiz_upload_template.csv';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+}
+
+function parseCsvLine(line) {
+    const values = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let index = 0; index < line.length; index += 1) {
+        const char = line[index];
+        const nextChar = line[index + 1];
+
+        if (char === '"') {
+            if (inQuotes && nextChar === '"') {
+                current += '"';
+                index += 1;
+            } else {
+                inQuotes = !inQuotes;
+            }
+            continue;
+        }
+
+        if (char === ',' && !inQuotes) {
+            values.push(current);
+            current = '';
+            continue;
+        }
+
+        current += char;
+    }
+
+    values.push(current);
+    return {
+        values,
+        hasUnclosedQuote: inQuotes
+    };
+}
+
+function normalizeQuizTemplateHeader(header) {
+    return header.trim().toLowerCase().replace(/\s+/g, '_');
+}
+
+function normalizeImportedQuestionType(rawType) {
+    const normalized = String(rawType || '').trim().toLowerCase();
+    if (['multiple_choice', 'multiple-choice', 'multiple choice', 'mcq'].includes(normalized)) {
+        return 'multiple_choice';
+    }
+    if (['true_false', 'true-false', 'true false', 'boolean'].includes(normalized)) {
+        return 'true_false';
+    }
+    return '';
+}
+
+function resolveCorrectAnswerIndex(correctAnswer, options) {
+    const token = String(correctAnswer || '').trim();
+    if (!token) return -1;
+
+    if (/^\d+$/.test(token)) {
+        const numericIndex = parseInt(token, 10) - 1;
+        if (numericIndex >= 0 && numericIndex < options.length) return numericIndex;
+    }
+
+    if (/^[A-Z]$/i.test(token)) {
+        const alphaIndex = token.toUpperCase().charCodeAt(0) - 65;
+        if (alphaIndex >= 0 && alphaIndex < options.length) return alphaIndex;
+    }
+
+    const optionMatch = token.match(/^option[\s_-]?(\d+)$/i);
+    if (optionMatch) {
+        const optionIndex = parseInt(optionMatch[1], 10) - 1;
+        if (optionIndex >= 0 && optionIndex < options.length) return optionIndex;
+    }
+
+    return options.findIndex(option => option.trim().toLowerCase() === token.toLowerCase());
+}
+
+function buildQuizTemplateImportError(errors) {
+    const visibleErrors = errors.slice(0, 8);
+    const remainingCount = errors.length - visibleErrors.length;
+    const messageLines = [
+        `${errors.length} issue(s) found in the quiz template:`,
+        ...visibleErrors.map(error => `- ${error}`)
+    ];
+
+    if (remainingCount > 0) {
+        messageLines.push(`- ...and ${remainingCount} more issue(s).`);
+    }
+
+    return messageLines.join('\n');
+}
+
+function parseQuizTemplateCsv(csvText) {
+    const parsedLines = csvText
+        .replace(/^\uFEFF/, '')
+        .split(/\r?\n/)
+        .map((line, index) => ({
+            line,
+            lineNumber: index + 1
+        }))
+        .filter(item => item.line.trim() !== '');
+
+    if (parsedLines.length < 2) {
+        throw new Error('The quiz template is empty. Add at least one question row.');
+    }
+
+    const headerLine = parsedLines[0];
+    const headerParse = parseCsvLine(headerLine.line);
+    if (headerParse.hasUnclosedQuote) {
+        throw new Error(`Line ${headerLine.lineNumber}: the header row has an unmatched quote.`);
+    }
+
+    const headers = headerParse.values.map(normalizeQuizTemplateHeader);
+    const questionColumn = headers.find(header => ['question_text', 'question'].includes(header));
+    const typeColumn = headers.find(header => ['question_type', 'type'].includes(header));
+    const correctColumn = headers.find(header => ['correct_answer', 'answer_key', 'answer'].includes(header));
+    const optionColumns = headers
+        .map((header, index) => ({ header, index }))
+        .filter(item => /^option_?\d+$/.test(item.header))
+        .sort((left, right) => {
+            const leftNumber = parseInt(left.header.replace(/\D/g, ''), 10);
+            const rightNumber = parseInt(right.header.replace(/\D/g, ''), 10);
+            return leftNumber - rightNumber;
+        });
+
+    if (!questionColumn || !typeColumn || !correctColumn || optionColumns.length < 2) {
+        throw new Error('Template columns must include question_text, question_type, at least option_1 and option_2, and correct_answer.');
+    }
+
+    const questions = [];
+    const errors = [];
+
+    for (let rowIndex = 1; rowIndex < parsedLines.length; rowIndex += 1) {
+        const { line, lineNumber } = parsedLines[rowIndex];
+        const parsedLine = parseCsvLine(line);
+
+        if (parsedLine.hasUnclosedQuote) {
+            errors.push(`Line ${lineNumber}: unmatched quote detected.`);
+            continue;
+        }
+
+        const values = parsedLine.values;
+        if (values.length > headers.length) {
+            errors.push(`Line ${lineNumber}: found ${values.length} columns but the template expects ${headers.length}. Check for extra commas or missing quotes.`);
+            continue;
+        }
+
+        const row = {};
+        headers.forEach((header, index) => {
+            row[header] = (values[index] || '').trim();
+        });
+
+        const questionText = row[questionColumn];
+        const rowHasContent = Object.values(row).some(value => value !== '');
+
+        if (!questionText) {
+            if (rowHasContent) {
+                errors.push(`Line ${lineNumber}: question_text is required.`);
+            }
+            continue;
+        }
+
+        const questionType = normalizeImportedQuestionType(row[typeColumn]);
+        if (!questionType) {
+            errors.push(`Line ${lineNumber}: question_type must be multiple_choice or true_false.`);
+            continue;
+        }
+
+        const rawOptions = optionColumns.map(item => row[item.header] || '');
+        let options = rawOptions.filter(Boolean);
+
+        if (questionType === 'true_false') {
+            const extraTrueFalseOptions = rawOptions.slice(2).filter(Boolean);
+            if (extraTrueFalseOptions.length > 0) {
+                errors.push(`Line ${lineNumber}: true_false rows may only use option_1 and option_2.`);
+                continue;
+            }
+
+            const firstOption = String(rawOptions[0] || '').trim();
+            const secondOption = String(rawOptions[1] || '').trim();
+
+            if (!firstOption && !secondOption) {
+                options = ['TRUE', 'FALSE'];
+            } else if (!firstOption || !secondOption) {
+                errors.push(`Line ${lineNumber}: true_false rows must either leave option_1 and option_2 blank or set them to TRUE and FALSE.`);
+                continue;
+            } else {
+                const normalizedFirst = firstOption.toUpperCase();
+                const normalizedSecond = secondOption.toUpperCase();
+
+                if (normalizedFirst !== 'TRUE' || normalizedSecond !== 'FALSE') {
+                    errors.push(`Line ${lineNumber}: true_false rows must use option_1=TRUE and option_2=FALSE.`);
+                    continue;
+                }
+
+                options = ['TRUE', 'FALSE'];
+            }
+        }
+
+        if (options.length < 2) {
+            errors.push(`Line ${lineNumber}: each question needs at least two options.`);
+            continue;
+        }
+
+        const correctIndex = resolveCorrectAnswerIndex(row[correctColumn], options);
+        if (correctIndex < 0) {
+            errors.push(`Line ${lineNumber}: correct_answer must match an option number, letter, or exact option text.`);
+            continue;
+        }
+
+        questions.push({
+            text: questionText,
+            type: questionType,
+            options: options.map((optionText, optionIndex) => ({
+                text: optionText,
+                is_correct: optionIndex === correctIndex
+            }))
+        });
+    }
+
+    if (errors.length > 0) {
+        throw new Error(buildQuizTemplateImportError(errors));
+    }
+
+    if (!questions.length) {
+        throw new Error('No valid questions were found in the uploaded template.');
+    }
+
+    return questions;
+}
+
+async function replaceQuizQuestionsFromTemplate(questions, target = 'lesson', outcomeId = null) {
+    const container = target === 'lesson'
+        ? document.getElementById('questionsContainer')
+        : document.querySelector(`#outcome-${outcomeId} .outcome-quiz-items`);
+
+    if (!container) {
+        throw new Error('Quiz container not found.');
+    }
+
+    if (container.children.length > 0) {
+        const result = await Swal.fire({
+            title: 'Replace current quiz?',
+            text: 'Importing a premade quiz will replace the questions already added here.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Replace Quiz',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#2563eb'
+        });
+
+        if (!result.isConfirmed) {
+            return false;
+        }
+    }
+
+    container.innerHTML = '';
+
+    questions.forEach(question => {
+        if (target === 'lesson') {
+            addQuestion({
+                question_text: question.text,
+                question_type: question.type,
+                options: question.options.map(option => ({
+                    option_text: option.text,
+                    is_correct: option.is_correct ? 1 : 0
+                }))
+            });
+            return;
+        }
+
+        addQuizQuestion(outcomeId, question);
+    });
+
+    await Swal.fire('Imported', `${questions.length} question(s) were arranged successfully.`, 'success');
+    return true;
+}
+
+async function importQuizTemplateFile(file, target = 'lesson', outcomeId = null) {
+    if (!file) return;
+
+    const fileName = file.name.toLowerCase();
+    if (!fileName.endsWith('.csv')) {
+        throw new Error('Please upload the premade quiz using the CSV template file.');
+    }
+
+    const fileText = await file.text();
+    const questions = parseQuizTemplateCsv(fileText);
+    await replaceQuizQuestionsFromTemplate(questions, target, outcomeId);
+}
+
+window.handleLessonQuizTemplateSelected = async function(input) {
+    const file = input?.files?.[0];
+    try {
+        await importQuizTemplateFile(file, 'lesson');
+    } catch (error) {
+        Swal.fire('Import Error', error.message || 'Failed to import the premade quiz.', 'error');
+    } finally {
+        if (input) input.value = '';
+    }
+}
+
+window.handleOutcomeQuizTemplateSelected = async function(outcomeId, input) {
+    const file = input?.files?.[0];
+    try {
+        await importQuizTemplateFile(file, 'outcome', outcomeId);
+    } catch (error) {
+        Swal.fire('Import Error', error.message || 'Failed to import the premade quiz.', 'error');
+    } finally {
+        if (input) input.value = '';
     }
 }
 
@@ -1452,12 +2523,11 @@ window.saveLessonSettingsAndQuiz = async function() {
         formData.append('quiz', JSON.stringify(questions)); // Send quiz as JSON string
         formData.append('trainer_id', trainerId);
         formData.append('user_id', user?.user_id);
+        formData.append('lesson_resource_url', document.getElementById('lessonResourceUrl')?.value.trim() || '');
 
-        if (competencyType !== 'core') {
-            const fileInput = document.getElementById('lessonFileUpload');
-            if (fileInput.files.length > 0) {
-                formData.append('lesson_file', fileInput.files[0]);
-            }
+        const fileInput = document.getElementById('lessonFileUpload');
+        if (fileInput.files.length > 0) {
+            formData.append('lesson_file', fileInput.files[0]);
         }
 
         const response = await axios.post(`${API_BASE_URL}/role/trainer/modules.php?action=save-lesson-settings`, formData);
@@ -1546,123 +2616,766 @@ window.openViewModuleModal = function(moduleId) {
     viewModuleModal.show();
 }
 
+function buildModuleTraineeSummaryCard({ title, value, subtitle, classes = '' } = {}) {
+    return `
+        <div class="rounded-xl border px-4 py-3 ${classes}">
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-600">${escapeHtml(title ?? '')}</p>
+            <p class="mt-2 text-2xl font-bold text-slate-900">${escapeHtml(value ?? '')}</p>
+            <p class="mt-1 text-xs text-slate-500">${escapeHtml(subtitle ?? '')}</p>
+        </div>
+    `;
+}
+
+function getModuleTraineeDisplayName(trainee = {}) {
+    const fullName = [trainee.first_name, trainee.last_name]
+        .map((part) => String(part || '').trim())
+        .filter(Boolean)
+        .join(' ');
+
+    if (fullName) return fullName;
+    if (trainee.email) return String(trainee.email);
+    if (trainee.trainee_id) return `Trainee #${trainee.trainee_id}`;
+    return 'Unnamed trainee';
+}
+
+function renderModuleTraineeGroupList(containerId, trainees = [], groupKey = 'answered', totalQuizzes = 0) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const groupStyles = {
+        answered: {
+            card: 'border-emerald-200 bg-white',
+            badge: 'bg-emerald-100 text-emerald-700',
+            meta: 'text-emerald-700'
+        },
+        lacking: {
+            card: 'border-amber-200 bg-white',
+            badge: 'bg-amber-100 text-amber-700',
+            meta: 'text-amber-700'
+        },
+        no_answer: {
+            card: 'border-slate-200 bg-white',
+            badge: 'bg-slate-100 text-slate-700',
+            meta: 'text-slate-600'
+        }
+    };
+
+    const style = groupStyles[groupKey] || groupStyles.no_answer;
+
+    if (!Array.isArray(trainees) || trainees.length === 0) {
+        container.innerHTML = `
+            <div class="rounded-lg border border-dashed border-slate-300 bg-white/80 px-3 py-4 text-center text-xs text-slate-500">
+                No trainees in this group.
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = trainees.map((trainee) => {
+        const answered = Number(trainee.answered_quizzes || 0);
+        const remaining = Math.max(0, Number(trainee.remaining_quizzes || 0));
+        let progressLabel = 'No quiz answers yet';
+
+        if (totalQuizzes > 0 && groupKey === 'answered') {
+            progressLabel = `${answered}/${totalQuizzes} quizzes answered`;
+        } else if (totalQuizzes > 0 && groupKey === 'lacking') {
+            progressLabel = `${answered}/${totalQuizzes} answered, ${remaining} lacking`;
+        } else if (totalQuizzes > 0) {
+            progressLabel = `0/${totalQuizzes} quizzes answered`;
+        }
+
+        return `
+            <div class="rounded-lg border px-3 py-3 shadow-sm ${style.card}">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="truncate text-sm font-semibold text-slate-900">${escapeHtml(getModuleTraineeDisplayName(trainee))}</p>
+                        ${trainee.email ? `<p class="mt-1 truncate text-xs text-slate-500">${escapeHtml(trainee.email)}</p>` : ''}
+                    </div>
+                    ${trainee.trainee_school_id ? `<span class="inline-flex shrink-0 items-center rounded-full px-2 py-1 text-[11px] font-semibold ${style.badge}">${escapeHtml(trainee.trainee_school_id)}</span>` : ''}
+                </div>
+                <p class="mt-3 text-xs font-medium ${style.meta}">${escapeHtml(progressLabel)}</p>
+            </div>
+        `;
+    }).join('');
+}
+
+function resetModuleTraineeStatusModal() {
+    const titleEl = document.getElementById('moduleTraineeStatusTitle');
+    const subtitleEl = document.getElementById('moduleTraineeStatusSubtitle');
+    const summaryEl = document.getElementById('moduleTraineeStatusSummary');
+    const emptyEl = document.getElementById('moduleTraineeStatusEmpty');
+    const groupsEl = document.getElementById('moduleTraineeStatusGroups');
+
+    if (titleEl) titleEl.textContent = 'Trainee Quiz Status';
+    if (subtitleEl) subtitleEl.textContent = 'Loading trainee quiz summary...';
+    if (summaryEl) summaryEl.innerHTML = '';
+    if (emptyEl) {
+        emptyEl.textContent = '';
+        emptyEl.classList.add('hidden');
+    }
+    if (groupsEl) groupsEl.classList.remove('hidden');
+
+    const listIds = ['moduleAnsweredList', 'moduleLackingList', 'moduleNoAnswerList'];
+    listIds.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.innerHTML = `
+                <div class="rounded-lg border border-dashed border-slate-300 bg-white/80 px-3 py-4 text-center text-xs text-slate-500">
+                    Waiting for data...
+                </div>
+            `;
+        }
+    });
+
+    const countMap = {
+        moduleAnsweredCount: '0',
+        moduleLackingCount: '0',
+        moduleNoAnswerCount: '0'
+    };
+    Object.entries(countMap).forEach(([id, value]) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    });
+}
+
+function showModuleTraineeStatusLoading(moduleTitle = '') {
+    resetModuleTraineeStatusModal();
+
+    const titleEl = document.getElementById('moduleTraineeStatusTitle');
+    const subtitleEl = document.getElementById('moduleTraineeStatusSubtitle');
+    const summaryEl = document.getElementById('moduleTraineeStatusSummary');
+
+    if (titleEl) titleEl.textContent = moduleTitle || 'Trainee Quiz Status';
+    if (subtitleEl) subtitleEl.textContent = 'Loading trainee quiz summary...';
+    if (summaryEl) {
+        summaryEl.innerHTML = [
+            buildModuleTraineeSummaryCard({
+                title: 'Assigned Trainees',
+                value: '...',
+                subtitle: 'Fetching assigned learners',
+                classes: 'border-blue-100 bg-blue-50'
+            }),
+            buildModuleTraineeSummaryCard({
+                title: 'Quizzes in Module',
+                value: '...',
+                subtitle: 'Checking module quiz items',
+                classes: 'border-emerald-100 bg-emerald-50'
+            }),
+            buildModuleTraineeSummaryCard({
+                title: 'Module Status',
+                value: '...',
+                subtitle: 'Preparing trainee summary',
+                classes: 'border-slate-200 bg-slate-50'
+            })
+        ].join('');
+    }
+}
+
+function renderModuleTraineeStatusModal(data = {}) {
+    const module = data.module || {};
+    const summary = data.summary || {};
+    const groups = data.groups || {};
+    const totalTrainees = Number(summary.total_trainees || 0);
+    const totalQuizzes = Number(summary.total_quizzes || 0);
+    const answeredCount = Number(summary.answered_count || 0);
+    const lackingCount = Number(summary.lacking_count || 0);
+    const noAnswerCount = Number(summary.no_answer_count || 0);
+    const moduleStatus = (module.module_status || 'published') === 'draft' ? 'Draft' : 'Published';
+
+    const titleEl = document.getElementById('moduleTraineeStatusTitle');
+    const subtitleEl = document.getElementById('moduleTraineeStatusSubtitle');
+    const summaryEl = document.getElementById('moduleTraineeStatusSummary');
+    const emptyEl = document.getElementById('moduleTraineeStatusEmpty');
+    const groupsEl = document.getElementById('moduleTraineeStatusGroups');
+
+    if (titleEl) titleEl.textContent = module.module_title || 'Trainee Quiz Status';
+    if (subtitleEl) {
+        const subtitleParts = [
+            `${totalTrainees} assigned ${totalTrainees === 1 ? 'trainee' : 'trainees'}`,
+            `${totalQuizzes} ${totalQuizzes === 1 ? 'quiz' : 'quizzes'} tracked`,
+            moduleStatus
+        ];
+        subtitleEl.textContent = subtitleParts.join(' - ');
+    }
+
+    if (summaryEl) {
+        summaryEl.innerHTML = [
+            buildModuleTraineeSummaryCard({
+                title: 'Assigned Trainees',
+                value: String(totalTrainees),
+                subtitle: totalTrainees === 1 ? '1 trainee can access this module' : `${totalTrainees} trainees can access this module`,
+                classes: 'border-blue-100 bg-blue-50'
+            }),
+            buildModuleTraineeSummaryCard({
+                title: 'Quizzes in Module',
+                value: String(totalQuizzes),
+                subtitle: totalQuizzes === 0 ? 'Add a quiz to track answers here' : `${totalQuizzes} quiz ${totalQuizzes === 1 ? 'lesson is' : 'lessons are'} included`,
+                classes: 'border-emerald-100 bg-emerald-50'
+            }),
+            buildModuleTraineeSummaryCard({
+                title: 'Module Status',
+                value: moduleStatus,
+                subtitle: moduleStatus === 'Draft' ? 'Draft modules may not be visible to trainees yet' : 'Published modules are visible to trainees',
+                classes: 'border-slate-200 bg-slate-50'
+            })
+        ].join('');
+    }
+
+    const countElements = {
+        moduleAnsweredCount: answeredCount,
+        moduleLackingCount: lackingCount,
+        moduleNoAnswerCount: noAnswerCount
+    };
+    Object.entries(countElements).forEach(([id, value]) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = String(value);
+    });
+
+    if (emptyEl) {
+        emptyEl.classList.add('hidden');
+        emptyEl.textContent = '';
+    }
+    if (groupsEl) groupsEl.classList.remove('hidden');
+
+    if (totalTrainees === 0) {
+        if (emptyEl) {
+            emptyEl.textContent = 'No trainees are assigned to this module yet.';
+            emptyEl.classList.remove('hidden');
+        }
+        if (groupsEl) groupsEl.classList.add('hidden');
+        return;
+    }
+
+    if (totalQuizzes === 0) {
+        if (emptyEl) {
+            emptyEl.textContent = 'This module does not have any quizzes yet. Add a quiz to at least one learning outcome to track trainee answers here.';
+            emptyEl.classList.remove('hidden');
+        }
+        if (groupsEl) groupsEl.classList.add('hidden');
+        return;
+    }
+
+    renderModuleTraineeGroupList('moduleAnsweredList', groups.answered || [], 'answered', totalQuizzes);
+    renderModuleTraineeGroupList('moduleLackingList', groups.lacking || [], 'lacking', totalQuizzes);
+    renderModuleTraineeGroupList('moduleNoAnswerList', groups.no_answer || [], 'no_answer', totalQuizzes);
+}
+
+window.openModuleTraineeStatusModal = async function(moduleId) {
+    if (!moduleTraineeStatusModal) return;
+
+    const requestedModuleId = Number(moduleId || 0);
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const selectedModule = currentModules.find((module) => Number(module.module_id) === requestedModuleId);
+
+    if (!requestedModuleId) {
+        Swal.fire('Missing Input', 'Module ID is required.', 'warning');
+        return;
+    }
+
+    if (!user?.user_id) {
+        Swal.fire('Session Error', 'User session is missing. Please refresh the page and try again.', 'error');
+        return;
+    }
+
+    showModuleTraineeStatusLoading(selectedModule?.module_title || 'Trainee Quiz Status');
+    moduleTraineeStatusModal.show();
+
+    try {
+        const response = await axios.get(`${API_BASE_URL}/role/trainer/modules.php?action=get-module-trainee-quiz-status`, {
+            params: {
+                module_id: requestedModuleId,
+                user_id: user.user_id
+            }
+        });
+
+        if (!response.data?.success) {
+            throw new Error(response.data?.message || 'Failed to load trainee quiz summary.');
+        }
+
+        renderModuleTraineeStatusModal(response.data.data || {});
+    } catch (error) {
+        console.error('Error loading module trainee quiz status:', error);
+
+        const emptyEl = document.getElementById('moduleTraineeStatusEmpty');
+        const groupsEl = document.getElementById('moduleTraineeStatusGroups');
+        const subtitleEl = document.getElementById('moduleTraineeStatusSubtitle');
+
+        if (subtitleEl) subtitleEl.textContent = 'Unable to load trainee quiz summary.';
+        if (emptyEl) {
+            emptyEl.textContent = error.response?.data?.message || error.message || 'Unable to load trainee quiz summary.';
+            emptyEl.classList.remove('hidden');
+        }
+        if (groupsEl) groupsEl.classList.add('hidden');
+    }
+}
+
 // ============================================================================
 // NEW: UNIFIED MODULE UPLOAD FUNCTIONALITY
 // ============================================================================
 
 let outcomesCounter = 0;
+function getModuleWorkflowMeta(module = {}) {
+    const status = module.module_status || 'published';
+    if (status === 'draft') {
+        return {
+            status,
+            label: 'Draft',
+            icon: 'fas fa-pen',
+            badgeClasses: 'border-amber-200 bg-amber-50 text-amber-700'
+        };
+    }
 
-/**
- * Open the unified module upload modal
- */
-function openUnifiedModuleUploadModal(competencyType) {
+    return {
+        status: 'published',
+        label: 'Published',
+        icon: 'fas fa-check-circle',
+        badgeClasses: 'border-emerald-200 bg-emerald-50 text-emerald-700'
+    };
+}
+
+function escapeHtml(value = '') {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function refreshLearningOutcomeLabels() {
+    document.querySelectorAll('#learningOutcomesContainer [id^="outcome-"]').forEach((outcomeEl, index) => {
+        const heading = outcomeEl.querySelector('.outcome-heading');
+        if (heading) heading.textContent = `Learning Outcome ${index + 1}`;
+
+        const orderInput = outcomeEl.querySelector('.outcome-order');
+        if (orderInput && !orderInput.value.trim()) {
+            orderInput.value = String(index);
+        }
+    });
+}
+
+function resetUnifiedModuleUploadForm() {
+    const form = document.getElementById('unifiedModuleUploadForm');
+    if (form) form.reset();
+
+    outcomesCounter = 0;
+
+    const modal = document.getElementById('unifiedModuleUploadModal');
+    if (modal) {
+        delete modal.dataset.competencyType;
+        delete modal.dataset.moduleId;
+        delete modal.dataset.moduleStatus;
+    }
+
+    const outcomesContainer = document.getElementById('learningOutcomesContainer');
+    if (outcomesContainer) outcomesContainer.innerHTML = '';
+
+    const noMessage = document.getElementById('noOutcomesMessage');
+    if (noMessage) noMessage.style.display = 'block';
+
+    const titleEl = document.getElementById('unifiedModuleUploadTitle');
+    if (titleEl) titleEl.textContent = 'Upload Complete Module';
+
+    const subtitleEl = document.getElementById('unifiedModuleUploadSubtitle');
+    if (subtitleEl) subtitleEl.textContent = 'Build the module, attach learning files, and save a draft any time.';
+
+    const moduleIdEl = document.getElementById('uplModuleId');
+    if (moduleIdEl) moduleIdEl.value = '';
+
+    const moduleStatusEl = document.getElementById('uplModuleStatus');
+    if (moduleStatusEl) moduleStatusEl.value = 'published';
+
+    setUnifiedModuleActionState({ moduleId: '', status: 'published' });
+}
+
+function setUnifiedModuleActionState({ moduleId = '', status = 'published' } = {}) {
+    const isExistingModule = Boolean(String(moduleId || '').trim());
+    const isDraft = status === 'draft';
+
+    const titleEl = document.getElementById('unifiedModuleUploadTitle');
+    if (titleEl) {
+        if (isExistingModule && isDraft) titleEl.textContent = 'Continue Draft Module';
+        else if (isExistingModule) titleEl.textContent = 'Edit Complete Module';
+        else titleEl.textContent = 'Upload Complete Module';
+    }
+
+    const subtitleEl = document.getElementById('unifiedModuleUploadSubtitle');
+    if (subtitleEl) {
+        if (isExistingModule && isDraft) subtitleEl.textContent = 'Update the draft, attach learning files, then publish when ready.';
+        else if (isExistingModule) subtitleEl.textContent = 'Review and update the full module structure from one form.';
+        else subtitleEl.textContent = 'Build the module, attach learning files, and save a draft any time.';
+    }
+
+    const draftBtn = document.getElementById('saveDraftModuleBtn');
+    if (draftBtn) {
+        const shouldShowDraft = !isExistingModule || isDraft;
+        draftBtn.classList.toggle('hidden', !shouldShowDraft);
+        draftBtn.innerHTML = `<i class="fas fa-save"></i> ${shouldShowDraft && isDraft ? 'Save Draft Changes' : 'Save Draft'}`;
+        draftBtn.dataset.defaultLabel = draftBtn.innerHTML;
+    }
+
+    const publishBtn = document.getElementById('publishModuleBtn');
+    if (publishBtn) {
+        if (isExistingModule && isDraft) {
+            publishBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Publish Module';
+        } else if (isExistingModule) {
+            publishBtn.innerHTML = '<i class="fas fa-check"></i> Save Changes';
+        } else {
+            publishBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Upload Module';
+        }
+        publishBtn.dataset.defaultLabel = publishBtn.innerHTML;
+    }
+}
+
+function renderOutcomeDocumentState(outcomeId, existingPath = '', uploadedFile = null) {
+    const outcomeEl = document.getElementById(`outcome-${outcomeId}`);
+    if (!outcomeEl) return;
+
+    const preview = outcomeEl.querySelector('.outcome-file-preview');
+    const emptyState = outcomeEl.querySelector('.outcome-file-empty');
+    const fileNameEl = outcomeEl.querySelector('.outcome-file-name');
+    const fileMetaEl = outcomeEl.querySelector('.outcome-file-meta');
+    const fileLinkEl = outcomeEl.querySelector('.outcome-file-link');
+    const hiddenPathEl = outcomeEl.querySelector('.outcome-existing-file-path');
+
+    const fileName = uploadedFile?.name || existingPath.split('/').pop() || '';
+    const hasFile = Boolean(fileName);
+
+    if (hiddenPathEl && !uploadedFile) {
+        hiddenPathEl.value = existingPath || '';
+    }
+
+    if (preview) preview.classList.toggle('hidden', !hasFile);
+    if (emptyState) emptyState.classList.toggle('hidden', hasFile);
+
+    if (!hasFile) return;
+
+    if (fileNameEl) fileNameEl.textContent = fileName;
+
+    if (fileMetaEl) {
+        fileMetaEl.textContent = uploadedFile
+            ? `Selected locally: ${(uploadedFile.size / 1024 / 1024).toFixed(2)} MB`
+            : 'Saved in this module';
+    }
+
+    if (fileLinkEl) {
+        if (uploadedFile) {
+            fileLinkEl.classList.add('hidden');
+            fileLinkEl.removeAttribute('href');
+        } else if (existingPath) {
+            fileLinkEl.href = LESSON_UPLOADS_URL + existingPath;
+            fileLinkEl.classList.remove('hidden');
+        } else {
+            fileLinkEl.classList.add('hidden');
+            fileLinkEl.removeAttribute('href');
+        }
+    }
+}
+
+function bindOutcomeDocumentInput(outcomeId) {
+    const outcomeEl = document.getElementById(`outcome-${outcomeId}`);
+    if (!outcomeEl) return;
+
+    const fileInput = outcomeEl.querySelector('.outcome-material-file');
+    if (!fileInput) return;
+
+    fileInput.addEventListener('change', () => {
+        const selectedFile = fileInput.files[0] || null;
+        renderOutcomeDocumentState(
+            outcomeId,
+            selectedFile ? '' : (outcomeEl.querySelector('.outcome-existing-file-path')?.value || ''),
+            selectedFile
+        );
+    });
+}
+
+function renderOutcomeResourceState(outcomeId, resourceUrl = '') {
+    const outcomeEl = document.getElementById(`outcome-${outcomeId}`);
+    if (!outcomeEl) return;
+
+    const inputEl = outcomeEl.querySelector('.outcome-resource-url');
+    const preview = outcomeEl.querySelector('.outcome-resource-preview');
+    const emptyState = outcomeEl.querySelector('.outcome-resource-empty');
+    const titleEl = outcomeEl.querySelector('.outcome-resource-title');
+    const metaEl = outcomeEl.querySelector('.outcome-resource-meta');
+    const linkEl = outcomeEl.querySelector('.outcome-resource-link');
+    const normalizedUrl = normalizeLessonResourceUrlInput(resourceUrl || inputEl?.value || '');
+    const hasResource = Boolean(normalizedUrl);
+
+    if (preview) preview.classList.toggle('hidden', !hasResource);
+    if (emptyState) emptyState.classList.toggle('hidden', hasResource);
+
+    if (!hasResource) {
+        if (linkEl) {
+            linkEl.classList.add('hidden');
+            linkEl.removeAttribute('href');
+        }
+        return;
+    }
+
+    const resourceMeta = getLessonResourceDisplayMeta(normalizedUrl);
+    if (titleEl) titleEl.textContent = resourceMeta.displayText;
+    if (metaEl) metaEl.textContent = `${resourceMeta.label} from ${resourceMeta.helper}`;
+    if (linkEl) {
+        linkEl.href = resourceMeta.url;
+        linkEl.textContent = resourceMeta.label === 'Video Lesson' ? 'Open video' : 'Open link';
+        linkEl.classList.remove('hidden');
+    }
+}
+
+function bindOutcomeResourceInput(outcomeId) {
+    const outcomeEl = document.getElementById(`outcome-${outcomeId}`);
+    if (!outcomeEl) return;
+
+    const inputEl = outcomeEl.querySelector('.outcome-resource-url');
+    if (!inputEl) return;
+
+    inputEl.addEventListener('input', () => {
+        renderOutcomeResourceState(outcomeId, inputEl.value);
+    });
+
+    inputEl.addEventListener('blur', () => {
+        const normalizedUrl = normalizeLessonResourceUrlInput(inputEl.value);
+        if (normalizedUrl) {
+            inputEl.value = normalizedUrl;
+        }
+        renderOutcomeResourceState(outcomeId, inputEl.value);
+    });
+}
+
+async function openUnifiedModuleUploadModal(competencyType, moduleId = null) {
+    const modal = document.getElementById('unifiedModuleUploadModal');
+    if (!modal || !unifiedModuleUploadModal) return;
+
+    resetUnifiedModuleUploadForm();
+    modal.dataset.competencyType = competencyType;
+    if (moduleId) modal.dataset.moduleId = String(moduleId);
+
+    if (moduleId) {
+        try {
+            const response = await axios.get(`${API_BASE_URL}/role/trainer/modules.php?action=get-module-structure&module_id=${moduleId}`);
+            if (!response.data.success || !response.data.data) {
+                Swal.fire('Error', response.data.message || 'Failed to load module details.', 'error');
+                return;
+            }
+
+            populateUnifiedModuleUploadForm(response.data.data, competencyType);
+        } catch (error) {
+            console.error('Error loading module structure:', error);
+            Swal.fire('Error', 'Failed to load the module for editing.', 'error');
+            return;
+        }
+    } else {
+        setUnifiedModuleActionState({ moduleId: '', status: 'published' });
+        addLearningOutcomeRow();
+    }
+
+    unifiedModuleUploadModal.show();
+}
+
+function populateUnifiedModuleUploadForm(moduleData, competencyType) {
     const modal = document.getElementById('unifiedModuleUploadModal');
     if (!modal) return;
 
-    // Reset form
-    document.getElementById('unifiedModuleUploadForm').reset();
-    outcomesCounter = 0;
-    document.getElementById('learningOutcomesContainer').innerHTML = '';
-    document.getElementById('noOutcomesMessage').style.display = 'block';
+    modal.dataset.competencyType = competencyType || moduleData.competency_type || currentCompetencyType;
+    modal.dataset.moduleId = String(moduleData.module_id || '');
+    modal.dataset.moduleStatus = moduleData.module_status || 'published';
 
-    // Store competency type
-    modal.dataset.competencyType = competencyType;
-    
-    const moduleModal = new SimpleModal(modal);
-    moduleModal.show();
+    const moduleIdEl = document.getElementById('uplModuleId');
+    if (moduleIdEl) moduleIdEl.value = moduleData.module_id || '';
+
+    const moduleStatusEl = document.getElementById('uplModuleStatus');
+    if (moduleStatusEl) moduleStatusEl.value = moduleData.module_status || 'published';
+
+    document.getElementById('uplModuleTitle').value = moduleData.module_title || '';
+    document.getElementById('uplUnitCode').value = moduleData.unit_code || '';
+    document.getElementById('uplModuleDescription').value = moduleData.module_description || '';
+    document.getElementById('uplModuleOrder').value = moduleData.module_order || 0;
+
+    const outcomes = Array.isArray(moduleData.learning_outcomes) ? moduleData.learning_outcomes : [];
+    outcomes.forEach(outcome => addLearningOutcomeRow(outcome));
+
+    if (!outcomes.length) {
+        addLearningOutcomeRow();
+    }
+
+    setUnifiedModuleActionState({
+        moduleId: moduleData.module_id || '',
+        status: moduleData.module_status || 'published'
+    });
 }
 
-/**
- * Add a learning outcome row with all its components (quiz, task sheets, content)
- */
-function addLearningOutcomeRow() {
+function addLearningOutcomeRow(outcomeData = null) {
     const container = document.getElementById('learningOutcomesContainer');
     const noMessage = document.getElementById('noOutcomesMessage');
-    
+
+    if (!container) return;
     if (noMessage) noMessage.style.display = 'none';
 
     const outcomeId = outcomesCounter++;
+    const existingFilePath = outcomeData?.lesson_file_path || '';
+    const existingResourceUrl = outcomeData?.lesson_resource_url || '';
+    const supportsTaskSheets = competencyTypeSupportsTaskSheets(
+        document.getElementById('unifiedModuleUploadModal')?.dataset.competencyType || currentCompetencyType
+    );
+    const taskTabHtml = supportsTaskSheets
+        ? `
+                    <button type="button" role="tab" aria-selected="false" class="outcome-tab border-b-2 border-transparent px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900" data-tab="tasks-${outcomeId}">
+                        <i class="fas fa-tasks mr-1"></i> Task Sheets
+                    </button>
+        `
+        : '';
+    const taskPaneHtml = supportsTaskSheets
+        ? `
+            <div class="outcome-tab-content mb-4 hidden rounded-md bg-slate-50 p-3" id="tasks-${outcomeId}" data-tab-pane="tasks">
+                <div class="mb-3 flex items-center justify-between">
+                    <h6 class="text-xs font-bold text-slate-900">Task Sheets</h6>
+                    <button type="button" onclick="addTaskSheet(${outcomeId})" class="text-xs font-semibold text-blue-600 hover:text-blue-700">+ Add Task</button>
+                </div>
+                <div class="outcome-task-items space-y-2"></div>
+            </div>
+        `
+        : '';
+
     const outcomeHtml = `
         <div class="rounded-lg border border-slate-300 bg-white p-4" id="outcome-${outcomeId}">
-            <!-- Outcome Header -->
+            <input type="hidden" class="outcome-lesson-id" value="${outcomeData?.lesson_id || ''}">
             <div class="mb-4 flex items-center justify-between">
-                <h6 class="text-sm font-bold text-slate-900">Learning Outcome ${outcomeId + 1}</h6>
+                <h6 class="outcome-heading text-sm font-bold text-slate-900">Learning Outcome ${container.children.length + 1}</h6>
                 <button type="button" onclick="removeLearningOutcome(${outcomeId})" class="rounded-md p-1 text-red-600 hover:bg-red-50">
                     <i class="fas fa-trash-alt"></i>
                 </button>
             </div>
 
-            <!-- Outcome Basic Info -->
-            <div class="grid grid-cols-1 gap-3 md:grid-cols-2 mb-4">
+            <div class="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2">
                 <div>
                     <label class="mb-1.5 block text-xs font-semibold text-slate-700">Outcome Title <span class="text-red-500">*</span></label>
-                    <input type="text" class="outcome-title w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" placeholder="e.g., Introduction to Welding Safety" required>
+                    <input type="text" class="outcome-title w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" placeholder="e.g., Introduction to Welding Safety" required value="${escapeHtml(outcomeData?.lesson_title || outcomeData?.title || '')}">
                 </div>
                 <div>
                     <label class="mb-1.5 block text-xs font-semibold text-slate-700">Order</label>
-                    <input type="number" class="outcome-order w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" value="${outcomeId}" min="0">
+                    <input type="number" class="outcome-order w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" value="${outcomeData?.outcome_order ?? container.children.length}" min="0">
                 </div>
             </div>
 
             <div class="mb-4">
                 <label class="mb-1.5 block text-xs font-semibold text-slate-700">Outcome Description</label>
-                <textarea class="outcome-description w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" rows="2" placeholder="Describe what learners will achieve..."></textarea>
+                <textarea class="outcome-description w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" rows="2" placeholder="Describe what learners will achieve...">${escapeHtml(outcomeData?.lesson_description || outcomeData?.description || '')}</textarea>
             </div>
 
-            <!-- Tabs for outcome components -->
             <div class="mb-4 border-b border-slate-200">
                 <div class="flex gap-2" role="tablist">
-                    <button type="button" role="tab" aria-selected="true" class="outcome-tab px-3 py-2 text-xs font-semibold text-blue-700 border-b-2 border-blue-600 bg-blue-50" data-tab="content-${outcomeId}">
+                    <button type="button" role="tab" aria-selected="true" class="outcome-tab border-b-2 border-blue-600 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700" data-tab="content-${outcomeId}">
                         <i class="fas fa-book-open mr-1"></i> Content
                     </button>
-                    <button type="button" role="tab" aria-selected="false" class="outcome-tab px-3 py-2 text-xs font-semibold text-slate-600 border-b-2 border-transparent hover:text-slate-900" data-tab="quiz-${outcomeId}">
+                    <button type="button" role="tab" aria-selected="false" class="outcome-tab border-b-2 border-transparent px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900" data-tab="quiz-${outcomeId}">
                         <i class="fas fa-question-circle mr-1"></i> Quiz
                     </button>
-                    <button type="button" role="tab" aria-selected="false" class="outcome-tab px-3 py-2 text-xs font-semibold text-slate-600 border-b-2 border-transparent hover:text-slate-900" data-tab="tasks-${outcomeId}">
-                        <i class="fas fa-tasks mr-1"></i> Task Sheets
-                    </button>
+                    ${taskTabHtml}
                 </div>
             </div>
 
-            <!-- Content Tab -->
-            <div class="outcome-tab-content mb-4 p-3 rounded-md bg-slate-50" id="content-${outcomeId}" data-tab-pane="content">
-                <div class="flex items-center justify-between mb-3">
-                    <h6 class="text-xs font-bold text-slate-900">Learning Materials</h6>
-                    <button type="button" onclick="addContentItem(${outcomeId})" class="text-xs text-blue-600 hover:text-blue-700 font-semibold">+ Add Content</button>
+            <div class="outcome-tab-content mb-4 rounded-md bg-slate-50 p-3" id="content-${outcomeId}" data-tab-pane="content">
+                <div class="mb-3 rounded-lg border border-dashed border-blue-200 bg-white p-3">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                            <h6 class="text-xs font-bold text-slate-900">Learning Materials</h6>
+                            <p class="mt-1 text-xs text-slate-500">Attach one PDF or Word document and/or paste a video or lesson link for this outcome, then add optional rich-text notes below.</p>
+                        </div>
+                        <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">
+                            <i class="fas fa-paperclip"></i> Choose File
+                            <input type="file" class="outcome-material-file hidden" accept=".pdf,.doc,.docx">
+                        </label>
+                    </div>
+                    <input type="hidden" class="outcome-existing-file-path" value="${escapeHtml(existingFilePath)}">
+                    <div class="outcome-file-preview ${existingFilePath ? '' : 'hidden'} mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div class="min-w-0">
+                                <p class="outcome-file-name truncate text-sm font-semibold text-slate-800"></p>
+                                <p class="outcome-file-meta text-xs text-slate-500"></p>
+                            </div>
+                            <a href="#" target="_blank" class="outcome-file-link hidden text-xs font-semibold text-blue-700 hover:text-blue-800 hover:underline">Open file</a>
+                        </div>
+                    </div>
+                    <p class="outcome-file-empty ${existingFilePath ? 'hidden' : ''} mt-3 text-xs text-slate-500">No PDF or DOC file attached yet.</p>
+
+                    <div class="mt-3 border-t border-dashed border-slate-200 pt-3">
+                        <label class="mb-1.5 block text-xs font-semibold text-slate-700">Video or Lesson Link</label>
+                        <input type="url" class="outcome-resource-url w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm text-slate-700 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" placeholder="https://www.youtube.com/watch?v=..." value="${escapeHtml(existingResourceUrl)}">
+                        <div class="outcome-resource-preview ${existingResourceUrl ? '' : 'hidden'} mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <div class="min-w-0">
+                                    <p class="outcome-resource-title truncate text-sm font-semibold text-slate-800"></p>
+                                    <p class="outcome-resource-meta text-xs text-slate-500"></p>
+                                </div>
+                                <a href="#" target="_blank" rel="noopener" class="outcome-resource-link hidden text-xs font-semibold text-emerald-700 hover:text-emerald-800 hover:underline">Open link</a>
+                            </div>
+                        </div>
+                        <p class="outcome-resource-empty ${existingResourceUrl ? 'hidden' : ''} mt-3 text-xs text-slate-500">No video or external lesson link added yet.</p>
+                    </div>
+                </div>
+
+                <div class="mb-3 flex items-center justify-between">
+                    <h6 class="text-xs font-bold text-slate-900">Rich Text Notes</h6>
+                    <button type="button" onclick="addContentItem(${outcomeId})" class="text-xs font-semibold text-blue-600 hover:text-blue-700">+ Add Content</button>
                 </div>
                 <div class="outcome-content-items space-y-2"></div>
             </div>
 
-            <!-- Quiz Tab -->
-            <div class="outcome-tab-content mb-4 p-3 rounded-md bg-slate-50 hidden" id="quiz-${outcomeId}" data-tab-pane="quiz">
-                <div class="flex items-center justify-between mb-3">
+            <div class="outcome-tab-content mb-4 hidden rounded-md bg-slate-50 p-3" id="quiz-${outcomeId}" data-tab-pane="quiz">
+                <div class="mb-3 rounded-lg border border-blue-100 bg-white p-3">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                            <h6 class="text-xs font-bold text-slate-900">Premade Quiz Upload</h6>
+                            <p class="mt-1 text-xs text-slate-500">Use the CSV template for your premade quiz and answer key. For <code>true_false</code>, set <code>option_1</code> to <code>TRUE</code>, <code>option_2</code> to <code>FALSE</code>, leave <code>option_3</code> and <code>option_4</code> blank, and set <code>correct_answer</code> to <code>TRUE</code> or <code>FALSE</code>. Multiple choice rows can still use 1, A, or the exact option text.</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" onclick="downloadQuizTemplate()" class="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">
+                                <i class="fas fa-file-arrow-down"></i> Download Template
+                            </button>
+                            <button type="button" onclick="document.querySelector('#outcome-${outcomeId} .outcome-quiz-template-input').click()" class="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">
+                                <i class="fas fa-file-upload"></i> Import Premade Quiz
+                            </button>
+                        </div>
+                    </div>
+                    <input type="file" class="outcome-quiz-template-input hidden" accept=".csv,text/csv" onchange="handleOutcomeQuizTemplateSelected(${outcomeId}, this)">
+                </div>
+                <div class="mb-3 flex items-center justify-between">
                     <h6 class="text-xs font-bold text-slate-900">Quiz Questions</h6>
-                    <button type="button" onclick="addQuizQuestion(${outcomeId})" class="text-xs text-blue-600 hover:text-blue-700 font-semibold">+ Add Question</button>
+                    <button type="button" onclick="addQuizQuestion(${outcomeId})" class="text-xs font-semibold text-blue-600 hover:text-blue-700">+ Add Question</button>
                 </div>
                 <div class="outcome-quiz-items space-y-3"></div>
             </div>
 
-            <!-- Task Sheets Tab -->
-            <div class="outcome-tab-content mb-4 p-3 rounded-md bg-slate-50 hidden" id="tasks-${outcomeId}" data-tab-pane="tasks">
-                <div class="flex items-center justify-between mb-3">
-                    <h6 class="text-xs font-bold text-slate-900">Task Sheets</h6>
-                    <button type="button" onclick="addTaskSheet(${outcomeId})" class="text-xs text-blue-600 hover:text-blue-700 font-semibold">+ Add Task</button>
-                </div>
-                <div class="outcome-task-items space-y-2"></div>
-            </div>
+            ${taskPaneHtml}
         </div>
     `;
 
     container.insertAdjacentHTML('beforeend', outcomeHtml);
 
-    // Bind tab switching
-    const tabButtons = document.querySelectorAll(`#outcome-${outcomeId} .outcome-tab`);
-    tabButtons.forEach(btn => {
+    document.querySelectorAll(`#outcome-${outcomeId} .outcome-tab`).forEach(btn => {
         btn.addEventListener('click', function() {
-            const tabId = this.getAttribute('data-tab');
-            switchOutcomeTab(outcomeId, tabId);
+            switchOutcomeTab(outcomeId, this.getAttribute('data-tab'));
         });
     });
+
+    bindOutcomeDocumentInput(outcomeId);
+    bindOutcomeResourceInput(outcomeId);
+    renderOutcomeDocumentState(outcomeId, existingFilePath);
+    renderOutcomeResourceState(outcomeId, existingResourceUrl);
+
+    const contents = Array.isArray(outcomeData?.contents) ? outcomeData.contents : [];
+    contents.forEach(content => addContentItem(outcomeId, content));
+
+    const quizItems = Array.isArray(outcomeData?.quiz) ? outcomeData.quiz : [];
+    quizItems.forEach(question => addQuizQuestion(outcomeId, question));
+
+    if (supportsTaskSheets) {
+        const taskSheets = Array.isArray(outcomeData?.task_sheets) ? outcomeData.task_sheets : [];
+        taskSheets.forEach(task => addTaskSheet(outcomeId, task));
+    }
+
+    refreshLearningOutcomeLabels();
 }
 
 /**
@@ -1693,11 +3406,11 @@ function switchOutcomeTab(outcomeId, tabId) {
 /**
  * Add a content item to a learning outcome
  */
-function addContentItem(outcomeId) {
+function addContentItem(outcomeId, contentData = null) {
     const container = document.querySelector(`#outcome-${outcomeId} .outcome-content-items`);
     if (!container) return;
 
-    const itemId = Date.now();
+    const itemId = nextRuntimeId();
     const html = `
         <div class="content-item bg-white p-3 rounded-md border border-slate-200 space-y-2 cursor-move hover:shadow-md transition-shadow" data-item-id="${itemId}" draggable="true">
             <div class="flex items-center justify-between mb-2">
@@ -1709,7 +3422,7 @@ function addContentItem(outcomeId) {
 
             <!-- Content Title -->
             <div>
-                <input type="text" class="content-title w-full text-xs px-2 py-1 border border-slate-200 rounded" placeholder="e.g., Welding Tools Overview">
+                <input type="text" class="content-title w-full text-xs px-2 py-1 border border-slate-200 rounded" placeholder="e.g., Welding Tools Overview" value="${escapeHtml(contentData?.title || '')}">
             </div>
 
             <!-- Rich Text Editor with Inline Images -->
@@ -1734,6 +3447,10 @@ function addContentItem(outcomeId) {
     const contentItem = container.querySelector(`[data-item-id="${itemId}"]`);
     const editor = contentItem.querySelector('.content-editor');
     const imageFile = contentItem.querySelector('.editor-image-file');
+
+    if (editor && contentData) {
+        editor.innerHTML = contentData.content || contentData.text || '';
+    }
 
     // Setup rich text editor with image handling
     setupRichTextEditor(itemId, editor, imageFile);
@@ -2195,42 +3912,121 @@ function getDragAfterElement(container, y) {
 /**
  * Add a quiz question to a learning outcome
  */
-function addQuizQuestion(outcomeId) {
+function normalizeOutcomeQuizQuestionData(questionData = null) {
+    const questionText = String(questionData?.text ?? questionData?.question_text ?? '').trim();
+    const questionType = String(questionData?.type ?? questionData?.question_type ?? 'multiple_choice').trim() === 'true_false'
+        ? 'true_false'
+        : 'multiple_choice';
+
+    let options = Array.isArray(questionData?.options)
+        ? questionData.options.map(option => ({
+            text: String(option?.text ?? option?.option_text ?? '').trim(),
+            is_correct: option?.is_correct == 1 || option?.is_correct === true
+        })).filter(option => option.text !== '')
+        : [];
+
+    if (questionType === 'true_false') {
+        const normalizedCorrect = options.find(option => option.is_correct)?.text?.trim().toLowerCase() || '';
+        return {
+            text: questionText,
+            type: questionType,
+            options: [
+                { text: 'TRUE', is_correct: normalizedCorrect === 'true' },
+                { text: 'FALSE', is_correct: normalizedCorrect === 'false' }
+            ]
+        };
+    }
+
+    return {
+        text: questionText,
+        type: questionType,
+        options
+    };
+}
+
+function renderOutcomeTrueFalseOptions(questionEl, questionId, options = []) {
+    const optionsContainer = questionEl.querySelector('.quiz-options');
+    if (!optionsContainer) return;
+
+    const normalizedCorrect = options.find(option => option.is_correct)?.text?.trim().toLowerCase() || '';
+    optionsContainer.innerHTML = '';
+    addQuizOption(null, questionId, { text: 'TRUE', is_correct: normalizedCorrect === 'true' });
+    addQuizOption(null, questionId, { text: 'FALSE', is_correct: normalizedCorrect === 'false' });
+}
+
+window.toggleOutcomeQuizOptions = function(select, outcomeId, questionId) {
+    const questionEl = select.closest('.quiz-question');
+    if (!questionEl) return;
+
+    const addButton = questionEl.querySelector('.add-outcome-option-btn');
+    if (select.value === 'true_false') {
+        if (addButton) {
+            addButton.classList.add('hidden');
+            addButton.style.display = 'none';
+        }
+        renderOutcomeTrueFalseOptions(questionEl, questionId);
+    } else {
+        if (addButton) {
+            addButton.classList.remove('hidden');
+            addButton.style.display = '';
+        }
+        const optionsContainer = questionEl.querySelector('.quiz-options');
+        if (optionsContainer && optionsContainer.children.length < 2) {
+            optionsContainer.innerHTML = '';
+            addQuizOption(outcomeId, questionId);
+            addQuizOption(outcomeId, questionId);
+        }
+    }
+}
+
+function addQuizQuestion(outcomeId, questionData = null) {
     const container = document.querySelector(`#outcome-${outcomeId} .outcome-quiz-items`);
     if (!container) return;
 
-    const questionId = Date.now();
+    const questionId = nextRuntimeId();
+    const normalized = normalizeOutcomeQuizQuestionData(questionData);
     const html = `
         <div class="quiz-question bg-white p-3 rounded-md border border-slate-200 space-y-2" data-question-id="${questionId}">
             <div class="flex items-start justify-between">
-                <input type="text" class="quiz-question-text flex-1 text-xs px-2 py-1 border border-slate-200 rounded" placeholder="Enter question text...">
+                <input type="text" class="quiz-question-text flex-1 text-xs px-2 py-1 border border-slate-200 rounded" placeholder="Enter question text..." value="${escapeHtml(normalized.text)}">
                 <button type="button" onclick="removeQuizQuestion(${outcomeId}, ${questionId})" class="ml-2 text-xs text-red-600 hover:text-red-700 font-semibold">Remove</button>
             </div>
-            <select class="quiz-type w-full text-xs px-2 py-1 border border-slate-200 rounded">
-                <option value="multiple_choice">Multiple Choice</option>
-                <option value="true_false">True / False</option>
+            <select class="quiz-type w-full text-xs px-2 py-1 border border-slate-200 rounded" onchange="toggleOutcomeQuizOptions(this, ${outcomeId}, ${questionId})">
+                <option value="multiple_choice" ${normalized.type === 'multiple_choice' ? 'selected' : ''}>Multiple Choice</option>
+                <option value="true_false" ${normalized.type === 'true_false' ? 'selected' : ''}>True / False</option>
             </select>
             <div class="quiz-options space-y-1"></div>
-            <button type="button" onclick="addQuizOption(${outcomeId}, ${questionId})" class="text-xs text-blue-600 hover:text-blue-700 font-semibold">+ Add Option</button>
+            <button type="button" onclick="addQuizOption(${outcomeId}, ${questionId})" class="add-outcome-option-btn text-xs text-blue-600 hover:text-blue-700 font-semibold ${normalized.type === 'true_false' ? 'hidden' : ''}">+ Add Option</button>
         </div>
     `;
     container.insertAdjacentHTML('beforeend', html);
-    addQuizOption(outcomeId, questionId); // Add default option
+    const insertedQuestion = container.querySelector(`.quiz-question[data-question-id="${questionId}"]`);
+
+    if (normalized.type === 'true_false') {
+        const addButton = insertedQuestion?.querySelector('.add-outcome-option-btn');
+        if (addButton) addButton.style.display = 'none';
+        renderOutcomeTrueFalseOptions(insertedQuestion, questionId, normalized.options);
+    } else if (Array.isArray(normalized.options) && normalized.options.length) {
+        normalized.options.forEach(option => addQuizOption(outcomeId, questionId, option));
+    } else {
+        addQuizOption(outcomeId, questionId);
+    }
 }
 
 /**
  * Add an option to a quiz question
  */
-function addQuizOption(outcomeId, questionId) {
+function addQuizOption(outcomeId, questionId, optionData = null) {
     const optionsContainer = document.querySelector(`.quiz-question[data-question-id="${questionId}"] .quiz-options`);
     if (!optionsContainer) return;
 
-    const optionId = Date.now();
+    const optionId = nextRuntimeId();
+    const isCorrect = optionData?.is_correct === true || Number(optionData?.is_correct) === 1;
     const html = `
         <div class="quiz-option flex gap-2 items-center" data-option-id="${optionId}">
-            <input type="text" class="option-text flex-1 text-xs px-2 py-1 border border-slate-200 rounded" placeholder="Option text">
+            <input type="text" class="option-text flex-1 text-xs px-2 py-1 border border-slate-200 rounded" placeholder="Option text" value="${escapeHtml(optionData?.text || optionData?.option_text || '')}">
             <label class="flex items-center gap-1 text-xs">
-                <input type="checkbox" class="option-correct" style="width: 14px; height: 14px;">
+                <input type="checkbox" class="option-correct" style="width: 14px; height: 14px;" ${isCorrect ? 'checked' : ''}>
                 <span>Correct</span>
             </label>
             <button type="button" onclick="removeQuizOption(${questionId}, ${optionId})" class="text-red-600 hover:text-red-700">
@@ -2258,16 +4054,16 @@ function removeQuizOption(questionId, optionId) {
 /**
  * Add a task sheet to a learning outcome
  */
-function addTaskSheet(outcomeId) {
+function addTaskSheet(outcomeId, taskData = null) {
     const container = document.querySelector(`#outcome-${outcomeId} .outcome-task-items`);
     if (!container) return;
 
-    const taskId = Date.now();
+    const taskId = nextRuntimeId();
     const html = `
         <div class="task-item rounded-lg border border-slate-200 bg-white p-3" data-task-id="${taskId}">
             <div class="mb-3">
                 <label class="mb-1.5 block text-xs font-semibold text-slate-700">Title</label>
-                <input type="text" class="task-title w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-xs text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" placeholder="e.g., Information Sheet 1.1-1">
+                <input type="text" class="task-title w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-xs text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" placeholder="e.g., Information Sheet 1.1-1" value="${escapeHtml(taskData?.title || '')}">
             </div>
 
             <div class="mb-2 flex flex-wrap items-center justify-end gap-2">
@@ -2286,7 +4082,7 @@ function addTaskSheet(outcomeId) {
             </div>
 
             <div id="task-editor-${taskId}" class="task-body-editor min-h-[220px] rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700" contenteditable="true" onfocus="removeEditorPlaceholder(this)">
-                <p data-editor-placeholder class="text-xs text-slate-400">Start writing task sheet content here...</p>
+                ${taskData?.content ? taskData.content : '<p data-editor-placeholder class="text-xs text-slate-400">Start writing task sheet content here...</p>'}
             </div>
 
             <div class="mt-3">
@@ -2324,188 +4120,182 @@ function removeLearningOutcome(outcomeId) {
         if (container && container.children.length === 0) {
             document.getElementById('noOutcomesMessage').style.display = 'block';
         }
+        refreshLearningOutcomeLabels();
     }
 }
 
-/**
- * Collect and validate form data, then upload complete module
- */
-async function uploadCompleteModule() {
+function collectOutcomeContents(outcomeEl) {
+    return Array.from(outcomeEl.querySelectorAll('.content-item')).map((item, idx) => {
+        const contentTitle = item.querySelector('.content-title')?.value.trim() || '';
+        const editorHTML = item.querySelector('.content-editor')?.innerHTML.trim() || '';
+        if (!contentTitle && !editorHTML) return null;
+
+        return {
+            title: contentTitle,
+            text: editorHTML,
+            display_order: idx
+        };
+    }).filter(Boolean);
+}
+
+function collectOutcomeQuiz(outcomeEl) {
+    return Array.from(outcomeEl.querySelectorAll('.quiz-question')).map(questionEl => {
+        const questionText = questionEl.querySelector('.quiz-question-text')?.value.trim() || '';
+        const questionType = questionEl.querySelector('.quiz-type')?.value || 'multiple_choice';
+        const options = Array.from(questionEl.querySelectorAll('.quiz-option')).map(optionEl => {
+            const optionText = optionEl.querySelector('.option-text')?.value.trim() || '';
+            if (!optionText) return null;
+            return {
+                text: optionText,
+                is_correct: Boolean(optionEl.querySelector('.option-correct')?.checked)
+            };
+        }).filter(Boolean);
+
+        if (!questionText || !options.length) return null;
+        return { text: questionText, type: questionType, options };
+    }).filter(Boolean);
+}
+
+function collectOutcomeTaskSheets(outcomeEl) {
+    return Array.from(outcomeEl.querySelectorAll('.task-item')).map(taskEl => {
+        const taskTitle = taskEl.querySelector('.task-title')?.value.trim() || '';
+        const taskContent = getSerializedEditableContent(taskEl.querySelector('.task-body-editor'));
+        if (!taskTitle && !taskContent) return null;
+        return { title: taskTitle, content: taskContent };
+    }).filter(Boolean);
+}
+
+function setUnifiedModuleButtonsBusy(isBusy, status = 'published') {
+    const publishBtn = document.getElementById('publishModuleBtn');
+    const draftBtn = document.getElementById('saveDraftModuleBtn');
+
+    if (publishBtn) {
+        if (!publishBtn.dataset.defaultLabel) publishBtn.dataset.defaultLabel = publishBtn.innerHTML;
+        publishBtn.disabled = isBusy;
+        if (isBusy && status === 'published') publishBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        if (!isBusy) publishBtn.innerHTML = publishBtn.dataset.defaultLabel;
+    }
+
+    if (draftBtn) {
+        if (!draftBtn.dataset.defaultLabel) draftBtn.dataset.defaultLabel = draftBtn.innerHTML;
+        draftBtn.disabled = isBusy;
+        if (isBusy && status === 'draft') draftBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        if (!isBusy) draftBtn.innerHTML = draftBtn.dataset.defaultLabel;
+    }
+}
+
+async function uploadCompleteModule(targetStatus = 'published') {
     const modal = document.getElementById('unifiedModuleUploadModal');
-    const competencyType = modal.dataset.competencyType;
-    const qualificationIdRaw = document.getElementById('qualificationSelect')?.value || '';
-    const qualificationId = parseInt(qualificationIdRaw, 10) || 0;
-    const trainer = JSON.parse(localStorage.getItem('trainer') || '{}');
+    if (!modal) return;
+
+    const competencyType = modal.dataset.competencyType || currentCompetencyType;
+    const supportsTaskSheets = competencyTypeSupportsTaskSheets(competencyType);
+    const qualificationId = parseInt(document.getElementById('qualificationSelect')?.value || '0', 10) || 0;
     const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const trainer = JSON.parse(localStorage.getItem('trainer') || '{}');
     const resolvedTrainerId = parseInt(trainerId || trainer.trainer_id || user.trainer_id || 0, 10) || 0;
     const resolvedUserId = parseInt(user.user_id || 0, 10) || 0;
 
-    // Collect module data
-    const moduleTitle = document.getElementById('uplModuleTitle').value.trim();
+    const moduleId = document.getElementById('uplModuleId')?.value.trim() || '';
+    const moduleTitle = document.getElementById('uplModuleTitle')?.value.trim() || '';
     const unitCode = document.getElementById('uplUnitCode')?.value.trim() || '';
-    const moduleDescription = document.getElementById('uplModuleDescription').value.trim();
-    const moduleOrder = parseInt(document.getElementById('uplModuleOrder')?.value, 10) || 0;
+    const moduleDescription = document.getElementById('uplModuleDescription')?.value.trim() || '';
+    const moduleOrder = parseInt(document.getElementById('uplModuleOrder')?.value || '0', 10) || 0;
 
-    if (!moduleTitle || !qualificationId) {
-        Swal.fire('Validation Error', 'Module title and qualification are required', 'error');
+    if (!qualificationId || !moduleTitle) {
+        Swal.fire('Validation Error', 'Module title and qualification are required.', 'error');
         return;
     }
+
     if (!resolvedTrainerId) {
         Swal.fire('Validation Error', 'Trainer session is missing. Please refresh the page and try again.', 'error');
         return;
     }
 
-    // Collect learning outcomes
+    const outcomeElements = Array.from(document.querySelectorAll('#learningOutcomesContainer [id^="outcome-"]'));
     const learningOutcomes = [];
-    const outcomeElements = document.querySelectorAll('[id^="outcome-"]');
+    const formData = new FormData();
 
-    for (const outcomeEl of outcomeElements) {
-        const outcomeId = parseInt(outcomeEl.id.replace('outcome-', ''));
-        const title = outcomeEl.querySelector('.outcome-title').value.trim();
-        const description = outcomeEl.querySelector('.outcome-description').value.trim();
-        const order = parseInt(outcomeEl.querySelector('.outcome-order').value) || 0;
+    for (const [index, outcomeEl] of outcomeElements.entries()) {
+        const title = outcomeEl.querySelector('.outcome-title')?.value.trim() || '';
+        const description = outcomeEl.querySelector('.outcome-description')?.value.trim() || '';
+        const order = parseInt(outcomeEl.querySelector('.outcome-order')?.value || `${index}`, 10) || 0;
+        const lessonId = outcomeEl.querySelector('.outcome-lesson-id')?.value.trim() || '';
+        const existingFilePath = outcomeEl.querySelector('.outcome-existing-file-path')?.value.trim() || '';
+        const selectedFile = outcomeEl.querySelector('.outcome-material-file')?.files?.[0] || null;
+        const lessonResourceUrl = outcomeEl.querySelector('.outcome-resource-url')?.value.trim() || '';
+
+        const hasRichContent = outcomeEl.querySelectorAll('.content-item').length > 0;
+        const hasQuizContent = outcomeEl.querySelectorAll('.quiz-question').length > 0;
+        const hasTaskContent = supportsTaskSheets && outcomeEl.querySelectorAll('.task-item').length > 0;
+        const hasAnything = Boolean(title || description || selectedFile || existingFilePath || lessonResourceUrl || hasRichContent || hasQuizContent || hasTaskContent);
+
+        if (!hasAnything) continue;
 
         if (!title) {
-            Swal.fire('Validation Error', 'All learning outcomes must have a title', 'error');
+            Swal.fire('Validation Error', 'Each saved learning outcome needs a title.', 'error');
             return;
         }
 
-        // Collect contents with image handling for rich text editor
-        const contents = [];
-        const contentItems = Array.from(outcomeEl.querySelectorAll('.content-item'));
-        for (const [idx, item] of contentItems.entries()) {
-            const content = {};
-            const title = item.querySelector('.content-title')?.value.trim() || '';
-            const editor = item.querySelector('.content-editor');
-            
-            if (!editor) continue;
-
-            // Get HTML content from rich text editor
-            const editorHTML = editor.innerHTML.trim();
-            
-            // Collect images from the editor
-            const images = [];
-            const imageWrappers = editor.querySelectorAll('.editor-image-wrapper');
-            
-            for (const wrapper of imageWrappers) {
-                const img = wrapper.querySelector('.editor-image');
-                if (img && img.src) {
-                    images.push({
-                        src: img.src,
-                        filename: img.alt || 'image'
-                    });
-                }
-            }
-
-            // If there's text content or images
-            if (title || editorHTML) {
-                content.title = title;
-                content.text = editorHTML;
-                content.type = 'rich-text';
-                content.has_images = images.length > 0;
-                
-                // Store images data
-                if (images.length > 0) {
-                    content.images = images;
-                }
-            }
-
-            if (Object.keys(content).length > 0) {
-                content.display_order = idx;
-                contents.push(content);
-            }
-        }
-
-        // Collect quiz questions
-        const quiz = [];
-        outcomeEl.querySelectorAll('.quiz-question').forEach(questionEl => {
-            const text = questionEl.querySelector('.quiz-question-text').value.trim();
-            const type = questionEl.querySelector('.quiz-type').value;
-            const options = [];
-
-            questionEl.querySelectorAll('.quiz-option').forEach(optionEl => {
-                const optionText = optionEl.querySelector('.option-text').value.trim();
-                const isCorrect = optionEl.querySelector('.option-correct').checked;
-                if (optionText) {
-                    options.push({ text: optionText, is_correct: isCorrect });
-                }
-            });
-
-            if (text && options.length > 0) {
-                quiz.push({ text, type, options });
-            }
-        });
-
-        // Collect task sheets
-        const taskSheets = [];
-        outcomeEl.querySelectorAll('.task-item').forEach(taskEl => {
-            const title = taskEl.querySelector('.task-title').value.trim();
-            const content = getSerializedEditableContent(taskEl.querySelector('.task-body-editor'));
-            if (title || content) {
-                taskSheets.push({ title, content });
-            }
-        });
+        const uploadField = `learning_material_file_${index}`;
+        if (selectedFile) formData.append(uploadField, selectedFile);
 
         learningOutcomes.push({
+            lesson_id: lessonId || null,
             title,
             description,
             outcome_order: order,
             is_required: 1,
             quiz_instructions: '',
             task_instructions: '',
-            contents,
-            quiz,
-            task_sheets: taskSheets
+            contents: collectOutcomeContents(outcomeEl),
+            quiz: collectOutcomeQuiz(outcomeEl),
+            task_sheets: supportsTaskSheets ? collectOutcomeTaskSheets(outcomeEl) : [],
+            upload_field: uploadField,
+            existing_file_path: existingFilePath,
+            lesson_resource_url: lessonResourceUrl
         });
     }
 
-    if (learningOutcomes.length === 0) {
-        Swal.fire('Validation Error', 'Add at least one learning outcome', 'error');
+    if (targetStatus === 'published' && learningOutcomes.length === 0) {
+        Swal.fire('Validation Error', 'Add at least one learning outcome before publishing the module.', 'error');
         return;
     }
 
-    // Show loading
-    const btn = document.querySelector('#unifiedModuleUploadModal button[onclick="uploadCompleteModule()"]');
-    if (!btn) {
-        Swal.fire('Error', 'Upload button not found. Please refresh and try again.', 'error');
-        return;
-    }
-    const origText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+    formData.append('module_id', moduleId);
+    formData.append('module_title', moduleTitle);
+    formData.append('unit_code', unitCode);
+    formData.append('module_description', moduleDescription);
+    formData.append('module_order', String(moduleOrder));
+    formData.append('competency_type', competencyType);
+    formData.append('qualification_id', String(qualificationId));
+    formData.append('trainer_id', String(resolvedTrainerId));
+    formData.append('user_id', String(resolvedUserId));
+    formData.append('module_status', targetStatus);
+    formData.append('learning_outcomes', JSON.stringify(learningOutcomes));
+
+    setUnifiedModuleButtonsBusy(true, targetStatus);
 
     try {
-        const payload = {
-            module_title: moduleTitle,
-            unit_code: unitCode,
-            module_description: moduleDescription,
-            module_order: moduleOrder,
-            competency_type: competencyType,
-            qualification_id: qualificationId,
-            trainer_id: resolvedTrainerId,
-            user_id: resolvedUserId,
-            learning_outcomes: learningOutcomes
-        };
+        const response = await axios.post(`${API_BASE_URL}/role/trainer/modules.php?action=upload-complete-module`, formData);
 
-        const response = await axios.post(`${API_BASE_URL}/role/trainer/modules.php?action=upload-complete-module`, payload);
-
-        if (response.data.success) {
-            Swal.fire('Success!', 'Module uploaded successfully with all learning outcomes, quizzes, and task sheets!', 'success');
-            
-            // Close modal
-            const moduleModal = new SimpleModal(modal);
-            moduleModal.hide();
-
-            // Reload modules
-            loadDataForTab(currentCompetencyType);
-        } else {
-            Swal.fire('Error', response.data.message || 'Failed to upload module', 'error');
+        if (!response.data.success) {
+            Swal.fire('Error', response.data.message || 'Failed to save the module.', 'error');
+            return;
         }
+
+        const successMessage = targetStatus === 'draft'
+            ? 'Draft saved successfully. You can reopen it any time from the module list.'
+            : (moduleId ? 'Module updated successfully.' : 'Module uploaded successfully.');
+
+        await Swal.fire('Success', successMessage, 'success');
+
+        if (unifiedModuleUploadModal) unifiedModuleUploadModal.hide();
+        await loadDataForTab(currentCompetencyType);
     } catch (error) {
         console.error('Upload error:', error);
-        Swal.fire('Error', 'Failed to upload module: ' + (error.response?.data?.message || error.message), 'error');
+        Swal.fire('Error', 'Failed to save module: ' + (error.response?.data?.message || error.message), 'error');
     } finally {
-        btn.disabled = false;
-        btn.innerHTML = origText;
+        setUnifiedModuleButtonsBusy(false, targetStatus);
     }
 }

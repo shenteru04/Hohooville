@@ -1,5 +1,7 @@
 const API_BASE_URL = window.location.origin + '/Hohoo-ville/api';
-const UPLOADS_URL = window.location.origin + '/hohoo-ville/uploads/trainees/';
+const TRAINEE_PROFILE_IMAGES_URL = window.location.origin + '/Hohoo-ville/uploads/profile_images/';
+const TRAINEE_UPLOADS_URL = window.location.origin + '/Hohoo-ville/uploads/trainees/';
+let currentProfileImageUrl = '';
 
 async function ensureSwal() {
     if (typeof window.Swal !== 'undefined') return;
@@ -12,11 +14,87 @@ async function ensureSwal() {
     });
 }
 
+function formatDateValue(value) {
+    if (!value) return '';
+
+    const normalizedValue = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00` : value;
+    const date = new Date(normalizedValue);
+
+    return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString();
+}
+
+function joinProfileParts(parts, separator = ' ') {
+    return parts.filter((part) => part && String(part).trim() !== '').join(separator);
+}
+
+function buildFullName(profile) {
+    return joinProfileParts([
+        profile.first_name,
+        profile.middle_name,
+        profile.last_name,
+        profile.extension_name
+    ]);
+}
+
+function getProfilePhotoUrl(profile, fallbackName) {
+    if (profile.photo_url) {
+        return profile.photo_url.startsWith('http')
+            ? profile.photo_url
+            : `${window.location.origin}${profile.photo_url}`;
+    }
+
+    if (profile.profile_image) {
+        return TRAINEE_PROFILE_IMAGES_URL + encodeURIComponent(profile.profile_image);
+    }
+
+    if (profile.photo_file) {
+        return TRAINEE_UPLOADS_URL + encodeURIComponent(profile.photo_file);
+    }
+
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(fallbackName || 'Trainee')}&background=random&color=fff`;
+}
+
+function setTraineeProfileImages(imageUrl) {
+    ['headerTraineePhoto', 'userProfileImage'].forEach((id) => {
+        const image = document.getElementById(id);
+        if (image) {
+            image.src = imageUrl;
+        }
+    });
+}
+
+function setProfileImageStatus(message, tone = 'muted') {
+    const status = document.getElementById('profileImageStatusText');
+    if (!status) return;
+
+    const toneClassMap = {
+        muted: 'text-slate-500',
+        loading: 'text-blue-600',
+        success: 'text-emerald-600',
+        error: 'text-red-500'
+    };
+
+    status.className = `mt-2 text-xs ${toneClassMap[tone] || toneClassMap.muted}`;
+    status.textContent = message;
+}
+
+function setProfileImageButtonLoading(isLoading) {
+    const button = document.getElementById('changeProfileImageBtn');
+    if (!button) return;
+
+    button.disabled = isLoading;
+    button.classList.toggle('cursor-wait', isLoading);
+    button.classList.toggle('opacity-80', isLoading);
+    button.innerHTML = isLoading
+        ? '<i class="fas fa-spinner fa-spin text-sm"></i>'
+        : '<i class="fas fa-camera text-sm"></i>';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
 
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user || user.role !== 'trainee') {
-        // window.location.href = '../../../../login.html';
+        // window.location.href = '/Hohoo-ville/frontend/login.html';
         console.error("Not a trainee or not logged in.");
         return;
     }
@@ -102,7 +180,7 @@ function setupUserNav(user) {
                 }).then((result) => {
                     if (result.isConfirmed) {
                         localStorage.clear();
-                        window.location.href = '../../../../login.html';
+                        window.location.href = '/Hohoo-ville/frontend/login.html';
                     }
                 });
             });
@@ -113,33 +191,33 @@ function setupUserNav(user) {
 async function loadProfileData(traineeId) {
     try {
         const token = localStorage.getItem('token');
-        const response = await axios.get(`${API_BASE_URL}/profile/get_profile.php`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+        const response = await axios.get(`${API_BASE_URL}/role/trainee/profile.php`, {
+            params: {
+                action: 'get',
+                trainee_id: traineeId
+            },
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
+
         if (response.data.success) {
-            const profile = response.data.profile;
+            const profile = response.data.data || {};
 
             // Basic Information
-            const fullName = [profile.first_name, profile.middle_name, profile.last_name, profile.extension_name].filter(Boolean).join(' ');
+            const fullName = buildFullName(profile) || profile.username || 'Trainee';
+            const photoUrl = getProfilePhotoUrl(profile, fullName);
+
             document.getElementById('headerTraineeName').textContent = fullName;
             document.getElementById('headerTraineeCourse').textContent = profile.course_name || 'N/A';
+            currentProfileImageUrl = profile.photo_url || profile.profile_image || profile.photo_file ? photoUrl : '';
+            setTraineeProfileImages(photoUrl);
+            setProfileImageStatus('Click the camera icon to change your profile photo.');
 
             document.getElementById('profileSex').textContent = profile.sex || 'N/A';
             document.getElementById('profileCivilStatus').textContent = profile.civil_status || 'N/A';
-            document.getElementById('profileBirthdate').textContent = profile.birthdate ? new Date(profile.birthdate).toLocaleDateString() : 'N/A';
+            document.getElementById('profileBirthdate').textContent = formatDateValue(profile.birthdate) || 'N/A';
             document.getElementById('profileAge').textContent = profile.age || 'N/A';
-            document.getElementById('profileBirthplace').textContent = `${profile.birthplace_city || ''}, ${profile.birthplace_province || ''}`.replace(/^, |, $/g, '') || 'N/A';
+            document.getElementById('profileBirthplace').textContent = joinProfileParts([profile.birthplace_city, profile.birthplace_province], ', ') || 'N/A';
             document.getElementById('profileNationality').textContent = profile.nationality || 'N/A';
-            document.getElementById('profileEducation').textContent = profile.educational_attainment || 'N/A';
-
-            
-            if (profile.photo_file) {
-                document.getElementById('headerTraineePhoto').src = UPLOADS_URL + encodeURIComponent(profile.photo_file);
-            } else {
-                document.getElementById('headerTraineePhoto').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=random&color=fff`;
-            }
-
-            document.getElementById('profileSex').textContent = profile.sex || 'N/A';
             document.getElementById('profileEducation').textContent = profile.educational_attainment || 'N/A';
 
             document.getElementById('profileSchoolId').textContent = profile.trainee_school_id || 'N/A';
@@ -156,14 +234,14 @@ async function loadProfileData(traineeId) {
             document.getElementById('address').value = profile.address || '';
             document.getElementById('qualification').value = profile.qualification || profile.course_name || '';
             document.getElementById('sex').value = profile.sex || '';
-            document.getElementById('birthdate').value = profile.birthdate ? new Date(profile.birthdate).toLocaleDateString() : '';
+            document.getElementById('birthdate').value = formatDateValue(profile.birthdate);
 
         } else {
             Swal.fire('Error', 'Could not load profile data: ' + response.data.message, 'error');
         }
     } catch (error) {
         console.error('Error loading profile:', error);
-        Swal.fire('Error', 'An error occurred while fetching your profile.', 'error');
+        Swal.fire('Error', error.response?.data?.message || 'An error occurred while fetching your profile.', 'error');
     }
 }
 
@@ -173,33 +251,29 @@ async function saveProfileData(traineeId) {
     saveBtn.innerHTML = '<i class="animate-spin fas fa-spinner mr-2"></i> Saving...';
 
     const payload = {
+        trainee_id: traineeId,
         first_name: document.getElementById('firstName').value,
         last_name: document.getElementById('lastName').value,
         email: document.getElementById('email').value,
         phone_number: document.getElementById('phone').value,
-        address: document.getElementById('address').value
+        facebook_account: document.getElementById('facebook').value
     };
 
     try {
         const token = localStorage.getItem('token');
-        const response = await axios.post(`${API_BASE_URL}/profile/update_profile.php`, payload, {
-            headers: { 'Authorization': `Bearer ${token}` }
+        const response = await axios.post(`${API_BASE_URL}/role/trainee/profile.php?action=update`, payload, {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
 
         if (response.data.success) {
             Swal.fire('Success', 'Profile updated successfully!', 'success');
-            // Update header name if changed
-            const user = JSON.parse(localStorage.getItem('user'));
-            // This is a bit complex, let's simplify. We don't need to re-fetch username if it's not editable.
-            // The username is not on the form, so it won't change.
-            // Let's just reload the profile data to be safe.
             loadProfileData(traineeId);
         } else {
             Swal.fire('Error', 'Error updating profile: ' + response.data.message, 'error');
         }
     } catch (error) {
         console.error('Error updating profile:', error);
-        Swal.fire('Error', 'An error occurred while saving your profile.', 'error');
+        Swal.fire('Error', error.response?.data?.message || 'An error occurred while saving your profile.', 'error');
     } finally {
         saveBtn.disabled = false;
         saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Save Changes';
@@ -277,46 +351,29 @@ function initPasswordToggle() {
 
 function setupProfileImageUpload(user) {
     const fileInput = document.getElementById('profileImageInput');
-    const preview = document.getElementById('profileImagePreview');
-    const uploadBtn = document.getElementById('uploadProfileImageBtn');
-    const profileImageForm = document.getElementById('profileImageForm');
+    const changePhotoButton = document.getElementById('changeProfileImageBtn');
+    const headerPhoto = document.getElementById('headerTraineePhoto');
 
-    if (!fileInput || !preview) return;
+    if (!fileInput || !changePhotoButton || !headerPhoto) return;
 
-    // Click on image to select file
-    preview.addEventListener('click', () => {
+    const openFilePicker = () => {
+        if (changePhotoButton.disabled) return;
         fileInput.click();
-    });
+    };
 
-    // Handle file selection
+    changePhotoButton.addEventListener('click', openFilePicker);
+    headerPhoto.addEventListener('click', openFilePicker);
+    headerPhoto.classList.add('cursor-pointer');
+
     fileInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Show preview
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            preview.src = event.target.result;
-        };
-        reader.readAsDataURL(file);
-
-        // Enable upload button
-        uploadBtn.disabled = false;
-    });
-
-    // Handle form submission
-    profileImageForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const file = fileInput.files[0];
-        if (!file) {
-            await ensureSwal();
-            Swal.fire('Error', 'Please select an image file', 'error');
-            return;
-        }
-
-        uploadBtn.disabled = true;
-        uploadBtn.innerHTML = '<i class="animate-spin fas fa-spinner mr-2"></i> Uploading...';
+        const previousImageUrl = currentProfileImageUrl || headerPhoto.src;
+        const previewUrl = URL.createObjectURL(file);
+        setTraineeProfileImages(previewUrl);
+        setProfileImageStatus('Uploading profile photo...', 'loading');
+        setProfileImageButtonLoading(true);
 
         try {
             const response = await uploadProfileImage(
@@ -327,20 +384,33 @@ function setupProfileImageUpload(user) {
             );
 
             await ensureSwal();
-            Swal.fire('Success', 'Profile photo updated successfully!', 'success');
+            currentProfileImageUrl = response.url;
+            setTraineeProfileImages(response.url);
+            setProfileImageStatus('Profile photo updated successfully.', 'success');
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: 'Profile photo updated',
+                showConfirmButton: false,
+                timer: 1800,
+                timerProgressBar: true
+            });
 
-            // Update preview with uploaded image URL
-            preview.src = response.url;
-            fileInput.value = '';
-            uploadBtn.disabled = true;
-            uploadBtn.innerHTML = '<i class="fas fa-upload mr-2"></i>Upload Photo';
+            if (typeof window.refreshHeaderProfileChip === 'function') {
+                window.refreshHeaderProfileChip();
+            }
 
         } catch (error) {
             console.error('Error uploading profile image:', error);
             await ensureSwal();
+            setTraineeProfileImages(previousImageUrl);
+            setProfileImageStatus(error.message || 'Failed to upload profile photo.', 'error');
             Swal.fire('Error', error.message || 'Failed to upload profile photo', 'error');
-            uploadBtn.disabled = false;
-            uploadBtn.innerHTML = '<i class="fas fa-upload mr-2"></i>Upload Photo';
+        } finally {
+            URL.revokeObjectURL(previewUrl);
+            fileInput.value = '';
+            setProfileImageButtonLoading(false);
         }
     });
 }

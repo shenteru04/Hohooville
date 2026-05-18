@@ -24,6 +24,7 @@ const charts = {
     attendanceTrendChart: null,
     competencyChart: null
 };
+let isDashboardRefreshing = false;
 
 document.addEventListener('DOMContentLoaded', () => {
     setupHeaderControls();
@@ -32,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const refreshBtn = document.getElementById('refreshDashboard');
     if (refreshBtn) {
-        refreshBtn.addEventListener('click', loadDashboardData);
+        refreshBtn.addEventListener('click', () => loadDashboardData({ showFeedback: true, triggeredByUser: true }));
     }
 });
 
@@ -97,14 +98,64 @@ async function loadUserProfileImage() {
     }
 }
 
-async function loadDashboardData() {
+function getDashboardRequestConfig(cacheBustKey) {
+    return {
+        params: { _ts: cacheBustKey },
+        headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            Pragma: 'no-cache',
+            Expires: '0'
+        }
+    };
+}
+
+function formatPhpAmountValue(value) {
+    const amount = Number(value || 0);
+    return amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function setRefreshButtonLoading(isLoading) {
+    const refreshBtn = document.getElementById('refreshDashboard');
+    if (!refreshBtn) return;
+
+    if (!refreshBtn.dataset.originalHtml) {
+        refreshBtn.dataset.originalHtml = refreshBtn.innerHTML;
+    }
+
+    refreshBtn.disabled = isLoading;
+    refreshBtn.classList.toggle('opacity-75', isLoading);
+    refreshBtn.classList.toggle('cursor-not-allowed', isLoading);
+
+    if (isLoading) {
+        refreshBtn.innerHTML = `
+            <i class="fas fa-sync-alt animate-spin"></i>
+            <span class="hidden sm:inline">Refreshing...</span>
+        `;
+        return;
+    }
+
+    refreshBtn.innerHTML = refreshBtn.dataset.originalHtml;
+}
+
+async function loadDashboardData(options = {}) {
+    const { showFeedback = false, triggeredByUser = false } = options;
+    if (isDashboardRefreshing) {
+        return;
+    }
+
+    isDashboardRefreshing = true;
+    if (triggeredByUser) {
+        setRefreshButtonLoading(true);
+    }
+
+    const cacheBustKey = Date.now();
     const results = await Promise.allSettled([
-        loadStatistics(),
-        loadFinancialSummary(),
-        loadEnrollmentStats(),
-        loadAttendanceOverview(),
-        loadCompetencyResults(),
-        loadRecentActivities()
+        loadStatistics(cacheBustKey),
+        loadFinancialSummary(cacheBustKey),
+        loadEnrollmentStats(cacheBustKey),
+        loadAttendanceOverview(cacheBustKey),
+        loadCompetencyResults(cacheBustKey),
+        loadRecentActivities(cacheBustKey)
     ]);
 
     const rejected = results.find((result) => result.status === 'rejected');
@@ -112,11 +163,18 @@ async function loadDashboardData() {
         console.error('Error loading dashboard data:', rejected.reason);
         const message = rejected.reason?.message || 'Unable to refresh dashboard data.';
         showToast(message, 'danger');
+    } else if (showFeedback) {
+        showToast('Dashboard refreshed successfully.', 'success');
     }
+
+    if (triggeredByUser) {
+        setRefreshButtonLoading(false);
+    }
+    isDashboardRefreshing = false;
 }
 
-async function loadStatistics() {
-    const response = await apiClient.get('/role/admin/admin_dashboard.php?action=statistics');
+async function loadStatistics(cacheBustKey) {
+    const response = await apiClient.get('/role/admin/admin_dashboard.php?action=statistics', getDashboardRequestConfig(cacheBustKey));
     if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to load dashboard statistics.');
     }
@@ -130,8 +188,8 @@ async function loadStatistics() {
     setText('completedThisYear', stats.completed_this_year || 0);
 }
 
-async function loadFinancialSummary() {
-    const response = await apiClient.get('/role/admin/admin_dashboard.php?action=financial-summary');
+async function loadFinancialSummary(cacheBustKey) {
+    const response = await apiClient.get('/role/admin/admin_dashboard.php?action=financial-summary', getDashboardRequestConfig(cacheBustKey));
     if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to load financial summary.');
     }
@@ -140,8 +198,8 @@ async function loadFinancialSummary() {
     const totalCollected = Number(data.total_collected || 0);
     const totalPending = Number(data.total_pending || 0);
 
-    setText('totalCollected', `PHP ${totalCollected.toLocaleString()}`);
-    setText('totalPending', `PHP ${totalPending.toLocaleString()}`);
+    setText('totalCollected', formatPhpAmountValue(totalCollected));
+    setText('totalPending', formatPhpAmountValue(totalPending));
 
     renderPieChart(
         'scholarshipDistributionChart',
@@ -159,8 +217,8 @@ async function loadFinancialSummary() {
     );
 }
 
-async function loadEnrollmentStats() {
-    const response = await apiClient.get('/role/admin/admin_dashboard.php?action=enrollment-stats');
+async function loadEnrollmentStats(cacheBustKey) {
+    const response = await apiClient.get('/role/admin/admin_dashboard.php?action=enrollment-stats', getDashboardRequestConfig(cacheBustKey));
     if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to load enrollment stats.');
     }
@@ -207,8 +265,8 @@ async function loadEnrollmentStats() {
     });
 }
 
-async function loadAttendanceOverview() {
-    const response = await apiClient.get('/role/admin/admin_dashboard.php?action=attendance-overview');
+async function loadAttendanceOverview(cacheBustKey) {
+    const response = await apiClient.get('/role/admin/admin_dashboard.php?action=attendance-overview', getDashboardRequestConfig(cacheBustKey));
     if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to load attendance overview.');
     }
@@ -248,8 +306,8 @@ async function loadAttendanceOverview() {
     });
 }
 
-async function loadCompetencyResults() {
-    const response = await apiClient.get('/role/admin/admin_dashboard.php?action=competency-results');
+async function loadCompetencyResults(cacheBustKey) {
+    const response = await apiClient.get('/role/admin/admin_dashboard.php?action=competency-results', getDashboardRequestConfig(cacheBustKey));
     if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to load competency results.');
     }
@@ -264,8 +322,8 @@ async function loadCompetencyResults() {
     );
 }
 
-async function loadRecentActivities() {
-    const response = await apiClient.get('/role/admin/admin_dashboard.php?action=recent-activities');
+async function loadRecentActivities(cacheBustKey) {
+    const response = await apiClient.get('/role/admin/admin_dashboard.php?action=recent-activities', getDashboardRequestConfig(cacheBustKey));
     if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to load recent activities.');
     }

@@ -13,15 +13,52 @@ require_once '../../database/db.php';
 
 class ArchiveManager {
     private $conn;
+    private $requestData;
 
     public function __construct($db) {
         $this->conn = $db;
+        $this->requestData = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($this->requestData)) {
+            $this->requestData = [];
+        }
+    }
+
+    private function requestValue(string $key) {
+        return $_GET[$key] ?? $_POST[$key] ?? $this->requestData[$key] ?? null;
+    }
+
+    private function getEnrollmentRecord($traineeId, $enrollmentId): ?array {
+        $stmt = $this->conn->prepare("
+            SELECT e.enrollment_id, e.trainee_id, e.status, e.is_archived, e.completion_date, e.enrollment_date,
+                   b.end_date, b.batch_name
+            FROM tbl_enrollment e
+            LEFT JOIN tbl_batch b ON b.batch_id = e.batch_id
+            WHERE e.enrollment_id = ? AND e.trainee_id = ?
+            LIMIT 1
+        ");
+        $stmt->execute([$enrollmentId, $traineeId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+
+    private function hasReachedEndDate(?string $endDate): bool {
+        $normalized = trim((string)$endDate);
+        if ($normalized === '') {
+            return false;
+        }
+
+        $timestamp = strtotime($normalized . ' 23:59:59');
+        if ($timestamp === false) {
+            return false;
+        }
+
+        return $timestamp <= time();
     }
 
     public function handleRequest() {
-        $action = $_GET['action'] ?? $_POST['action'] ?? null;
-        $traineeId = $_GET['trainee_id'] ?? $_POST['trainee_id'] ?? null;
-        $enrollmentId = $_GET['enrollment_id'] ?? $_POST['enrollment_id'] ?? null;
+        $action = $this->requestValue('action');
+        $traineeId = $this->requestValue('trainee_id');
+        $enrollmentId = $this->requestValue('enrollment_id');
 
         if (!$traineeId) {
             http_response_code(400);
@@ -54,19 +91,28 @@ class ArchiveManager {
         }
 
         try {
-            // Verify ownership
-            $verifyStmt = $this->conn->prepare("SELECT enrollment_id FROM tbl_enrollment WHERE enrollment_id = ? AND trainee_id = ?");
-            $verifyStmt->execute([$enrollmentId, $traineeId]);
-            if (!$verifyStmt->fetch()) {
+            $enrollment = $this->getEnrollmentRecord($traineeId, $enrollmentId);
+            if (!$enrollment) {
                 http_response_code(403);
                 echo json_encode(['success' => false, 'message' => 'Unauthorized']);
                 return;
             }
 
-            // Archive the course
+            if (!$this->hasReachedEndDate($enrollment['end_date'] ?? null)) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'This qualification cannot be archived yet because the batch end date has not been reached.'
+                ]);
+                return;
+            }
+
             $updateStmt = $this->conn->prepare(
                 "UPDATE tbl_enrollment 
-                 SET is_archived = 1, archive_date = CURDATE() 
+                 SET status = CASE WHEN status = 'approved' THEN 'completed' ELSE status END,
+                     completion_date = COALESCE(completion_date, CURDATE()),
+                     is_archived = 1,
+                     archive_date = CURDATE() 
                  WHERE enrollment_id = ? AND trainee_id = ?"
             );
             $updateStmt->execute([$enrollmentId, $traineeId]);
@@ -89,22 +135,26 @@ class ArchiveManager {
         }
 
         try {
-            // Verify ownership
-            $verifyStmt = $this->conn->prepare("SELECT enrollment_id FROM tbl_enrollment WHERE enrollment_id = ? AND trainee_id = ?");
-            $verifyStmt->execute([$enrollmentId, $traineeId]);
-            if (!$verifyStmt->fetch()) {
+            $enrollment = $this->getEnrollmentRecord($traineeId, $enrollmentId);
+            if (!$enrollment) {
                 http_response_code(403);
                 echo json_encode(['success' => false, 'message' => 'Unauthorized']);
                 return;
             }
 
-            // Unarchive the course
+            $shouldRestoreActiveState = !$this->hasReachedEndDate($enrollment['end_date'] ?? null)
+                && ($enrollment['status'] ?? '') === 'completed';
+
             $updateStmt = $this->conn->prepare(
                 "UPDATE tbl_enrollment 
-                 SET is_archived = 0, archive_date = NULL 
+                 SET is_archived = 0,
+                     archive_date = NULL,
+                     status = CASE WHEN ? = 1 THEN 'approved' ELSE status END,
+                     completion_date = CASE WHEN ? = 1 THEN NULL ELSE completion_date END
                  WHERE enrollment_id = ? AND trainee_id = ?"
             );
-            $updateStmt->execute([$enrollmentId, $traineeId]);
+            $flag = $shouldRestoreActiveState ? 1 : 0;
+            $updateStmt->execute([$flag, $flag, $enrollmentId, $traineeId]);
 
             echo json_encode([
                 'success' => true,

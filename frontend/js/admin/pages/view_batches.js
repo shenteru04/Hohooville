@@ -121,11 +121,14 @@ function bindActions() {
     if (createBatchBtn) {
         createBatchBtn.addEventListener('click', openCreateBatchModal);
     }
+
+    document.getElementById('newBatchMaxTrainees')?.addEventListener('input', updateProjectedBatchValue);
+    document.getElementById('newBatchTrainingCost')?.addEventListener('input', updateProjectedBatchValue);
 }
 
 async function loadBatches() {
     try {
-        const response = await axios.get(`${API_BASE_URL}/role/admin/trainees.php?action=get-batches`);
+        const response = await axios.get(`${API_BASE_URL}/role/admin/batches.php?action=list`);
         if (!response.data.success) {
             showError('Error loading batches: ' + (response.data.message || 'Unknown error'));
             return;
@@ -157,13 +160,14 @@ function renderBatchesTable(data, tbodyId) {
 
     tbody.innerHTML = data.map((batch) => {
         const count = Number(batch.enrolled_count || 0);
+        const maxTrainees = Number(batch.max_trainees || 25);
         const statusValue = normalizeStatus(batch.status);
         const statusBadge = statusValue === 'open'
             ? '<span class="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">OPEN</span>'
             : '<span class="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">CLOSED</span>';
 
         const countBadge = `<span class="inline-flex rounded-full bg-sky-100 px-2 py-1 text-xs font-semibold text-sky-700">${count} Trainees</span>`;
-        const fullBadge = count >= 25
+        const fullBadge = count >= maxTrainees
             ? '<span class="ml-1 inline-flex rounded-full bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-700">FULL</span>'
             : '';
 
@@ -233,6 +237,8 @@ function renderModalTrainees(data) {
 
     tbody.innerHTML = data.map((trainee) => {
         const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(`${trainee.first_name || ''} ${trainee.last_name || ''}`)}&background=random&size=32`;
+        const displayName = `${trainee.last_name || ''}, ${trainee.first_name || ''}`.replace(/^,\s*/, '');
+        const enrolledDate = formatEnrollmentDate(trainee.formatted_enrollment_date || trainee.enrollment_date);
         const status = String(trainee.status || '').toLowerCase();
         const statusBadge = status === 'active'
             ? '<span class="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">Active</span>'
@@ -243,16 +249,38 @@ function renderModalTrainees(data) {
                 <td class="px-3 py-3 text-sm text-slate-700">${trainee.trainee_school_id ? escapeHtml(trainee.trainee_school_id) : '<span class="text-slate-400">N/A</span>'}</td>
                 <td class="px-3 py-3 text-sm text-slate-900">
                     <div class="flex items-center gap-2">
-                        <img src="${avatarUrl}" class="h-8 w-8 rounded-full border border-slate-200 object-cover" alt="Avatar">
-                        <div class="font-semibold">${escapeHtml(`${trainee.last_name || ''}, ${trainee.first_name || ''}`.replace(/^,\s*/, ''))}</div>
+                        <img src="${avatarUrl}" class="h-8 w-8 rounded-full border border-slate-200 object-cover" alt="" onerror="this.style.display='none'">
+                        <div class="font-semibold">${escapeHtml(displayName)}</div>
                     </div>
                 </td>
                 <td class="px-3 py-3 text-sm text-slate-700">${escapeHtml(trainee.email || 'N/A')}</td>
-                <td class="px-3 py-3 text-sm text-slate-600">${trainee.formatted_enrollment_date || trainee.enrollment_date || 'N/A'}</td>
+                <td class="px-3 py-3 text-sm text-slate-600">${escapeHtml(enrolledDate)}</td>
                 <td class="px-3 py-3 text-center text-sm">${statusBadge}</td>
             </tr>
         `;
     }).join('');
+}
+
+function formatEnrollmentDate(value) {
+    if (!value) return 'N/A';
+
+    const text = String(value).trim();
+    if (!text) return 'N/A';
+
+    if (/^[A-Za-z]+\s+\d{1,2},\s+\d{4}$/.test(text)) {
+        return text;
+    }
+
+    const parsed = new Date(text.replace(' ', 'T'));
+    if (Number.isNaN(parsed.getTime())) {
+        return text;
+    }
+
+    return parsed.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
 }
 
 function showError(message) {
@@ -280,34 +308,35 @@ function escapeAttribute(value) {
         .replace(/\r?\n/g, ' ');
 }
 
+function formatQualificationOptionLabel(qualification) {
+    const baseName = qualification?.course_name || qualification?.qualification_name || 'Unnamed Qualification';
+    const ncLevel = qualification?.nc_level_code || qualification?.nc_level_name || '';
+    return ncLevel ? `${baseName} (${ncLevel})` : baseName;
+}
+
 async function openCreateBatchModal() {
     const form = document.getElementById('createBatchForm');
     if (form) form.reset();
+    setText('newBatchProjectedTotal', 'PHP 0.00');
+    setValueIfPresent('newBatchId', '');
+    setValueIfPresent('newBatchStatus', 'open');
+    setValueIfPresent('newBatchMaxTrainees', '25');
+    setBatchModalMode(false);
     
     // Load form data
     await loadCreateBatchFormData();
+    updateProjectedBatchValue();
     
     if (createBatchModal) createBatchModal.show();
 }
 
 async function loadCreateBatchFormData() {
     try {
-        // Fetch qualifications from admin endpoint
-        let qualifications = [];
-        try {
-            const qualResponse = await axios.get(`${API_BASE_URL}/role/admin/trainers.php?action=get-qualifications`);
-            if (qualResponse.data.success) {
-                qualifications = qualResponse.data.data || [];
-            }
-        } catch (qualError) {
-            console.error('Error loading qualifications:', qualError);
-        }
-
-        // Fetch trainers and scholarships from registrar endpoint
-        const response = await axios.get(`${API_BASE_URL}/role/registrar/batches.php?action=get-form-data`);
+        const response = await axios.get(`${API_BASE_URL}/role/admin/batches.php?action=get-form-data`);
         if (!response.data.success) return;
 
         const data = response.data.data || {};
+        availableQualifications = data.qualifications || [];
         
         // Store all trainers for filtering later
         allTrainers = data.trainers || [];
@@ -316,11 +345,12 @@ async function loadCreateBatchFormData() {
         const qualifSelect = document.getElementById('newBatchQualificationId');
         if (qualifSelect) {
             qualifSelect.innerHTML = '<option value="">Select Qualification</option>';
-            if (qualifications.length > 0) {
-                qualifications.forEach((q) => {
+            if (availableQualifications.length > 0) {
+                availableQualifications.forEach((q) => {
                     const option = document.createElement('option');
                     option.value = q.qualification_id;
-                    option.textContent = q.qualification_name;
+                    option.textContent = formatQualificationOptionLabel(q);
+                    option.dataset.qualificationName = q.course_name || q.qualification_name || '';
                     qualifSelect.appendChild(option);
                 });
             }
@@ -334,16 +364,18 @@ async function loadCreateBatchFormData() {
                 const selectedOption = updatedSelect.options[updatedSelect.selectedIndex];
                 const batchNameField = document.getElementById('newBatchName');
                 if (selectedOption && selectedOption.value) {
-                    const qualName = selectedOption.textContent;
                     const qualId = selectedOption.value;
-                    batchNameField.value = generateBatchName(qualName, parseInt(qualId));
+                    batchNameField.value = generateBatchName(selectedOption.dataset.qualificationName || selectedOption.textContent, parseInt(qualId, 10));
                     // Filter trainers by selected qualification
                     filterTrainersByQualification(selectedOption.value);
+                    populateTrainingCostFromQualification(selectedOption.value);
                 } else {
                     batchNameField.value = '';
                     // Show all trainers if no qualification selected
                     populateAllTrainers();
+                    populateTrainingCostFromQualification('');
                 }
+                updateProjectedBatchValue();
             });
         }
 
@@ -447,15 +479,26 @@ async function handleCreateBatch(event) {
     const startDate = document.getElementById('newBatchStartDate')?.value;
     const endDate = document.getElementById('newBatchEndDate')?.value;
     const maxTrainees = document.getElementById('newBatchMaxTrainees')?.value;
+    const trainingCost = document.getElementById('newBatchTrainingCost')?.value;
     const status = document.getElementById('newBatchStatus')?.value || 'open';
 
-    if (!batchName || !qualificationId || !trainerId || !startDate || !endDate) {
+    if (!batchName || !qualificationId || !trainerId || !startDate || !endDate || !maxTrainees || trainingCost === '') {
         showError('Please fill in all required fields');
         return;
     }
 
     if (new Date(endDate) <= new Date(startDate)) {
         showError('End date must be after start date');
+        return;
+    }
+
+    if (Number(maxTrainees) <= 0) {
+        showError('Max trainees must be greater than zero');
+        return;
+    }
+
+    if (Number(trainingCost) < 0) {
+        showError('Training cost cannot be negative');
         return;
     }
 
@@ -467,7 +510,8 @@ async function handleCreateBatch(event) {
         start_date: startDate,
         end_date: endDate,
         status: status,
-        max_trainees: maxTrainees ? parseInt(maxTrainees) : null
+        max_trainees: maxTrainees ? parseInt(maxTrainees) : null,
+        training_cost: Number(trainingCost)
     };
 
     if (batchId) {
@@ -514,12 +558,11 @@ window.editBatch = async function(id) {
             document.getElementById('newBatchStartDate').value = batch.start_date;
             document.getElementById('newBatchEndDate').value = batch.end_date;
             document.getElementById('newBatchMaxTrainees').value = batch.max_trainees || 25;
+            document.getElementById('newBatchTrainingCost').value = batch.training_cost || '';
             document.getElementById('newBatchStatus').value = batch.status;
-            
-            const modalLabel = document.querySelector('#createBatchModal h3');
-            const submitBtn = document.querySelector('#createBatchModal button[type="submit"]');
-            if (modalLabel) modalLabel.textContent = 'Edit Batch';
-            if (submitBtn) submitBtn.textContent = 'Save Changes';
+
+            setBatchModalMode(true);
+            updateProjectedBatchValue();
             
             if (createBatchModal) createBatchModal.show();
         }
@@ -536,3 +579,48 @@ document.addEventListener('DOMContentLoaded', () => {
         createBatchForm.addEventListener('submit', handleCreateBatch);
     }
 });
+
+function populateTrainingCostFromQualification(qualificationId) {
+    const trainingCostField = document.getElementById('newBatchTrainingCost');
+    if (!trainingCostField) return;
+
+    if (!qualificationId) {
+        trainingCostField.value = '';
+        return;
+    }
+
+    const qualification = availableQualifications.find((item) => String(item.qualification_id) === String(qualificationId));
+    if (!qualification) return;
+
+    trainingCostField.value = qualification.training_cost !== undefined && qualification.training_cost !== null
+        ? String(qualification.training_cost)
+        : '';
+}
+
+function updateProjectedBatchValue() {
+    const maxTrainees = Number(document.getElementById('newBatchMaxTrainees')?.value || 0);
+    const trainingCost = Number(document.getElementById('newBatchTrainingCost')?.value || 0);
+    const projectedValue = maxTrainees > 0 && trainingCost >= 0 ? maxTrainees * trainingCost : 0;
+    setText('newBatchProjectedTotal', `PHP ${projectedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+}
+
+function setBatchModalMode(isEditing) {
+    const modalLabel = document.querySelector('#createBatchModal h3');
+    const submitBtn = document.querySelector('#createBatchModal button[type="submit"]');
+    if (modalLabel) modalLabel.textContent = isEditing ? 'Edit Batch' : 'Create New Batch';
+    if (submitBtn) submitBtn.textContent = isEditing ? 'Save Changes' : 'Create Batch';
+}
+
+function setText(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.textContent = value;
+    }
+}
+
+function setValueIfPresent(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.value = value;
+    }
+}

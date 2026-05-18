@@ -58,6 +58,7 @@ function getTrainers($conn) {
                                         t.qualification_id,
                                         t.trainer_nc_level_id,
                                         t.status,
+                                        COALESCE(t.profile_image, '') as profile_image,
                                         q_primary.qualification_name,
                                         COALESCE(nc_trainer.nc_level_code, nc_q.nc_level_code, t.nc_level) AS nc_level_code,
                                         COALESCE(nc_trainer.nc_level_name, nc_q.nc_level_name, t.nc_level) AS nc_level_name
@@ -80,6 +81,7 @@ function getTrainers($conn) {
                                         t.qualification_id,
                                         NULL AS trainer_nc_level_id,
                                         t.status,
+                                        COALESCE(t.profile_image, '') as profile_image,
                                         q_primary.qualification_name,
                                         t.nc_level AS nc_level_code,
                                         t.nc_level AS nc_level_name
@@ -1035,21 +1037,37 @@ function createTrainerAccount($conn) {
             throw new Exception('Username and Password are required');
         }
 
+        $username = trim((string) $data['username']);
+        $password = (string) $data['password'];
+
+        if ($username === '' || $password === '') {
+            throw new Exception('Username and Password are required');
+        }
+
+        if (!preg_match('/^[A-Za-z0-9_]+$/', $username)) {
+            throw new Exception('Username can only contain letters, numbers, and underscores.');
+        }
+
         ensureTrainerAddressSchema($conn);
         $conn->beginTransaction();
 
         // 1. Get Trainer Email and check if account exists
-        $stmt = $conn->prepare("SELECT email, user_id FROM tbl_trainer WHERE trainer_id = ?");
+        $stmt = $conn->prepare("SELECT email, user_id, first_name, last_name FROM tbl_trainer WHERE trainer_id = ?");
         $stmt->execute([$data['trainer_id']]);
         $trainer = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if (!$trainer) throw new Exception('Trainer not found');
         if (!empty($trainer['user_id'])) throw new Exception('Trainer already has an account');
+        if (empty($trainer['email'])) throw new Exception('Trainer email is required before creating an account');
 
         // Check if username exists
         $stmtCheck = $conn->prepare("SELECT user_id FROM tbl_users WHERE username = ?");
-        $stmtCheck->execute([$data['username']]);
+        $stmtCheck->execute([$username]);
         if ($stmtCheck->fetch()) throw new Exception('Username already exists');
+
+        $stmtCheckEmail = $conn->prepare("SELECT user_id FROM tbl_users WHERE email = ?");
+        $stmtCheckEmail->execute([$trainer['email']]);
+        if ($stmtCheckEmail->fetch()) throw new Exception('This trainer email is already linked to another user account');
 
         // 2. Get/Create Role ID for 'trainer'
         $stmtRole = $conn->query("SELECT role_id FROM tbl_role WHERE role_name = 'trainer' LIMIT 1");
@@ -1064,9 +1082,9 @@ function createTrainerAccount($conn) {
         }
 
         // 3. Create User
-        $hashed = password_hash($data['password'], PASSWORD_DEFAULT);
+        $hashed = password_hash($password, PASSWORD_DEFAULT);
         $stmtUser = $conn->prepare("INSERT INTO tbl_users (role_id, username, password, email, status, date_created) VALUES (?, ?, ?, ?, 'active', NOW())");
-        $stmtUser->execute([$roleId, $data['username'], $hashed, $trainer['email']]);
+        $stmtUser->execute([$roleId, $username, $hashed, $trainer['email']]);
         $userId = $conn->lastInsertId();
 
         // 4. Link User to Trainer
@@ -1078,7 +1096,7 @@ function createTrainerAccount($conn) {
             require_once __DIR__ . '/../../utils/EmailService.php';
             $emailSvc = new EmailService();
             $trainerName = ($trainer['first_name'] ?? '') . ' ' . ($trainer['last_name'] ?? '');
-            $sendResult = $emailSvc->sendTrainerAccountCredentials($trainer['email'], trim($trainerName), $data['username'], $data['password']);
+            $sendResult = $emailSvc->sendTrainerAccountCredentials($trainer['email'], trim($trainerName), $username, $password);
             if (!$sendResult['success']) {
                 error_log('Trainer account email failed: ' . $sendResult['message']);
             }
@@ -1088,7 +1106,7 @@ function createTrainerAccount($conn) {
 
         $conn->commit();
         echo json_encode(['success' => true, 'message' => 'Account created successfully']);
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         if ($conn->inTransaction()) $conn->rollBack();
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);

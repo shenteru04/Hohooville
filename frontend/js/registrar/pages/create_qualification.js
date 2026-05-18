@@ -19,7 +19,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 nc_level_id: document.getElementById('ncLevel').value,
                 ctpr_number: document.getElementById('ctprNumber').value,
                 duration: document.getElementById('duration').value,
-                training_cost: document.getElementById('trainingCost').value,
                 description: document.getElementById('description').value,
                 status: document.getElementById('qualificationStatus')?.value || 'active'
             };
@@ -140,7 +139,7 @@ async function initLogout() {
             if (result.isConfirmed) {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
-                window.location.href = '../../../login.html';
+                window.location.href = '/Hohoo-ville/frontend/login.html';
             }
         });
     });
@@ -154,12 +153,11 @@ async function loadQualifications() {
         tbody.innerHTML = '';
 
         if (!response.data.success || !Array.isArray(response.data.data) || !response.data.data.length) {
-            tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-sm text-slate-500">No qualifications found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-sm text-slate-500">No qualifications found.</td></tr>';
             return;
         }
 
         response.data.data.forEach((q) => {
-            const trainingCost = q.training_cost ? `PHP ${parseFloat(q.training_cost).toFixed(2)}` : 'N/A';
             const ncLevel = q.nc_level_code || 'N/A';
             tbody.innerHTML += `
                 <tr class="hover:bg-slate-50">
@@ -167,7 +165,6 @@ async function loadQualifications() {
                     <td class="px-4 py-3 text-sm text-slate-700"><span class="inline-flex rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700">${ncLevel}</span></td>
                     <td class="px-4 py-3 text-sm text-slate-700">${q.ctpr_number || 'N/A'}</td>
                     <td class="px-4 py-3 text-sm text-slate-700">${q.duration || 'N/A'}</td>
-                    <td class="px-4 py-3 text-sm text-slate-700">${trainingCost}</td>
                     <td class="px-4 py-3">
                         <span class="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold capitalize text-emerald-700">${q.status}</span>
                     </td>

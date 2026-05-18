@@ -3,9 +3,11 @@ const UPLOADS_URL = `${window.location.origin}/Hohoo-ville/uploads/trainees/`;
 
 let reviewModal;
 let reassignBatchModal;
+let documentPreviewModal;
 let currentQueueData = [];
 let currentReservedData = [];
 let allBatches = [];
+let openModalCount = 0;
 
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
@@ -25,7 +27,7 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) window.location.href = '../../../login.html';
+        if (error.response?.status === 401) window.location.href = '/Hohoo-ville/frontend/login.html';
         return Promise.reject(error);
     }
 );
@@ -36,17 +38,21 @@ class SimpleModal {
     }
 
     show() {
-        if (!this.element) return;
+        if (!this.element || !this.element.classList.contains('hidden')) return;
         this.element.classList.remove('hidden');
         this.element.classList.add('flex');
+        openModalCount += 1;
         document.body.classList.add('overflow-hidden');
     }
 
     hide() {
-        if (!this.element) return;
+        if (!this.element || this.element.classList.contains('hidden')) return;
         this.element.classList.add('hidden');
         this.element.classList.remove('flex');
-        document.body.classList.remove('overflow-hidden');
+        openModalCount = Math.max(0, openModalCount - 1);
+        if (openModalCount === 0) {
+            document.body.classList.remove('overflow-hidden');
+        }
     }
 }
 
@@ -161,12 +167,14 @@ function setTabButtonState(button, isActive) {
 function initModals() {
     reviewModal = new SimpleModal(document.getElementById('reviewModal'));
     reassignBatchModal = new SimpleModal(document.getElementById('reassignBatchModal'));
+    documentPreviewModal = new SimpleModal(document.getElementById('documentPreviewModal'));
 
     document.querySelectorAll('[data-modal-hide]').forEach((button) => {
         button.addEventListener('click', () => {
             const modalId = button.getAttribute('data-modal-hide');
             if (modalId === 'reviewModal') reviewModal.hide();
             if (modalId === 'reassignBatchModal') reassignBatchModal.hide();
+            if (modalId === 'documentPreviewModal') documentPreviewModal.hide();
         });
     });
 }
@@ -339,29 +347,143 @@ function formatCourseBatch(courseName, batchName) {
     return 'N/A';
 }
 
+function formatDateTime(value) {
+    if (!value) return '-';
+    const normalized = String(value).replace(' ', 'T');
+    const date = new Date(normalized);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function getFullName(item) {
+    return `${item.first_name || ''} ${item.middle_name || ''} ${item.last_name || ''} ${item.extension_name || ''}`
+        .replace(/\s+/g, ' ')
+        .trim() || 'Unnamed Applicant';
+}
+
+function getInitials(name) {
+    return String(name || '')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part.charAt(0).toUpperCase())
+        .join('') || 'NA';
+}
+
+function joinLabelParts(parts, fallback = 'N/A') {
+    const value = parts
+        .map((part) => String(part || '').trim())
+        .filter(Boolean)
+        .join(', ');
+    return value || fallback;
+}
+
+function getScholarshipLabel(value) {
+    const scholarship = String(value || '').trim();
+    return !scholarship || scholarship.toLowerCase() === 'not a scholar'
+        ? 'Private / Payee'
+        : scholarship;
+}
+
+function getFacebookHref(value) {
+    const account = String(value || '').trim();
+    if (!account) return '';
+    if (/^https?:\/\//i.test(account)) return account;
+    if (/^www\./i.test(account)) return `https://${account}`;
+    if (/facebook\.com/i.test(account)) return `https://${account.replace(/^https?:\/\//i, '')}`;
+    return '';
+}
+
+function setContactLink(elementId, text, href, enabledClassName) {
+    const link = document.getElementById(elementId);
+    if (!link) return;
+
+    const value = String(text || '').trim();
+    const label = link.querySelector('span');
+    if (label) {
+        label.textContent = value || 'Not provided';
+    } else {
+        link.textContent = value || 'Not provided';
+    }
+    if (href) {
+        link.href = href;
+        link.target = href.startsWith('http') ? '_blank' : '';
+        link.rel = href.startsWith('http') ? 'noopener noreferrer' : '';
+        link.className = enabledClassName;
+        return;
+    }
+
+    link.href = '#';
+    link.target = '';
+    link.rel = '';
+    link.className = 'mt-2 block text-sm font-medium text-slate-500 pointer-events-none';
+}
+
+function setBadge(id, label, className) {
+    const element = document.getElementById(id);
+    if (!element) return;
+    element.textContent = label;
+    element.className = className;
+}
+
 function openReviewModal(id) {
     const item = currentQueueData.find((entry) => String(entry.enrollment_id) === String(id));
     if (!item) return;
 
     setValue('reviewEnrollmentId', id);
+    const fullName = getFullName(item);
+    const courseName = item.course_name || 'Not Assigned';
+    const batchName = item.batch_name || 'Not Assigned';
+    const scholarshipLabel = getScholarshipLabel(item.scholarship_type);
 
-    setText('reviewName', `${item.first_name || ''} ${item.middle_name || ''} ${item.last_name || ''}`.replace(/\s+/g, ' ').trim());
+    setText('reviewName', fullName);
+    setText('reviewInitials', getInitials(fullName));
+    setText('reviewProfileSummary', item.course_name ? `${item.course_name} applicant` : 'Trainee applicant');
+    setBadge('reviewQueueStatus', 'Pending Review', 'inline-flex rounded-full border border-white/20 bg-white/15 px-3 py-1 text-xs font-semibold text-white');
+    setBadge(
+        'reviewScholarshipBadge',
+        scholarshipLabel,
+        scholarshipLabel === 'Private / Payee'
+            ? 'inline-flex rounded-full border border-white/20 bg-white/15 px-3 py-1 text-xs font-semibold text-white'
+            : 'inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700'
+    );
+    setText('reviewCourseStat', courseName);
+    setText('reviewBatchStat', batchName);
+    setText('reviewAppliedAt', formatDateTime(item.enrollment_date));
+
     setText('reviewSex', item.sex || 'N/A');
     setText('reviewCivilStatus', item.civil_status || 'N/A');
+    setText('reviewNationality', item.nationality || 'N/A');
     setText('reviewBirthdate', item.birthdate || 'N/A');
     setText('reviewAge', item.age || 'N/A');
-    setText('reviewBirthplace', `${item.birthplace_city || ''}, ${item.birthplace_province || ''}`.replace(/^,\s*|,\s*$/g, '') || 'N/A');
-    setText('reviewEmail', item.email || 'N/A');
-    setText('reviewPhone', item.phone_number || 'N/A');
-    setText('reviewAddress', item.address || 'N/A');
+    setText('reviewBirthplace', joinLabelParts([item.birthplace_city, item.birthplace_province, item.birthplace_region]));
+    setText('reviewAddress', item.address || joinLabelParts([item.house_no_street, item.barangay, item.district, item.city_municipality, item.province, item.region]));
+
+    setText('reviewEmail', item.email || 'Not provided');
+    setText('reviewPhone', item.phone_number || 'Not provided');
+    setText('reviewFacebook', item.facebook_account || 'Not provided');
+    setContactLink('reviewEmailLink', item.email || 'Not provided', item.email ? `mailto:${item.email}` : '', 'mt-2 block break-all text-sm font-semibold text-blue-700 hover:text-blue-800');
+    setContactLink('reviewPhoneLink', item.phone_number || 'Not provided', item.phone_number ? `tel:${String(item.phone_number).replace(/\s+/g, '')}` : '', 'mt-2 block text-sm font-semibold text-slate-900 hover:text-blue-700');
+    setContactLink('reviewFacebookLink', item.facebook_account || 'Not provided', getFacebookHref(item.facebook_account), 'mt-2 block break-all text-sm font-semibold text-slate-900 hover:text-blue-700');
 
     setText('reviewEducation', item.educational_attainment || 'N/A');
     setText('reviewEmploymentStatus', item.employment_status || 'N/A');
+    setText('reviewEmploymentType', item.employment_type || 'N/A');
     setText('reviewClassification', item.learner_classification ? item.learner_classification.split(',').join(', ') : 'N/A');
     setText('reviewIsPwd', Number(item.is_pwd) === 1 ? 'Yes' : 'No');
+    setText('reviewDisabilityType', item.disability_type || 'N/A');
+    setText('reviewDisabilityCause', item.disability_cause || 'N/A');
 
-    setText('reviewCourse', item.course_name || 'N/A');
-    setText('reviewBatch', item.batch_name || 'N/A');
+    setText('reviewCourse', courseName);
+    setText('reviewBatch', batchName);
+    setText('reviewScholarshipText', scholarshipLabel);
 
     const scholarshipSelect = document.getElementById('scholarshipSelect');
     if (scholarshipSelect) {
@@ -375,34 +497,125 @@ function openReviewModal(id) {
             photoImg.src = `${UPLOADS_URL}${encodeURIComponent(item.photo_file)}`;
             photoImg.classList.remove('hidden');
             noPhoto.classList.add('hidden');
+            photoImg.alt = `${fullName} profile photo`;
+            photoImg.onerror = () => {
+                photoImg.removeAttribute('src');
+                photoImg.classList.add('hidden');
+                noPhoto.classList.remove('hidden');
+            };
         } else {
+            photoImg.removeAttribute('src');
             photoImg.classList.add('hidden');
             noPhoto.classList.remove('hidden');
         }
     }
 
-    setupDocLink('linkValidId', item.valid_id_file, 'Valid ID', 'fas fa-id-card');
-    setupDocLink('linkBirthCert', item.birth_cert_file, 'Birth Certificate', 'fas fa-file-alt');
+    setupDocLink('linkValidId', item.valid_id_file);
+    setupDocLink('linkBirthCert', item.birth_cert_file);
 
     reviewModal.show();
 }
 
-function setupDocLink(elementId, filename, label, iconClass) {
-    const element = document.getElementById(elementId);
-    if (!element) return;
+function setupDocLink(elementId, filename) {
+    const link = document.getElementById(elementId);
+    const status = document.getElementById(`${elementId}Status`);
+    const action = document.getElementById(`${elementId}Action`);
+    if (!link || !status || !action) return;
+
+    const documentLabel = elementId === 'linkValidId' ? 'Valid ID' : 'Birth Certificate';
 
     if (filename) {
-        element.href = `${UPLOADS_URL}${encodeURIComponent(filename)}`;
-        element.target = '_blank';
-        element.classList.remove('pointer-events-none', 'opacity-50');
-        element.innerHTML = `<i class="${iconClass} mr-2"></i> ${label} (Click to View)`;
+        link.href = '#';
+        link.target = '';
+        link.rel = '';
+        link.className = 'group rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 transition hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-50';
+        link.onclick = (event) => {
+            event.preventDefault();
+            openApplicationDocumentPreview(filename, documentLabel);
+        };
+        status.textContent = 'Preview submitted file in this window.';
+        action.textContent = 'Preview';
+        action.className = 'inline-flex shrink-0 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700';
         return;
     }
 
-    element.href = '#';
-    element.target = '';
-    element.classList.add('pointer-events-none', 'opacity-50');
-    element.innerHTML = `<i class="${iconClass} mr-2"></i> ${label} (Not Uploaded)`;
+    link.href = '#';
+    link.target = '';
+    link.rel = '';
+    link.onclick = null;
+    link.className = 'group rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 opacity-80 pointer-events-none';
+    status.textContent = 'Not uploaded yet.';
+    action.textContent = 'Missing';
+    action.className = 'inline-flex shrink-0 rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-600';
+}
+
+function getApplicationDocumentUrl(filename = '') {
+    return `${UPLOADS_URL}${encodeURIComponent(String(filename || '').trim())}`;
+}
+
+function getApplicationDocumentExtension(filename = '') {
+    const cleaned = String(filename || '').split('/').pop().split('\\').pop();
+    const lastDot = cleaned.lastIndexOf('.');
+    return lastDot >= 0 ? cleaned.slice(lastDot + 1).toLowerCase() : '';
+}
+
+function renderApplicationDocumentPreview(documentUrl, extension, label, filename) {
+    const body = document.getElementById('documentPreviewBody');
+    if (!body) return;
+
+    const safeUrl = documentUrl;
+    const safeLabel = escapeHtml(label || 'Document Preview');
+    const safeFilename = escapeHtml(filename || 'Uploaded file');
+
+    if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'jfif'].includes(extension)) {
+        body.innerHTML = `
+            <div class="space-y-4">
+                <div class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
+                    <img src="${safeUrl}" alt="${safeLabel}" class="mx-auto max-h-[68vh] w-auto max-w-full rounded-2xl object-contain">
+                </div>
+                <p class="text-center text-sm text-slate-500">${safeFilename}</p>
+            </div>
+        `;
+        return;
+    }
+
+    if (extension === 'pdf') {
+        body.innerHTML = `
+            <div class="h-full min-h-[70vh] overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm">
+                <iframe src="${safeUrl}#view=FitH" title="${safeLabel}" class="h-[70vh] w-full border-0"></iframe>
+            </div>
+        `;
+        return;
+    }
+
+    body.innerHTML = `
+        <div class="mx-auto flex max-w-2xl flex-col items-center justify-center rounded-[24px] border border-amber-200 bg-amber-50 px-6 py-10 text-center">
+            <div class="flex h-16 w-16 items-center justify-center rounded-full bg-white text-amber-600 shadow-sm">
+                <i class="fas fa-file-circle-question text-2xl"></i>
+            </div>
+            <h4 class="mt-4 text-lg font-semibold text-slate-900">${safeLabel}</h4>
+            <p class="mt-2 break-all text-sm text-slate-600">${safeFilename}</p>
+            <p class="mt-3 text-sm text-slate-500">Inline preview is not available for this file type yet. You can still use the button below to open the original file.</p>
+        </div>
+    `;
+}
+
+function openApplicationDocumentPreview(filename, label) {
+    const cleanedFilename = String(filename || '').trim();
+    if (!cleanedFilename) return;
+
+    const documentUrl = getApplicationDocumentUrl(cleanedFilename);
+    const extension = getApplicationDocumentExtension(cleanedFilename);
+    const titleEl = document.getElementById('documentPreviewTitle');
+    const subtitleEl = document.getElementById('documentPreviewSubtitle');
+    const openLinkEl = document.getElementById('documentPreviewOpenLink');
+
+    if (titleEl) titleEl.textContent = label || 'Document Preview';
+    if (subtitleEl) subtitleEl.textContent = cleanedFilename;
+    if (openLinkEl) openLinkEl.href = documentUrl;
+
+    renderApplicationDocumentPreview(documentUrl, extension, label, cleanedFilename);
+    documentPreviewModal?.show();
 }
 
 async function approveEnrollment(id) {

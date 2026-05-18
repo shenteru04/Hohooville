@@ -55,6 +55,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     const qualificationSelect = document.getElementById('qualificationSelect');
     if (qualificationSelect) qualificationSelect.addEventListener('change', handleQualificationChange);
+    document.getElementById('maxTrainees')?.addEventListener('input', updateProjectedBatchValue);
+    document.getElementById('trainingCost')?.addEventListener('input', updateProjectedBatchValue);
+    document.querySelectorAll('input[name="trainerAssignmentMode"]').forEach((input) => {
+        input.addEventListener('change', () => applyTrainerAssignmentMode(input.value));
+    });
+    applyTrainerAssignmentMode(getSelectedTrainerAssignmentMode());
 
     const openClosedBtn = document.getElementById('openClosedBatches');
     if (openClosedBtn) {
@@ -85,6 +91,12 @@ function hydrateHeaderUser() {
     } catch (error) {
         console.warn('Unable to parse user in localStorage:', error);
     }
+}
+
+function formatQualificationOptionLabel(qualification) {
+    const baseName = qualification?.course_name || qualification?.qualification_name || 'Unnamed Qualification';
+    const ncLevel = qualification?.nc_level_code || qualification?.nc_level_name || '';
+    return ncLevel ? `${baseName} (${ncLevel})` : baseName;
 }
 
 function initSidebar() {
@@ -167,7 +179,7 @@ async function initLogout() {
             if (result.isConfirmed) {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
-                window.location.href = '../../../login.html';
+                window.location.href = '/Hohoo-ville/frontend/login.html';
             }
         });
     });
@@ -250,7 +262,10 @@ async function loadFormData() {
             const qualSelect = document.getElementById('qualificationSelect');
             qualSelect.innerHTML = '<option value="">Select Qualification</option>';
             allQualifications.forEach(q => {
-                qualSelect.innerHTML += `<option value="${q.qualification_id}">${q.course_name}</option>`;
+                const option = document.createElement('option');
+                option.value = q.qualification_id;
+                option.textContent = formatQualificationOptionLabel(q);
+                qualSelect.appendChild(option);
             });
         }
 
@@ -313,16 +328,22 @@ function renderBatchesTable(data, tbodyId) {
         const statusClass = batch.status === 'open'
             ? 'bg-emerald-100 text-emerald-700'
             : 'bg-slate-200 text-slate-700';
+        const mode = normalizeTrainerAssignmentMode(batch.trainer_assignment_mode);
+        const modeLabel = mode === 'multiple' ? 'Multiple by unit' : 'Single trainer';
+        const trainerSummary = batch.trainer_summary || batch.trainer_name || 'Not Assigned';
         const safeBatchName = String(batch.batch_name || '').replace(/'/g, '\\\'');
         tbody.innerHTML += `
             <tr class="hover:bg-slate-50">
-                <td class="px-4 py-3 text-sm text-slate-800">${batch.batch_name}</td>
-                <td class="px-4 py-3 text-sm text-slate-700">${batch.course_name || 'N/A'}</td>
-                <td class="px-4 py-3 text-sm text-slate-700">${batch.trainer_name || 'N/A'}</td>
-                <td class="px-4 py-3 text-sm text-slate-700">${batch.scholarship_type || 'None'}</td>
-                <td class="px-4 py-3 text-sm text-slate-700">${batch.start_date}</td>
-                <td class="px-4 py-3 text-sm text-slate-700">${batch.end_date}</td>
-                <td class="px-4 py-3 text-sm text-slate-700">${batch.max_trainees || '25'}</td>
+                <td class="px-4 py-3 text-sm text-slate-800">${escapeHtml(batch.batch_name || '')}</td>
+                <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(batch.course_name || 'N/A')}</td>
+                <td class="px-4 py-3 text-sm text-slate-700">
+                    <p class="font-medium text-slate-800">${escapeHtml(trainerSummary)}</p>
+                    <p class="text-xs text-slate-500">${modeLabel}</p>
+                </td>
+                <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(batch.scholarship_type || 'None')}</td>
+                <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(batch.start_date || '')}</td>
+                <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(batch.end_date || '')}</td>
+                <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(batch.max_trainees || '25')}</td>
                 <td class="px-4 py-3">
                     <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${statusClass}">${batch.status}</span>
                 </td>
@@ -348,6 +369,10 @@ window.openAddModal = function() {
     document.getElementById('submitBtn').textContent = 'Create Batch';
     document.getElementById('trainerSelect').innerHTML = '<option value="">Select Trainer</option>';
     document.getElementById('maxTrainees').value = '25';
+    document.getElementById('trainingCost').value = '';
+    document.getElementById('status').value = 'open';
+    setTrainerAssignmentMode('single');
+    updateProjectedBatchValue();
     batchModal.show();
 }
 
@@ -361,14 +386,17 @@ window.editBatch = async function(id) {
         document.getElementById('qualificationSelect').value = batch.qualification_id;
         filterTrainers(batch.qualification_id);
         document.getElementById('trainerSelect').value = batch.trainer_id;
+        setTrainerAssignmentMode(batch.trainer_assignment_mode || 'single');
         document.getElementById('scholarshipSelect').value = batch.scholarship_type_id;
         document.getElementById('startDate').value = batch.start_date;
         document.getElementById('endDate').value = batch.end_date;
         document.getElementById('maxTrainees').value = batch.max_trainees || 25;
+        document.getElementById('trainingCost').value = batch.training_cost || '';
         document.getElementById('status').value = batch.status;
         
         document.getElementById('batchModalLabel').textContent = 'Edit Batch';
         document.getElementById('submitBtn').textContent = 'Save Changes';
+        updateProjectedBatchValue();
         batchModal.show();
     }
 }
@@ -416,20 +444,42 @@ function handleQualificationChange() {
         const count = batchesData.filter(b => b.qualification_id == qualId).length + 1;
         document.getElementById('batchName').value = qual ? `${qual.course_name} - Batch ${count}` : '';
     }
+
+    const qual = allQualifications.find(q => String(q.qualification_id) === String(qualId));
+    document.getElementById('trainingCost').value = qual && qual.training_cost !== undefined && qual.training_cost !== null
+        ? qual.training_cost
+        : '';
+    updateProjectedBatchValue();
 }
 
 async function saveBatch(e) {
     e.preventDefault();
     const id = document.getElementById('batchId').value;
+    const maxTrainees = document.getElementById('maxTrainees').value;
+    const trainingCost = document.getElementById('trainingCost').value;
+    const assignmentMode = getSelectedTrainerAssignmentMode();
+
+    if (!maxTrainees || Number(maxTrainees) <= 0) {
+        Swal.fire('Error', 'Max trainees must be greater than zero.', 'error');
+        return;
+    }
+
+    if (trainingCost === '' || Number(trainingCost) < 0) {
+        Swal.fire('Error', 'Training cost must be zero or greater.', 'error');
+        return;
+    }
+
     const payload = {
         batch_id: id,
         batch_name: document.getElementById('batchName').value,
         qualification_id: document.getElementById('qualificationSelect').value,
         trainer_id: document.getElementById('trainerSelect').value,
+        trainer_assignment_mode: assignmentMode,
         scholarship_type_id: document.getElementById('scholarshipSelect').value,
         start_date: document.getElementById('startDate').value,
         end_date: document.getElementById('endDate').value,
-        max_trainees: document.getElementById('maxTrainees').value,
+        max_trainees: maxTrainees,
+        training_cost: trainingCost,
         status: document.getElementById('status').value
     };
 
@@ -447,6 +497,76 @@ async function saveBatch(e) {
     } catch (error) {
         console.error('Error saving batch:', error);
     }
+}
+
+function getSelectedTrainerAssignmentMode() {
+    return normalizeTrainerAssignmentMode(document.querySelector('input[name="trainerAssignmentMode"]:checked')?.value);
+}
+
+function setTrainerAssignmentMode(mode) {
+    const normalizedMode = normalizeTrainerAssignmentMode(mode);
+    const radio = document.querySelector(`input[name="trainerAssignmentMode"][value="${normalizedMode}"]`);
+    if (radio) {
+        radio.checked = true;
+    }
+    applyTrainerAssignmentMode(normalizedMode);
+}
+
+function applyTrainerAssignmentMode(mode) {
+    const normalizedMode = normalizeTrainerAssignmentMode(mode);
+    const label = document.getElementById('trainerSelectLabel');
+    const help = document.getElementById('trainerSelectHelp');
+    const hint = document.getElementById('trainerAssignmentHint');
+    const cards = Array.from(document.querySelectorAll('input[name="trainerAssignmentMode"]')).map((input) => input.closest('label'));
+
+    cards.forEach((card) => {
+        if (!card) return;
+        const isActive = card.querySelector('input')?.value === normalizedMode;
+        card.classList.toggle('border-blue-200', isActive);
+        card.classList.toggle('bg-blue-50/60', isActive);
+        card.classList.toggle('border-slate-300', !isActive);
+    });
+
+    if (label) {
+        label.textContent = normalizedMode === 'multiple' ? 'Lead Trainer (Optional)' : 'Assign Trainer';
+    }
+    if (help) {
+        help.textContent = normalizedMode === 'multiple'
+            ? 'Optional lead trainer can be scheduled immediately. Unit trainer assignment happens on the Schedule page.'
+            : 'This trainer is used for the whole batch in single mode.';
+    }
+    if (hint) {
+        hint.textContent = normalizedMode === 'multiple'
+            ? 'Multiple mode uses an optional lead trainer here, then trainer assignment per unit happens on the Schedule page.'
+            : 'Single mode keeps one trainer and one shared schedule for the whole batch.';
+    }
+}
+
+function normalizeTrainerAssignmentMode(mode) {
+    return String(mode || '').toLowerCase() === 'multiple' ? 'multiple' : 'single';
+}
+
+function updateProjectedBatchValue() {
+    const maxTrainees = Number(document.getElementById('maxTrainees')?.value || 0);
+    const trainingCost = Number(document.getElementById('trainingCost')?.value || 0);
+    const projectedValue = maxTrainees > 0 && trainingCost >= 0 ? maxTrainees * trainingCost : 0;
+    const output = document.getElementById('projectedBatchValue');
+    if (output) {
+        output.textContent = `PHP ${projectedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function escapeAttr(value) {
+    return escapeHtml(value);
 }
 
 window.viewBatch = async function(id, name) {

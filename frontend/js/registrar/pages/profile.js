@@ -1,12 +1,14 @@
 const API_BASE_URL = window.location.origin + '/Hohoo-ville/api';
+const REGISTRAR_PROFILE_IMAGES_URL = window.location.origin + '/Hohoo-ville/uploads/profile_images/';
 let currentUserId = 0;
+let currentProfileImageUrl = '';
 
 document.addEventListener('DOMContentLoaded', async function () {
     await ensureSwal();
 
     const user = getStoredUser();
     if (!user) {
-        window.location.href = '../../../login.html';
+        window.location.href = '/Hohoo-ville/frontend/login.html';
         return;
     }
 
@@ -61,6 +63,56 @@ function getDisplayName(userLike) {
 function hydrateHeaderUser(userLike) {
     const userName = document.getElementById('userName');
     if (userName) userName.textContent = getDisplayName(userLike);
+}
+
+function getRegistrarProfileImageUrl(profile, fallbackName) {
+    if (profile?.photo_url) {
+        return profile.photo_url.startsWith('http')
+            ? profile.photo_url
+            : `${window.location.origin}${profile.photo_url}`;
+    }
+
+    if (profile?.profile_image) {
+        return REGISTRAR_PROFILE_IMAGES_URL + encodeURIComponent(profile.profile_image);
+    }
+
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(fallbackName || 'Registrar')}&background=random`;
+}
+
+function setRegistrarProfileImage(imageUrl) {
+    ['profileAvatar', 'userProfileImage'].forEach((id) => {
+        const image = document.getElementById(id);
+        if (image) {
+            image.src = imageUrl;
+        }
+    });
+}
+
+function setProfileImageStatus(message, tone = 'muted') {
+    const status = document.getElementById('profileImageStatusText');
+    if (!status) return;
+
+    const toneClassMap = {
+        muted: 'text-slate-500',
+        loading: 'text-blue-600',
+        success: 'text-emerald-600',
+        error: 'text-red-500'
+    };
+
+    status.className = `mt-2 text-xs ${toneClassMap[tone] || toneClassMap.muted}`;
+    status.textContent = message;
+}
+
+function setProfileImageButtonLoading(isLoading) {
+    const button = document.getElementById('changeProfileImageBtn');
+    if (!button) return;
+
+    button.disabled = isLoading;
+    button.classList.toggle('cursor-wait', isLoading);
+    button.classList.toggle('opacity-80', isLoading);
+    button.innerHTML = isLoading
+        ? '<i class="fas fa-spinner fa-spin text-sm"></i>'
+        : '<i class="fas fa-camera text-sm"></i>';
 }
 
 function persistUserPatch(patch) {
@@ -170,7 +222,7 @@ async function initLogout() {
             if (result.isConfirmed) {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
-                window.location.href = '../../../login.html';
+                window.location.href = '/Hohoo-ville/frontend/login.html';
             }
         });
     });
@@ -211,7 +263,10 @@ async function loadProfile(userId) {
         document.getElementById('headerName').textContent = fullName;
         document.getElementById('displayEmail').textContent = data.email || 'N/A';
         document.getElementById('displayPhone').textContent = data.phone_number || 'N/A';
-        document.getElementById('profileAvatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=random`;
+        const imageUrl = getRegistrarProfileImageUrl(data, fullName);
+        currentProfileImageUrl = data.photo_url || data.profile_image ? imageUrl : '';
+        setRegistrarProfileImage(imageUrl);
+        setProfileImageStatus('Click the camera icon to change your profile photo.');
 
         persistUserPatch({
             user_id: Number(data.user_id || userId || 0),
@@ -330,68 +385,63 @@ function initPasswordToggle() {
 
 function setupProfileImageUpload(user) {
     const fileInput = document.getElementById('profileImageInput');
-    const preview = document.getElementById('profileImagePreview');
-    const uploadBtn = document.getElementById('uploadProfileImageBtn');
-    const profileImageForm = document.getElementById('profileImageForm');
+    const changePhotoButton = document.getElementById('changeProfileImageBtn');
+    const profileAvatar = document.getElementById('profileAvatar');
 
-    if (!fileInput || !preview) return;
+    if (!fileInput || !changePhotoButton || !profileAvatar) return;
 
-    // Click on image to select file
-    preview.addEventListener('click', () => {
+    const openFilePicker = () => {
+        if (changePhotoButton.disabled) return;
         fileInput.click();
-    });
+    };
 
-    // Handle file selection
+    changePhotoButton.addEventListener('click', openFilePicker);
+    profileAvatar.addEventListener('click', openFilePicker);
+    profileAvatar.classList.add('cursor-pointer');
+
     fileInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Show preview
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            preview.src = event.target.result;
-        };
-        reader.readAsDataURL(file);
-
-        // Enable upload button
-        uploadBtn.disabled = false;
-    });
-
-    // Handle form submission
-    profileImageForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const file = fileInput.files[0];
-        if (!file) {
-            if (window.Swal) {
-                Swal.fire('Error', 'Please select an image file', 'error');
-            }
-            return;
-        }
-
-        uploadBtn.disabled = true;
-        uploadBtn.innerHTML = '<i class="animate-spin fas fa-spinner mr-2"></i> Uploading...';
+        const previousImageUrl = currentProfileImageUrl || profileAvatar.src;
+        const previewUrl = URL.createObjectURL(file);
+        setRegistrarProfileImage(previewUrl);
+        setProfileImageStatus('Uploading profile photo...', 'loading');
+        setProfileImageButtonLoading(true);
 
         try {
             const response = await uploadProfileImage(file, 'registrar', currentUserId);
+            currentProfileImageUrl = response.url;
+            setRegistrarProfileImage(response.url);
+            setProfileImageStatus('Profile photo updated successfully.', 'success');
 
             if (window.Swal) {
-                Swal.fire('Success', 'Profile photo updated successfully!', 'success');
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Profile photo updated',
+                    showConfirmButton: false,
+                    timer: 1800,
+                    timerProgressBar: true
+                });
             }
 
-            // Update preview with uploaded image URL
-            preview.src = response.url;
-            fileInput.value = '';
-            uploadBtn.disabled = true;
-            uploadBtn.innerHTML = '<i class="fas fa-upload mr-2"></i>Upload Photo';
+            if (typeof window.refreshHeaderProfileChip === 'function') {
+                window.refreshHeaderProfileChip();
+            }
 
         } catch (error) {
             console.error('Error uploading profile image:', error);
+            setRegistrarProfileImage(previousImageUrl);
+            setProfileImageStatus(error.message || 'Failed to upload profile photo.', 'error');
             if (window.Swal) {
                 Swal.fire('Error', error.message || 'Failed to upload profile photo', 'error');
             }
-            uploadBtn.disabled = false;
-            uploadBtn.innerHTML = '<i class="fas fa-upload mr-2"></i>Upload Photo';
+        } finally {
+            URL.revokeObjectURL(previewUrl);
+            fileInput.value = '';
+            setProfileImageButtonLoading(false);
         }
     });
 }

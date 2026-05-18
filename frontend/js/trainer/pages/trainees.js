@@ -99,17 +99,6 @@ function initUserMenu() {
     });
 }
 
-async function ensureSwal() {
-    if (typeof window.Swal !== 'undefined') return;
-    await new Promise((resolve) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
-        script.onload = resolve;
-        script.onerror = resolve;
-        document.head.appendChild(script);
-    });
-}
-
 async function initLogout() {
     const logoutBtn = document.getElementById('logoutBtn');
     if (!logoutBtn) return;
@@ -152,9 +141,20 @@ async function loadTrainees(trainerId) {
                     ? 'bg-emerald-100 text-emerald-700'
                     : 'bg-amber-100 text-amber-700';
 
+                // Profile image with fallback to avatar
+                let profileImageHtml = '';
+                if (trainee.profile_image) {
+                    profileImageHtml = `<img src="/Hohoo-ville/uploads/profile_images/${encodeURIComponent(trainee.profile_image)}" alt="Profile" class="h-8 w-8 rounded-full border border-slate-200 object-cover" />`;
+                } else if (trainee.first_name) {
+                    profileImageHtml = `<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(trainee.first_name)}&background=random" alt="Avatar" class="h-8 w-8 rounded-full border border-slate-200 object-cover" />`;
+                } else {
+                    profileImageHtml = `<div class="h-8 w-8 rounded-full border border-slate-200 bg-slate-100 flex items-center justify-center"><i class="fas fa-user text-slate-400 text-xs"></i></div>`;
+                }
+
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td class="px-4 py-3 text-sm text-slate-700">${trainee.trainee_school_id || 'N/A'}</td>
+                    <td class="px-4 py-3 text-sm text-slate-700">${profileImageHtml}</td>
                     <td class="px-4 py-3">
                         <p class="text-sm font-semibold text-slate-900">${trainee.first_name || ''} ${trainee.last_name || ''}</p>
                         <p class="text-xs text-slate-500">${trainee.email || ''}</p>
@@ -174,13 +174,13 @@ async function loadTrainees(trainerId) {
                 tbody.appendChild(row);
             });
         } else {
-            tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-sm text-slate-500">No trainees found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-6 text-center text-sm text-slate-500">No trainees found.</td></tr>';
         }
     } catch (error) {
         console.error('Error loading trainees:', error);
         const tbody = document.getElementById('traineesTableBody');
         if (tbody) {
-            tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-sm text-red-600">Failed to load trainees.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-6 text-center text-sm text-red-600">Failed to load trainees.</td></tr>';
         }
     }
 }

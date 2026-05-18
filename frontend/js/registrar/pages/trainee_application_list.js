@@ -2,6 +2,7 @@ const API_BASE_URL = window.location.origin + '/Hohoo-ville/api';
 const UPLOADS_URL = window.location.origin + '/Hohoo-ville/uploads/trainees/';
 
 let viewModal;
+let documentPreviewModal;
 let currentQueueData = [];
 let unqualifiedData = [];
 let currentViewItem = null;
@@ -49,6 +50,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     const modalEl = document.getElementById('viewApplicationModal');
     if (modalEl) viewModal = new SimpleModal(modalEl);
+    const documentPreviewEl = document.getElementById('documentPreviewModal');
+    if (documentPreviewEl) documentPreviewModal = new SimpleModal(documentPreviewEl);
 
     loadApprovalQueue();
     loadUnqualifiedQueue();
@@ -173,7 +176,7 @@ async function initLogout() {
             if (result.isConfirmed) {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
-                window.location.href = '../../../login.html';
+                window.location.href = '/Hohoo-ville/frontend/login.html';
             }
         });
     });
@@ -338,72 +341,280 @@ function formatDateTime(value) {
     });
 }
 
+function setText(id, value) {
+    const element = document.getElementById(id);
+    if (element) element.textContent = value;
+}
+
+function getFullName(item) {
+    return `${item.first_name || ''} ${item.middle_name || ''} ${item.last_name || ''} ${item.extension_name || ''}`
+        .replace(/\s+/g, ' ')
+        .trim() || 'Unnamed Applicant';
+}
+
+function getInitials(name) {
+    return String(name || '')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part.charAt(0).toUpperCase())
+        .join('') || 'NA';
+}
+
+function joinLabelParts(parts, fallback = 'N/A') {
+    const value = parts
+        .map((part) => String(part || '').trim())
+        .filter(Boolean)
+        .join(', ');
+    return value || fallback;
+}
+
+function escapeHtml(value = '') {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function getScholarshipLabel(value) {
+    const scholarship = String(value || '').trim();
+    return !scholarship || scholarship.toLowerCase() === 'not a scholar'
+        ? 'Private / Payee'
+        : scholarship;
+}
+
+function getFacebookHref(value) {
+    const account = String(value || '').trim();
+    if (!account) return '';
+    if (/^https?:\/\//i.test(account)) return account;
+    if (/^www\./i.test(account)) return `https://${account}`;
+    if (/facebook\.com/i.test(account)) return `https://${account.replace(/^https?:\/\//i, '')}`;
+    return '';
+}
+
+function setContactLink(elementId, text, href, enabledClassName) {
+    const link = document.getElementById(elementId);
+    if (!link) return;
+
+    const value = String(text || '').trim();
+    const label = link.querySelector('span');
+    if (label) {
+        label.textContent = value || 'Not provided';
+    } else {
+        link.textContent = value || 'Not provided';
+    }
+    if (href) {
+        link.href = href;
+        link.target = href.startsWith('http') ? '_blank' : '';
+        link.rel = href.startsWith('http') ? 'noopener noreferrer' : '';
+        link.className = enabledClassName;
+        return;
+    }
+
+    link.href = '#';
+    link.target = '';
+    link.rel = '';
+    link.className = 'mt-2 block text-sm font-medium text-slate-500 pointer-events-none';
+}
+
+function setBadge(elementId, label, className) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    element.textContent = label;
+    element.className = className;
+}
+
+function setupApplicationDocumentCard(elementId, filename) {
+    const link = document.getElementById(elementId);
+    const status = document.getElementById(`${elementId}Status`);
+    const action = document.getElementById(`${elementId}Action`);
+    if (!link || !status || !action) return;
+
+    const documentLabel = elementId === 'linkValidId' ? 'Valid ID' : 'Birth Certificate';
+
+    if (filename) {
+        link.href = '#';
+        link.target = '';
+        link.rel = '';
+        link.className = 'group rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 transition hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-50';
+        link.onclick = (event) => {
+            event.preventDefault();
+            openApplicationDocumentPreview(filename, documentLabel);
+        };
+        status.textContent = 'Preview submitted file in this window.';
+        action.textContent = 'Preview';
+        action.className = 'inline-flex shrink-0 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700';
+        return;
+    }
+
+    link.href = '#';
+    link.target = '';
+    link.rel = '';
+    link.onclick = null;
+    link.className = 'group rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 opacity-80 pointer-events-none';
+    status.textContent = 'Not uploaded yet.';
+    action.textContent = 'Missing';
+    action.className = 'inline-flex shrink-0 rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-600';
+}
+
+function getApplicationDocumentUrl(filename = '') {
+    return `${UPLOADS_URL}${encodeURIComponent(String(filename || '').trim())}`;
+}
+
+function getApplicationDocumentExtension(filename = '') {
+    const cleaned = String(filename || '').split('/').pop().split('\\').pop();
+    const lastDot = cleaned.lastIndexOf('.');
+    return lastDot >= 0 ? cleaned.slice(lastDot + 1).toLowerCase() : '';
+}
+
+function renderApplicationDocumentPreview(documentUrl, extension, label, filename) {
+    const body = document.getElementById('documentPreviewBody');
+    if (!body) return;
+
+    const safeUrl = documentUrl;
+    const safeLabel = escapeHtml(label || 'Document Preview');
+    const safeFilename = escapeHtml(filename || 'Uploaded file');
+
+    if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'jfif'].includes(extension)) {
+        body.innerHTML = `
+            <div class="space-y-4">
+                <div class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
+                    <img src="${safeUrl}" alt="${safeLabel}" class="mx-auto max-h-[68vh] w-auto max-w-full rounded-2xl object-contain">
+                </div>
+                <p class="text-center text-sm text-slate-500">${safeFilename}</p>
+            </div>
+        `;
+        return;
+    }
+
+    if (extension === 'pdf') {
+        body.innerHTML = `
+            <div class="h-full min-h-[70vh] overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm">
+                <iframe src="${safeUrl}#view=FitH" title="${safeLabel}" class="h-[70vh] w-full border-0"></iframe>
+            </div>
+        `;
+        return;
+    }
+
+    body.innerHTML = `
+        <div class="mx-auto flex max-w-2xl flex-col items-center justify-center rounded-[24px] border border-amber-200 bg-amber-50 px-6 py-10 text-center">
+            <div class="flex h-16 w-16 items-center justify-center rounded-full bg-white text-amber-600 shadow-sm">
+                <i class="fas fa-file-circle-question text-2xl"></i>
+            </div>
+            <h4 class="mt-4 text-lg font-semibold text-slate-900">${safeLabel}</h4>
+            <p class="mt-2 break-all text-sm text-slate-600">${safeFilename}</p>
+            <p class="mt-3 text-sm text-slate-500">Inline preview is not available for this file type yet. You can still use the button below to open the original file.</p>
+        </div>
+    `;
+}
+
+function openApplicationDocumentPreview(filename, label) {
+    const cleanedFilename = String(filename || '').trim();
+    if (!cleanedFilename) return;
+
+    const documentUrl = getApplicationDocumentUrl(cleanedFilename);
+    const extension = getApplicationDocumentExtension(cleanedFilename);
+    const titleEl = document.getElementById('documentPreviewTitle');
+    const subtitleEl = document.getElementById('documentPreviewSubtitle');
+    const openLinkEl = document.getElementById('documentPreviewOpenLink');
+
+    if (titleEl) titleEl.textContent = label || 'Document Preview';
+    if (subtitleEl) subtitleEl.textContent = cleanedFilename;
+    if (openLinkEl) openLinkEl.href = documentUrl;
+
+    renderApplicationDocumentPreview(documentUrl, extension, label, cleanedFilename);
+    documentPreviewModal?.show();
+}
+
 window.viewApplication = function(id, canReview = false) {
-    // Search in both lists
     const item = currentQueueData.find(i => i.enrollment_id == id) || unqualifiedData.find(i => i.enrollment_id == id);
     if (!item) return;
     currentViewItem = item;
     currentViewCanReview = !!canReview;
 
-    // Personal Info
-    document.getElementById('appName').textContent = `${item.first_name} ${item.middle_name || ''} ${item.last_name} ${item.extension_name || ''}`;
-    document.getElementById('appSex').textContent = item.sex || 'N/A';
-    document.getElementById('appCivilStatus').textContent = item.civil_status || 'N/A';
-    document.getElementById('appBirthdate').textContent = item.birthdate || 'N/A';
-    document.getElementById('appAge').textContent = item.age || 'N/A';
-    document.getElementById('appNationality').textContent = item.nationality || 'N/A';
-    document.getElementById('appBirthplace').textContent = `${item.birthplace_city || ''}, ${item.birthplace_province || ''}, ${item.birthplace_region || ''}`;
+    const fullName = getFullName(item);
+    const courseName = item.course_name || 'Not Assigned';
+    const batchName = item.batch_name || 'Not Assigned';
+    const scholarshipLabel = getScholarshipLabel(item.scholarship_type);
+    const applicationStatus = currentViewCanReview
+        ? {
+            label: 'Pending Qualification',
+            className: 'inline-flex rounded-full border border-white/20 bg-white/15 px-3 py-1 text-xs font-semibold text-white'
+        }
+        : {
+            label: 'Unqualified',
+            className: 'inline-flex rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700'
+        };
+    const scholarshipBadgeClass = scholarshipLabel === 'Private / Payee'
+        ? 'inline-flex rounded-full border border-white/20 bg-white/15 px-3 py-1 text-xs font-semibold text-white'
+        : 'inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700';
 
-    // Contact & Address
-    document.getElementById('appEmail').textContent = item.email;
-    document.getElementById('appPhone').textContent = item.phone_number || 'N/A';
-    document.getElementById('appFacebook').textContent = item.facebook_account || 'N/A';
-    document.getElementById('appAddress').textContent = `${item.house_no_street || ''}, ${item.barangay || ''}, ${item.district || ''}, ${item.city_municipality || ''}, ${item.province || ''}, ${item.region || ''}`;
+    setText('appName', fullName);
+    setText('appInitials', getInitials(fullName));
+    setText('appProfileSummary', item.course_name ? `${item.course_name} applicant` : 'Trainee applicant');
+    setBadge('appApplicationStatus', applicationStatus.label, applicationStatus.className);
+    setBadge('appScholarshipBadge', scholarshipLabel, scholarshipBadgeClass);
+    setText('appCourseStat', courseName);
+    setText('appBatchStat', batchName);
+    setText('appAppliedAt', formatDateTime(item.enrollment_date));
 
-    // Background
-    document.getElementById('appEducation').textContent = item.educational_attainment || 'N/A';
-    document.getElementById('appEmploymentStatus').textContent = item.employment_status || 'N/A';
-    document.getElementById('appEmploymentType').textContent = item.employment_type || 'N/A';
-    document.getElementById('appClassification').textContent = item.learner_classification ? item.learner_classification.split(',').join(', ') : 'N/A';
-    
-    document.getElementById('appIsPwd').textContent = item.is_pwd == 1 ? 'Yes' : 'No';
-    document.getElementById('appDisabilityType').textContent = item.disability_type || 'N/A';
-    document.getElementById('appDisabilityCause').textContent = item.disability_cause || 'N/A';
+    setText('appSex', item.sex || 'N/A');
+    setText('appCivilStatus', item.civil_status || 'N/A');
+    setText('appBirthdate', item.birthdate || 'N/A');
+    setText('appAge', item.age || 'N/A');
+    setText('appNationality', item.nationality || 'N/A');
+    setText('appBirthplace', joinLabelParts([item.birthplace_city, item.birthplace_province, item.birthplace_region]));
+    setText('appAddress', joinLabelParts([item.house_no_street, item.barangay, item.district, item.city_municipality, item.province, item.region]));
 
-    // Training
-    document.getElementById('appCourse').textContent = item.course_name || 'N/A';
-    document.getElementById('appBatch').textContent = item.batch_name || 'N/A';
-    document.getElementById('appScholarship').textContent = item.scholarship_type || 'N/A';
+    setText('appEmail', item.email || 'Not provided');
+    setText('appPhone', item.phone_number || 'Not provided');
+    setText('appFacebook', item.facebook_account || 'Not provided');
+    setContactLink('appEmailLink', item.email || 'Not provided', item.email ? `mailto:${item.email}` : '', 'mt-2 block break-all text-sm font-semibold text-blue-700 hover:text-blue-800');
+    setContactLink('appPhoneLink', item.phone_number || 'Not provided', item.phone_number ? `tel:${String(item.phone_number).replace(/\s+/g, '')}` : '', 'mt-2 block text-sm font-semibold text-slate-900 hover:text-blue-700');
+    setContactLink('appFacebookLink', item.facebook_account || 'Not provided', getFacebookHref(item.facebook_account), 'mt-2 block break-all text-sm font-semibold text-slate-900 hover:text-blue-700');
 
-    // Docs & Photo
-    const linkValidId = document.getElementById('linkValidId');
-    linkValidId.href = item.valid_id_file ? UPLOADS_URL + encodeURIComponent(item.valid_id_file) : '#';
-    linkValidId.classList.toggle('pointer-events-none', !item.valid_id_file);
-    linkValidId.classList.toggle('opacity-50', !item.valid_id_file);
-    
-    const linkBirthCert = document.getElementById('linkBirthCert');
-    linkBirthCert.href = item.birth_cert_file ? UPLOADS_URL + encodeURIComponent(item.birth_cert_file) : '#';
-    linkBirthCert.classList.toggle('pointer-events-none', !item.birth_cert_file);
-    linkBirthCert.classList.toggle('opacity-50', !item.birth_cert_file);
+    setText('appEducation', item.educational_attainment || 'N/A');
+    setText('appEmploymentStatus', item.employment_status || 'N/A');
+    setText('appEmploymentType', item.employment_type || 'N/A');
+    setText('appClassification', item.learner_classification ? item.learner_classification.split(',').join(', ') : 'N/A');
+    setText('appIsPwd', item.is_pwd == 1 ? 'Yes' : 'No');
+    setText('appDisabilityType', item.disability_type || 'N/A');
+    setText('appDisabilityCause', item.disability_cause || 'N/A');
+
+    setText('appCourse', courseName);
+    setText('appBatch', batchName);
+    setText('appScholarship', scholarshipLabel);
+
+    setupApplicationDocumentCard('linkValidId', item.valid_id_file);
+    setupApplicationDocumentCard('linkBirthCert', item.birth_cert_file);
 
     const photo = document.getElementById('appPhoto');
     const noPhoto = document.getElementById('appNoPhoto');
-    photo.src = item.photo_file ? UPLOADS_URL + encodeURIComponent(item.photo_file) : '';
-    photo.onerror = function() {
-        this.classList.add('hidden');
-        noPhoto.classList.remove('hidden');
-    };
-    photo.classList.toggle('hidden', !item.photo_file);
-    noPhoto.classList.toggle('hidden', !!item.photo_file);
+    if (photo && noPhoto) {
+        photo.alt = `${fullName} profile photo`;
+        if (item.photo_file) {
+            photo.src = `${UPLOADS_URL}${encodeURIComponent(item.photo_file)}`;
+            photo.classList.remove('hidden');
+            noPhoto.classList.add('hidden');
+            photo.onerror = function() {
+                this.removeAttribute('src');
+                this.classList.add('hidden');
+                noPhoto.classList.remove('hidden');
+            };
+        } else {
+            photo.removeAttribute('src');
+            photo.classList.add('hidden');
+            noPhoto.classList.remove('hidden');
+        }
+    }
 
     const modalQualifyBtn = document.getElementById('modalQualifyBtn');
     const modalUnqualifyBtn = document.getElementById('modalUnqualifyBtn');
     if (modalQualifyBtn) modalQualifyBtn.classList.toggle('hidden', !currentViewCanReview);
     if (modalUnqualifyBtn) modalUnqualifyBtn.classList.toggle('hidden', !currentViewCanReview);
-
-    if (typeof window.setActiveViewApplicationTab === 'function') {
-        window.setActiveViewApplicationTab('viewPersonal');
-    }
     viewModal.show();
 }
 

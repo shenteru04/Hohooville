@@ -13,6 +13,13 @@ document.addEventListener('DOMContentLoaded', function() {
     let allScholarships = [];
     let isReturningTrainee = false;
     let phLocationData = {}; // Store PH location data
+    let isPhLocationDataReady = false;
+    let pendingReturningTraineeData = null;
+    let pendingDraftFormValues = null;
+    let hasRestoredSavedProgress = false;
+    let isRestoringSavedProgress = false;
+    let draftSaveTimer = null;
+    const APPLICATION_DRAFT_STORAGE_KEY = 'hohooville_application_form_progress_v1';
 
     // --- Element Selectors ---
     const preCheckSection = document.getElementById('preCheckSection');
@@ -25,6 +32,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const requirementsUploadSection = document.getElementById('requirementsUploadSection');
     const signatureSection = document.getElementById('signatureSection');
     const submitBtn = document.getElementById('submitBtn');
+    const phoneInput = document.getElementById('phoneInput');
+    const emailInput = document.getElementById('emailInput');
+    const phoneError = document.getElementById('phoneError');
+    const emailError = document.getElementById('emailError');
+    const checkSchoolIdInput = document.getElementById('check_school_id');
 
     // --- Section visibility + required handling ---
     function initRequiredMarkers(section) {
@@ -51,8 +63,445 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    function getCurrentStepNumber() {
+        return document.getElementById('step2').style.display === 'block' ? 2 : 1;
+    }
+
+    function setCurrentStepNumber(stepNumber = 1) {
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        if (!step1 || !step2) return;
+
+        if (Number(stepNumber) === 2) {
+            step1.style.display = 'none';
+            step2.style.display = 'block';
+        } else {
+            step2.style.display = 'none';
+            step1.style.display = 'block';
+        }
+    }
+
+    function getFieldElementsByName(name) {
+        return Array.from(applicationForm?.elements || []).filter(field => field && field.name === name);
+    }
+
+    function serializeFormValues() {
+        const values = {};
+        const checkboxCollections = new Map();
+
+        Array.from(applicationForm?.elements || []).forEach(field => {
+            if (!field || !field.name || field.type === 'file') {
+                return;
+            }
+
+            if (field.type === 'radio') {
+                if (field.checked) {
+                    values[field.name] = field.value;
+                } else if (!(field.name in values)) {
+                    values[field.name] = '';
+                }
+                return;
+            }
+
+            if (field.type === 'checkbox') {
+                if (field.name.endsWith('[]')) {
+                    if (!checkboxCollections.has(field.name)) {
+                        checkboxCollections.set(field.name, []);
+                    }
+                    if (field.checked) {
+                        checkboxCollections.get(field.name).push(field.value);
+                    }
+                } else {
+                    values[field.name] = Boolean(field.checked);
+                }
+                return;
+            }
+
+            values[field.name] = field.value;
+        });
+
+        checkboxCollections.forEach((items, name) => {
+            values[name] = items;
+        });
+
+        return values;
+    }
+
+    function restoreSimpleFormValues(values = {}) {
+        const deferredFieldNames = new Set([
+            'birthplace_province',
+            'birthplace_city',
+            'birthplace_region',
+            'province',
+            'city_municipality',
+            'barangay',
+            'region',
+            'district',
+            'qualification_id',
+            'batch_id'
+        ]);
+
+        Object.entries(values).forEach(([name, value]) => {
+            if (deferredFieldNames.has(name)) return;
+
+            const fields = getFieldElementsByName(name);
+            if (!fields.length) return;
+
+            const [firstField] = fields;
+
+            if (firstField.type === 'radio') {
+                fields.forEach(field => {
+                    field.checked = String(field.value) === String(value || '');
+                });
+                return;
+            }
+
+            if (firstField.type === 'checkbox') {
+                if (name.endsWith('[]')) {
+                    const selectedValues = Array.isArray(value) ? value.map(String) : [];
+                    fields.forEach(field => {
+                        field.checked = selectedValues.includes(String(field.value));
+                    });
+                } else {
+                    firstField.checked = Boolean(value);
+                }
+                return;
+            }
+
+            firstField.value = value ?? '';
+        });
+    }
+
+    function restoreSignaturePresentation(values = {}) {
+        const savedSignatureMethod = values.signatureMethod === 'upload' ? 'upload' : 'draw';
+        const savedSignatureData = String(values.digital_signature || '').trim();
+        const signaturePreview = document.getElementById('signaturePreview');
+        const signaturePlaceholder = document.getElementById('signaturePlaceholder');
+        const clearSignatureBtn = document.getElementById('clearSignatureBtn');
+        const digitalSignatureInput = document.getElementById('digitalSignatureInput');
+
+        if (sigMethodDraw && sigMethodUpload && drawSection && uploadSection) {
+            sigMethodDraw.checked = savedSignatureMethod !== 'upload';
+            sigMethodUpload.checked = savedSignatureMethod === 'upload';
+            drawSection.style.display = savedSignatureMethod === 'upload' ? 'none' : 'block';
+            uploadSection.style.display = savedSignatureMethod === 'upload' ? 'block' : 'none';
+        }
+
+        if (digitalSignatureInput) {
+            digitalSignatureInput.value = savedSignatureData;
+        }
+
+        if (!savedSignatureData) {
+            if (signaturePreview) {
+                signaturePreview.src = '';
+                signaturePreview.style.display = 'none';
+            }
+            if (signaturePlaceholder) signaturePlaceholder.style.display = 'block';
+            if (clearSignatureBtn) clearSignatureBtn.style.display = 'none';
+            if (uploadPreview) uploadPreview.src = '';
+            if (uploadPreviewContainer) uploadPreviewContainer.style.display = 'none';
+            return;
+        }
+
+        if (savedSignatureMethod === 'upload') {
+            if (uploadPreview) uploadPreview.src = savedSignatureData;
+            if (uploadPreviewContainer) uploadPreviewContainer.style.display = 'block';
+            if (signaturePreview) {
+                signaturePreview.src = '';
+                signaturePreview.style.display = 'none';
+            }
+            if (signaturePlaceholder) signaturePlaceholder.style.display = 'block';
+            if (clearSignatureBtn) clearSignatureBtn.style.display = 'none';
+        } else {
+            if (signaturePreview) {
+                signaturePreview.src = savedSignatureData;
+                signaturePreview.style.display = 'block';
+            }
+            if (signaturePlaceholder) signaturePlaceholder.style.display = 'none';
+            if (clearSignatureBtn) clearSignatureBtn.style.display = 'inline-block';
+            if (uploadPreview) uploadPreview.src = '';
+            if (uploadPreviewContainer) uploadPreviewContainer.style.display = 'none';
+        }
+    }
+
+    function restoreCourseAndBatchSelection(values = {}) {
+        const courseSelect = document.getElementById('courseSelect');
+        const batchSelect = document.getElementById('batchSelect');
+        if (!courseSelect || !batchSelect) return;
+
+        const desiredCourseId = String(values.qualification_id || '').trim();
+        if (desiredCourseId && Array.from(courseSelect.options).some(option => option.value === desiredCourseId)) {
+            courseSelect.value = desiredCourseId;
+        }
+
+        updateCourseNcLevelHint(courseSelect.value);
+        populateBatches(courseSelect.value);
+
+        const desiredBatchId = String(values.batch_id || '').trim();
+        if (desiredBatchId && Array.from(batchSelect.options).some(option => option.value === desiredBatchId)) {
+            batchSelect.value = desiredBatchId;
+            if (typeof batchSelect.onchange === 'function') {
+                batchSelect.onchange();
+            } else {
+                batchSelect.dispatchEvent(new Event('change'));
+            }
+        }
+    }
+
+    function getApplicationFlowMode() {
+        if (applicationContainer.style.display === 'none') {
+            return 'precheck';
+        }
+
+        return isReturningTrainee ? 'returning' : 'new';
+    }
+
+    function clearSavedApplicationProgress() {
+        window.sessionStorage.removeItem(APPLICATION_DRAFT_STORAGE_KEY);
+    }
+
+    function saveApplicationProgress() {
+        if (isRestoringSavedProgress) return;
+
+        const payload = {
+            updatedAt: Date.now(),
+            flowMode: getApplicationFlowMode(),
+            currentStep: getCurrentStepNumber(),
+            preCheckSchoolId: checkSchoolIdInput?.value?.trim() || '',
+            isReturningTrainee: Boolean(isReturningTrainee),
+            returningTraineeData: pendingReturningTraineeData || null,
+            values: serializeFormValues()
+        };
+
+        window.sessionStorage.setItem(APPLICATION_DRAFT_STORAGE_KEY, JSON.stringify(payload));
+    }
+
+    function queueApplicationProgressSave() {
+        if (isRestoringSavedProgress) return;
+
+        window.clearTimeout(draftSaveTimer);
+        draftSaveTimer = window.setTimeout(() => {
+            saveApplicationProgress();
+        }, 120);
+    }
+
+    function restoreSavedApplicationProgress() {
+        if (hasRestoredSavedProgress) return;
+        hasRestoredSavedProgress = true;
+
+        const rawState = window.sessionStorage.getItem(APPLICATION_DRAFT_STORAGE_KEY);
+        if (!rawState) return;
+
+        try {
+            const state = JSON.parse(rawState);
+            const values = state?.values && typeof state.values === 'object' ? state.values : {};
+
+            pendingDraftFormValues = values;
+            isRestoringSavedProgress = true;
+
+            if (checkSchoolIdInput) {
+                checkSchoolIdInput.value = state?.preCheckSchoolId || '';
+            }
+
+            const flowMode = state?.flowMode || 'precheck';
+            if (flowMode === 'returning' && state?.returningTraineeData) {
+                preCheckSection.style.display = 'none';
+                applicationContainer.style.display = 'block';
+                handleReturningTrainee(state.returningTraineeData);
+            } else if (flowMode === 'new') {
+                preCheckSection.style.display = 'none';
+                applicationContainer.style.display = 'block';
+                handleNewTrainee({});
+            }
+
+            restoreSimpleFormValues(values);
+            syncReturningTraineeLocationFields(values);
+            restoreCourseAndBatchSelection(values);
+            restoreSignaturePresentation(values);
+            setCurrentStepNumber(state?.currentStep || 1);
+
+            document.getElementById('employmentStatus')?.dispatchEvent(new Event('change'));
+            document.querySelector(`input[name="is_pwd"]:checked`)?.dispatchEvent(new Event('change'));
+            if (privacyConsent) privacyConsent.dispatchEvent(new Event('change'));
+        } catch (error) {
+            console.error('Failed to restore saved application progress:', error);
+            clearSavedApplicationProgress();
+        } finally {
+            isRestoringSavedProgress = false;
+        }
+    }
+
     initRequiredMarkers(requirementsUploadSection);
     initRequiredMarkers(signatureSection);
+
+    function normalizeLocationLabel(value = '') {
+        return String(value || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, ' ')
+            .trim();
+    }
+
+    function levenshteinDistance(a = '', b = '') {
+        const source = String(a);
+        const target = String(b);
+
+        if (!source.length) return target.length;
+        if (!target.length) return source.length;
+
+        const previous = Array.from({ length: target.length + 1 }, (_, index) => index);
+        const current = new Array(target.length + 1).fill(0);
+
+        for (let sourceIndex = 1; sourceIndex <= source.length; sourceIndex += 1) {
+            current[0] = sourceIndex;
+            for (let targetIndex = 1; targetIndex <= target.length; targetIndex += 1) {
+                const substitutionCost = source[sourceIndex - 1] === target[targetIndex - 1] ? 0 : 1;
+                current[targetIndex] = Math.min(
+                    current[targetIndex - 1] + 1,
+                    previous[targetIndex] + 1,
+                    previous[targetIndex - 1] + substitutionCost
+                );
+            }
+
+            for (let targetIndex = 0; targetIndex < previous.length; targetIndex += 1) {
+                previous[targetIndex] = current[targetIndex];
+            }
+        }
+
+        return previous[target.length];
+    }
+
+    function findBestSelectOption(selectElem, targetValue) {
+        if (!selectElem) return null;
+
+        const rawTarget = String(targetValue || '').trim();
+        if (!rawTarget) return null;
+
+        const options = Array.from(selectElem.options || []).filter(option => String(option.value || '').trim() !== '');
+        if (!options.length) return null;
+
+        const exactMatch = options.find(option => String(option.value || '').trim() === rawTarget || String(option.text || '').trim() === rawTarget);
+        if (exactMatch) return exactMatch;
+
+        const normalizedTarget = normalizeLocationLabel(rawTarget);
+        const normalizedMatch = options.find(option => {
+            return normalizeLocationLabel(option.value) === normalizedTarget || normalizeLocationLabel(option.text) === normalizedTarget;
+        });
+        if (normalizedMatch) return normalizedMatch;
+
+        let bestMatch = null;
+        let bestDistance = Number.POSITIVE_INFINITY;
+
+        options.forEach(option => {
+            const normalizedOption = normalizeLocationLabel(option.value || option.text);
+            if (!normalizedOption) return;
+
+            const distance = levenshteinDistance(normalizedTarget, normalizedOption);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                bestMatch = option;
+            }
+        });
+
+        const distanceThreshold = normalizedTarget.length <= 6 ? 1 : normalizedTarget.length <= 14 ? 2 : 3;
+        return bestDistance <= distanceThreshold ? bestMatch : null;
+    }
+
+    function appendAndSelectOption(selectElem, value) {
+        if (!selectElem) return null;
+
+        const rawValue = String(value || '').trim();
+        if (!rawValue) return null;
+
+        const existingOption = findBestSelectOption(selectElem, rawValue);
+        if (existingOption) {
+            selectElem.value = existingOption.value;
+            return existingOption;
+        }
+
+        const option = document.createElement('option');
+        option.value = rawValue;
+        option.text = rawValue;
+        option.dataset.injected = '1';
+        selectElem.appendChild(option);
+        selectElem.value = rawValue;
+        return option;
+    }
+
+    function setSelectValueSafely(selectElem, value) {
+        if (!selectElem) {
+            return { matched: false, option: null };
+        }
+
+        const matchedOption = findBestSelectOption(selectElem, value);
+        if (matchedOption) {
+            selectElem.value = matchedOption.value;
+            return { matched: true, option: matchedOption };
+        }
+
+        return { matched: false, option: appendAndSelectOption(selectElem, value) };
+    }
+
+    function syncReturningTraineeLocationFields(traineeData = pendingReturningTraineeData) {
+        if (!traineeData) return;
+
+        const bpProvince = document.getElementById('birthplace_province');
+        const bpCity = document.getElementById('birthplace_city');
+        const bpRegion = document.getElementById('birthplace_region');
+        const addrProvince = document.getElementById('addr_province');
+        const addrCity = document.getElementById('addr_city');
+        const addrBarangay = document.getElementById('addr_barangay');
+        const addrRegion = document.getElementById('addr_region');
+        const addrDistrict = document.getElementById('addr_district');
+
+        if (traineeData.birthplace_province && bpProvince) {
+            const provinceResult = setSelectValueSafely(bpProvince, traineeData.birthplace_province);
+            if (provinceResult.matched) {
+                bpProvince.dispatchEvent(new Event('change'));
+            } else if (bpCity && traineeData.birthplace_city) {
+                appendAndSelectOption(bpCity, traineeData.birthplace_city);
+            }
+        }
+
+        if (traineeData.birthplace_city && bpCity) {
+            setSelectValueSafely(bpCity, traineeData.birthplace_city);
+        }
+
+        if (bpRegion) {
+            bpRegion.value = traineeData.birthplace_region || bpRegion.value || '';
+        }
+
+        if (traineeData.province && addrProvince) {
+            const provinceResult = setSelectValueSafely(addrProvince, traineeData.province);
+            if (provinceResult.matched) {
+                addrProvince.dispatchEvent(new Event('change'));
+            } else if (addrCity && traineeData.city_municipality) {
+                appendAndSelectOption(addrCity, traineeData.city_municipality);
+            }
+        }
+
+        if (traineeData.city_municipality && addrCity) {
+            const cityResult = setSelectValueSafely(addrCity, traineeData.city_municipality);
+            if (cityResult.matched) {
+                addrCity.dispatchEvent(new Event('change'));
+            } else if (addrBarangay && traineeData.barangay) {
+                appendAndSelectOption(addrBarangay, traineeData.barangay);
+            }
+        }
+
+        if (traineeData.barangay && addrBarangay) {
+            setSelectValueSafely(addrBarangay, traineeData.barangay);
+        }
+
+        if (addrRegion) {
+            addrRegion.value = traineeData.region || addrRegion.value || '';
+        }
+
+        if (addrDistrict) {
+            addrDistrict.value = traineeData.district || addrDistrict.value || '';
+        }
+    }
 
     // --- Page Navigation (existing) ---
     window.nextPage = function() {
@@ -67,6 +516,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (validateStep1()) {
             document.getElementById('step1').style.display = 'none';
             document.getElementById('step2').style.display = 'block';
+            queueApplicationProgressSave();
             window.scrollTo(0, 0);
         }
     }
@@ -74,6 +524,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.prevPage = function() {
         document.getElementById('step2').style.display = 'none';
         document.getElementById('step1').style.display = 'block';
+        queueApplicationProgressSave();
         window.scrollTo(0, 0);
     }
 
@@ -119,44 +570,93 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('disabilityDetails').style.display = this.value === 'yes' ? 'block' : 'none';
         });
     });
-    
-    // Phone number validation - numbers only
-    const phoneInput = document.getElementById('phoneInput');
-    if (phoneInput) {
-        // Create error message element
-        const errorMessage = document.createElement('div');
-        errorMessage.id = 'phoneError';
-        errorMessage.style.display = 'none';
-        errorMessage.style.color = '#dc3545';
-        errorMessage.style.fontSize = '0.875rem';
-        errorMessage.style.marginTop = '0.25rem';
-        errorMessage.textContent = 'Numbers only';
-        phoneInput.parentElement.appendChild(errorMessage);
 
-        let errorTimeout;
-        
-        phoneInput.addEventListener('keypress', function(e) {
-            // Prevent non-numeric key press
-            const char = String.fromCharCode(e.which);
-            if (!/[0-9]/.test(char)) {
+    function showFieldError(input, errorEl, message) {
+        if (!input) return;
+        input.classList.add('is-invalid');
+        input.setAttribute('aria-invalid', 'true');
+        if (errorEl) {
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+        }
+    }
+
+    function clearFieldError(input, errorEl) {
+        if (!input) return;
+        input.classList.remove('is-invalid');
+        input.removeAttribute('aria-invalid');
+        input.setCustomValidity('');
+        if (errorEl) errorEl.style.display = 'none';
+    }
+
+    function validatePhilippinePhone(showInline = true) {
+        if (!phoneInput || phoneInput.disabled) return true;
+
+        const normalizedPhone = phoneInput.value.replace(/\D/g, '').slice(0, 11);
+        phoneInput.value = normalizedPhone;
+
+        if (!normalizedPhone) {
+            clearFieldError(phoneInput, phoneError);
+            return true;
+        }
+
+        if (!/^09\d{9}$/.test(normalizedPhone)) {
+            const message = 'Enter a valid Philippine mobile number in 11 digits, starting with 09.';
+            phoneInput.setCustomValidity(message);
+            if (showInline) showFieldError(phoneInput, phoneError, message);
+            return false;
+        }
+
+        clearFieldError(phoneInput, phoneError);
+        return true;
+    }
+
+    function validateEmailAddress(showInline = true) {
+        if (!emailInput || emailInput.disabled) return true;
+
+        const normalizedEmail = emailInput.value.trim();
+        emailInput.value = normalizedEmail;
+
+        if (!normalizedEmail) {
+            clearFieldError(emailInput, emailError);
+            return true;
+        }
+
+        const emailPattern = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+        if (!emailPattern.test(normalizedEmail)) {
+            const message = 'Enter a valid email address.';
+            emailInput.setCustomValidity(message);
+            if (showInline) showFieldError(emailInput, emailError, message);
+            return false;
+        }
+
+        clearFieldError(emailInput, emailError);
+        return true;
+    }
+
+    if (phoneInput) {
+        phoneInput.addEventListener('beforeinput', function(e) {
+            if (e.data && /\D/.test(e.data)) {
                 e.preventDefault();
-                
-                // Show error message
-                this.classList.add('is-invalid');
-                errorMessage.style.display = 'block';
-                
-                // Clear previous timeout and hide error after 2 seconds
-                clearTimeout(errorTimeout);
-                errorTimeout = setTimeout(() => {
-                    this.classList.remove('is-invalid');
-                    errorMessage.style.display = 'none';
-                }, 2000);
             }
         });
-        
+
         phoneInput.addEventListener('input', function() {
-            // Remove non-numeric characters in real-time (for paste)
-            this.value = this.value.replace(/[^0-9]/g, '');
+            validatePhilippinePhone(true);
+        });
+
+        phoneInput.addEventListener('blur', function() {
+            validatePhilippinePhone(true);
+        });
+    }
+
+    if (emailInput) {
+        emailInput.addEventListener('input', function() {
+            validateEmailAddress(true);
+        });
+
+        emailInput.addEventListener('blur', function() {
+            validateEmailAddress(true);
         });
     }
 
@@ -198,11 +698,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (response.data.exists) {
                         isReturningTrainee = true;
                         handleReturningTrainee(response.data.data);
+                        queueApplicationProgressSave();
                     } else {
                         isReturningTrainee = false;
                         Swal.fire('Not Found', 'ID not found. Please check your ID or proceed as a new applicant.', 'error');
                         preCheckSection.style.display = 'block';
                         applicationContainer.style.display = 'none';
+                        queueApplicationProgressSave();
                     }
                 } else {
                     Swal.fire('Error', 'Error: ' + response.data.message, 'error');
@@ -224,10 +726,12 @@ document.addEventListener('DOMContentLoaded', function() {
             applicationContainer.style.display = 'block';
             isReturningTrainee = false;
             handleNewTrainee({});
+            queueApplicationProgressSave();
         });
     }
 
     function handleNewTrainee(data) {
+        pendingReturningTraineeData = null;
         if (data.lastName) document.querySelector('[name="last_name"]').value = data.lastName;
         if (data.firstName) document.querySelector('[name="first_name"]').value = data.firstName;
         if (data.email) document.querySelector('[name="email"]').value = data.email;
@@ -239,9 +743,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (allCourses.length > 0) {
             populateBatches(allCourses[0].qualification_id);
         }
+        queueApplicationProgressSave();
     }
 
     function handleReturningTrainee(traineeData) {
+        pendingReturningTraineeData = traineeData;
         welcomeBackMessage.style.display = 'block';
         setSectionVisibility(requirementsUploadSection, false);
         setSectionVisibility(signatureSection, false);
@@ -287,57 +793,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // Helper to set dropdown value after options are loaded
-        function setDropdownValue(selectElem, value, maxRetries = 10) {
-            let retries = 0;
-            function trySet() {
-                if ([...selectElem.options].some(opt => opt.value === value)) {
-                    selectElem.value = value;
-                    selectElem.dispatchEvent(new Event('change'));
-                } else if (retries < maxRetries) {
-                    retries++;
-                    setTimeout(trySet, 100);
-                }
-            }
-            trySet();
-        }
-
-        // Special handling for dropdowns (Birthplace, Address)
-        // Birthplace
-        if (traineeData.birthplace_province) {
-            const bpProvince = document.getElementById('birthplace_province');
-            setDropdownValue(bpProvince, traineeData.birthplace_province);
-        }
-        if (traineeData.birthplace_city) {
-            const bpCity = document.getElementById('birthplace_city');
-            setDropdownValue(bpCity, traineeData.birthplace_city);
-        }
-        if (traineeData.birthplace_region) {
-            const bpRegion = document.getElementById('birthplace_region');
-            bpRegion.value = traineeData.birthplace_region;
-        }
-        // Address
-        if (traineeData.province) {
-            const addrProvince = document.getElementById('addr_province');
-            setDropdownValue(addrProvince, traineeData.province);
-        }
-        if (traineeData.city_municipality) {
-            const addrCity = document.getElementById('addr_city');
-            setDropdownValue(addrCity, traineeData.city_municipality);
-        }
-        if (traineeData.barangay) {
-            const addrBarangay = document.getElementById('addr_barangay');
-            setDropdownValue(addrBarangay, traineeData.barangay);
-        }
-        if (traineeData.region) {
-            const addrRegion = document.getElementById('addr_region');
-            addrRegion.value = traineeData.region;
-        }
-        // Explicitly set district input value
-        if (traineeData.district) {
-            const addrDistrict = document.getElementById('addr_district');
-            if (addrDistrict) addrDistrict.value = traineeData.district;
-        }
+        syncReturningTraineeLocationFields(traineeData);
         if (traineeData.birth_certificate_no) {
             const birthCert = document.querySelector('[name="birth_certificate_no"]');
             if (birthCert) birthCert.value = traineeData.birth_certificate_no;
@@ -364,6 +820,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             populateBatches(null);
         }
+        queueApplicationProgressSave();
     }
 
     // --- Data Loading (Modified) ---
@@ -381,6 +838,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 document.getElementById('courseSelect').innerHTML = '<option value="">Select a Qualification</option>';
                 document.getElementById('batchSelect').innerHTML = '<option value="">Select a qualification first</option>';
+                restoreSavedApplicationProgress();
             } else {
                 console.error("Failed to load form data:", response.data.message);
                 Swal.fire('Error', "Could not load application settings. Please try again later.", 'error');
@@ -396,11 +854,34 @@ document.addEventListener('DOMContentLoaded', function() {
         select.innerHTML = '<option value="">Select a Qualification</option>';
         if(courses && courses.length > 0) {
             courses.forEach(qualification => {
-                select.innerHTML += `<option value="${qualification.qualification_id}">${qualification.course_name}</option>`;
+                const option = document.createElement('option');
+                option.value = qualification.qualification_id;
+                option.textContent = formatCourseOptionLabel(qualification);
+                option.dataset.ncLevel = qualification.nc_level || '';
+                select.appendChild(option);
             });
         } else {
             select.innerHTML = '<option value="">No new courses available for enrollment</option>';
         }
+        updateCourseNcLevelHint(select.value);
+    }
+
+    function formatCourseOptionLabel(course = {}) {
+        const courseName = String(course.course_name || '').trim();
+        const ncLevel = String(course.nc_level || '').trim();
+        return ncLevel ? `${courseName} (${ncLevel})` : courseName;
+    }
+
+    function updateCourseNcLevelHint(courseId = '') {
+        const hintEl = document.getElementById('courseNcLevelHint');
+        if (!hintEl) return;
+
+        const selectedCourse = allCourses.find(course => String(course.qualification_id) === String(courseId || ''));
+        const ncLevel = String(selectedCourse?.nc_level || '').trim();
+
+        hintEl.textContent = ncLevel
+            ? `Selected NC Level: ${ncLevel}`
+            : 'NC level will appear here after you choose a qualification.';
     }
 
     function populateScholarships(scholarships) {
@@ -438,6 +919,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 scholarshipInput.value = '';
             }
+            queueApplicationProgressSave();
         }
         batchSelect.onchange = setScholarshipFromBatch;
         setScholarshipFromBatch();
@@ -445,11 +927,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('courseSelect').addEventListener('change', function() {
         populateBatches(this.value);
+        updateCourseNcLevelHint(this.value);
+        queueApplicationProgressSave();
     });
 
     // --- NEW: Form Submission Logic ---
     applicationForm.addEventListener('submit', async function(e) {
         e.preventDefault();
+
+        const isPhoneValid = validatePhilippinePhone(true);
+        const isEmailValid = validateEmailAddress(true);
+        if (!isPhoneValid || !isEmailValid) {
+            const invalidInput = !isPhoneValid ? phoneInput : emailInput;
+            const invalidMessage = !isPhoneValid
+                ? 'Please enter a valid Philippine mobile number with 11 digits starting with 09.'
+                : 'Please enter a valid email address.';
+            Swal.fire('Invalid Input', invalidMessage, 'warning');
+            invalidInput?.focus();
+            return;
+        }
 
         if (isReturningTrainee) {
             const step1Inputs = document.querySelectorAll('#step1 input, #step1 select, #step1 textarea');
@@ -475,6 +971,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             if (response.data.success) {
+                clearSavedApplicationProgress();
                 window.location.href = 'index.html?status=submitted';
             } else {
                 Swal.fire('Submission Failed', response.data.message, 'error');
@@ -530,6 +1027,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 return false;
             }
         }
+
+        if (!validatePhilippinePhone(true)) {
+            Swal.fire('Invalid Contact Number', 'Please enter a valid Philippine mobile number with 11 digits starting with 09.', 'warning');
+            phoneInput?.focus();
+            return false;
+        }
+
+        if (!validateEmailAddress(true)) {
+            Swal.fire('Invalid Email Address', 'Please enter a valid email address.', 'warning');
+            emailInput?.focus();
+            return false;
+        }
+
         return true;
     }
 
@@ -612,6 +1122,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('clearSignatureBtn').style.display = 'inline-block';
         submitBtn.disabled = !privacyConsent.checked;
         signatureModal.hide();
+        queueApplicationProgressSave();
     });
 
     document.getElementById('signaturePreviewArea').addEventListener('click', () => signatureModal.show());
@@ -625,6 +1136,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('digitalSignatureInput').value = '';
         submitBtn.disabled = true;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        queueApplicationProgressSave();
     });
 
     // --- NEW: Signature Method Toggle & Upload Logic ---
@@ -661,6 +1173,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 drawSection.style.display = 'block';
                 uploadSection.style.display = 'none';
                 resetSignatureState();
+                queueApplicationProgressSave();
             }
         });
         sigMethodUpload.addEventListener('change', () => {
@@ -668,6 +1181,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 drawSection.style.display = 'none';
                 uploadSection.style.display = 'block';
                 resetSignatureState();
+                queueApplicationProgressSave();
             }
         });
     }
@@ -685,6 +1199,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Trigger validation check for submit button
                     if(privacyConsent) privacyConsent.dispatchEvent(new Event('change'));
+                    queueApplicationProgressSave();
                 };
                 reader.readAsDataURL(file);
             }
@@ -700,6 +1215,11 @@ document.addEventListener('DOMContentLoaded', function() {
             
             populateAddressDropdowns();
             populateBirthplaceDropdowns();
+            isPhLocationDataReady = true;
+            if (pendingDraftFormValues) {
+                syncReturningTraineeLocationFields(pendingDraftFormValues);
+            }
+            syncReturningTraineeLocationFields();
         } catch (error) {
             console.error('Error loading PH location data:', error);
         }
@@ -825,8 +1345,28 @@ document.addEventListener('DOMContentLoaded', function() {
                     bpCity.innerHTML += `<option value="${mName}">${mName}</option>`;
                 }
             }
+            queueApplicationProgressSave();
         });
     }
+
+    if (checkSchoolIdInput) {
+        checkSchoolIdInput.addEventListener('input', queueApplicationProgressSave);
+        checkSchoolIdInput.addEventListener('change', queueApplicationProgressSave);
+    }
+
+    if (applicationForm) {
+        applicationForm.addEventListener('input', (event) => {
+            if (event.target?.type === 'file') return;
+            queueApplicationProgressSave();
+        });
+
+        applicationForm.addEventListener('change', (event) => {
+            if (event.target?.type === 'file') return;
+            queueApplicationProgressSave();
+        });
+    }
+
+    window.addEventListener('beforeunload', saveApplicationProgress);
 
     // --- Initial Load ---
     loadInitialData();

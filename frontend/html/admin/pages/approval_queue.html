@@ -37,7 +37,6 @@
                         </button>
                         <div id="userDropdownMenu" class="absolute right-0 top-full z-40 mt-2 hidden w-48 rounded-xl border border-blue-100 bg-white py-1 shadow-xl shadow-blue-100/40">
                             <a href="profile.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-user mr-2"></i> Profile</a>
-                            <a href="settings.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-cog mr-2"></i> Settings</a>
                             <div class="border-t border-blue-100"></div>
                             <a href="#" id="logoutBtn" class="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50"><i class="fas fa-sign-out-alt mr-2"></i> Logout</a>
                         </div>
@@ -98,99 +97,220 @@
         </main>
     </div>
 
-    <div class="fixed inset-0 z-50 hidden items-center justify-center p-4" id="reviewModal" aria-hidden="true">
-        <div class="absolute inset-0 bg-slate-900/50" data-modal-hide="reviewModal"></div>
-        <div class="relative z-10 flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-2xl">
-            <div class="flex items-center justify-between border-b border-blue-100 px-5 py-4">
-                <h3 class="text-lg font-semibold text-slate-900">Review Enrollment Application</h3>
-                <button type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800" data-modal-hide="reviewModal" aria-label="Close">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-
-            <div class="border-b border-blue-100 px-5 py-3">
-                <div class="flex flex-wrap gap-2" id="reviewTabs" role="tablist">
-                    <button class="active rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white" type="button" data-tab-group="review" data-tab-target="#reviewPersonal">Personal Info</button>
-                    <button class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" type="button" data-tab-group="review" data-tab-target="#reviewBackground">Background</button>
-                    <button class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" type="button" data-tab-group="review" data-tab-target="#reviewTraining">Training & Approval</button>
+    <div class="modal-root fixed inset-0 z-50 hidden items-center justify-center overflow-y-auto bg-slate-950/50 p-4 sm:p-6" id="reviewModal" aria-hidden="true">
+        <div class="absolute inset-0 backdrop-blur-sm" data-modal-hide="reviewModal"></div>
+        <div class="relative z-10 my-auto flex max-h-[calc(100vh-2rem)] w-full max-w-6xl flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl shadow-slate-900/20 sm:max-h-[calc(100vh-3rem)]">
+            <div class="border-b border-slate-200 bg-white px-5 py-4 sm:px-6">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.32em] text-blue-600">Approval Queue</p>
+                        <h3 class="mt-1 text-xl font-semibold text-slate-900">Review Enrollment Application</h3>
+                        <p class="mt-1 text-sm text-slate-500">Inspect the trainee record, confirm the scholarship assignment, and review uploaded requirements before approval.</p>
+                    </div>
+                    <button type="button" class="inline-flex self-end rounded-xl border border-slate-200 p-2.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 sm:self-auto" data-modal-hide="reviewModal" aria-label="Close">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-5">
+            <div class="min-h-0 flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_35%),linear-gradient(180deg,_rgba(248,250,252,0.95),_rgba(255,255,255,1))] p-5 sm:p-6">
                 <input type="hidden" id="reviewEnrollmentId">
 
-                <section class="tab-review-pane" id="reviewPersonal" role="tabpanel">
-                    <div class="grid grid-cols-1 gap-5 md:grid-cols-12">
-                        <div class="md:col-span-4">
-                            <img id="reviewPhoto" src="" class="hidden h-56 w-full rounded-xl border border-slate-200 object-cover" alt="Applicant Photo">
-                            <div id="reviewNoPhoto" class="flex h-56 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-500">No Photo</div>
-                        </div>
-                        <div class="space-y-4 md:col-span-8">
-                            <div>
-                                <h4 id="reviewName" class="text-xl font-semibold text-slate-900"></h4>
-                                <p class="text-sm text-slate-500">Applicant profile</p>
-                            </div>
-                            <div class="grid grid-cols-1 gap-3 text-sm text-slate-700 sm:grid-cols-2">
-                                <p><span class="text-slate-500">Sex:</span> <span id="reviewSex"></span></p>
-                                <p><span class="text-slate-500">Civil Status:</span> <span id="reviewCivilStatus"></span></p>
-                                <p><span class="text-slate-500">Birthdate:</span> <span id="reviewBirthdate"></span></p>
-                                <p><span class="text-slate-500">Age:</span> <span id="reviewAge"></span></p>
-                                <p class="sm:col-span-2"><span class="text-slate-500">Birthplace:</span> <span id="reviewBirthplace"></span></p>
-                            </div>
-                            <div>
-                                <h5 class="text-sm font-semibold uppercase tracking-wider text-blue-700">Contact & Address</h5>
-                                <div class="mt-2 grid grid-cols-1 gap-3 text-sm text-slate-700 sm:grid-cols-2">
-                                    <p><span class="text-slate-500">Email:</span> <span id="reviewEmail"></span></p>
-                                    <p><span class="text-slate-500">Phone:</span> <span id="reviewPhone"></span></p>
-                                    <p class="sm:col-span-2"><span class="text-slate-500">Address:</span> <span id="reviewAddress"></span></p>
+                <div class="grid gap-6 xl:grid-cols-[320px,minmax(0,1fr)]">
+                    <aside class="rounded-[26px] bg-gradient-to-br from-blue-600 via-sky-500 to-cyan-400 p-[1px] shadow-xl shadow-sky-500/20">
+                        <div class="flex h-full flex-col rounded-[25px] bg-slate-950/15 p-5 text-white backdrop-blur">
+                            <div class="overflow-hidden rounded-3xl border border-white/20 bg-white/10">
+                                <img id="reviewPhoto" src="" class="hidden aspect-[4/5] w-full object-cover" alt="Applicant Photo">
+                                <div id="reviewNoPhoto" class="flex aspect-[4/5] flex-col items-center justify-center gap-3 bg-slate-900/15 px-6 text-center">
+                                    <div id="reviewInitials" class="flex h-20 w-20 items-center justify-center rounded-full bg-white/15 text-2xl font-bold uppercase tracking-[0.18em] text-white">NA</div>
+                                    <p class="text-sm text-white/80">No profile photo available</p>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </section>
 
-                <section class="tab-review-pane hidden" id="reviewBackground" role="tabpanel">
-                    <div class="space-y-4">
-                        <div>
-                            <h5 class="text-sm font-semibold uppercase tracking-wider text-blue-700">Education & Employment</h5>
-                            <div class="mt-2 space-y-2 text-sm text-slate-700">
-                                <p><span class="text-slate-500">Educational Attainment:</span> <span id="reviewEducation" class="font-semibold text-slate-900"></span></p>
-                                <p><span class="text-slate-500">Employment Status:</span> <span id="reviewEmploymentStatus" class="font-semibold text-slate-900"></span></p>
+                            <div class="mt-5">
+                                <p class="text-xs font-semibold uppercase tracking-[0.32em] text-white/70">Enrollment Record</p>
+                                <h4 id="reviewName" class="mt-2 text-2xl font-bold leading-tight text-white"></h4>
+                                <p id="reviewProfileSummary" class="mt-2 text-sm text-white/85">Trainee applicant</p>
                             </div>
-                        </div>
-                        <div>
-                            <h5 class="text-sm font-semibold uppercase tracking-wider text-blue-700">Classification & Disability</h5>
-                            <div class="mt-2 space-y-2 text-sm text-slate-700">
-                                <p><span class="text-slate-500">Learner Classification:</span> <span id="reviewClassification"></span></p>
-                                <p><span class="text-slate-500">PWD:</span> <span id="reviewIsPwd"></span></p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
 
-                <section class="tab-review-pane hidden" id="reviewTraining" role="tabpanel">
-                    <div class="space-y-5">
-                        <div>
-                            <h5 class="text-sm font-semibold uppercase tracking-wider text-blue-700">Training Assignment</h5>
-                            <div class="mt-2 grid grid-cols-1 gap-3 text-sm text-slate-700 sm:grid-cols-2">
-                                <p><span class="text-slate-500">Course:</span> <span id="reviewCourse"></span></p>
-                                <p><span class="text-slate-500">Batch:</span> <span id="reviewBatch"></span></p>
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                <span id="reviewQueueStatus" class="inline-flex rounded-full border border-white/20 bg-white/15 px-3 py-1 text-xs font-semibold text-white">Pending Review</span>
+                                <span id="reviewScholarshipBadge" class="inline-flex rounded-full border border-white/20 bg-white/15 px-3 py-1 text-xs font-semibold text-white">Private / Payee</span>
                             </div>
-                        </div>
 
-                        <div>
-                            <h5 class="text-sm font-semibold uppercase tracking-wider text-blue-700">Uploaded Requirements</h5>
-                            <div class="mt-2 space-y-2">
-                                <a href="#" id="linkValidId" target="_blank" class="block rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"><i class="fas fa-id-card mr-2"></i> Valid ID</a>
-                                <a href="#" id="linkBirthCert" target="_blank" class="block rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"><i class="fas fa-file-alt mr-2"></i> Birth Certificate</a>
+                            <dl class="mt-6 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                                <div class="rounded-2xl bg-white/12 p-4 ring-1 ring-white/10">
+                                    <dt class="text-xs font-semibold uppercase tracking-[0.28em] text-white/65">Course</dt>
+                                    <dd id="reviewCourseStat" class="mt-1 text-sm font-semibold leading-6 text-white">Not Assigned</dd>
+                                </div>
+                                <div class="rounded-2xl bg-white/12 p-4 ring-1 ring-white/10">
+                                    <dt class="text-xs font-semibold uppercase tracking-[0.28em] text-white/65">Batch</dt>
+                                    <dd id="reviewBatchStat" class="mt-1 text-sm font-semibold leading-6 text-white">Not Assigned</dd>
+                                </div>
+                                <div class="rounded-2xl bg-white/12 p-4 ring-1 ring-white/10">
+                                    <dt class="text-xs font-semibold uppercase tracking-[0.28em] text-white/65">Applied On</dt>
+                                    <dd id="reviewAppliedAt" class="mt-1 text-sm font-semibold leading-6 text-white">N/A</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </aside>
+
+                    <div class="space-y-6">
+                        <section class="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 sm:p-6">
+                            <div class="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-[0.32em] text-blue-600">Profile Overview</p>
+                                    <h5 class="mt-1 text-lg font-semibold text-slate-900">Personal Information</h5>
+                                </div>
+                                <span class="inline-flex w-fit rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">Admin View</span>
                             </div>
-                        </div>
 
-                        <div>
-                            <h5 class="text-sm font-semibold uppercase tracking-wider text-blue-700">Approval Action</h5>
-                            <div class="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                            <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Email Address</p>
+                                    <a id="reviewEmailLink" href="#" class="mt-2 block break-all text-sm font-semibold text-blue-700 hover:text-blue-800">
+                                        <span id="reviewEmail">N/A</span>
+                                    </a>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Phone Number</p>
+                                    <a id="reviewPhoneLink" href="#" class="mt-2 block text-sm font-semibold text-slate-900 hover:text-blue-700">
+                                        <span id="reviewPhone">N/A</span>
+                                    </a>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Facebook Account</p>
+                                    <a id="reviewFacebookLink" href="#" class="mt-2 block break-all text-sm font-semibold text-slate-900 hover:text-blue-700">
+                                        <span id="reviewFacebook">N/A</span>
+                                    </a>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Sex</p>
+                                    <p id="reviewSex" class="mt-2 text-sm font-semibold text-slate-900">N/A</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Civil Status</p>
+                                    <p id="reviewCivilStatus" class="mt-2 text-sm font-semibold text-slate-900">N/A</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Nationality</p>
+                                    <p id="reviewNationality" class="mt-2 text-sm font-semibold text-slate-900">N/A</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Birthdate</p>
+                                    <p id="reviewBirthdate" class="mt-2 text-sm font-semibold text-slate-900">N/A</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Age</p>
+                                    <p id="reviewAge" class="mt-2 text-sm font-semibold text-slate-900">N/A</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Birthplace</p>
+                                    <p id="reviewBirthplace" class="mt-2 text-sm leading-6 text-slate-700">N/A</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 md:col-span-2 xl:col-span-3">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Home Address</p>
+                                    <p id="reviewAddress" class="mt-2 text-sm leading-6 text-slate-700">N/A</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 sm:p-6">
+                            <div class="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-[0.32em] text-blue-600">Applicant Background</p>
+                                    <h5 class="mt-1 text-lg font-semibold text-slate-900">Education, Employment, and Classification</h5>
+                                </div>
+                                <span class="inline-flex w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">Pending Approval</span>
+                            </div>
+
+                            <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 md:col-span-2 xl:col-span-3">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Educational Attainment</p>
+                                    <p id="reviewEducation" class="mt-2 text-sm font-semibold text-slate-900">N/A</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Employment Status</p>
+                                    <p id="reviewEmploymentStatus" class="mt-2 text-sm font-semibold text-slate-900">N/A</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Employment Type</p>
+                                    <p id="reviewEmploymentType" class="mt-2 text-sm font-semibold text-slate-900">N/A</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">PWD</p>
+                                    <p id="reviewIsPwd" class="mt-2 text-sm font-semibold text-slate-900">No</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 md:col-span-2 xl:col-span-3">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Learner Classification</p>
+                                    <p id="reviewClassification" class="mt-2 text-sm leading-6 text-slate-700">N/A</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Disability Type</p>
+                                    <p id="reviewDisabilityType" class="mt-2 text-sm leading-6 text-slate-700">N/A</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 md:col-span-2">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Disability Cause</p>
+                                    <p id="reviewDisabilityCause" class="mt-2 text-sm leading-6 text-slate-700">N/A</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 sm:p-6">
+                            <div class="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-[0.32em] text-blue-600">Training and Approval</p>
+                                    <h5 class="mt-1 text-lg font-semibold text-slate-900">Course, Requirements, and Decision</h5>
+                                </div>
+                                <span class="inline-flex w-fit rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Ready for Review</span>
+                            </div>
+
+                            <div class="mt-5 grid gap-4 md:grid-cols-3">
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Course</p>
+                                    <p id="reviewCourse" class="mt-2 text-sm font-semibold text-slate-900">N/A</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Batch</p>
+                                    <p id="reviewBatch" class="mt-2 text-sm font-semibold text-slate-900">N/A</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Scholarship Preference</p>
+                                    <p id="reviewScholarshipText" class="mt-2 text-sm font-semibold text-slate-900">Private / Payee</p>
+                                </div>
+                            </div>
+
+                            <div class="mt-5 grid gap-4 lg:grid-cols-2">
+                                <a href="#" id="linkValidId" target="_blank" rel="noopener noreferrer" class="group rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50/60">
+                                    <div class="flex items-start gap-4">
+                                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
+                                            <i class="fas fa-id-card text-lg"></i>
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-base font-semibold text-slate-900">Valid ID</p>
+                                            <p id="linkValidIdStatus" class="mt-1 text-sm leading-6 text-slate-500">Not uploaded yet.</p>
+                                        </div>
+                                        <span id="linkValidIdAction" class="inline-flex shrink-0 rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-600">Missing</span>
+                                    </div>
+                                </a>
+
+                                <a href="#" id="linkBirthCert" target="_blank" rel="noopener noreferrer" class="group rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50/60">
+                                    <div class="flex items-start gap-4">
+                                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
+                                            <i class="fas fa-file-lines text-lg"></i>
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-base font-semibold text-slate-900">Birth Certificate</p>
+                                            <p id="linkBirthCertStatus" class="mt-1 text-sm leading-6 text-slate-500">Not uploaded yet.</p>
+                                        </div>
+                                        <span id="linkBirthCertAction" class="inline-flex shrink-0 rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-600">Missing</span>
+                                    </div>
+                                </a>
+                            </div>
+
+                            <div class="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                                 <label class="mb-1 block text-sm font-semibold text-slate-700">Assign Financial Classification</label>
-                                <select class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="scholarshipSelect">
+                                <select class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="scholarshipSelect">
                                     <option value="">None (Private / Payee)</option>
                                     <option value="TWSP">TWSP</option>
                                     <option value="TTSP">TTSP</option>
@@ -200,16 +320,49 @@
                                 </select>
                                 <p class="mt-2 text-xs text-slate-500">The scholarship selected by the applicant is pre-selected. You can override it if necessary.</p>
                             </div>
-                        </div>
+                        </section>
                     </div>
-                </section>
+                </div>
             </div>
 
-            <div class="flex flex-wrap items-center justify-end gap-2 border-t border-blue-100 px-5 py-4">
-                <button type="button" class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700" id="btnReject">Reject Application</button>
-                <button type="button" class="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600" id="btnReserve">Reserve (Batch Full)</button>
-                <button type="button" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" data-modal-hide="reviewModal">Cancel</button>
-                <button type="button" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700" id="btnApprove">Confirm & Approve</button>
+            <div class="shrink-0 flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 bg-white px-5 py-4 sm:px-6">
+                <button type="button" class="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700" id="btnReject">Reject Application</button>
+                <button type="button" class="rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600" id="btnReserve">Reserve (Batch Full)</button>
+                <button type="button" class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700" id="btnApprove">Confirm & Approve</button>
+                <button type="button" class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" data-modal-hide="reviewModal">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-root fixed inset-0 z-[60] hidden items-center justify-center overflow-y-auto bg-slate-950/60 p-4 sm:p-6" id="documentPreviewModal" tabindex="-1" aria-hidden="true">
+        <div class="absolute inset-0 backdrop-blur-sm" data-modal-hide="documentPreviewModal"></div>
+        <div class="relative z-10 my-auto flex max-h-[calc(100vh-2rem)] w-full max-w-5xl flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl shadow-slate-900/25 sm:max-h-[calc(100vh-3rem)]">
+            <div class="shrink-0 border-b border-slate-200 bg-white px-5 py-4 sm:px-6">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.32em] text-blue-600">Submitted Requirement</p>
+                        <h3 id="documentPreviewTitle" class="mt-1 text-xl font-semibold text-slate-900">Document Preview</h3>
+                        <p id="documentPreviewSubtitle" class="mt-1 break-all text-sm text-slate-500">Preview the uploaded requirement here.</p>
+                    </div>
+                    <button type="button" class="inline-flex self-end rounded-xl border border-slate-200 p-2.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 sm:self-auto" data-modal-hide="documentPreviewModal" aria-label="Close document preview">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="documentPreviewBody" class="min-h-0 flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.10),_transparent_35%),linear-gradient(180deg,_rgba(248,250,252,0.98),_rgba(255,255,255,1))] p-4 sm:p-6">
+                <div class="flex min-h-full items-center justify-center rounded-[24px] border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">
+                    Select a submitted requirement to preview it here.
+                </div>
+            </div>
+
+            <div class="shrink-0 flex flex-wrap justify-end gap-2 border-t border-slate-200 bg-white px-5 py-4 sm:px-6">
+                <a href="#" id="documentPreviewOpenLink" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                    <i class="fas fa-arrow-up-right-from-square"></i> Open in New Tab
+                </a>
+                <button type="button" class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" data-modal-hide="documentPreviewModal">
+                    Close
+                </button>
             </div>
         </div>
     </div>

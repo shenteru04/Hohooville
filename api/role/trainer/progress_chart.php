@@ -155,7 +155,7 @@ function isOutcomeCompleted($conn, $traineeId, $lessonId) {
             FROM tbl_task_sheet_submissions 
             WHERE trainee_id = ? 
             AND task_sheet_id IN ($placeholders) 
-            AND status IN ('submitted', 'approved')
+            AND status IN ('approved', 'recorded')
         ");
         $stmtSubs->execute(array_merge([$traineeId], $taskSheets));
         $count = $stmtSubs->fetchColumn();

@@ -35,17 +35,11 @@
                     <a href="../trainee_dashboard.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
                         <i class="fas fa-home w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> Dashboard
                     </a>
-                    <a href="/Hohoo-ville/frontend/html/trainee/pages/learning_path.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
-                        <i class="fas fa-graduation-cap w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> Learning Path
-                    </a>
                     <a href="/Hohoo-ville/frontend/html/trainee/pages/my_training.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
                         <i class="fas fa-book-open w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> My Training
                     </a>
                     <a href="/Hohoo-ville/frontend/html/trainee/pages/my_grades.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50/70 hover:text-blue-700 transition-colors">
                         <i class="fas fa-star w-5 h-5 text-slate-400 group-hover:text-blue-600"></i> My Progress
-                    </a>
-                    <a href="/Hohoo-ville/frontend/html/trainee/pages/profile.html" class="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold text-blue-700 bg-blue-50 ring-1 ring-blue-100" aria-current="page">
-                        <i class="fas fa-user w-5 h-5 text-blue-600"></i> Profile
                     </a>
                 </nav>
             </div>
@@ -93,14 +87,16 @@
                         <div class="flex flex-col md:flex-row items-center gap-5">
                             <div class="relative">
                                 <img id="headerTraineePhoto" src="https://ui-avatars.com/api/?name=Trainee&background=random" class="h-24 w-24 rounded-2xl object-cover ring-2 ring-blue-100" alt="Trainee Photo">
-                                <div class="absolute -bottom-2 -right-2 h-8 w-8 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-md">
-                                    <i class="fas fa-user text-xs"></i>
-                                </div>
+                                <input type="file" id="profileImageInput" accept="image/*" class="hidden" />
+                                <button type="button" id="changeProfileImageBtn" class="absolute bottom-1 right-1 inline-flex h-10 w-10 items-center justify-center rounded-full border-4 border-white bg-slate-900/80 text-white shadow-lg transition hover:scale-105 hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" aria-label="Change profile photo">
+                                    <i class="fas fa-camera text-sm"></i>
+                                </button>
                             </div>
                             <div class="text-center md:text-left">
                                 <p class="text-xs font-semibold uppercase tracking-widest text-blue-500 mb-1">Profile</p>
                                 <h3 class="text-2xl font-bold text-slate-900" id="headerTraineeName">Loading...</h3>
                                 <p class="text-slate-500" id="headerTraineeCourse">Loading course...</p>
+                                <p id="profileImageStatusText" class="mt-2 text-xs text-slate-500">Click the camera icon to change your profile photo.</p>
                             </div>
                         </div>
                     </div>
@@ -212,30 +208,6 @@
                         <div class="lg:col-span-5 space-y-6">
                             <div class="bg-white rounded-2xl border border-blue-100 shadow-sm overflow-hidden">
                                 <div class="px-6 py-4 border-b border-blue-100 bg-blue-50/60">
-                                    <h3 class="text-lg font-semibold text-slate-900"><i class="fas fa-image mr-2 text-blue-500"></i>Profile Photo</h3>
-                                </div>
-                                <div class="p-6">
-                                    <form id="profileImageForm" class="space-y-4">
-                                        <div class="relative group">
-                                            <img id="profileImagePreview" src="https://ui-avatars.com/api/?name=Trainee&background=random" class="h-32 w-32 rounded-2xl object-cover ring-2 ring-blue-100 mx-auto cursor-pointer hover:opacity-80 transition-opacity" alt="Profile Photo" />
-                                            <input type="file" id="profileImageInput" accept="image/*" class="hidden" />
-                                            <div class="absolute inset-0 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <div class="bg-slate-900/40 w-full h-full rounded-2xl flex items-center justify-center">
-                                                    <i class="fas fa-camera text-white text-2xl"></i>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <p class="text-xs text-slate-500 text-center">Click to upload a new profile photo (Max 5MB)</p>
-                                        <div class="flex justify-center">
-                                            <button type="submit" id="uploadProfileImageBtn" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" disabled>
-                                                <i class="fas fa-upload"></i>Upload Photo
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                            <div class="bg-white rounded-2xl border border-blue-100 shadow-sm overflow-hidden">
-                                <div class="px-6 py-4 border-b border-blue-100 bg-blue-50/60">
                                     <h3 class="text-lg font-semibold text-slate-900"><i class="fas fa-id-card mr-2 text-blue-500"></i>Personal Information</h3>
                                 </div>
                                 <div class="p-6">
@@ -274,6 +246,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
     <script src="../../../js/session_timeout.js"></script>
     <script src="../../../js/profile-image-upload.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         fetch('/Hohoo-ville/frontend/html/trainee/components/notification.html')
             .then(r => r.text())

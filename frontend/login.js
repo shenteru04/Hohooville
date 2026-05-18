@@ -1,5 +1,8 @@
 const AUTH_ENDPOINT = `${window.location.origin}/hohoo-ville/api/authentication/Authentication.php`;
 const REMEMBERED_USERNAME_KEY = 'remembered_username';
+const SESSION_TIMEOUT_LAST_ACTIVITY_KEY = 'session_timeout_last_activity_at';
+const SESSION_TIMEOUT_EXPIRES_AT_KEY = 'session_timeout_expires_at';
+const SESSION_TIMEOUT_EXPIRED_AT_KEY = 'session_timeout_expired_at';
 
 document.addEventListener('DOMContentLoaded', () => {
     if (redirectIfLoggedIn()) {
@@ -54,6 +57,13 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function redirectIfLoggedIn() {
+    if (localStorage.getItem(SESSION_TIMEOUT_EXPIRED_AT_KEY)) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('trainer');
+        return false;
+    }
+
     const token = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
 
@@ -292,11 +302,18 @@ function showMessage(elements, message, type = 'info') {
 }
 
 function completeLogin(user, token) {
+    clearSessionTimeoutState();
     localStorage.setItem('user', JSON.stringify(user));
     if (token) {
         localStorage.setItem('token', token);
     }
     redirectToDashboard(user.role);
+}
+
+function clearSessionTimeoutState() {
+    localStorage.removeItem(SESSION_TIMEOUT_LAST_ACTIVITY_KEY);
+    localStorage.removeItem(SESSION_TIMEOUT_EXPIRES_AT_KEY);
+    localStorage.removeItem(SESSION_TIMEOUT_EXPIRED_AT_KEY);
 }
 
 function redirectToDashboard(role) {

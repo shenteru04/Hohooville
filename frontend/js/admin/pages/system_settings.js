@@ -1,6 +1,7 @@
 const API_URL = '/Hohoo-ville/api/role/admin/system_settings.php';
 const EMAIL_API_URL = '/Hohoo-ville/api/role/admin/email_templates.php';
 const ARCHIVAL_API_URL = '/Hohoo-ville/api/role/admin/user_archival.php';
+const ACCOUNT_SETTINGS_API_URL = '/Hohoo-ville/api/role/admin/settings.php';
 
 document.addEventListener('DOMContentLoaded', async () => {
     await ensureSwal();
@@ -8,7 +9,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     initLogout();
     initTabs();
     initModalDismissers();
+    bindAccountSettingsForm();
+    bindGeneralSystemSettingsForm();
+    bindQuickActions();
 
+    loadGeneralSystemSettings();
     loadHolidays();
     loadEmailTemplates();
     loadCertificateStats();
@@ -210,6 +215,143 @@ function showToast(text, icon = 'success') {
         return;
     }
     alert(text);
+}
+
+function bindAccountSettingsForm() {
+    const accountForm = document.getElementById('accountSettingsForm');
+    if (!accountForm) return;
+
+    accountForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const currentPassword = document.getElementById('currentPassword')?.value || '';
+        const newPassword = document.getElementById('newPassword')?.value || '';
+        const confirmPassword = document.getElementById('confirmPassword')?.value || '';
+
+        if (newPassword !== confirmPassword) {
+            showAlert('Password Mismatch', 'New passwords do not match.', 'warning');
+            return;
+        }
+
+        try {
+            const response = await axios.post(`${ACCOUNT_SETTINGS_API_URL}?action=change-password`, {
+                user_id: getCurrentUserId(),
+                current_password: currentPassword,
+                new_password: newPassword
+            });
+
+            if (!response.data.success) {
+                throw new Error(response.data.message || 'Failed to change password');
+            }
+
+            accountForm.reset();
+            showToast('Password changed successfully.');
+        } catch (error) {
+            console.error('Error changing password:', error);
+            showAlert('Error', error.response?.data?.message || error.message || 'Failed to change password.', 'error');
+        }
+    });
+}
+
+function bindGeneralSystemSettingsForm() {
+    const systemForm = document.getElementById('systemSettingsForm');
+    if (!systemForm) return;
+
+    systemForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const payload = {
+            session_timeout: document.getElementById('sessionTimeout')?.value || 60,
+            email_notifications: document.getElementById('emailNotifications')?.checked ? '1' : '0'
+        };
+
+        try {
+            const response = await axios.post(`${ACCOUNT_SETTINGS_API_URL}?action=update-system`, payload);
+            if (!response.data.success) {
+                throw new Error(response.data.message || 'Failed to save settings');
+            }
+
+            showToast('System defaults saved successfully.');
+        } catch (error) {
+            console.error('Error saving general system settings:', error);
+            showAlert('Error', error.response?.data?.message || error.message || 'Failed to save settings.', 'error');
+        }
+    });
+}
+
+function bindQuickActions() {
+    const backupBtn = document.getElementById('backupDataBtn');
+    if (backupBtn) {
+        backupBtn.addEventListener('click', async () => {
+            const originalLabel = backupBtn.innerHTML;
+
+            try {
+                backupBtn.disabled = true;
+                backupBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Backing up...';
+
+                const response = await axios.post(`${ACCOUNT_SETTINGS_API_URL}?action=backup-database`);
+                if (!response.data.success) {
+                    throw new Error(response.data.message || 'Backup failed');
+                }
+
+                const blob = new Blob([response.data.data || ''], { type: 'text/sql' });
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `backup_${new Date().toISOString().slice(0, 10)}.sql`;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                window.URL.revokeObjectURL(url);
+
+                showToast('Database backup downloaded successfully.');
+            } catch (error) {
+                console.error('Backup failed:', error);
+                showAlert('Error', error.response?.data?.message || error.message || 'Backup failed.', 'error');
+            } finally {
+                backupBtn.disabled = false;
+                backupBtn.innerHTML = originalLabel;
+            }
+        });
+    }
+
+    const clearCacheBtn = document.getElementById('clearCacheBtn');
+    if (clearCacheBtn) {
+        clearCacheBtn.addEventListener('click', () => {
+            showToast('Cache cleared (simulated).', 'info');
+        });
+    }
+}
+
+async function loadGeneralSystemSettings() {
+    try {
+        const response = await axios.get(`${ACCOUNT_SETTINGS_API_URL}?action=get-system-settings`);
+        if (!response.data.success || !response.data.data) {
+            return;
+        }
+
+        const settings = response.data.data;
+        setValue('sessionTimeout', settings.session_timeout || 60);
+
+        const emailNotifications = document.getElementById('emailNotifications');
+        if (emailNotifications) {
+            emailNotifications.checked = String(settings.email_notifications) === '1';
+        }
+    } catch (error) {
+        console.error('Error loading general system settings:', error);
+    }
+}
+
+function getCurrentUserId() {
+    const rawUser = localStorage.getItem('user');
+    if (!rawUser) return 1;
+
+    try {
+        const user = JSON.parse(rawUser);
+        return Number(user?.user_id || user?.id || user?.uid) || 1;
+    } catch (error) {
+        return 1;
+    }
 }
 
 function openHolidayModal() {

@@ -143,7 +143,7 @@ async function initLogout() {
             if (result.isConfirmed) {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
-                window.location.href = '../../../login.html';
+                window.location.href = '/Hohoo-ville/frontend/login.html';
             }
         });
     });

@@ -10,6 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../../database/db.php';
+require_once '../../utils/trainer_assignment_helper.php';
 
 /**
  * Extract abbreviation from qualification name
@@ -68,6 +69,7 @@ class AdminDashboard {
 
     public function __construct($db) {
         $this->conn = $db;
+        ta_ensure_schema($this->conn);
     }
 
     public function handleRequest() {
@@ -160,18 +162,32 @@ class AdminDashboard {
     private function getFinancialSummary() {
         $summary = [];
         try {
-            $summary['total_collected'] = (int)($this->conn->query("SELECT SUM(amount) FROM tbl_payments")->fetchColumn() ?? 0);
+            $stmt = $this->conn->query("
+                SELECT
+                    COALESCE(SUM(
+                        CASE
+                            WHEN b.end_date IS NOT NULL AND b.end_date < CURDATE()
+                                THEN COALESCE(b.training_cost, q.training_cost, 0) * COALESCE(b.max_trainees, 0)
+                            ELSE 0
+                        END
+                    ), 0) AS total_collected,
+                    COALESCE(SUM(
+                        CASE
+                            WHEN b.end_date IS NULL OR b.end_date >= CURDATE()
+                                THEN COALESCE(b.training_cost, q.training_cost, 0) * COALESCE(b.max_trainees, 0)
+                            ELSE 0
+                        END
+                    ), 0) AS total_pending
+                FROM tbl_batch b
+                LEFT JOIN tbl_qualifications q ON q.qualification_id = b.qualification_id
+            ");
+            $totals = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+            $summary['total_collected'] = (float)($totals['total_collected'] ?? 0);
+            $summary['total_pending'] = (float)($totals['total_pending'] ?? 0);
         } catch (Exception $e) {
             $summary['total_collected'] = 0;
+            $summary['total_pending'] = 0;
         }
-        
-        try {
-            $totalCost = (int)($this->conn->query("SELECT SUM(q.training_cost) FROM tbl_enrollment e JOIN tbl_qualifications q ON e.qualification_id = q.qualification_id WHERE e.scholarship_type IS NULL OR e.scholarship_type = ''")->fetchColumn() ?? 0);
-        } catch (Exception $e) {
-            $totalCost = 0;
-        }
-        
-        $summary['total_pending'] = max(0, $totalCost - $summary['total_collected']);
 
         try {
             $summary['scholarship_distribution'] = $this->conn->query("SELECT scholarship_type, COUNT(*) as count FROM tbl_enrollment WHERE scholarship_type IS NOT NULL AND scholarship_type != '' GROUP BY scholarship_type")->fetchAll(PDO::FETCH_ASSOC) ?? [];

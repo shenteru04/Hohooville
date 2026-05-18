@@ -11,6 +11,29 @@ class MyTraining {
         $this->conn = $db;
     }
 
+    private function moduleStatusColumnExists(): bool {
+        static $exists = null;
+        if ($exists !== null) {
+            return $exists;
+        }
+
+        try {
+            $stmt = $this->conn->prepare("SHOW COLUMNS FROM `tbl_module` LIKE 'module_status'");
+            $stmt->execute();
+            $exists = (bool)$stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            $exists = false;
+        }
+
+        return $exists;
+    }
+
+    private function publishedModuleFilter(string $alias = 'm'): string {
+        return $this->moduleStatusColumnExists()
+            ? " AND COALESCE($alias.module_status, 'published') = 'published'"
+            : '';
+    }
+
     public function handleRequest() {
         $traineeId = $_GET['trainee_id'] ?? null;
         if (!$traineeId) {
@@ -30,10 +53,10 @@ class MyTraining {
 
             if ($course) {
                 // Get Modules and Lessons
-                $modStmt = $this->conn->prepare("SELECT m.module_id, m.module_title, l.lesson_id, l.lesson_title, l.file_path 
+                $modStmt = $this->conn->prepare("SELECT m.module_id, m.module_title, l.lesson_id, l.lesson_title, l.lesson_file_path 
                                                  FROM tbl_module m 
                                                  LEFT JOIN tbl_lessons l ON m.module_id = l.module_id 
-                                                 WHERE m.qualification_id = ? ORDER BY m.module_id, l.lesson_id");
+                                                 WHERE m.qualification_id = ?" . $this->publishedModuleFilter('m') . " ORDER BY m.module_id, l.lesson_id");
                 $modStmt->execute([$course['qualification_id']]);
                 $data = $modStmt->fetchAll(PDO::FETCH_ASSOC);
                 echo json_encode(['success' => true, 'course' => $course, 'modules' => $data]);

@@ -169,11 +169,12 @@
                         <div class="schedule-tab-content hidden" id="batches-tab">
                             <div class="p-4 sm:p-6">
                                 <div class="overflow-x-auto">
-                                    <table class="min-w-full divide-y divide-slate-200" id="schedulesTable" data-table-manager="true" data-filters="Qualification:1|Trainer:2" data-filter-auto-options="true">
+                                    <table class="min-w-full divide-y divide-slate-200" id="schedulesTable" data-table-manager="true" data-filters="Qualification:1|Assignment:2|Trainer:3" data-filter-auto-options="true">
                                         <thead class="bg-slate-50">
                                             <tr>
                                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Batch Name</th>
                                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Qualification</th>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Assignment</th>
                                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Trainer</th>
                                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Schedule</th>
                                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Room</th>
@@ -193,7 +194,7 @@
 
     <div class="modal-root fixed inset-0 z-50 hidden items-center justify-center p-4" id="assignScheduleModal" tabindex="-1" aria-hidden="true">
         <div class="absolute inset-0 bg-slate-900/50" data-modal-hide="assignScheduleModal"></div>
-        <div class="relative z-10 w-full max-w-xl max-h-screen overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-2xl flex flex-col">
+        <div class="relative z-10 w-full max-w-5xl max-h-screen overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-2xl flex flex-col">
             <div class="flex items-center justify-between border-b border-blue-100 px-5 py-4 flex-shrink-0">
                 <h5 class="text-lg font-semibold text-slate-900" id="assignModalTitle">Assign Schedule</h5>
                 <button type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800" data-modal-hide="assignScheduleModal" aria-label="Close modal">
@@ -203,101 +204,193 @@
             <div class="p-5 sm:p-6 overflow-y-auto flex-1">
                 <form id="assignScheduleForm" class="space-y-4">
                     <input type="hidden" id="assignBatchId">
+                    <input type="hidden" id="assignModuleId">
+                    <input type="hidden" id="assignTrainerAssignmentMode">
+                    <input type="hidden" id="assignScopeType">
+                    <input type="hidden" id="assignResolvedTrainerId">
+                    <input type="hidden" id="assignHasAssignment">
                     <div>
                         <label class="mb-1 block text-sm font-medium text-slate-700">Batch</label>
                         <p id="assignBatchName" class="text-sm font-semibold text-slate-900"></p>
                     </div>
                     <div>
-                        <label for="assignTrainerSelect" class="mb-1 block text-sm font-medium text-slate-700">Trainer</label>
-                        <select id="assignTrainerSelect" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-                            <option value="">Unassign</option>
-                        </select>
+                        <label class="mb-1 block text-sm font-medium text-slate-700">Assignment</label>
+                        <p id="assignScopeName" class="text-sm font-semibold text-slate-900"></p>
+                        <p id="assignModeHint" class="mt-1 text-xs text-slate-500"></p>
                     </div>
-                    <!-- Schedule Type Selection -->
-                    <div>
-                        <label class="mb-2 block text-sm font-medium text-slate-700">Schedule Type</label>
-                        <div class="space-y-3">
-                            <label class="flex items-center gap-3 p-3 rounded-lg border border-slate-300 cursor-pointer hover:bg-blue-50">
-                                <input type="radio" name="scheduleType" value="preset" class="h-4 w-4 text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" checked>
-                                <span class="text-sm font-medium text-slate-700">Use Preset Schedule</span>
-                            </label>
-                            <label class="flex items-center gap-3 p-3 rounded-lg border border-slate-300 cursor-pointer hover:bg-blue-50">
-                                <input type="radio" name="scheduleType" value="custom" class="h-4 w-4 text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-                                <span class="text-sm font-medium text-slate-700">Create Custom Schedule</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Preset Schedule Options -->
-                    <div id="presetScheduleContainer">
-                        <label for="assignScheduleSelect" class="mb-1 block text-sm font-medium text-slate-700">Preset Schedules</label>
-                        <select id="assignScheduleSelect" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-                            <option value="">Not Set</option>
-                            <option value="MWF (8:00 AM - 12:00 PM)">MWF (8:00 AM - 12:00 PM)</option>
-                            <option value="MWF (1:00 PM - 5:00 PM)">MWF (1:00 PM - 5:00 PM)</option>
-                            <option value="TTH (8:00 AM - 12:00 PM)">TTH (8:00 AM - 12:00 PM)</option>
-                            <option value="TTH (1:00 PM - 5:00 PM)">TTH (1:00 PM - 5:00 PM)</option>
-                            <option value="Weekdays (8:00 AM - 12:00 PM)">Weekdays (8:00 AM - 12:00 PM)</option>
-                            <option value="Weekdays (1:00 PM - 5:00 PM)">Weekdays (1:00 PM - 5:00 PM)</option>
-                            <option value="Saturday (8:00 AM - 5:00 PM)">Saturday (8:00 AM - 5:00 PM)</option>
-                            <option value="Day Shift (8:00 AM - 5:00 PM)">Day Shift (8:00 AM - 5:00 PM)</option>
-                            <option value="Night Shift (6:00 PM - 10:00 PM)">Night Shift (6:00 PM - 10:00 PM)</option>
-                        </select>
-                    </div>
-
-                    <!-- Custom Schedule Options -->
-                    <div id="customScheduleContainer" class="hidden space-y-4">
-                        <div>
-                            <label for="customScheduleDays" class="mb-1 block text-sm font-medium text-slate-700">Days of Week</label>
-                            <div class="grid grid-cols-4 gap-2">
-                                <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-300 cursor-pointer hover:bg-blue-50">
-                                    <input type="checkbox" name="customDays" value="Monday" class="h-4 w-4 text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-                                    <span class="text-xs font-medium text-slate-700">Mon</span>
-                                </label>
-                                <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-300 cursor-pointer hover:bg-blue-50">
-                                    <input type="checkbox" name="customDays" value="Tuesday" class="h-4 w-4 text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-                                    <span class="text-xs font-medium text-slate-700">Tue</span>
-                                </label>
-                                <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-300 cursor-pointer hover:bg-blue-50">
-                                    <input type="checkbox" name="customDays" value="Wednesday" class="h-4 w-4 text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-                                    <span class="text-xs font-medium text-slate-700">Wed</span>
-                                </label>
-                                <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-300 cursor-pointer hover:bg-blue-50">
-                                    <input type="checkbox" name="customDays" value="Thursday" class="h-4 w-4 text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-                                    <span class="text-xs font-medium text-slate-700">Thu</span>
-                                </label>
-                                <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-300 cursor-pointer hover:bg-blue-50">
-                                    <input type="checkbox" name="customDays" value="Friday" class="h-4 w-4 text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-                                    <span class="text-xs font-medium text-slate-700">Fri</span>
-                                </label>
-                                <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-300 cursor-pointer hover:bg-blue-50">
-                                    <input type="checkbox" name="customDays" value="Saturday" class="h-4 w-4 text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-                                    <span class="text-xs font-medium text-slate-700">Sat</span>
-                                </label>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
+                    <section id="modalUnitAssignmentSection" class="hidden rounded-2xl border border-blue-100 bg-blue-50/40 p-4">
+                        <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
                             <div>
-                                <label for="customStartTime" class="mb-1 block text-sm font-medium text-slate-700">Start Time</label>
-                                <input type="time" id="customStartTime" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                <h6 class="text-sm font-semibold text-slate-900">Assign Trainers Per Unit of Competency</h6>
+                                <p class="mt-1 text-xs text-slate-500">Choose the trainer for each core, basic, and common unit here. The scheduling section below follows the active competency tab, and the displayed hours update from the session plan you choose.</p>
+                            </div>
+                            <div class="rounded-2xl border border-blue-100 bg-white px-4 py-3">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-blue-700">Lead Trainer</p>
+                                <p id="unitTrainerLeadDisplay" class="mt-1 text-sm font-semibold text-slate-900">Not selected</p>
+                                <p class="mt-3 text-xs font-semibold uppercase tracking-wide text-blue-700">Qualification</p>
+                                <p id="unitTrainerQualificationDisplay" class="mt-1 text-sm font-semibold text-slate-900">Select a batch to view units</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 flex items-center justify-between gap-3">
+                            <div class="flex flex-wrap gap-2" id="unitTrainerAssignmentTabs" role="tablist" aria-label="Unit competency tabs">
+                                <button type="button" class="unit-assignment-tab-btn inline-flex items-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white" data-unit-tab="core" aria-selected="true">Core</button>
+                                <button type="button" class="unit-assignment-tab-btn inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50" data-unit-tab="basic" aria-selected="false">Basic</button>
+                                <button type="button" class="unit-assignment-tab-btn inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50" data-unit-tab="common" aria-selected="false">Common</button>
+                            </div>
+                            <p id="unitTrainerAssignmentSummary" class="text-xs font-semibold uppercase tracking-wide text-blue-700">0 of 0 units assigned</p>
+                        </div>
+
+                        <div id="unitTrainerBulkAssignBar" class="mt-4 hidden rounded-xl border border-blue-100 bg-white px-4 py-3">
+                            <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                                <div>
+                                    <p id="unitTrainerBulkAssignTitle" class="text-sm font-semibold text-slate-900">Assign This Competency Group To One Trainer</p>
+                                    <p id="unitTrainerBulkAssignHint" class="mt-1 text-xs text-slate-500">Pick one trainer to own all units in this tab.</p>
+                                </div>
+                                <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                    <select id="bulkUnitTrainerSelect" class="min-w-[220px] rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                        <option value="">Select Trainer</option>
+                                    </select>
+                                    <button type="button" id="applyBulkUnitTrainerBtn" class="rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                        Assign All In Tab
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="unitTrainerAssignmentEmptyState" class="mt-4 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500">
+                            Select a multiple-mode batch to load its units of competency.
+                        </div>
+
+                        <div id="unitTrainerAssignmentPanels" class="mt-4 hidden space-y-4">
+                            <div id="unitTrainerAssignments-core" class="unit-assignment-tab-panel space-y-3"></div>
+                            <div id="unitTrainerAssignments-basic" class="unit-assignment-tab-panel hidden space-y-3"></div>
+                            <div id="unitTrainerAssignments-common" class="unit-assignment-tab-panel hidden space-y-3"></div>
+                        </div>
+                    </section>
+                    <section id="modalSchedulingSection" class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                        <div>
+                            <p id="scheduleSectionTypeLabel" class="text-xs font-semibold uppercase tracking-wide text-blue-700">Scheduling</p>
+                            <h6 id="scheduleSectionHeading" class="mt-1 text-sm font-semibold text-slate-900">Set Day, Time, and Room</h6>
+                            <p id="scheduleSectionFocusLabel" class="mt-1 text-xs text-slate-500">Choose the batch or unit you want to schedule.</p>
+                            <p id="scheduleSectionTypeHint" class="mt-1 text-[11px] text-slate-400">Hours update after you choose a session plan.</p>
+                        </div>
+
+                        <div class="mt-4 grid gap-3 lg:grid-cols-2">
+                            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                                <p id="scheduleSectionSelectedHoursLabel" class="text-xs font-semibold uppercase tracking-wide text-slate-500">Selected Schedule Hours</p>
+                                <p id="scheduleSectionSelectedHours" class="mt-1 text-sm font-semibold text-slate-900">0 hrs</p>
+                                <p id="scheduleSectionSelectedHoursHint" class="mt-1 text-[11px] text-slate-400">Choose a preset or custom session plan to update the hours.</p>
+                            </div>
+                            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                                <p id="scheduleSectionTabHoursLabel" class="text-xs font-semibold uppercase tracking-wide text-slate-500">Competency Total</p>
+                                <p id="scheduleSectionTabHours" class="mt-1 text-sm font-semibold text-slate-900">0 hrs total</p>
+                                <p id="scheduleSectionTabHoursHint" class="mt-1 text-[11px] text-slate-400">0 of 0 units scheduled</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 space-y-4">
+                            <div id="assignTrainerSelectField">
+                                <label for="assignTrainerSelect" class="mb-1 block text-sm font-medium text-slate-700">Trainer</label>
+                                <select id="assignTrainerSelect" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                    <option value="">Unassign</option>
+                                </select>
+                            </div>
+                            <div id="assignTrainerDisplayField" class="hidden">
+                                <label class="mb-1 block text-sm font-medium text-slate-700">Trainer</label>
+                                <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                                    <p id="assignTrainerDisplay" class="text-sm font-semibold text-slate-900"></p>
+                                    <p class="mt-1 text-xs text-slate-500">In multiple mode, the lead trainer can be scheduled first. Unit/module schedules can be added later from trainer-owned modules.</p>
+                                </div>
                             </div>
                             <div>
-                                <label for="customEndTime" class="mb-1 block text-sm font-medium text-slate-700">End Time</label>
-                                <input type="time" id="customEndTime" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                <label class="mb-2 block text-sm font-medium text-slate-700">Schedule Type</label>
+                                <div class="space-y-3">
+                                    <label class="flex items-center gap-3 rounded-lg border border-slate-300 p-3 cursor-pointer hover:bg-blue-50">
+                                        <input type="radio" name="scheduleType" value="preset" class="h-4 w-4 text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" checked>
+                                        <span class="text-sm font-medium text-slate-700">Use Preset Schedule</span>
+                                    </label>
+                                    <label class="flex items-center gap-3 rounded-lg border border-slate-300 p-3 cursor-pointer hover:bg-blue-50">
+                                        <input type="radio" name="scheduleType" value="custom" class="h-4 w-4 text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                        <span class="text-sm font-medium text-slate-700">Create Custom Schedule</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
-                        <div>
-                            <label for="customStartDate" class="mb-1 block text-sm font-medium text-slate-700">Start Date</label>
-                            <input type="date" id="customStartDate" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+
+                        <!-- Preset Schedule Options -->
+                        <div id="presetScheduleContainer" class="mt-4">
+                            <label for="assignScheduleSelect" class="mb-1 block text-sm font-medium text-slate-700">Preset Schedules</label>
+                            <select id="assignScheduleSelect" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                <option value="">Not Set</option>
+                                <option value="MWF (8:00 AM - 12:00 PM)">MWF (8:00 AM - 12:00 PM)</option>
+                                <option value="MWF (1:00 PM - 5:00 PM)">MWF (1:00 PM - 5:00 PM)</option>
+                                <option value="TTH (8:00 AM - 12:00 PM)">TTH (8:00 AM - 12:00 PM)</option>
+                                <option value="TTH (1:00 PM - 5:00 PM)">TTH (1:00 PM - 5:00 PM)</option>
+                                <option value="Weekdays (8:00 AM - 12:00 PM)">Weekdays (8:00 AM - 12:00 PM)</option>
+                                <option value="Weekdays (1:00 PM - 5:00 PM)">Weekdays (1:00 PM - 5:00 PM)</option>
+                                <option value="Saturday (8:00 AM - 5:00 PM)">Saturday (8:00 AM - 5:00 PM)</option>
+                                <option value="Day Shift (8:00 AM - 5:00 PM)">Day Shift (8:00 AM - 5:00 PM)</option>
+                                <option value="Night Shift (6:00 PM - 10:00 PM)">Night Shift (6:00 PM - 10:00 PM)</option>
+                            </select>
                         </div>
-                    </div>
-                    <div>
-                        <label for="assignRoomSelect" class="mb-1 block text-sm font-medium text-slate-700">Room / Venue</label>
-                        <select id="assignRoomSelect" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-                            <option value="">Select Room</option>
-                        </select>
-                    </div>
+
+                        <!-- Custom Schedule Options -->
+                        <div id="customScheduleContainer" class="mt-4 hidden space-y-4">
+                            <div>
+                                <label for="customScheduleDays" class="mb-1 block text-sm font-medium text-slate-700">Days of Week</label>
+                                <div class="grid grid-cols-4 gap-2">
+                                    <label class="flex items-center gap-2 rounded-lg border border-slate-300 p-2 cursor-pointer hover:bg-blue-50">
+                                        <input type="checkbox" name="customDays" value="Monday" class="h-4 w-4 text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                        <span class="text-xs font-medium text-slate-700">Mon</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 rounded-lg border border-slate-300 p-2 cursor-pointer hover:bg-blue-50">
+                                        <input type="checkbox" name="customDays" value="Tuesday" class="h-4 w-4 text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                        <span class="text-xs font-medium text-slate-700">Tue</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 rounded-lg border border-slate-300 p-2 cursor-pointer hover:bg-blue-50">
+                                        <input type="checkbox" name="customDays" value="Wednesday" class="h-4 w-4 text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                        <span class="text-xs font-medium text-slate-700">Wed</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 rounded-lg border border-slate-300 p-2 cursor-pointer hover:bg-blue-50">
+                                        <input type="checkbox" name="customDays" value="Thursday" class="h-4 w-4 text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                        <span class="text-xs font-medium text-slate-700">Thu</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 rounded-lg border border-slate-300 p-2 cursor-pointer hover:bg-blue-50">
+                                        <input type="checkbox" name="customDays" value="Friday" class="h-4 w-4 text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                        <span class="text-xs font-medium text-slate-700">Fri</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 rounded-lg border border-slate-300 p-2 cursor-pointer hover:bg-blue-50">
+                                        <input type="checkbox" name="customDays" value="Saturday" class="h-4 w-4 text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                        <span class="text-xs font-medium text-slate-700">Sat</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="customStartTime" class="mb-1 block text-sm font-medium text-slate-700">Start Time</label>
+                                    <input type="time" id="customStartTime" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label for="customEndTime" class="mb-1 block text-sm font-medium text-slate-700">End Time</label>
+                                    <input type="time" id="customEndTime" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="customStartDate" class="mb-1 block text-sm font-medium text-slate-700">Start Date</label>
+                                <input type="date" id="customStartDate" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <label for="assignRoomSelect" class="mb-1 block text-sm font-medium text-slate-700">Room / Venue</label>
+                            <select id="assignRoomSelect" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                <option value="">Select schedule first</option>
+                            </select>
+                            <p class="mt-1 text-xs text-slate-500">Rooms are filtered based on the selected day and time.</p>
+                        </div>
+                    </section>
                     <div class="flex justify-end gap-2">
+                        <button type="button" id="removeAssignmentBtn" class="hidden rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500">Unassign Unit</button>
                         <button type="button" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" data-modal-hide="assignScheduleModal">Cancel</button>
                         <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">Save Schedule</button>
                     </div>

@@ -9,68 +9,95 @@
     <link rel="stylesheet" href="frontend/css/landing.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
-            outline: 2px solid #2563eb;
+            outline: 2px solid #0d9488;
             outline-offset: 2px;
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-700 antialiased">
-    <nav class="fixed inset-x-0 top-0 z-50 border-b border-blue-100 bg-white/95 shadow-sm backdrop-blur">
+<body class="text-slate-700 antialiased">
+    <div class="page-orb page-orb-a"></div>
+    <div class="page-orb page-orb-b"></div>
+
+    <nav class="site-nav fixed inset-x-0 top-0 z-50">
         <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-            <a class="flex items-center gap-3 text-blue-700" href="#">
-                <img src="img/logo.jpg" alt="Logo" class="h-9 w-9 rounded-full object-cover ring-2 ring-blue-100">
-                <span class="text-lg font-bold">Hohoo Ville</span>
+            <a class="brand-mark" href="#">
+                <img src="img/logo.jpg" alt="Hohoo Ville logo" class="h-9 w-9 rounded-full object-cover">
+                <span class="text-sm font-semibold uppercase tracking-[0.17em] text-teal-700">Hohoo Ville</span>
             </a>
 
-            <button id="mobileMenuBtn" type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 md:hidden" aria-expanded="false" aria-controls="mobileMenu" aria-label="Toggle menu">
+            <button id="mobileMenuBtn" type="button" class="mobile-menu-btn inline-flex h-10 w-10 items-center justify-center rounded-xl md:hidden" aria-expanded="false" aria-controls="mobileMenu" aria-label="Toggle menu">
                 <i class="fas fa-bars"></i>
             </button>
 
-            <div class="hidden items-center gap-6 md:flex">
-                <a href="#about" class="text-sm font-medium text-slate-600 hover:text-blue-600">About Us</a>
-                <a href="#courses" class="text-sm font-medium text-slate-600 hover:text-blue-600">Courses</a>
-                <a href="#contact" class="text-sm font-medium text-slate-600 hover:text-blue-600">Contact</a>
-                <a href="frontend/login.html" class="inline-flex items-center gap-2 rounded-lg border border-blue-200 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50">
+            <div class="hidden items-center gap-4 md:flex">
+                <a href="#about" class="nav-link text-sm font-semibold">About Us</a>
+                <a href="#courses" class="nav-link text-sm font-semibold">Courses</a>
+                <a href="#contact" class="nav-link text-sm font-semibold">Contact</a>
+                <a href="frontend/login.html" class="nav-action nav-action-secondary inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold">
                     <i class="fas fa-sign-in-alt"></i> Login
                 </a>
-                <a href="application_form.html" class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700">
+                <a href="application_form.html" class="nav-action nav-action-primary inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white">
                     <i class="fas fa-user-plus"></i> Apply Now
                 </a>
             </div>
         </div>
 
-        <div id="mobileMenu" class="hidden border-t border-blue-100 bg-white px-4 pb-4 pt-2 md:hidden">
+        <div id="mobileMenu" class="mobile-menu hidden px-4 pb-4 pt-2 md:hidden">
             <div class="space-y-1">
-                <a href="#about" class="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">About Us</a>
-                <a href="#courses" class="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">Courses</a>
-                <a href="#contact" class="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">Contact</a>
-                <a href="frontend/login.html" class="mt-2 block rounded-lg border border-blue-200 px-3 py-2 text-center text-sm font-semibold text-blue-700 hover:bg-blue-50">
+                <a href="#about" class="mobile-link block rounded-lg px-3 py-2 text-sm font-medium">About Us</a>
+                <a href="#courses" class="mobile-link block rounded-lg px-3 py-2 text-sm font-medium">Courses</a>
+                <a href="#contact" class="mobile-link block rounded-lg px-3 py-2 text-sm font-medium">Contact</a>
+                <a href="frontend/login.html" class="nav-action nav-action-secondary mt-2 block rounded-lg px-3 py-2 text-center text-sm font-semibold">
                     <i class="fas fa-sign-in-alt mr-1"></i> Login
                 </a>
-                <a href="application_form.html" class="mt-2 block rounded-lg bg-emerald-600 px-3 py-2 text-center text-sm font-semibold text-white hover:bg-emerald-700">
+                <a href="application_form.html" class="nav-action nav-action-primary mt-2 block rounded-lg px-3 py-2 text-center text-sm font-semibold text-white">
                     <i class="fas fa-user-plus mr-1"></i> Apply Now
                 </a>
             </div>
         </div>
     </nav>
 
-    <header class="hero-section relative mt-16 overflow-hidden text-white">
-        <div class="mx-auto max-w-7xl px-4 py-24 text-center sm:px-6 lg:px-8 lg:py-32">
-            <h1 class="text-4xl font-bold leading-tight sm:text-5xl">Build Your Future with Hohoo Ville</h1>
-            <p class="mx-auto mt-4 max-w-3xl text-base text-blue-50 sm:text-lg">Your journey to a successful technical career starts here. Quality training for in-demand skills.</p>
-            <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <a href="application_form.html" class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow hover:bg-blue-700">Apply Now</a>
-                <a href="#courses" class="inline-flex items-center justify-center rounded-lg border border-white/60 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10">Explore Courses</a>
+    <header class="hero-section relative overflow-hidden text-white">
+        <div class="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+            <div class="max-w-3xl">
+                <p class="capsule inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-teal-100">
+                    <i class="fas fa-shield-heart text-[11px]"></i>
+                    TESDA-Accredited Training Programs
+                </p>
+                <h1 class="mt-5 text-4xl font-extrabold leading-tight sm:text-5xl">Build your future with practical skills that employers trust.</h1>
+                <p class="mt-4 max-w-2xl text-base text-white/85 sm:text-lg">Join Hohoo Ville Technical School and train inside a streamlined learning system built for real industry outcomes.</p>
+                <div class="mt-8 flex flex-col items-center justify-start gap-3 sm:flex-row sm:justify-start">
+                    <a href="application_form.html" class="hero-cta hero-cta-primary inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-bold text-white">Apply Now</a>
+                    <a href="#courses" class="hero-cta hero-cta-secondary inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-bold">Explore Courses</a>
+                </div>
+            </div>
+
+            <div class="mt-8 grid gap-3 sm:grid-cols-2 lg:max-w-4xl lg:grid-cols-3">
+                <div class="hero-feature rounded-2xl p-4">
+                    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-teal-100">Programs</p>
+                    <h3 class="mt-2 text-lg font-bold">Industry-ready tracks</h3>
+                    <p class="mt-1 text-sm text-white/80">Technical qualifications aligned with TESDA standards.</p>
+                </div>
+                <div class="hero-feature rounded-2xl p-4">
+                    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-teal-100">Enrollment</p>
+                    <h3 class="mt-2 text-lg font-bold">Simple online intake</h3>
+                    <p class="mt-1 text-sm text-white/80">Apply and track the next steps through one portal.</p>
+                </div>
+                <div class="hero-feature rounded-2xl p-4 sm:col-span-2 lg:col-span-1">
+                    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-teal-100">Support</p>
+                    <h3 class="mt-2 text-lg font-bold">Guided learning journey</h3>
+                    <p class="mt-1 text-sm text-white/80">Get help from trainers and staff at every stage.</p>
+                </div>
             </div>
         </div>
     </header>
 
-    <section id="about" class="py-16 sm:py-20">
+    <section id="about" class="py-12 sm:py-14">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div class="grid items-center gap-10 lg:grid-cols-2">
+            <div class="surface-panel grid items-center gap-8 rounded-3xl p-5 lg:grid-cols-2 lg:p-8">
                 <div>
                     <h2 class="text-3xl font-bold text-slate-900">About Hohoo Ville Technical School</h2>
                     <div class="line"></div>
@@ -78,83 +105,84 @@
                     <p class="mt-3 text-slate-600">Located in Purok 6A, Poblacion, Lagonglong, Misamis Oriental, we are committed to fostering a learning environment that promotes innovation, skill, and professionalism.</p>
                 </div>
                 <div>
-                    <img src="/Hohoo-ville/img/school.png" class="w-full rounded-2xl shadow-xl ring-1 ring-blue-100" alt="School Campus">
+                    <img src="img/school.png" class="w-full rounded-2xl shadow-xl ring-1 ring-white/40" alt="School Campus">
                 </div>
             </div>
         </div>
     </section>
 
-    <section id="courses" class="bg-slate-100/70 py-16 sm:py-20">
+    <section id="courses" class="py-12 sm:py-14">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="mb-10 text-center">
-                <h2 class="text-3xl font-bold text-slate-900">Our Featured Courses</h2>
+                <p class="inline-flex items-center gap-2 rounded-full bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-teal-700">Featured Qualifications</p>
+                <h2 class="mt-4 text-3xl font-bold text-slate-900">Our Featured Courses</h2>
                 <p class="mt-2 text-slate-600">We offer a range of TESDA-accredited programs.</p>
             </div>
 
             <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                <article class="course-card relative min-h-[280px] cursor-pointer overflow-hidden rounded-2xl shadow-md ring-1 ring-blue-100" role="button"
+                <article class="course-card relative min-h-[280px] cursor-pointer overflow-hidden rounded-2xl" role="button"
                     data-course-title="Electrical Installation &amp; Maintenance (EIM) NC II"
                     data-course-description="Learn to install and maintain electrical wiring, lighting, and related equipment for residential and commercial buildings. This course covers topics such as AC/DC circuits, blueprint reading, wiring installation, and safety procedures. Graduates are prepared for entry-level electrician roles."
                     data-course-gallery='["img/actual/eim1.png", "img/actual/eim2.png", "img/actual/eim3.png", "img/actual/eim4.png", "img/actual/eim5.png", "img/actual/eim6.png"]'>
-                    <div class="absolute inset-0 bg-cover bg-center" style="background-image: linear-gradient(rgba(0,0,0,.68), rgba(0,0,0,.68)), url('https://rtcviionlinecourse.gnomio.com/pluginfile.php/94/course/overviewfiles/electric.jpg');"></div>
+                    <div class="absolute inset-0 bg-cover bg-center" style="background-image: linear-gradient(rgba(2, 6, 23, .7), rgba(2, 6, 23, .58)), url('https://rtcviionlinecourse.gnomio.com/pluginfile.php/94/course/overviewfiles/electric.jpg');"></div>
                     <div class="relative flex h-full flex-col items-center justify-center px-6 py-8 text-center text-white">
-                        <div class="icon-circle mb-4 bg-blue-600 text-white">
+                        <div class="icon-circle mb-4 bg-teal-600 text-white">
                             <i class="fas fa-bolt fa-2x"></i>
                         </div>
                         <h3 class="text-xl font-bold">Electrical Installation &amp; Maintenance (EIM) NC II</h3>
-                        <p class="mt-3 text-sm text-blue-50">Learn to install and maintain electrical wiring, lighting, and related equipment for residential and commercial buildings.</p>
+                        <p class="mt-3 text-sm text-teal-50">Learn to install and maintain electrical wiring, lighting, and related equipment for residential and commercial buildings.</p>
                     </div>
                 </article>
 
-                <article class="course-card relative min-h-[280px] cursor-pointer overflow-hidden rounded-2xl shadow-md ring-1 ring-blue-100" role="button"
+                <article class="course-card relative min-h-[280px] cursor-pointer overflow-hidden rounded-2xl" role="button"
                     data-course-title="Automotive Servicing NC II"
                     data-course-description="Gain expertise in inspecting, maintaining, and repairing light and heavy-duty automotive vehicles. This program covers engine systems, brakes, suspension, and electrical components, preparing you for a career as an automotive technician."
                     data-course-gallery='["https://images.unsplash.com/photo-1487754180143-c282de8e6de9?q=80&w=800", "https://images.unsplash.com/photo-1486262715619-67b519e0edd3?q=80&w=800", "https://images.unsplash.com/photo-1538108149393-fbbd81895907?q=80&w=800"]'>
-                    <div class="absolute inset-0 bg-cover bg-center" style="background-image: linear-gradient(rgba(0,0,0,.68), rgba(0,0,0,.68)), url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSzgri299DTiVN6ryInU6-uBGTqQgrKrl9Bug&s');"></div>
+                    <div class="absolute inset-0 bg-cover bg-center" style="background-image: linear-gradient(rgba(2, 6, 23, .7), rgba(2, 6, 23, .58)), url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSzgri299DTiVN6ryInU6-uBGTqQgrKrl9Bug&s');"></div>
                     <div class="relative flex h-full flex-col items-center justify-center px-6 py-8 text-center text-white">
-                        <div class="icon-circle mb-4 bg-emerald-600 text-white">
+                        <div class="icon-circle mb-4 bg-sky-600 text-white">
                             <i class="fas fa-cogs fa-2x"></i>
                         </div>
                         <h3 class="text-xl font-bold">Automotive Servicing NC II</h3>
-                        <p class="mt-3 text-sm text-blue-50">Gain expertise in inspecting, maintaining, and repairing light and heavy-duty automotive vehicles.</p>
+                        <p class="mt-3 text-sm text-teal-50">Gain expertise in inspecting, maintaining, and repairing light and heavy-duty automotive vehicles.</p>
                     </div>
                 </article>
 
-                <article class="course-card relative min-h-[280px] cursor-pointer overflow-hidden rounded-2xl shadow-md ring-1 ring-blue-100" role="button"
+                <article class="course-card relative min-h-[280px] cursor-pointer overflow-hidden rounded-2xl" role="button"
                     data-course-title="Cookery NC II"
                     data-course-description="Master the art of preparing hot and cold meals in commercial kitchens, from appetizers to desserts. Students learn food safety, knife skills, various cooking methods, and kitchen management to work in restaurants, hotels, and other food service establishments."
                     data-course-gallery='["https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800", "https://images.unsplash.com/photo-1495521821757-a1efb6729352?q=80&w=800", "https://images.unsplash.com/photo-1495479897352-95338368ae18?q=80&w=800"]'>
-                    <div class="absolute inset-0 bg-cover bg-center" style="background-image: linear-gradient(rgba(0,0,0,.68), rgba(0,0,0,.68)), url('https://static.wixstatic.com/media/a6f2f1_b670f6e22a8a468a8308860a7974b987~mv2.jpg/v1/fill/w_640,h_686,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/a6f2f1_b670f6e22a8a468a8308860a7974b987~mv2.jpg');"></div>
+                    <div class="absolute inset-0 bg-cover bg-center" style="background-image: linear-gradient(rgba(2, 6, 23, .7), rgba(2, 6, 23, .58)), url('https://static.wixstatic.com/media/a6f2f1_b670f6e22a8a468a8308860a7974b987~mv2.jpg/v1/fill/w_640,h_686,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/a6f2f1_b670f6e22a8a468a8308860a7974b987~mv2.jpg');"></div>
                     <div class="relative flex h-full flex-col items-center justify-center px-6 py-8 text-center text-white">
                         <div class="icon-circle mb-4 bg-amber-500 text-white">
                             <i class="fas fa-utensils fa-2x"></i>
                         </div>
                         <h3 class="text-xl font-bold">Cookery NC II</h3>
-                        <p class="mt-3 text-sm text-blue-50">Master the art of preparing hot and cold meals in commercial kitchens, from appetizers to desserts.</p>
+                        <p class="mt-3 text-sm text-teal-50">Master the art of preparing hot and cold meals in commercial kitchens, from appetizers to desserts.</p>
                     </div>
                 </article>
             </div>
         </div>
     </section>
 
-    <section id="contact" class="py-16 sm:py-20">
+    <section id="contact" class="py-12 sm:py-14">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="mb-10 text-center">
                 <h2 class="text-3xl font-bold text-slate-900">Get In Touch</h2>
                 <p class="mt-2 text-slate-600">We'd love to hear from you. Visit us or send us a message.</p>
             </div>
             <div class="grid gap-8 lg:grid-cols-2">
-                <div class="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
+                <div class="surface-panel rounded-2xl p-6">
                     <h3 class="text-lg font-bold text-slate-900">Our Location</h3>
-                    <p class="mt-3 text-slate-700"><i class="fas fa-map-marker-alt mr-2 text-blue-600"></i>Purok 6A, Poblacion, Lagonglong, Misamis Oriental</p>
+                    <p class="mt-3 text-slate-700"><i class="fas fa-map-marker-alt mr-2 text-teal-600"></i>Purok 6A, Poblacion, Lagonglong, Misamis Oriental</p>
                     <h3 class="mt-6 text-lg font-bold text-slate-900">Contact Info</h3>
-                    <p class="mt-3 text-slate-700"><i class="fas fa-phone mr-2 text-blue-600"></i>(+63) 921-696-8538</p>
-                    <p class="mt-2 text-slate-700"><i class="fas fa-envelope mr-2 text-blue-600"></i>hohooville@gmail.com</p>
-                    <p class="mt-2 text-slate-700"><i class="fas fa-clock mr-2 text-blue-600"></i>Monday - Saturday: 8:00 AM - 5:00 PM</p>
-                    <p class="mt-2 text-slate-700"><i class="fas fa-clock mr-2 text-blue-600"></i>Sunday: Closed</p>
-                    <p class="mt-6 text-sm font-semibold text-slate-800">Hohoo Ville Technical School Inc. is an educational institution under the TESDA.</p>
+                    <p class="mt-3 text-slate-700"><i class="fas fa-phone mr-2 text-teal-600"></i>(+63) 921-696-8538</p>
+                    <p class="mt-2 text-slate-700"><i class="fas fa-envelope mr-2 text-teal-600"></i>hohooville@gmail.com</p>
+                    <p class="mt-2 text-slate-700"><i class="fas fa-clock mr-2 text-teal-600"></i>Monday - Saturday: 8:00 AM - 5:00 PM</p>
+                    <p class="mt-2 text-slate-700"><i class="fas fa-clock mr-2 text-teal-600"></i>Sunday: Closed</p>
+                    <p class="mt-6 text-sm font-semibold text-slate-800">Hohoo Ville Technical School Inc. is an educational institution under TESDA.</p>
                 </div>
-                <div class="map-container overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm">
+                <div class="map-container overflow-hidden rounded-2xl">
                     <iframe
                         class="h-full w-full"
                         style="border:0;"
@@ -167,26 +195,26 @@
         </div>
     </section>
 
-    <section id="enrollment" class="bg-slate-100/70 py-16 sm:py-20">
+    <section id="enrollment" class="py-12 sm:py-14">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="mb-10 text-center">
-                <h2 class="text-3xl font-bold text-slate-900">Enrollment is Now Open!</h2>
+                <h2 class="text-3xl font-bold text-slate-900">Enrollment Is Now Open</h2>
                 <p class="mt-2 text-slate-600">Check out our available programs and upcoming batches.</p>
             </div>
             <div class="grid gap-8 md:grid-cols-2">
-                <div>
-                    <h3 class="mb-4 text-xl font-bold text-slate-900"><i class="fas fa-award mr-2 text-blue-600"></i>Available Qualifications</h3>
+                <div class="surface-panel rounded-2xl p-6">
+                    <h3 class="mb-4 text-xl font-bold text-slate-900"><i class="fas fa-award mr-2 text-teal-600"></i>Available Qualifications</h3>
                     <div id="qualificationsList">
                         <div class="flex justify-center py-8">
-                            <div class="h-8 w-8 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600"></div>
+                            <div class="h-8 w-8 animate-spin rounded-full border-4 border-teal-200 border-t-teal-600"></div>
                         </div>
                     </div>
                 </div>
-                <div>
-                    <h3 class="mb-4 text-xl font-bold text-slate-900"><i class="fas fa-calendar-alt mr-2 text-emerald-600"></i>Upcoming Batches</h3>
+                <div class="surface-panel rounded-2xl p-6">
+                    <h3 class="mb-4 text-xl font-bold text-slate-900"><i class="fas fa-calendar-alt mr-2 text-amber-500"></i>Upcoming Batches</h3>
                     <div id="batchesList">
                         <div class="flex justify-center py-8">
-                            <div class="h-8 w-8 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600"></div>
+                            <div class="h-8 w-8 animate-spin rounded-full border-4 border-teal-200 border-t-teal-600"></div>
                         </div>
                     </div>
                 </div>
@@ -194,7 +222,7 @@
         </div>
     </section>
 
-    <footer class="bg-slate-900 py-8 text-center text-white">
+    <footer class="site-footer py-8 text-center text-white">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="mb-4">
                 <a href="https://web.facebook.com/profile.php?id=61562511351031" class="social-icon" title="Facebook">
@@ -202,7 +230,7 @@
                     <span>Hohoo Ville Technical School Inc.</span>
                 </a>
             </div>
-            <p class="text-sm text-slate-300">&copy; 2024 Hohoo-ville Technical School Inc. All Rights Reserved.</p>
+            <p class="text-sm text-slate-200">&copy; 2026 Hohoo-ville Technical School Inc. All Rights Reserved.</p>
         </div>
     </footer>
 
@@ -212,8 +240,8 @@
 
     <div class="fixed inset-0 z-[60] hidden items-center justify-center p-4" id="courseModal" aria-hidden="true">
         <div class="absolute inset-0 bg-slate-900/60" data-modal-close="courseModal"></div>
-        <div class="relative z-10 w-full max-w-4xl rounded-2xl bg-white shadow-2xl">
-            <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+        <div class="modal-shell relative z-10 w-full max-w-4xl rounded-2xl">
+            <div class="flex items-center justify-between border-b border-slate-200/70 px-5 py-4">
                 <h4 class="text-lg font-semibold text-slate-900" id="courseModalLabel">Course Details</h4>
                 <button type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700" data-modal-close="courseModal" aria-label="Close">
                     <i class="fas fa-times"></i>
@@ -232,3 +260,4 @@
     <script src="frontend/js/landing.js"></script>
 </body>
 </html>
+

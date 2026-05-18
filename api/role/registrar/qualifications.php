@@ -56,13 +56,12 @@ function createQualification($conn) {
             throw new Exception('Qualification name is required');
         }
 
-        $stmt = $conn->prepare("INSERT INTO tbl_qualifications (qualification_name, nc_level_id, ctpr_number, duration, training_cost, description, status) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO tbl_qualifications (qualification_name, nc_level_id, ctpr_number, duration, description, status) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $data['qualification_name'],
             $data['nc_level_id'] ?? null,
             $data['ctpr_number'] ?? null,
             $data['duration'] ?? null,
-            $data['training_cost'] ?? 0,
             $data['description'] ?? null,
             $data['status'] ?? 'active'
         ]);

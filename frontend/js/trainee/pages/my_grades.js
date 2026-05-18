@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }).then((result) => {
             if (result.isConfirmed) {
                 localStorage.clear();
-                window.location.href = '../../../../login.html';
+                window.location.href = '/Hohoo-ville/frontend/login.html';
             }
         });
     });
@@ -206,9 +206,11 @@ async function loadGrades(traineeId) {
                         let taskText = 'N/A';
                         if (lesson.task_sheets && lesson.task_sheets.length > 0) {
                             totalItems++;
-                            if (lesson.task_sheet_status) {
+                            if (lesson.task_sheet_status === 'approved') {
                                 completedItems++;
                                 taskText = 'Submitted';
+                            } else if (lesson.task_sheet_status === 'submitted') {
+                                taskText = 'Pending';
                             } else {
                                 taskText = 'Pending';
                             }
