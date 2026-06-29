@@ -30,6 +30,7 @@ class SimpleModal {
 document.addEventListener('DOMContentLoaded', async () => {
     await ensureSwal();
     initUserDropdown();
+    initBatchActionMenus();
     initLogout();
     initModals();
     bindActions();
@@ -62,6 +63,47 @@ function initUserDropdown() {
             menu.classList.add('hidden');
         }
     });
+}
+
+function initBatchActionMenus() {
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('[data-batch-actions-wrapper]')) {
+            closeBatchActionMenus();
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            closeBatchActionMenus();
+        }
+    });
+}
+
+function closeBatchActionMenus() {
+    document.querySelectorAll('[data-batch-actions-menu]').forEach((menu) => {
+        menu.classList.add('hidden');
+    });
+
+    document.querySelectorAll('[data-batch-actions-toggle]').forEach((button) => {
+        button.setAttribute('aria-expanded', 'false');
+    });
+}
+
+function toggleBatchActionMenu(event, batchId) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const menu = document.querySelector(`[data-batch-actions-menu="${batchId}"]`);
+    const button = document.querySelector(`[data-batch-actions-toggle="${batchId}"]`);
+    if (!menu || !button) return;
+
+    const shouldOpen = menu.classList.contains('hidden');
+    closeBatchActionMenus();
+
+    if (shouldOpen) {
+        menu.classList.remove('hidden');
+        button.setAttribute('aria-expanded', 'true');
+    }
 }
 
 async function initLogout() {
@@ -154,11 +196,11 @@ function renderBatchesTable(data, tbodyId) {
     if (!tbody) return;
 
     if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-sm text-slate-500">No batches found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-6 text-center text-sm text-slate-500">No batches found</td></tr>';
         return;
     }
 
-    tbody.innerHTML = data.map((batch) => {
+    tbody.innerHTML = data.map((batch, index) => {
         const count = Number(batch.enrolled_count || 0);
         const maxTrainees = Number(batch.max_trainees || 25);
         const statusValue = normalizeStatus(batch.status);
@@ -170,6 +212,9 @@ function renderBatchesTable(data, tbodyId) {
         const fullBadge = count >= maxTrainees
             ? '<span class="ml-1 inline-flex rounded-full bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-700">FULL</span>'
             : '';
+        const menuPositionClasses = data.length > 3 && data.length - index <= 3
+            ? 'bottom-full right-0 mb-2 origin-bottom-right'
+            : 'top-full right-0 mt-2 origin-top-right';
 
         return `
             <tr class="hover:bg-slate-50">
@@ -177,15 +222,44 @@ function renderBatchesTable(data, tbodyId) {
                 <td class="px-3 py-3 text-sm">${statusBadge}</td>
                 <td class="px-3 py-3 text-sm">${countBadge}${fullBadge}</td>
                 <td class="px-3 py-3 text-sm">
-                    <button class="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100" onclick="viewBatchTrainees(${batch.batch_id}, '${escapeAttribute(batch.batch_name || '')}')">
-                        <i class="fas fa-users"></i> View Trainees
-                    </button>
-                </td>
-                <td class="px-3 py-3 text-sm">
-                    <div class="flex flex-wrap items-center justify-center gap-1">
-                        <button class="inline-flex items-center rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50" type="button" onclick="editBatch(${batch.batch_id})" title="Edit">
-                            <i class="fas fa-edit"></i>
+                    <div class="relative flex justify-center" data-batch-actions-wrapper>
+                        <button
+                            type="button"
+                            class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                            data-batch-actions-toggle="${batch.batch_id}"
+                            aria-haspopup="true"
+                            aria-expanded="false"
+                            aria-controls="batchActionsMenu-${batch.batch_id}"
+                            aria-label="Open batch actions"
+                            onclick="toggleBatchActionMenu(event, ${batch.batch_id})"
+                        >
+                            <i class="fas fa-ellipsis-vertical"></i>
                         </button>
+                        <div
+                            id="batchActionsMenu-${batch.batch_id}"
+                            class="absolute z-30 hidden w-56 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/80 ${menuPositionClasses}"
+                            data-batch-actions-menu="${batch.batch_id}"
+                        >
+                            <div class="border-b border-slate-100 bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                Actions
+                            </div>
+                            <button
+                                type="button"
+                                class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-blue-700 transition hover:bg-blue-50"
+                                onclick="closeBatchActionMenus(); viewBatchTrainees(${batch.batch_id}, '${escapeAttribute(batch.batch_name || '')}')"
+                            >
+                                <i class="fas fa-users w-4 text-center text-blue-500"></i>
+                                <span>View Trainees</span>
+                            </button>
+                            <button
+                                type="button"
+                                class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                                onclick="closeBatchActionMenus(); editBatch(${batch.batch_id})"
+                            >
+                                <i class="fas fa-edit w-4 text-center text-slate-500"></i>
+                                <span>Edit</span>
+                            </button>
+                        </div>
                     </div>
                 </td>
             </tr>

@@ -56,6 +56,7 @@ const dom = {
 document.addEventListener('DOMContentLoaded', () => {
     cacheDom();
     bindHeaderEvents();
+    initUserActionMenus();
     setupTabs();
     setupModalEvents();
     setupFormEvents();
@@ -93,6 +94,47 @@ function bindHeaderEvents() {
                 dropdownMenu.classList.add('hidden');
             }
         });
+    }
+}
+
+function initUserActionMenus() {
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('[data-user-actions-wrapper]')) {
+            closeUserActionMenus();
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            closeUserActionMenus();
+        }
+    });
+}
+
+function closeUserActionMenus() {
+    document.querySelectorAll('[data-user-actions-menu]').forEach((menu) => {
+        menu.classList.add('hidden');
+    });
+
+    document.querySelectorAll('[data-user-actions-toggle]').forEach((button) => {
+        button.setAttribute('aria-expanded', 'false');
+    });
+}
+
+function toggleUserActionMenu(event, userId) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const menu = document.querySelector(`[data-user-actions-menu="${userId}"]`);
+    const button = document.querySelector(`[data-user-actions-toggle="${userId}"]`);
+    if (!menu || !button) return;
+
+    const shouldOpen = menu.classList.contains('hidden');
+    closeUserActionMenus();
+
+    if (shouldOpen) {
+        menu.classList.remove('hidden');
+        button.setAttribute('aria-expanded', 'true');
     }
 }
 
@@ -268,7 +310,7 @@ function renderRoleUsersTable(role) {
         return;
     }
 
-    data.forEach((user) => {
+    data.forEach((user, index) => {
         const row = document.createElement('tr');
         row.className = 'hover:bg-slate-50';
 
@@ -290,6 +332,9 @@ function renderRoleUsersTable(role) {
         const safeUsername = escapeHtml(user.username || 'Unknown User');
         const safeEmail = escapeHtml(user.email || 'No email');
         const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username || 'User')}&background=2563eb&color=ffffff&size=40`;
+        const menuPositionClasses = data.length > 3 && data.length - index <= 3
+            ? 'bottom-full right-0 mb-2 origin-bottom-right'
+            : 'top-full right-0 mt-2 origin-top-right';
 
         row.innerHTML = `
             <td class="px-4 py-3">
@@ -304,15 +349,46 @@ function renderRoleUsersTable(role) {
             <td class="px-4 py-3">${statusBadge}</td>
             <td class="px-4 py-3 text-sm text-slate-700">${formatDate(user.date_created)}</td>
             <td class="px-4 py-3">
-                <div class="flex items-center justify-end gap-2">
-                    <button class="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500" onclick="editUser(${user.user_id})">
-                        <i class="fas fa-edit mr-1"></i>Edit
+                <div class="relative flex justify-end" data-user-actions-wrapper>
+                    <button
+                        type="button"
+                        class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                        data-user-actions-toggle="${user.user_id}"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                        aria-controls="userActionsMenu-${user.user_id}"
+                        aria-label="Open user actions"
+                        onclick="toggleUserActionMenu(event, ${user.user_id})"
+                    >
+                        <i class="fas fa-ellipsis-vertical"></i>
                     </button>
-                    ${isActive
-                        ? `<button class="rounded-lg border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500" onclick="deactivateUser(${user.user_id})" title="Deactivate this user">
-                            <i class="fas fa-ban mr-1"></i>Deactivate
-                        </button>`
-                        : '<span class="inline-flex items-center rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700">Inactive</span>'}
+                    <div
+                        id="userActionsMenu-${user.user_id}"
+                        class="absolute z-30 hidden w-52 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/80 ${menuPositionClasses}"
+                        data-user-actions-menu="${user.user_id}"
+                    >
+                        <div class="border-b border-slate-100 bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                            Actions
+                        </div>
+                        <button
+                            type="button"
+                            class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-amber-700 transition hover:bg-amber-50"
+                            onclick="closeUserActionMenus(); editUser(${user.user_id})"
+                        >
+                            <i class="fas fa-edit w-4 text-center text-amber-500"></i>
+                            <span>Edit</span>
+                        </button>
+                        ${isActive
+                            ? `<button
+                                type="button"
+                                class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-rose-700 transition hover:bg-rose-50"
+                                onclick="closeUserActionMenus(); deactivateUser(${user.user_id})"
+                            >
+                                <i class="fas fa-ban w-4 text-center text-rose-500"></i>
+                                <span>Deactivate</span>
+                            </button>`
+                            : ''}
+                    </div>
                 </div>
             </td>
         `;

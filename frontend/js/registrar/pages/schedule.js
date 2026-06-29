@@ -1,15 +1,19 @@
 const API_BASE_URL = window.location.origin + '/Hohoo-ville/api';
 let scheduleModal;
+let scheduleRequestModal;
 let allTrainers = [];
 let allScheduleRows = [];
 let allScheduleTableRows = [];
 let allBatches = [];
 let allRooms = [];
+let allScheduleRequests = [];
 let currentScheduleRow = null;
+let currentScheduleRequest = null;
 let currentUnitAssignmentBatchId = '';
 let currentUnitAssignmentGroups = [];
 let latestUnitAssignmentLoadToken = 0;
 let currentUnitAssignmentFocusGroupKey = '';
+let pendingScheduleRequestId = null;
 
 class SimpleModal {
     constructor(element) {
@@ -44,8 +48,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     initUnitAssignmentTabs();
 
     scheduleModal = new SimpleModal(document.getElementById('assignScheduleModal'));
+    scheduleRequestModal = new SimpleModal(document.getElementById('scheduleRequestModal'));
     initScheduleTypeToggle();
+    initRequestReviewActions();
     buildTimetable();
+    hydrateScheduleRequestIntent();
     await loadScheduleData();
 
     const assignScheduleForm = document.getElementById('assignScheduleForm');
@@ -70,6 +77,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
+    const requestsBody = document.getElementById('scheduleRequestsTableBody');
+    if (requestsBody) {
+        requestsBody.addEventListener('click', (event) => {
+            const btn = event.target.closest('.request-review-btn');
+            if (!btn) return;
+            openScheduleRequestModal(Number(btn.dataset.requestId || 0));
+        });
+    }
+
     document.getElementById('timetableTrainerFilter')?.addEventListener('change', (e) => {
         updateQualificationFilter(e.target.value);
         updateBatchFilter(e.target.value, document.getElementById('timetableQualificationFilter')?.value || '');
@@ -87,6 +103,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
     document.getElementById('customStartTime')?.addEventListener('input', refreshRoomDropdownForCurrentModal);
     document.getElementById('customEndTime')?.addEventListener('input', refreshRoomDropdownForCurrentModal);
+    document.getElementById('assignEffectiveDate')?.addEventListener('change', refreshRoomDropdownForCurrentModal);
 });
 
 async function ensureSwal() {
@@ -194,29 +211,37 @@ function initModalDismissers() {
         button.addEventListener('click', () => {
             const modalId = button.getAttribute('data-modal-hide');
             if (modalId === 'assignScheduleModal' && scheduleModal) scheduleModal.hide();
+            if (modalId === 'scheduleRequestModal' && scheduleRequestModal) {
+                scheduleRequestModal.hide();
+                clearScheduleRequestIntent();
+            }
         });
     });
 }
 
 function initScheduleTabs() {
+    document.querySelectorAll('.schedule-tab-btn').forEach((button) => {
+        button.addEventListener('click', () => {
+            showScheduleTab(button.getAttribute('data-tab'));
+        });
+    });
+}
+
+function showScheduleTab(tabName = 'timetable') {
+    const normalizedTab = ['timetable', 'batches', 'requests'].includes(String(tabName)) ? String(tabName) : 'timetable';
     const tabButtons = document.querySelectorAll('.schedule-tab-btn');
     const tabContents = document.querySelectorAll('.schedule-tab-content');
 
-    tabButtons.forEach((button) => {
-        button.addEventListener('click', () => {
-            const tabName = button.getAttribute('data-tab');
-
-            tabContents.forEach((tab) => tab.classList.add('hidden'));
-            tabButtons.forEach((btn) => {
-                btn.classList.remove('border-blue-600', 'bg-white', 'text-blue-700');
-                btn.classList.add('border-transparent', 'text-slate-600');
-            });
-
-            document.getElementById(`${tabName}-tab`)?.classList.remove('hidden');
-            button.classList.remove('border-transparent', 'text-slate-600');
-            button.classList.add('border-blue-600', 'bg-white', 'text-blue-700');
-        });
+    tabContents.forEach((tab) => tab.classList.add('hidden'));
+    tabButtons.forEach((btn) => {
+        btn.classList.remove('border-blue-600', 'bg-white', 'text-blue-700');
+        btn.classList.add('border-transparent', 'text-slate-600');
     });
+
+    document.getElementById(`${normalizedTab}-tab`)?.classList.remove('hidden');
+    const activeButton = document.querySelector(`.schedule-tab-btn[data-tab="${normalizedTab}"]`);
+    activeButton?.classList.remove('border-transparent', 'text-slate-600');
+    activeButton?.classList.add('border-blue-600', 'bg-white', 'text-blue-700');
 }
 
 function initUnitAssignmentTabs() {
@@ -255,7 +280,7 @@ async function loadScheduleData() {
         const response = await axios.get(`${API_BASE_URL}/role/registrar/schedule.php?action=get-data`);
         if (!response.data.success) return;
 
-        const { trainers, batches, schedule_rows: scheduleRows } = response.data.data;
+        const { trainers, batches, schedule_rows: scheduleRows, schedule_requests: scheduleRequests } = response.data.data;
         allTrainers = (trainers || []).map((trainer) => ({
             ...trainer,
             qualification_ids: parseIdList(trainer.qualification_ids)
@@ -263,10 +288,13 @@ async function loadScheduleData() {
         allBatches = Array.isArray(batches) ? batches : [];
         allScheduleRows = (scheduleRows || []).map(normalizeScheduleRow);
         allScheduleTableRows = getScheduleTableRows();
+        allScheduleRequests = Array.isArray(scheduleRequests) ? scheduleRequests : [];
 
         populateTimeTableFilters();
         renderScheduleTable();
+        renderScheduleRequestTable();
         rebuildTimetable();
+        maybeOpenPendingScheduleRequest();
     } catch (error) {
         console.error('Error loading schedule data:', error);
     }
@@ -1191,6 +1219,205 @@ function renderScheduleTable() {
     });
 }
 
+function renderScheduleRequestTable() {
+    const tbody = document.getElementById('scheduleRequestsTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+    if (!allScheduleRequests.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-6 text-center text-sm text-slate-500">No schedule requests yet.</td></tr>';
+        return;
+    }
+
+    allScheduleRequests.forEach((request) => {
+        const proposalLabel = [request.schedule || 'Not set', request.room || 'TBA', formatDateLabel(request.resolved_effective_date || '')].join(' | ');
+        const canReview = ['pending_registrar_approval', 'modification_requested'].includes(String(request.status || ''));
+        const actionLabel = canReview ? 'Review' : 'View';
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-slate-50';
+        row.innerHTML = `
+            <td class="px-4 py-3 text-sm text-slate-800">
+                <p class="font-medium text-slate-900">${escapeHtml(request.batch_name || 'N/A')}</p>
+                <p class="text-xs text-slate-500">${escapeHtml(request.course_name || 'N/A')}</p>
+            </td>
+            <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(request.scope_label || 'Schedule')}</td>
+            <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(request.trainer_name || 'Unassigned')}</td>
+            <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(formatProposalSource(request.proposed_by_role))}</td>
+            <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(proposalLabel)}</td>
+            <td class="px-4 py-3 text-sm text-slate-700">${buildStatusBadgeHtml(request.status)}</td>
+            <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(formatDateTimeLabel(request.updated_at))}</td>
+            <td class="px-4 py-3 text-center">
+                <button type="button" class="request-review-btn inline-flex items-center gap-1 rounded-md border border-blue-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" data-request-id="${escapeAttr(request.request_id)}">
+                    <i class="fas fa-eye"></i> ${escapeHtml(actionLabel)}
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function initRequestReviewActions() {
+    document.getElementById('requestApproveBtn')?.addEventListener('click', () => submitScheduleRequestReview('approve'));
+    document.getElementById('requestRejectBtn')?.addEventListener('click', () => submitScheduleRequestReview('reject'));
+    document.getElementById('requestModifyBtn')?.addEventListener('click', () => submitScheduleRequestReview('request_modifications'));
+}
+
+function openScheduleRequestModal(requestId) {
+    const request = allScheduleRequests.find((item) => Number(item.request_id) === Number(requestId));
+    if (!request) {
+        return;
+    }
+
+    currentScheduleRequest = request;
+    showScheduleTab('requests');
+    populateScheduleRequestModal(request);
+    scheduleRequestModal?.show();
+}
+
+function populateScheduleRequestModal(request) {
+    const statusBadge = document.getElementById('requestCurrentStatusBadge');
+    const canReview = ['pending_registrar_approval', 'modification_requested'].includes(String(request.status || ''));
+
+    document.getElementById('scheduleRequestModalSubtitle').textContent = canReview
+        ? 'Trainer-submitted schedules can be approved, rejected, or returned for changes.'
+        : 'This request is shown for tracking and status visibility.';
+    document.getElementById('requestBatchName').textContent = request.batch_name || 'N/A';
+    document.getElementById('requestCourseName').textContent = request.course_name || 'N/A';
+    document.getElementById('requestScopeName').textContent = request.scope_label || 'Schedule';
+    document.getElementById('requestTrainerName').textContent = request.trainer_name || 'Unassigned';
+    document.getElementById('requestCurrentSchedule').textContent = request.current_schedule || 'Not set';
+    document.getElementById('requestCurrentRoom').textContent = `Room: ${request.current_room || 'TBA'}`;
+    document.getElementById('requestCurrentDate').textContent = `Effective date: ${formatDateLabel(request.start_date || '')}`;
+    document.getElementById('requestProposedSchedule').textContent = request.schedule || 'Not set';
+    document.getElementById('requestProposedRoom').textContent = `Room: ${request.room || 'TBA'}`;
+    document.getElementById('requestProposedDate').textContent = `Effective date: ${formatDateLabel(request.resolved_effective_date || '')}`;
+    document.getElementById('requestTrainerNote').textContent = request.trainer_note || 'No trainer note.';
+    document.getElementById('requestRegistrarNote').textContent = request.registrar_note || 'No registrar note.';
+    document.getElementById('requestReviewNote').value = request.registrar_note || '';
+    document.getElementById('requestReviewSection').classList.toggle('opacity-70', !canReview);
+    document.getElementById('requestReviewHint').textContent = canReview
+        ? 'Use the note to explain your decision or request specific schedule changes.'
+        : 'Waiting on the trainer or already finalized. You can still view the proposal details here.';
+
+    if (statusBadge) {
+        statusBadge.textContent = formatRequestStatus(request.status);
+        statusBadge.className = `inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${getStatusBadgeClasses(request.status)}`;
+    }
+
+    document.getElementById('requestApproveBtn')?.classList.toggle('hidden', !canReview);
+    document.getElementById('requestRejectBtn')?.classList.toggle('hidden', !canReview);
+    document.getElementById('requestModifyBtn')?.classList.toggle('hidden', !canReview);
+    document.getElementById('requestReviewNote')?.toggleAttribute('disabled', !canReview);
+}
+
+async function submitScheduleRequestReview(reviewAction) {
+    if (!currentScheduleRequest) {
+        return;
+    }
+
+    const payload = {
+        request_id: currentScheduleRequest.request_id,
+        review_action: reviewAction,
+        registrar_note: document.getElementById('requestReviewNote')?.value?.trim() || '',
+        user_id: getCurrentUserId()
+    };
+
+    try {
+        const response = await axios.post(`${API_BASE_URL}/role/registrar/schedule.php?action=review-request`, payload);
+        if (!response.data.success) {
+            throw new Error(response.data.message || 'Unable to review the schedule request.');
+        }
+
+        Swal.fire({ title: 'Success', text: response.data.message || 'Schedule request updated successfully.', icon: 'success' });
+        scheduleRequestModal?.hide();
+        clearScheduleRequestIntent();
+        await loadScheduleData();
+    } catch (error) {
+        const message = error?.response?.data?.message || error.message || 'Unable to review the schedule request.';
+        Swal.fire({ title: 'Error', text: message, icon: 'error' });
+    }
+}
+
+function hydrateScheduleRequestIntent() {
+    const params = new URLSearchParams(window.location.search);
+    const requestId = Number(params.get('schedule_request_id') || 0);
+    pendingScheduleRequestId = requestId > 0 ? requestId : null;
+}
+
+function maybeOpenPendingScheduleRequest() {
+    if (!pendingScheduleRequestId) {
+        return;
+    }
+
+    const request = allScheduleRequests.find((item) => Number(item.request_id) === Number(pendingScheduleRequestId));
+    showScheduleTab('requests');
+    if (request) {
+        openScheduleRequestModal(pendingScheduleRequestId);
+    }
+}
+
+function clearScheduleRequestIntent() {
+    pendingScheduleRequestId = null;
+    const url = new URL(window.location.href);
+    url.searchParams.delete('schedule_request_id');
+    url.searchParams.delete('schedule_action');
+    window.history.replaceState({}, document.title, url.toString());
+}
+
+function formatProposalSource(role) {
+    return String(role || '').toLowerCase() === 'trainer' ? 'Trainer' : 'Registrar';
+}
+
+function formatRequestStatus(status) {
+    const value = String(status || '').trim();
+    const labels = {
+        pending_trainer_response: 'Pending Trainer Response',
+        pending_registrar_approval: 'Pending Registrar Approval',
+        approved: 'Approved',
+        rejected: 'Rejected',
+        modification_requested: 'Changes Requested'
+    };
+
+    return labels[value] || 'Pending';
+}
+
+function getStatusBadgeClasses(status) {
+    const value = String(status || '').trim();
+    if (value === 'approved') return 'bg-emerald-100 text-emerald-700';
+    if (value === 'rejected') return 'bg-red-100 text-red-700';
+    if (value === 'modification_requested') return 'bg-amber-100 text-amber-700';
+    if (value === 'pending_registrar_approval') return 'bg-blue-100 text-blue-700';
+    return 'bg-slate-200 text-slate-700';
+}
+
+function buildStatusBadgeHtml(status) {
+    return `<span class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${getStatusBadgeClasses(status)}">${escapeHtml(formatRequestStatus(status))}</span>`;
+}
+
+function formatDateTimeLabel(value) {
+    const date = value ? new Date(value) : null;
+    if (!date || Number.isNaN(date.getTime())) {
+        return 'Just now';
+    }
+
+    return date.toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+    });
+}
+
+function getCurrentUserId() {
+    try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        return Number(user?.user_id || user?.user?.user_id || 0) || null;
+    } catch (error) {
+        return null;
+    }
+}
+
 function populateTimeTableFilters() {
     const trainerSelect = document.getElementById('timetableTrainerFilter');
     if (trainerSelect) {
@@ -1549,10 +1776,18 @@ async function populateRoomDropdown(selectedRoomId = '', referenceRow = currentS
             return;
         }
 
-        const rooms = await ensureRoomsLoaded();
-        const availableRooms = rooms.filter((room) => {
-            return !isRoomOccupiedForSchedule(Number(room.room_id), selectedSchedule, referenceRow);
+        const params = new URLSearchParams({
+            batch_id: String(referenceRow?.batch_id || document.getElementById('assignBatchId')?.value || ''),
+            scope_type: String(document.getElementById('assignScopeType')?.value || referenceRow?.scope_type || ''),
+            trainer_assignment_mode: String(document.getElementById('assignTrainerAssignmentMode')?.value || referenceRow?.trainer_assignment_mode || 'single'),
+            module_id: String(document.getElementById('assignModuleId')?.value || referenceRow?.module_id || ''),
+            trainer_id: String(document.getElementById('assignResolvedTrainerId')?.value || document.getElementById('assignTrainerSelect')?.value || referenceRow?.trainer_id || ''),
+            schedule: selectedSchedule,
+            effective_date: getCurrentEffectiveDate(),
+            request_id: ''
         });
+        const response = await axios.get(`${API_BASE_URL}/role/registrar/schedule.php?action=available-rooms&${params.toString()}`);
+        const availableRooms = response.data?.success && Array.isArray(response.data.data) ? response.data.data : [];
 
         if (!availableRooms.length) {
             roomSelect.innerHTML = '<option value="">No available rooms for this schedule</option>';
@@ -1584,6 +1819,10 @@ function refreshRoomDropdownForCurrentModal() {
     populateRoomDropdown(currentRoomId, currentScheduleRow);
 }
 
+function getCurrentEffectiveDate() {
+    return document.getElementById('assignEffectiveDate')?.value || currentScheduleRow?.start_date || '';
+}
+
 function resetScheduleInputs() {
     const presetRadio = document.querySelector('input[name="scheduleType"][value="preset"]');
     if (presetRadio) presetRadio.checked = true;
@@ -1594,7 +1833,12 @@ function resetScheduleInputs() {
     });
     document.getElementById('customStartTime').value = '';
     document.getElementById('customEndTime').value = '';
-    document.getElementById('customStartDate').value = '';
+    const customStartDate = document.getElementById('customStartDate');
+    if (customStartDate) customStartDate.value = '';
+    const effectiveDateInput = document.getElementById('assignEffectiveDate');
+    if (effectiveDateInput) effectiveDateInput.value = currentScheduleRow?.start_date || '';
+    const registrarNoteInput = document.getElementById('assignRegistrarNote');
+    if (registrarNoteInput) registrarNoteInput.value = '';
     document.getElementById('presetScheduleContainer').classList.remove('hidden');
     document.getElementById('customScheduleContainer').classList.add('hidden');
     const roomSelect = document.getElementById('assignRoomSelect');
@@ -1995,12 +2239,15 @@ async function saveSchedule(event) {
                 ? document.getElementById('assignTrainerSelect').value
                 : selectedUnitTrainerId,
             schedule,
-            room_id: document.getElementById('assignRoomSelect').value
+            room_id: document.getElementById('assignRoomSelect').value,
+            effective_date: getCurrentEffectiveDate(),
+            registrar_note: document.getElementById('assignRegistrarNote')?.value?.trim() || '',
+            user_id: getCurrentUserId()
         };
 
         const response = await axios.post(`${API_BASE_URL}/role/registrar/schedule.php?action=assign`, payload);
         if (response.data.success) {
-            Swal.fire({ title: 'Success', text: 'Schedule saved successfully.', icon: 'success' });
+            Swal.fire({ title: 'Success', text: response.data.message || 'Schedule proposal sent successfully.', icon: 'success' });
             if (scheduleModal) scheduleModal.hide();
             await loadScheduleData();
         } else {

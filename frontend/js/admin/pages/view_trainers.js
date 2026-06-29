@@ -1,6 +1,8 @@
 const API_BASE_URL = `${window.location.origin}/Hohoo-ville/api`;
 const TRAINER_UPLOADS_URL = `${window.location.origin}/Hohoo-ville/api/uploads/trainers/`;
 const PROFILE_IMAGE_UPLOADS_URL = `${window.location.origin}/Hohoo-ville/uploads/profile_images/`;
+const TRAINER_PROGRESS_CHART_URL = `${window.location.origin}/Hohoo-ville/frontend/html/trainer/pages/progress_chart.html`;
+const TRAINER_ACHIEVEMENT_CHART_URL = `${window.location.origin}/Hohoo-ville/frontend/html/trainer/pages/achievement_chart.html`;
 const TOO_MANY_QUALIFICATIONS = 2;
 
 let accountModal;
@@ -52,6 +54,7 @@ class SimpleModal {
 document.addEventListener('DOMContentLoaded', async () => {
     await ensureSwal();
     initUserDropdown();
+    initTrainerActionMenus();
     initLogout();
     initModals();
     initDocumentZoomControls();
@@ -88,6 +91,47 @@ function initUserDropdown() {
             menu.classList.add('hidden');
         }
     });
+}
+
+function initTrainerActionMenus() {
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('[data-trainer-actions-wrapper]')) {
+            closeTrainerActionMenus();
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            closeTrainerActionMenus();
+        }
+    });
+}
+
+function closeTrainerActionMenus() {
+    document.querySelectorAll('[data-trainer-actions-menu]').forEach((menu) => {
+        menu.classList.add('hidden');
+    });
+
+    document.querySelectorAll('[data-trainer-actions-toggle]').forEach((button) => {
+        button.setAttribute('aria-expanded', 'false');
+    });
+}
+
+function toggleTrainerActionsMenu(event, trainerId) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const menu = document.querySelector(`[data-trainer-actions-menu="${trainerId}"]`);
+    const button = document.querySelector(`[data-trainer-actions-toggle="${trainerId}"]`);
+    if (!menu || !button) return;
+
+    const shouldOpen = menu.classList.contains('hidden');
+    closeTrainerActionMenus();
+
+    if (shouldOpen) {
+        menu.classList.remove('hidden');
+        button.setAttribute('aria-expanded', 'true');
+    }
 }
 
 async function initLogout() {
@@ -300,6 +344,22 @@ function getTrainerImageUrl(trainer) {
     return `${PROFILE_IMAGE_UPLOADS_URL}${encodeURIComponent(trainer.profile_image)}`;
 }
 
+function buildTrainerChartUrl(baseUrl, trainerId) {
+    const url = new URL(baseUrl, window.location.origin);
+    url.searchParams.set('trainer_id', String(trainerId));
+    return url.toString();
+}
+
+function openTrainerProgressChart(trainerId) {
+    if (!trainerId) return;
+    window.open(buildTrainerChartUrl(TRAINER_PROGRESS_CHART_URL, trainerId), '_blank', 'noopener');
+}
+
+function openTrainerAchievementChart(trainerId) {
+    if (!trainerId) return;
+    window.open(buildTrainerChartUrl(TRAINER_ACHIEVEMENT_CHART_URL, trainerId), '_blank', 'noopener');
+}
+
 function getStatusMeta(status) {
     const normalizedStatus = String(status || 'unknown').toLowerCase();
 
@@ -476,7 +536,7 @@ function renderTable(data) {
         return firstNameA.localeCompare(firstNameB);
     });
 
-    tbody.innerHTML = sorted.map((trainer) => {
+    tbody.innerHTML = sorted.map((trainer, index) => {
         // Profile image with fallback to avatar
         let profileImageHtml = '';
         if (trainer.profile_image) {
@@ -509,13 +569,27 @@ function renderTable(data) {
             ? '<span class="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">active</span>'
             : '<span class="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">inactive</span>';
 
-        const accountAction = !trainer.user_id
-            ? `<button type="button" class="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100" onclick="openAccountModal(${trainer.trainer_id})"><i class="fas fa-key"></i> Create Account</button>`
-            : '<span class="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700"><i class="fas fa-check"></i> Account Active</span>';
-
-        const statusToggleAction = trainer.status === 'active'
-            ? `<button type="button" class="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100" onclick="toggleStatus(${trainer.trainer_id}, 'inactive')"><i class="fas fa-archive"></i> Archive</button>`
-            : `<button type="button" class="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100" onclick="toggleStatus(${trainer.trainer_id}, 'active')"><i class="fas fa-undo"></i> Activate</button>`;
+        const accountMenuItem = trainer.user_id
+            ? `
+                <div class="px-3 py-3">
+                    <span class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                        <i class="fas fa-check"></i> Account Active
+                    </span>
+                </div>
+            `
+            : `
+                <button
+                    type="button"
+                    class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-blue-700 transition hover:bg-blue-50"
+                    onclick="closeTrainerActionMenus(); openAccountModal(${trainer.trainer_id})"
+                >
+                    <i class="fas fa-key w-4 text-center text-blue-500"></i>
+                    <span>Create Account</span>
+                </button>
+            `;
+        const menuPositionClasses = sorted.length > 3 && sorted.length - index <= 3
+            ? 'bottom-full right-0 mb-2 origin-bottom-right'
+            : 'top-full right-0 mt-2 origin-top-right';
 
         return `
             <tr class="hover:bg-slate-50">
@@ -535,10 +609,62 @@ function renderTable(data) {
                 </td>
                 <td class="px-3 py-3 text-sm">${statusBadge}</td>
                 <td class="px-3 py-3 text-sm">
-                    <div class="flex flex-wrap items-center gap-2">
-                        ${accountAction}
-                        <button type="button" class="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100" onclick="openViewProfileModal(${trainer.trainer_id})"><i class="fas fa-eye"></i> View Data</button>
-                        <button type="button" class="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100" onclick="openEditModal(${trainer.trainer_id})"><i class="fas fa-edit"></i> Edit</button>
+                    <div class="relative flex justify-center" data-trainer-actions-wrapper>
+                        <button
+                            type="button"
+                            class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                            data-trainer-actions-toggle="${trainer.trainer_id}"
+                            aria-haspopup="true"
+                            aria-expanded="false"
+                            aria-controls="trainerActionsMenu-${trainer.trainer_id}"
+                            aria-label="Open trainer actions"
+                            onclick="toggleTrainerActionsMenu(event, ${trainer.trainer_id})"
+                        >
+                            <i class="fas fa-ellipsis-vertical"></i>
+                        </button>
+                        <div
+                            id="trainerActionsMenu-${trainer.trainer_id}"
+                            class="absolute z-30 hidden w-56 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/80 ${menuPositionClasses}"
+                            data-trainer-actions-menu="${trainer.trainer_id}"
+                        >
+                            <div class="border-b border-slate-100 bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                Actions
+                            </div>
+                            ${accountMenuItem}
+                            <div class="border-t border-slate-100"></div>
+                            <button
+                                type="button"
+                                class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-emerald-700 transition hover:bg-emerald-50"
+                                onclick="closeTrainerActionMenus(); openTrainerProgressChart(${trainer.trainer_id})"
+                            >
+                                <i class="fas fa-chart-line w-4 text-center text-emerald-500"></i>
+                                <span>Progress</span>
+                            </button>
+                            <button
+                                type="button"
+                                class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-fuchsia-700 transition hover:bg-fuchsia-50"
+                                onclick="closeTrainerActionMenus(); openTrainerAchievementChart(${trainer.trainer_id})"
+                            >
+                                <i class="fas fa-trophy w-4 text-center text-fuchsia-500"></i>
+                                <span>Achievement</span>
+                            </button>
+                            <button
+                                type="button"
+                                class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-indigo-700 transition hover:bg-indigo-50"
+                                onclick="closeTrainerActionMenus(); openViewProfileModal(${trainer.trainer_id})"
+                            >
+                                <i class="fas fa-eye w-4 text-center text-indigo-500"></i>
+                                <span>View Data</span>
+                            </button>
+                            <button
+                                type="button"
+                                class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-blue-700 transition hover:bg-blue-50"
+                                onclick="closeTrainerActionMenus(); openEditModal(${trainer.trainer_id})"
+                            >
+                                <i class="fas fa-edit w-4 text-center text-blue-500"></i>
+                                <span>Edit</span>
+                            </button>
+                        </div>
                     </div>
                 </td>
             </tr>

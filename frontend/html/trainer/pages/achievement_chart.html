@@ -9,12 +9,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
     <style>
         body { font-family: 'Nunito', sans-serif; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-        .tesda-table { width: 100%; border-collapse: collapse; background: #fff; }
-        .tesda-table th, .tesda-table td { border: 1px solid #0f172a; padding: 6px; text-align: center; font-size: 12px; }
+        .tesda-table { width: 100%; border-collapse: collapse; background: #fff; table-layout: auto; min-width: max-content; }
+        .tesda-table th, .tesda-table td { border: 1px solid #0f172a; padding: 6px; text-align: center; font-size: 12px; vertical-align: middle; word-break: normal; overflow-wrap: break-word; }
+        .progress-mark { min-width: 48px; font-weight: 700; cursor: pointer; }
+        .selected-cell { background-color: #dbeafe !important; outline: 2px solid #2563eb; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-700">
@@ -102,12 +105,47 @@
 
             <main class="flex-1 overflow-y-auto bg-gradient-to-b from-blue-50/60 via-white to-slate-50 p-4 sm:p-6 lg:p-8">
                 <div class="mx-auto w-full max-w-7xl space-y-6">
+                    <section id="adminAccessBanner" class="hidden rounded-2xl border border-amber-200 bg-amber-50/90 p-4 text-amber-950 shadow-sm">
+                        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Admin Access</p>
+                                <p class="mt-1 text-base font-semibold">Viewing charts for <span id="adminAccessTrainerName">Selected trainer</span></p>
+                                <p id="adminAccessNote" class="mt-1 text-sm text-amber-800">Admin access mode. You can review and edit chart marks for export from here.</p>
+                            </div>
+                            <a id="adminAccessBackLink" href="/Hohoo-ville/frontend/html/admin/pages/view_trainers.html" class="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500">
+                                <i class="fas fa-arrow-left"></i> Back to Trainers
+                            </a>
+                        </div>
+                    </section>
+
                     <section class="bg-white rounded-2xl border border-blue-100 shadow-sm p-6">
-                        <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
-                            <select id="batchSelectForChart" class="w-full sm:max-w-md rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"></select>
-                            <button id="generateLiveChartBtn" class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
-                                <i class="fas fa-sync-alt"></i> Generate
-                            </button>
+                        <div class="flex flex-col gap-4">
+                            <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+                                <div class="flex-1">
+                                    <label for="batchSelectForChart" class="mb-1 block text-sm font-medium text-slate-700">Batch</label>
+                                    <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
+                                        <select id="batchSelectForChart" class="w-full sm:max-w-md rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"></select>
+                                        <button id="generateLiveChartBtn" class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
+                                            <i class="fas fa-sync-alt"></i> Generate
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <button id="exportChartBtn" class="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                        <i class="fas fa-file-export"></i> Export Chart
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                <h4 class="text-sm font-semibold text-slate-900 mb-2">Quick Tools</h4>
+                                <div class="flex flex-wrap gap-2">
+                                    <button id="insertCheckBtn" class="rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">Insert Check</button>
+                                    <button id="insertIpBtn" class="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-sm font-medium text-amber-700 hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500">Insert IP</button>
+                                    <button id="insertNycBtn" class="rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500">Insert NYC</button>
+                                    <button id="clearCellBtn" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">Clear Cell</button>
+                                </div>
+                            </div>
                         </div>
                     </section>
 

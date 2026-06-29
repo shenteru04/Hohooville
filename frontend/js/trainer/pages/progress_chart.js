@@ -2,6 +2,7 @@ const API_BASE_URL = window.location.origin + '/Hohoo-ville/api';
 const SCHOOL_NAME = 'Hohoo Ville Technical School Inc.';
 const SCHOOL_ADDRESS = 'Purok 6A, Poblacion, Lagonglong, Misamis Oriental';
 const CHECK_MARK = '\u2713';
+const ADMIN_TRAINERS_PAGE = '/Hohoo-ville/frontend/html/admin/pages/view_trainers.html';
 const COMPETENCY_ORDER = ['basic', 'common', 'core'];
 const COMPETENCY_LABELS = {
     basic: 'Basic Competencies',
@@ -45,8 +46,111 @@ async function ensureExcelJs() {
     });
 }
 
+function readStoredPortalUser() {
+    try {
+        const raw = JSON.parse(localStorage.getItem('user') || 'null');
+        if (raw && typeof raw === 'object' && raw.user && typeof raw.user === 'object') {
+            return raw.user;
+        }
+        return raw;
+    } catch (error) {
+        console.debug('Could not parse stored user:', error);
+        return null;
+    }
+}
+
+function isAdminUser(user) {
+    return String(user?.role || '').toLowerCase() === 'admin';
+}
+
+function getRequestedTrainerId() {
+    const params = new URLSearchParams(window.location.search);
+    const value = Number.parseInt(params.get('trainer_id') || '', 10);
+    return Number.isInteger(value) && value > 0 ? value : null;
+}
+
+function setHeaderUserLabel(label) {
+    const nameEl = document.getElementById('trainerName');
+    if (nameEl) nameEl.textContent = label;
+}
+
+function hideTrainerProfileLinkForAdmin() {
+    const profileLink = document.querySelector('#userMenuDropdown a[href$="/trainer/pages/profile.html"]');
+    if (profileLink) profileLink.classList.add('hidden');
+}
+
+function applyAdminChartLinks(trainerId) {
+    const suffix = `?trainer_id=${encodeURIComponent(String(trainerId))}`;
+    document.querySelectorAll('a[href$="progress_chart.html"]').forEach((link) => {
+        link.href = `/Hohoo-ville/frontend/html/trainer/pages/progress_chart.html${suffix}`;
+    });
+    document.querySelectorAll('a[href$="achievement_chart.html"]').forEach((link) => {
+        link.href = `/Hohoo-ville/frontend/html/trainer/pages/achievement_chart.html${suffix}`;
+    });
+}
+
+function showAdminAccessBanner(trainerName, hasSelection = true) {
+    const banner = document.getElementById('adminAccessBanner');
+    const trainerNameEl = document.getElementById('adminAccessTrainerName');
+    const noteEl = document.getElementById('adminAccessNote');
+    const backLink = document.getElementById('adminAccessBackLink');
+
+    if (!banner) return;
+    if (trainerNameEl) trainerNameEl.textContent = trainerName || 'Selected trainer';
+    if (noteEl) {
+        noteEl.textContent = hasSelection
+            ? 'Admin access mode. You can review and edit chart marks for export from here.'
+            : 'Open this page from View Trainers to load a trainer chart.';
+    }
+    if (backLink) backLink.href = ADMIN_TRAINERS_PAGE;
+
+    banner.classList.remove('hidden');
+}
+
+async function resolveTrainerContext(user) {
+    if (isAdminUser(user)) {
+        const trainerId = getRequestedTrainerId();
+        setHeaderUserLabel('Admin');
+        hideTrainerProfileLinkForAdmin();
+
+        if (!trainerId) {
+            showAdminAccessBanner('No trainer selected', false);
+            return null;
+        }
+
+        applyAdminChartLinks(trainerId);
+
+        let trainerLabel = `Trainer #${trainerId}`;
+        try {
+            const response = await axios.get(`${API_BASE_URL}/role/admin/trainers.php?action=get&id=${trainerId}`);
+            if (response.data?.success) {
+                const trainer = response.data.data || {};
+                trainerLabel = `${trainer.first_name || ''} ${trainer.last_name || ''}`.trim() || trainerLabel;
+            }
+        } catch (error) {
+            console.warn('Could not load admin trainer context:', error);
+        }
+
+        showAdminAccessBanner(trainerLabel, true);
+        return { trainerId };
+    }
+
+    const response = await axios.get(`${API_BASE_URL}/role/trainer/profile.php?action=get-trainer-id&user_id=${user.user_id}`);
+    if (!response.data.success) {
+        throw new Error(response.data.message || 'Trainer profile not found.');
+    }
+
+    const trainer = response.data.data || {};
+    const displayName = `${trainer.first_name || ''} ${trainer.last_name || ''}`.trim()
+        || user.username
+        || 'Trainer';
+    setHeaderUserLabel(displayName);
+
+    return { trainerId: trainer.trainer_id };
+}
+
 document.addEventListener('DOMContentLoaded', async function () {
-    const user = JSON.parse(localStorage.getItem('user'));
+    const user = readStoredPortalUser();
     if (!user) {
         window.location.href = '/Hohoo-ville/frontend/login.html';
         return;
@@ -84,21 +188,19 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
 
     try {
-        const response = await axios.get(`${API_BASE_URL}/role/trainer/profile.php?action=get-trainer-id&user_id=${user.user_id}`);
-        if (response.data.success) {
-            const trainer = response.data.data;
-            if (trainer.first_name && trainer.last_name) {
-                document.getElementById('trainerName').textContent = `${trainer.first_name} ${trainer.last_name}`;
-            } else {
-                document.getElementById('trainerName').textContent = user.username || 'Trainer';
-            }
-            currentTrainerId = trainer.trainer_id;
+        const context = await resolveTrainerContext(user);
+        if (context?.trainerId) {
+            currentTrainerId = context.trainerId;
             loadBatchesForChart(currentTrainerId);
         } else {
-            notify('error', response.data.message || 'Trainer profile not found.');
+            const select = document.getElementById('batchSelectForChart');
+            if (select) {
+                select.innerHTML = '<option value="">Open this page from View Trainers to load a trainer chart...</option>';
+            }
         }
     } catch (error) {
         console.error('Error fetching trainer ID:', error);
+        notify('error', error.message || 'Could not load trainer chart access.');
     }
 });
 
@@ -296,6 +398,11 @@ function renderChart(htmlContent) {
             if (isReadOnly) {
                 cell.removeAttribute('contenteditable');
                 return;
+            }
+
+            const normalizedMark = normalizeMark(cell.innerText.trim());
+            if (normalizedMark) {
+                cell.innerText = normalizedMark;
             }
 
             cell.setAttribute('contenteditable', 'true');
@@ -1141,7 +1248,7 @@ async function buildExcelJsProgressChart(data, markOverrides, exportTitle) {
                     const normalizedMark = normalizeMark(mark);
                     const cell = worksheet.getCell(11 + rowIndex, currentColumn);
                     cell.value = formatExcelMark(normalizedMark);
-                    if (normalizedMark === CHECK_MARK || normalizedMark === 'C') {
+                    if (normalizedMark === CHECK_MARK) {
                         applyStyle(cell, checkCellStyle);
                     } else if (normalizedMark === 'IP') {
                         applyStyle(cell, ipCellStyle);
@@ -1158,7 +1265,7 @@ async function buildExcelJsProgressChart(data, markOverrides, exportTitle) {
         11 + rowCount,
         1,
         totalColumns,
-        'Legend: C or check mark = Completed    IP = In Progress',
+        `Legend: ${CHECK_MARK} = Completed    IP = In Progress`,
         legendStyle,
         22
     );
@@ -1333,7 +1440,7 @@ function buildExcelXmlProgressChart(data, markOverrides, exportTitle) {
         xml.push('</Row>');
     }
 
-    xml.push(buildMergedTextRow('Legend: C or check mark = Completed    IP = In Progress', totalColumns, 'LegendRow', 22));
+    xml.push(buildMergedTextRow(`Legend: ${CHECK_MARK} = Completed    IP = In Progress`, totalColumns, 'LegendRow', 22));
     xml.push('</Table>');
     xml.push('<WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">');
     xml.push('<PageSetup><Layout x:Orientation="Landscape"/></PageSetup>');
@@ -1516,14 +1623,14 @@ function getExcelOutcomeStyle(type) {
 
 function getExcelMarkStyle(mark) {
     const normalized = normalizeMark(mark);
-    if (normalized === CHECK_MARK || normalized === 'C') return 'CheckCell';
+    if (normalized === CHECK_MARK) return 'CheckCell';
     if (normalized === 'IP') return 'IpCell';
     return 'MarkCell';
 }
 
 function formatExcelMark(mark) {
     const normalized = normalizeMark(mark);
-    if (normalized === CHECK_MARK) return 'C';
+    if (normalized === CHECK_MARK) return CHECK_MARK;
     return normalized;
 }
 

@@ -51,7 +51,7 @@ function trainerSeedDefinitions(): array
         [
             'username' => 'darren.flores.trainer',
             'email' => 'darren.flores.trainer@hohooville.local',
-            'password' => 'Trainer@123',
+            'password' => 'Df!2026Secure#1',
             'first_name' => 'Darren',
             'last_name' => 'Flores',
             'phone_number' => '09170000023',

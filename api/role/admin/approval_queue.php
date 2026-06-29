@@ -183,6 +183,16 @@ function finalizeApproval($conn, $enrollmentId, $scholarshipType) {
         $batchId = $enrollment['batch_id'];
         $year = date('Y', strtotime($enrollment['enrollment_date']));
 
+        if (!$batchId) {
+            throw new Exception('Cannot approve enrollment without an assigned batch. Reserve it or assign a batch first.');
+        }
+
+        $stmtBatch = $conn->prepare("SELECT batch_id FROM tbl_batch WHERE batch_id = ?");
+        $stmtBatch->execute([$batchId]);
+        if (!$stmtBatch->fetchColumn()) {
+            throw new Exception('Cannot approve enrollment because the assigned batch no longer exists.');
+        }
+
         // Update enrollment status
         $stmtUpdateStatus = $conn->prepare("UPDATE tbl_enrollment SET status = ? WHERE enrollment_id = ?");
         $stmtUpdateStatus->execute(['approved', $enrollmentId]);

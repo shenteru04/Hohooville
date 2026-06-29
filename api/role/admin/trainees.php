@@ -146,10 +146,11 @@ function getTrainees($conn) {
                 e.batch_id, b.batch_name, c.qualification_name as course_name, e.enrollment_date, DATE_FORMAT(e.enrollment_date, '%Y-%m-%d %H:%i:%s') as formatted_enrollment_date
             FROM tbl_trainee_hdr t
             JOIN tbl_enrollment e ON t.trainee_id = e.trainee_id
-            LEFT JOIN tbl_batch b ON e.batch_id = b.batch_id
+            JOIN tbl_batch b ON e.batch_id = b.batch_id
             LEFT JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
             LEFT JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id
             WHERE e.status = 'approved'
+              AND e.batch_id IS NOT NULL
             ORDER BY t.trainee_id DESC
         ");
         

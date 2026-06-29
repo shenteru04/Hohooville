@@ -123,29 +123,37 @@ class RegistrarProfile {
         $this->conn->beginTransaction();
 
         try {
-            // Update email in tbl_users
+            // Update email in tbl_users - this is the primary operation
             $stmtUser = $this->conn->prepare("UPDATE tbl_users SET email = ? WHERE user_id = ?");
-            $stmtUser->execute([$email, $userId]);
+            if (!$stmtUser->execute([$email, $userId])) {
+                throw new Exception('Failed to update email in tbl_users: ' . implode(', ', $stmtUser->errorInfo()));
+            }
 
             // Check if employee record exists
             $stmtCheck = $this->conn->prepare("SELECT employee_id FROM tbl_employee WHERE user_id = ?");
-            $stmtCheck->execute([$userId]);
+            if (!$stmtCheck->execute([$userId])) {
+                throw new Exception('Failed to check employee record');
+            }
             $employeeExists = $stmtCheck->fetch(PDO::FETCH_ASSOC);
 
             if ($employeeExists) {
-                // Update existing employee record
+                // Only UPDATE existing employee record, don't try to create new ones
                 if ($profileImage) {
                     $stmtEmployee = $this->conn->prepare("UPDATE tbl_employee SET first_name = ?, last_name = ?, email = ?, phone_number = ?, profile_image = ? WHERE user_id = ?");
-                    $stmtEmployee->execute([$firstName, $lastName, $email, $phone, $profileImage, $userId]);
+                    if (!$stmtEmployee->execute([$firstName, $lastName, $email, $phone, $profileImage, $userId])) {
+                        // Log employee update error but don't fail the transaction
+                        error_log('Warning: Failed to update employee record for user ' . $userId . ': ' . implode(', ', $stmtEmployee->errorInfo()));
+                    }
                 } else {
                     $stmtEmployee = $this->conn->prepare("UPDATE tbl_employee SET first_name = ?, last_name = ?, email = ?, phone_number = ? WHERE user_id = ?");
-                    $stmtEmployee->execute([$firstName, $lastName, $email, $phone, $userId]);
+                    if (!$stmtEmployee->execute([$firstName, $lastName, $email, $phone, $userId])) {
+                        // Log employee update error but don't fail the transaction
+                        error_log('Warning: Failed to update employee record for user ' . $userId . ': ' . implode(', ', $stmtEmployee->errorInfo()));
+                    }
                 }
-            } else {
-                // Create new employee record
-                $stmtInsert = $this->conn->prepare("INSERT INTO tbl_employee (user_id, first_name, last_name, email, phone_number, profile_image) VALUES (?, ?, ?, ?, ?, ?)");
-                $stmtInsert->execute([$userId, $firstName, $lastName, $email, $phone, $profileImage ?: null]);
             }
+            // Note: We no longer try to INSERT a new employee record if it doesn't exist
+            // The primary email source is tbl_users, and employee records are optional
 
             $this->conn->commit();
             echo json_encode(['success' => true, 'message' => 'Profile updated successfully']);

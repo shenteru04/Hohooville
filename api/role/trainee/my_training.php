@@ -44,10 +44,18 @@ class MyTraining {
         try {
             // Get Active Course ID
             $stmt = $this->conn->prepare("SELECT oc.qualification_id, c.qualification_name AS course_name
-                                          FROM tbl_enrollment e 
-                                          JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id 
+                                          FROM tbl_enrollment e
+                                          JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
                                           JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id
-                                          WHERE e.trainee_id = ? AND e.status = 'approved' LIMIT 1");
+                                          LEFT JOIN tbl_batch b ON b.batch_id = e.batch_id
+                                          WHERE e.trainee_id = ?
+                                            AND e.status = 'approved'
+                                            AND COALESCE(e.is_archived, 0) = 0
+                                          ORDER BY
+                                            COALESCE(b.end_date, '9999-12-31') DESC,
+                                            COALESCE(e.enrollment_date, '1970-01-01 00:00:00') DESC,
+                                            e.enrollment_id DESC
+                                          LIMIT 1");
             $stmt->execute([$traineeId]);
             $course = $stmt->fetch(PDO::FETCH_ASSOC);
 

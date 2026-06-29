@@ -131,6 +131,19 @@
 
             <main class="flex-1 overflow-y-auto bg-gradient-to-b from-blue-50/60 via-white to-slate-50 p-4 sm:p-6 lg:p-8">
                 <div class="mx-auto w-full max-w-7xl space-y-6">
+                    <section id="adminAccessBanner" class="hidden rounded-2xl border border-amber-200 bg-amber-50/90 p-4 text-amber-950 shadow-sm">
+                        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Admin Access</p>
+                                <p class="mt-1 text-base font-semibold">Viewing charts for <span id="adminAccessTrainerName">Selected trainer</span></p>
+                                <p id="adminAccessNote" class="mt-1 text-sm text-amber-800">Admin access mode. You can review and edit chart marks for export from here.</p>
+                            </div>
+                            <a id="adminAccessBackLink" href="/Hohoo-ville/frontend/html/admin/pages/view_trainers.html" class="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500">
+                                <i class="fas fa-arrow-left"></i> Back to Trainers
+                            </a>
+                        </div>
+                    </section>
+
                     <section class="bg-white rounded-2xl border border-blue-100 shadow-sm overflow-hidden">
                         <div class="px-6 py-4 border-b border-blue-100 bg-blue-50/50 flex items-center justify-between gap-2">
                             <h3 class="text-base font-semibold text-slate-900">Chart Management</h3>

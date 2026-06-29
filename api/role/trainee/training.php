@@ -335,16 +335,21 @@ function getAssignedTrainerForLesson($conn, $lessonId) {
 }
 
 function getAssignedTrainerForTrainee($conn, $traineeId) {
+    $activeEnrollment = getActiveTraineeEnrollmentRow($conn, (int)$traineeId);
+    $activeBatchId = (int)($activeEnrollment['batch_id'] ?? 0);
+    if ($activeBatchId <= 0) {
+        return null;
+    }
+
     try {
         $stmt = $conn->prepare("
             SELECT t.user_id, t.email, t.first_name, t.last_name
-            FROM tbl_enrollment e
-            JOIN tbl_batch b ON e.batch_id = b.batch_id
+            FROM tbl_batch b
             JOIN tbl_trainer t ON b.trainer_id = t.trainer_id
-            WHERE e.trainee_id = ? AND e.status = 'approved'
+            WHERE b.batch_id = ?
             LIMIT 1
         ");
-        $stmt->execute([$traineeId]);
+        $stmt->execute([$activeBatchId]);
         $trainer = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($trainer) {
             return $trainer;
@@ -355,13 +360,12 @@ function getAssignedTrainerForTrainee($conn, $traineeId) {
     try {
         $stmt = $conn->prepare("
             SELECT t.user_id, t.email, t.first_name, t.last_name
-            FROM tbl_enrollment e
-            JOIN tbl_batch b ON e.batch_id = b.batch_id
+            FROM tbl_batch b
             JOIN tbl_trainer_hdr t ON b.trainer_id = t.trainer_id
-            WHERE e.trainee_id = ? AND e.status = 'approved'
+            WHERE b.batch_id = ?
             LIMIT 1
         ");
-        $stmt->execute([$traineeId]);
+        $stmt->execute([$activeBatchId]);
         $trainer = $stmt->fetch(PDO::FETCH_ASSOC);
         return $trainer ?: null;
     } catch (Exception $e) {
@@ -595,6 +599,7 @@ function getActiveTraineeEnrollmentRow($conn, $traineeId) {
           AND e.status = 'approved'
           AND COALESCE(e.is_archived, 0) = 0
         ORDER BY
+            COALESCE(b.end_date, '9999-12-31') DESC,
             COALESCE(e.enrollment_date, '1970-01-01 00:00:00') DESC,
             e.enrollment_id DESC
         LIMIT 1

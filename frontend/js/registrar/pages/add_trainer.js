@@ -48,6 +48,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     await ensureSwal();
     initSidebar();
     initUserDropdown();
+    initRegistrarTrainerActionMenus();
     initLogout();
     initModalDismissers();
     hydrateHeaderUser();
@@ -112,6 +113,47 @@ function hydrateHeaderUser() {
         userName.textContent = displayName;
     } catch (error) {
         console.warn('Unable to parse user in localStorage:', error);
+    }
+}
+
+function initRegistrarTrainerActionMenus() {
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('[data-registrar-trainer-actions-wrapper]')) {
+            closeRegistrarTrainerActionMenus();
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            closeRegistrarTrainerActionMenus();
+        }
+    });
+}
+
+function closeRegistrarTrainerActionMenus() {
+    document.querySelectorAll('[data-registrar-trainer-actions-menu]').forEach((menu) => {
+        menu.classList.add('hidden');
+    });
+
+    document.querySelectorAll('[data-registrar-trainer-actions-toggle]').forEach((button) => {
+        button.setAttribute('aria-expanded', 'false');
+    });
+}
+
+function toggleRegistrarTrainerActionMenu(event, trainerId) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const menu = document.querySelector(`[data-registrar-trainer-actions-menu="${trainerId}"]`);
+    const button = document.querySelector(`[data-registrar-trainer-actions-toggle="${trainerId}"]`);
+    if (!menu || !button) return;
+
+    const shouldOpen = menu.classList.contains('hidden');
+    closeRegistrarTrainerActionMenus();
+
+    if (shouldOpen) {
+        menu.classList.remove('hidden');
+        button.setAttribute('aria-expanded', 'true');
     }
 }
 
@@ -491,7 +533,7 @@ function renderTrainersTable(trainers) {
         return;
     }
 
-    trainers.forEach(trainer => {
+    trainers.forEach((trainer, index) => {
         const row = document.createElement('tr');
         const qualificationLabel = trainer.qualification_names || trainer.qualification_name || 'N/A';
         const statusClass = trainer.status === 'active'
@@ -507,6 +549,9 @@ function renderTrainersTable(trainers) {
         } else {
             profileImageHtml = `<div class="h-8 w-8 rounded-full border border-slate-200 bg-slate-100 flex items-center justify-center"><i class="fas fa-user text-slate-400 text-xs"></i></div>`;
         }
+        const menuPositionClasses = trainers.length > 3 && trainers.length - index <= 3
+            ? 'bottom-full right-0 mb-2 origin-bottom-right'
+            : 'top-full right-0 mt-2 origin-top-right';
         
         row.className = 'hover:bg-slate-50';
         row.innerHTML = `
@@ -518,13 +563,44 @@ function renderTrainersTable(trainers) {
                 <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${statusClass}">${trainer.status}</span>
             </td>
             <td class="px-4 py-3">
-              <div class="flex flex-wrap items-center justify-center gap-1">
-                <button class="inline-flex items-center rounded-md border border-blue-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" type="button" onclick="viewTrainerDetails(${trainer.trainer_id})" title="View">
-                  <i class="fas fa-eye"></i>
+              <div class="relative flex justify-center" data-registrar-trainer-actions-wrapper>
+                <button
+                  class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                  type="button"
+                  data-registrar-trainer-actions-toggle="${trainer.trainer_id}"
+                  aria-haspopup="true"
+                  aria-expanded="false"
+                  aria-controls="registrarTrainerActionsMenu-${trainer.trainer_id}"
+                  aria-label="Open trainer actions"
+                  onclick="toggleRegistrarTrainerActionMenu(event, ${trainer.trainer_id})"
+                >
+                  <i class="fas fa-ellipsis-vertical"></i>
                 </button>
-                <button class="inline-flex items-center rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" type="button" onclick="editTrainer(${trainer.trainer_id})" title="Edit">
-                  <i class="fas fa-edit"></i>
-                </button>
+                <div
+                  id="registrarTrainerActionsMenu-${trainer.trainer_id}"
+                  class="absolute z-30 hidden w-52 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/80 ${menuPositionClasses}"
+                  data-registrar-trainer-actions-menu="${trainer.trainer_id}"
+                >
+                  <div class="border-b border-slate-100 bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Actions
+                  </div>
+                  <button
+                    class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-blue-700 transition hover:bg-blue-50"
+                    type="button"
+                    onclick="closeRegistrarTrainerActionMenus(); viewTrainerDetails(${trainer.trainer_id})"
+                  >
+                    <i class="fas fa-eye w-4 text-center text-blue-500"></i>
+                    <span>View</span>
+                  </button>
+                  <button
+                    class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    type="button"
+                    onclick="closeRegistrarTrainerActionMenus(); editTrainer(${trainer.trainer_id})"
+                  >
+                    <i class="fas fa-edit w-4 text-center text-slate-500"></i>
+                    <span>Edit</span>
+                  </button>
+                </div>
               </div>
             </td>
         `;

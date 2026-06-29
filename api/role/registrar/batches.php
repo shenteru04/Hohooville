@@ -455,6 +455,7 @@ function getTraineesForBatch($conn) {
 
 function getTraineeDetails($conn) {
     $traineeId = $_GET['trainee_id'] ?? 0;
+    $batchId = (int)($_GET['batch_id'] ?? 0);
 
     if (!$traineeId) {
         echo json_encode(['success' => false, 'message' => 'Trainee ID is required.']);
@@ -463,20 +464,42 @@ function getTraineeDetails($conn) {
     }
 
     try {
+        $params = [];
+        $enrollmentJoin = "LEFT JOIN tbl_enrollment e ON th.trainee_id = e.trainee_id";
+
+        if ($batchId > 0) {
+            $enrollmentJoin .= " AND e.batch_id = ?";
+            $params[] = $batchId;
+        }
+
+        $params[] = $traineeId;
+
         $query = "SELECT 
                     th.*, td.*, tf.*,
                     c.duration as nominal_duration,
-                    e.scholarship_type
+                    COALESCE(st.scholarship_name, NULLIF(e.scholarship_type, ''), NULLIF(b.scholarship_type, ''), 'No Scholarship') AS scholarship_type,
+                    e.batch_id,
+                    b.batch_name,
+                    c.qualification_name AS course_name,
+                    e.enrollment_date,
+                    DATE_FORMAT(e.enrollment_date, '%Y-%m-%d %H:%i:%s') AS formatted_enrollment_date,
+                    e.status AS enrollment_status
                   FROM tbl_trainee_hdr th
                   LEFT JOIN tbl_trainee_dtl td ON th.trainee_id = td.trainee_id
                   LEFT JOIN tbl_trainee_ftr tf ON th.trainee_id = tf.trainee_id
-                  LEFT JOIN tbl_enrollment e ON th.trainee_id = e.trainee_id
+                  {$enrollmentJoin}
+                  LEFT JOIN tbl_batch b ON e.batch_id = b.batch_id
                   LEFT JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
-                  LEFT JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id
-                  WHERE th.trainee_id = ?";
+                  LEFT JOIN tbl_qualifications c ON COALESCE(oc.qualification_id, b.qualification_id) = c.qualification_id
+                  LEFT JOIN tbl_scholarship_type st ON COALESCE(e.scholarship_type_id, b.scholarship_type_id) = st.scholarship_type_id
+                  WHERE th.trainee_id = ?
+                  ORDER BY
+                    CASE WHEN e.batch_id IS NULL THEN 1 ELSE 0 END,
+                    e.enrollment_date DESC
+                  LIMIT 1";
         
         $stmt = $conn->prepare($query);
-        $stmt->execute([$traineeId]);
+        $stmt->execute($params);
         $trainee = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($trainee) {

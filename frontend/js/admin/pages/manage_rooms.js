@@ -5,6 +5,7 @@ let allRoomsData = [];
 document.addEventListener('DOMContentLoaded', async () => {
     await ensureSwal();
     initUserDropdown();
+    initRoomActionMenus();
     initLogout();
     initArchiveButton();
     initRoomForm();
@@ -40,6 +41,47 @@ function initUserDropdown() {
             menu.classList.add('hidden');
         }
     });
+}
+
+function initRoomActionMenus() {
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('[data-room-actions-wrapper]')) {
+            closeRoomActionMenus();
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            closeRoomActionMenus();
+        }
+    });
+}
+
+function closeRoomActionMenus() {
+    document.querySelectorAll('[data-room-actions-menu]').forEach((menu) => {
+        menu.classList.add('hidden');
+    });
+
+    document.querySelectorAll('[data-room-actions-toggle]').forEach((button) => {
+        button.setAttribute('aria-expanded', 'false');
+    });
+}
+
+function toggleRoomActionMenu(event, roomId) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const menu = document.querySelector(`[data-room-actions-menu="${roomId}"]`);
+    const button = document.querySelector(`[data-room-actions-toggle="${roomId}"]`);
+    if (!menu || !button) return;
+
+    const shouldOpen = menu.classList.contains('hidden');
+    closeRoomActionMenus();
+
+    if (shouldOpen) {
+        menu.classList.remove('hidden');
+        button.setAttribute('aria-expanded', 'true');
+    }
 }
 
 async function initLogout() {
@@ -331,25 +373,68 @@ function displayClassicView(rooms) {
                 const activeClasses = room.active_classes || 0;
                 return `
                     <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
-                        <div class="flex items-start justify-between">
+                        <div class="flex items-start justify-between gap-3">
                             <div class="flex-1">
                                 <p class="font-semibold text-slate-900">${escapeHtml(room.room_name || '')}</p>
                                 <p class="mt-1 text-sm text-slate-600">${escapeHtml(room.room_description || 'No description')}</p>
                             </div>
-                            ${activeClasses > 0 ? `<span class="ml-2 inline-flex items-center rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-800">${activeClasses} active</span>` : ''}
+                            <div class="flex items-start gap-2">
+                                ${activeClasses > 0 ? `<span class="inline-flex items-center rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-800">${activeClasses} active</span>` : ''}
+                                <div class="relative shrink-0" data-room-actions-wrapper>
+                                    <button
+                                        type="button"
+                                        class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                                        data-room-actions-toggle="${room.room_id}"
+                                        aria-haspopup="true"
+                                        aria-expanded="false"
+                                        aria-controls="roomActionsMenu-${room.room_id}"
+                                        aria-label="Open room actions"
+                                        onclick="toggleRoomActionMenu(event, ${room.room_id})"
+                                    >
+                                        <i class="fas fa-ellipsis-vertical"></i>
+                                    </button>
+                                    <div
+                                        id="roomActionsMenu-${room.room_id}"
+                                        class="absolute right-0 top-full z-30 mt-2 hidden w-56 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/80"
+                                        data-room-actions-menu="${room.room_id}"
+                                    >
+                                        <div class="border-b border-slate-100 bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                            Actions
+                                        </div>
+                                        <button
+                                            type="button"
+                                            class="view-room-btn flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-blue-700 transition hover:bg-blue-50"
+                                            data-room-id="${room.room_id}"
+                                            onclick="closeRoomActionMenus()"
+                                        >
+                                            <i class="fas fa-eye w-4 text-center text-blue-500"></i>
+                                            <span>Details</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="edit-room-btn flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                                            data-room-id="${room.room_id}"
+                                            data-room-name="${escapeHtml(room.room_name || '')}"
+                                            data-room-description="${escapeHtml(room.room_description || '')}"
+                                            onclick="closeRoomActionMenus()"
+                                        >
+                                            <i class="fas fa-pen w-4 text-center text-slate-500"></i>
+                                            <span>Edit</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="archive-room-btn flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-amber-700 transition hover:bg-amber-50"
+                                            data-room-id="${room.room_id}"
+                                            onclick="closeRoomActionMenus()"
+                                        >
+                                            <i class="fas fa-box-archive w-4 text-center text-amber-500"></i>
+                                            <span>Archive</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         ${room.next_schedule ? `<p class="mt-2 text-xs text-slate-500"><i class="fas fa-clock mr-1"></i> Next: ${escapeHtml(room.next_schedule)}</p>` : ''}
-                        <div class="mt-3 flex flex-wrap gap-2">
-                            <button type="button" class="view-room-btn inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100" data-room-id="${room.room_id}">
-                                <i class="fas fa-eye"></i> Details
-                            </button>
-                            <button type="button" class="edit-room-btn inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100" data-room-id="${room.room_id}" data-room-name="${escapeHtml(room.room_name || '')}" data-room-description="${escapeHtml(room.room_description || '')}">
-                                <i class="fas fa-pen"></i> Edit
-                            </button>
-                            <button type="button" class="archive-room-btn inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100" data-room-id="${room.room_id}">
-                                <i class="fas fa-box-archive"></i> Archive
-                            </button>
-                        </div>
                     </article>
                 `;
             }).join('')}
@@ -367,7 +452,7 @@ function displayScheduleView(rooms) {
                 const activeClasses = room.active_classes || 0;
                 return `
                     <article class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
-                        <div class="flex items-start justify-between">
+                        <div class="flex items-start justify-between gap-3">
                             <div class="flex-1">
                                 <div class="flex items-center gap-3">
                                     <h4 class="text-base font-semibold text-slate-900">${escapeHtml(room.room_name || '')}</h4>
@@ -376,17 +461,58 @@ function displayScheduleView(rooms) {
                                 <p class="mt-1 text-sm text-slate-600">${escapeHtml(room.room_description || 'No description')}</p>
                                 ${room.next_schedule ? `<p class="mt-2 text-xs text-blue-600"><i class="fas fa-calendar-alt mr-1"></i> Next: <strong>${escapeHtml(room.next_schedule)}</strong></p>` : ''}
                             </div>
-                            <button type="button" class="view-room-btn ml-2 inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700" data-room-id="${room.room_id}">
-                                <i class="fas fa-list"></i> View Schedule
-                            </button>
-                        </div>
-                        <div class="mt-3 flex flex-wrap gap-2">
-                            <button type="button" class="edit-room-btn inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50" data-room-id="${room.room_id}" data-room-name="${escapeHtml(room.room_name || '')}" data-room-description="${escapeHtml(room.room_description || '')}">
-                                <i class="fas fa-pen"></i> Edit
-                            </button>
-                            <button type="button" class="archive-room-btn inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50" data-room-id="${room.room_id}">
-                                <i class="fas fa-box-archive"></i> Archive
-                            </button>
+                            <div class="relative shrink-0" data-room-actions-wrapper>
+                                <button
+                                    type="button"
+                                    class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                                    data-room-actions-toggle="${room.room_id}"
+                                    aria-haspopup="true"
+                                    aria-expanded="false"
+                                    aria-controls="roomActionsMenu-${room.room_id}"
+                                    aria-label="Open room actions"
+                                    onclick="toggleRoomActionMenu(event, ${room.room_id})"
+                                >
+                                    <i class="fas fa-ellipsis-vertical"></i>
+                                </button>
+                                <div
+                                    id="roomActionsMenu-${room.room_id}"
+                                    class="absolute right-0 top-full z-30 mt-2 hidden w-56 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/80"
+                                    data-room-actions-menu="${room.room_id}"
+                                >
+                                    <div class="border-b border-slate-100 bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                        Actions
+                                    </div>
+                                    <button
+                                        type="button"
+                                        class="view-room-btn flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-blue-700 transition hover:bg-blue-50"
+                                        data-room-id="${room.room_id}"
+                                        onclick="closeRoomActionMenus()"
+                                    >
+                                        <i class="fas fa-list w-4 text-center text-blue-500"></i>
+                                        <span>View Schedule</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="edit-room-btn flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                                        data-room-id="${room.room_id}"
+                                        data-room-name="${escapeHtml(room.room_name || '')}"
+                                        data-room-description="${escapeHtml(room.room_description || '')}"
+                                        onclick="closeRoomActionMenus()"
+                                    >
+                                        <i class="fas fa-pen w-4 text-center text-slate-500"></i>
+                                        <span>Edit</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="archive-room-btn flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                                        data-room-id="${room.room_id}"
+                                        onclick="closeRoomActionMenus()"
+                                    >
+                                        <i class="fas fa-box-archive w-4 text-center text-slate-500"></i>
+                                        <span>Archive</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </article>
                 `;

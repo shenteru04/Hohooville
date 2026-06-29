@@ -44,6 +44,7 @@ class SimpleModal {
 document.addEventListener('DOMContentLoaded', async () => {
     await ensureSwal();
     initUserDropdown();
+    initTraineeActionMenus();
     initLogout();
     initModals();
     initDocumentZoomControls();
@@ -127,6 +128,47 @@ function initModals() {
             if (modalId === 'documentModal' && documentModal) documentModal.hide();
         });
     });
+}
+
+function initTraineeActionMenus() {
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('[data-trainee-actions-wrapper]')) {
+            closeTraineeActionMenus();
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            closeTraineeActionMenus();
+        }
+    });
+}
+
+function closeTraineeActionMenus() {
+    document.querySelectorAll('[data-trainee-actions-menu]').forEach((menu) => {
+        menu.classList.add('hidden');
+    });
+
+    document.querySelectorAll('[data-trainee-actions-toggle]').forEach((button) => {
+        button.setAttribute('aria-expanded', 'false');
+    });
+}
+
+function toggleTraineeActionMenu(event, traineeId) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const menu = document.querySelector(`[data-trainee-actions-menu="${traineeId}"]`);
+    const button = document.querySelector(`[data-trainee-actions-toggle="${traineeId}"]`);
+    if (!menu || !button) return;
+
+    const shouldOpen = menu.classList.contains('hidden');
+    closeTraineeActionMenus();
+
+    if (shouldOpen) {
+        menu.classList.remove('hidden');
+        button.setAttribute('aria-expanded', 'true');
+    }
 }
 
 function initDocumentZoomControls() {
@@ -347,14 +389,10 @@ function renderTraineesTable(data) {
         return;
     }
 
-    const html = data.map((trainee) => {
+    const html = data.map((trainee, index) => {
         const statusBadge = trainee.status === 'active'
             ? '<span class="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">active</span>'
             : '<span class="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">inactive</span>';
-
-        const accountCell = !trainee.user_id
-            ? `<button class="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100" onclick="openAccountModal(${trainee.trainee_id})"><i class="fas fa-key"></i> Create Account</button>`
-            : '<span class="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700"><i class="fas fa-check"></i> Account Active</span>';
 
         const enrolledDate = trainee.formatted_enrollment_date 
             ? trainee.formatted_enrollment_date 
@@ -377,6 +415,28 @@ function renderTraineesTable(data) {
             profileImageHtml = `<div class="h-8 w-8 rounded-full border border-slate-200 bg-slate-100 flex items-center justify-center"><i class="fas fa-user text-slate-400 text-xs"></i></div>`;
         }
 
+        const accountMenuItem = trainee.user_id
+            ? `
+                <div class="px-3 py-3">
+                    <span class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                        <i class="fas fa-check"></i> Account Active
+                    </span>
+                </div>
+            `
+            : `
+                <button
+                    type="button"
+                    class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-blue-700 transition hover:bg-blue-50"
+                    onclick="closeTraineeActionMenus(); openAccountModal(${trainee.trainee_id})"
+                >
+                    <i class="fas fa-key w-4 text-center text-blue-500"></i>
+                    <span>Create Account</span>
+                </button>
+            `;
+        const menuPositionClasses = data.length > 3 && data.length - index <= 3
+            ? 'bottom-full right-0 mb-2 origin-bottom-right'
+            : 'top-full right-0 mt-2 origin-top-right';
+
         return `
             <tr class="hover:bg-slate-50">
                 <td class="px-3 py-3 text-sm text-slate-700">${escapeHtml(trainee.trainee_school_id || 'N/A')}</td>
@@ -395,9 +455,38 @@ function renderTraineesTable(data) {
                     ${statusBadge}
                 </td>
                 <td class="px-3 py-3 text-sm">
-                    <div class="flex flex-wrap items-center gap-2">
-                        ${accountCell}
-                        <button class="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100" onclick="viewProfile(${trainee.trainee_id})"><i class="fas fa-eye"></i> View Profile</button>
+                    <div class="relative flex justify-center" data-trainee-actions-wrapper>
+                        <button
+                            type="button"
+                            class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                            data-trainee-actions-toggle="${trainee.trainee_id}"
+                            aria-haspopup="true"
+                            aria-expanded="false"
+                            aria-controls="traineeActionsMenu-${trainee.trainee_id}"
+                            aria-label="Open trainee actions"
+                            onclick="toggleTraineeActionMenu(event, ${trainee.trainee_id})"
+                        >
+                            <i class="fas fa-ellipsis-vertical"></i>
+                        </button>
+                        <div
+                            id="traineeActionsMenu-${trainee.trainee_id}"
+                            class="absolute z-30 hidden w-56 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/80 ${menuPositionClasses}"
+                            data-trainee-actions-menu="${trainee.trainee_id}"
+                        >
+                            <div class="border-b border-slate-100 bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                Actions
+                            </div>
+                            ${accountMenuItem}
+                            <div class="border-t border-slate-100"></div>
+                            <button
+                                type="button"
+                                class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-blue-700 transition hover:bg-blue-50"
+                                onclick="closeTraineeActionMenus(); viewProfile(${trainee.trainee_id})"
+                            >
+                                <i class="fas fa-eye w-4 text-center text-blue-500"></i>
+                                <span>View Profile</span>
+                            </button>
+                        </div>
                     </div>
                 </td>
             </tr>

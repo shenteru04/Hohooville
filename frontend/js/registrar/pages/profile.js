@@ -301,11 +301,14 @@ async function updateProfile(userId) {
             notify('success', 'Profile updated successfully');
             loadProfile(userId);
         } else {
-            notify('error', response.data.message ? `Error: ${response.data.message}` : 'Failed to update profile.');
+            const errorMsg = response.data.message || 'Failed to update profile.';
+            console.error('Profile update error response:', response.data);
+            notify('error', errorMsg);
         }
     } catch (error) {
-        console.error('Error updating profile:', error);
-        notify('error', 'Failed to update profile.');
+        const errorMsg = error?.response?.data?.message || error?.message || 'Failed to update profile.';
+        console.error('Error updating profile:', errorMsg, error);
+        notify('error', errorMsg);
     }
 }
 

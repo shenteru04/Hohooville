@@ -74,19 +74,23 @@ function updateUserProfile($conn) {
 
         $conn->beginTransaction();
 
-        // Update Users Table (Email)
+        // Update Users Table (Email) - this is the primary operation
         $stmtUser = $conn->prepare("UPDATE tbl_users SET email = ? WHERE user_id = ?");
-        $stmtUser->execute([$data['email'], $userId]);
+        if (!$stmtUser->execute([$data['email'], $userId])) {
+            throw new Exception('Failed to update email in tbl_users: ' . implode(', ', $stmtUser->errorInfo()));
+        }
 
         // Check if employee record exists
         $stmtCheck = $conn->prepare("SELECT employee_id FROM tbl_employee WHERE user_id = ?");
-        $stmtCheck->execute([$userId]);
+        if (!$stmtCheck->execute([$userId])) {
+            throw new Exception('Failed to check employee record');
+        }
         $employeeExists = $stmtCheck->fetch(PDO::FETCH_ASSOC);
 
         if ($employeeExists) {
-            // Update existing employee record
+            // Only UPDATE existing employee record, don't try to create new ones
             $updateFields = "first_name = ?, last_name = ?, email = ?, phone_number = ?";
-            $params = [$data['first_name'], $data['last_name'], $data['email'], $data['phone'], $userId];
+            $params = [$data['first_name'] ?? '', $data['last_name'] ?? '', $data['email'] ?? '', $data['phone'] ?? '', $userId];
             
             // Add profile_image if provided
             if (!empty($data['profile_image'])) {
@@ -95,12 +99,12 @@ function updateUserProfile($conn) {
             }
             
             $stmtEmployee = $conn->prepare("UPDATE tbl_employee SET $updateFields WHERE user_id = ?");
-            $stmtEmployee->execute($params);
-        } else {
-            // Create new employee record
-            $stmtInsert = $conn->prepare("INSERT INTO tbl_employee (user_id, first_name, last_name, email, phone_number, profile_image) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmtInsert->execute([$userId, $data['first_name'] ?? '', $data['last_name'] ?? '', $data['email'] ?? '', $data['phone'] ?? '', $data['profile_image'] ?? null]);
+            if (!$stmtEmployee->execute($params)) {
+                // Log employee update error but don't fail the transaction
+                error_log('Warning: Failed to update employee record for user ' . $userId . ': ' . implode(', ', $stmtEmployee->errorInfo()));
+            }
         }
+        // Note: We no longer try to INSERT a new employee record if it doesn't exist
 
         $conn->commit();
         echo json_encode(['success' => true, 'message' => 'Profile updated successfully']);
