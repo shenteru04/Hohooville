@@ -1,4 +1,6 @@
 const API_BASE_URL = `${window.location.origin}/Hohoo-ville/api`;
+const TRAINER_PROGRESS_CHART_URL = `${window.location.origin}/Hohoo-ville/frontend/html/trainer/pages/progress_chart.html`;
+const TRAINER_ACHIEVEMENT_CHART_URL = `${window.location.origin}/Hohoo-ville/frontend/html/trainer/pages/achievement_chart.html`;
 let traineesModal;
 let closedBatchesModal;
 let createBatchModal;
@@ -177,11 +179,11 @@ async function loadBatches() {
         }
 
         allBatches = response.data.data || [];
-        const openBatches = allBatches.filter((batch) => normalizeStatus(batch.status) === 'open');
-        const closedBatches = allBatches.filter((batch) => normalizeStatus(batch.status) !== 'open');
+        const currentBatches = allBatches.filter((batch) => !isBatchArchived(batch));
+        const archivedBatches = allBatches.filter((batch) => isBatchArchived(batch));
 
-        renderBatchesTable(openBatches, 'batchesTableBody');
-        renderBatchesTable(closedBatches, 'closedBatchesTableBody');
+        renderBatchesTable(currentBatches, 'batchesTableBody');
+        renderBatchesTable(archivedBatches, 'closedBatchesTableBody', true);
     } catch (error) {
         console.error('Error loading batches:', error);
         const tbody = document.getElementById('batchesTableBody');
@@ -191,12 +193,28 @@ async function loadBatches() {
     }
 }
 
-function renderBatchesTable(data, tbodyId) {
+function isBatchArchived(batch) {
+    const status = normalizeStatus(batch?.status);
+    if (['archived', 'completed', 'finished'].includes(status)) return true;
+
+    const endDate = String(batch?.end_date || '').trim().slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(endDate)) return false;
+
+    const completionDate = new Date(`${endDate}T00:00:00`);
+    if (Number.isNaN(completionDate.getTime())) return false;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return completionDate < today;
+}
+
+function renderBatchesTable(data, tbodyId, isArchive = false) {
     const tbody = document.getElementById(tbodyId);
     if (!tbody) return;
 
     if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-6 text-center text-sm text-slate-500">No batches found</td></tr>';
+        const emptyMessage = isArchive ? 'No completed batches in the archive.' : 'No current batches found.';
+        tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-sm text-slate-500">${emptyMessage}</td></tr>`;
         return;
     }
 
@@ -215,6 +233,54 @@ function renderBatchesTable(data, tbodyId) {
         const menuPositionClasses = data.length > 3 && data.length - index <= 3
             ? 'bottom-full right-0 mb-2 origin-bottom-right'
             : 'top-full right-0 mt-2 origin-top-right';
+        const safeBatchName = escapeHtml(batch.batch_name || '');
+        const menuItems = isArchive
+            ? `
+                <button
+                    type="button"
+                    class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-blue-700 transition hover:bg-blue-50"
+                    data-batch-name="${safeBatchName}"
+                    onclick="closeBatchActionMenus(); viewBatchTrainees(${batch.batch_id}, this.dataset.batchName)"
+                >
+                    <i class="fas fa-users w-4 text-center text-blue-500"></i>
+                    <span>View Student List</span>
+                </button>
+                <button
+                    type="button"
+                    class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-emerald-700 transition hover:bg-emerald-50"
+                    onclick="closeBatchActionMenus(); openBatchArchiveChart('progress', ${batch.batch_id})"
+                >
+                    <i class="fas fa-chart-line w-4 text-center text-emerald-500"></i>
+                    <span>Progress Chart</span>
+                </button>
+                <button
+                    type="button"
+                    class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-fuchsia-700 transition hover:bg-fuchsia-50"
+                    onclick="closeBatchActionMenus(); openBatchArchiveChart('achievement', ${batch.batch_id})"
+                >
+                    <i class="fas fa-trophy w-4 text-center text-fuchsia-500"></i>
+                    <span>Achievement Chart</span>
+                </button>
+            `
+            : `
+                <button
+                    type="button"
+                    class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-blue-700 transition hover:bg-blue-50"
+                    data-batch-name="${safeBatchName}"
+                    onclick="closeBatchActionMenus(); viewBatchTrainees(${batch.batch_id}, this.dataset.batchName)"
+                >
+                    <i class="fas fa-users w-4 text-center text-blue-500"></i>
+                    <span>View Students</span>
+                </button>
+                <button
+                    type="button"
+                    class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    onclick="closeBatchActionMenus(); editBatch(${batch.batch_id})"
+                >
+                    <i class="fas fa-edit w-4 text-center text-slate-500"></i>
+                    <span>Edit</span>
+                </button>
+            `;
 
         return `
             <tr class="hover:bg-slate-50">
@@ -243,22 +309,7 @@ function renderBatchesTable(data, tbodyId) {
                             <div class="border-b border-slate-100 bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
                                 Actions
                             </div>
-                            <button
-                                type="button"
-                                class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-blue-700 transition hover:bg-blue-50"
-                                onclick="closeBatchActionMenus(); viewBatchTrainees(${batch.batch_id}, '${escapeAttribute(batch.batch_name || '')}')"
-                            >
-                                <i class="fas fa-users w-4 text-center text-blue-500"></i>
-                                <span>View Trainees</span>
-                            </button>
-                            <button
-                                type="button"
-                                class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                                onclick="closeBatchActionMenus(); editBatch(${batch.batch_id})"
-                            >
-                                <i class="fas fa-edit w-4 text-center text-slate-500"></i>
-                                <span>Edit</span>
-                            </button>
+                            ${menuItems}
                         </div>
                     </div>
                 </td>
@@ -270,6 +321,22 @@ function renderBatchesTable(data, tbodyId) {
 function normalizeStatus(status) {
     return String(status || '').trim().toLowerCase();
 }
+
+window.openBatchArchiveChart = function(type, batchId) {
+    const normalizedBatchId = Number.parseInt(batchId, 10);
+    if (!Number.isInteger(normalizedBatchId) || normalizedBatchId <= 0) {
+        showError('The selected batch is invalid.');
+        return;
+    }
+
+    const chartUrl = new URL(
+        type === 'achievement' ? TRAINER_ACHIEVEMENT_CHART_URL : TRAINER_PROGRESS_CHART_URL,
+        window.location.origin
+    );
+    chartUrl.searchParams.set('batch_id', String(normalizedBatchId));
+    chartUrl.searchParams.set('source', 'admin');
+    window.open(chartUrl.toString(), '_blank', 'noopener');
+};
 
 async function viewBatchTrainees(batchId, batchName) {
     const modalBatchName = document.getElementById('modalBatchName');

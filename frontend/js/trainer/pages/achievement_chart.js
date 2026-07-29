@@ -63,10 +63,25 @@ function isAdminUser(user) {
     return String(user?.role || '').toLowerCase() === 'admin';
 }
 
+function isRegistrarUser(user) {
+    return String(user?.role || '').toLowerCase() === 'registrar';
+}
+
 function getRequestedTrainerId() {
     const params = new URLSearchParams(window.location.search);
     const value = Number.parseInt(params.get('trainer_id') || '', 10);
     return Number.isInteger(value) && value > 0 ? value : null;
+}
+
+function getRequestedBatchId() {
+    const params = new URLSearchParams(window.location.search);
+    const value = Number.parseInt(params.get('batch_id') || '', 10);
+    return Number.isInteger(value) && value > 0 ? value : null;
+}
+
+function getRequestedChartSource() {
+    const source = String(new URLSearchParams(window.location.search).get('source') || '').toLowerCase();
+    return ['admin', 'registrar'].includes(source) ? source : '';
 }
 
 function setHeaderUserLabel(label) {
@@ -89,13 +104,29 @@ function applyAdminChartLinks(trainerId) {
     });
 }
 
+function applyBatchChartLinks(batchId, source) {
+    const params = new URLSearchParams({ batch_id: String(batchId) });
+    if (source) params.set('source', source);
+    const suffix = `?${params.toString()}`;
+
+    document.querySelectorAll('a[href$="progress_chart.html"]').forEach((link) => {
+        link.href = `/Hohoo-ville/frontend/html/trainer/pages/progress_chart.html${suffix}`;
+    });
+    document.querySelectorAll('a[href$="achievement_chart.html"]').forEach((link) => {
+        link.href = `/Hohoo-ville/frontend/html/trainer/pages/achievement_chart.html${suffix}`;
+    });
+}
+
 function showAdminAccessBanner(trainerName, hasSelection = true) {
     const banner = document.getElementById('adminAccessBanner');
+    const accessLabel = document.getElementById('chartAccessLabel');
     const trainerNameEl = document.getElementById('adminAccessTrainerName');
     const noteEl = document.getElementById('adminAccessNote');
     const backLink = document.getElementById('adminAccessBackLink');
+    const backLabel = document.getElementById('adminAccessBackLabel');
 
     if (!banner) return;
+    if (accessLabel) accessLabel.textContent = 'Admin Access';
     if (trainerNameEl) trainerNameEl.textContent = trainerName || 'Selected trainer';
     if (noteEl) {
         noteEl.textContent = hasSelection
@@ -103,11 +134,55 @@ function showAdminAccessBanner(trainerName, hasSelection = true) {
             : 'Open this page from View Trainers to load a trainer chart.';
     }
     if (backLink) backLink.href = ADMIN_TRAINERS_PAGE;
+    if (backLabel) backLabel.textContent = 'Back to Trainers';
+
+    banner.classList.remove('hidden');
+}
+
+function showBatchAccessBanner(source) {
+    const fromRegistrar = source === 'registrar';
+    const banner = document.getElementById('adminAccessBanner');
+    const accessLabel = document.getElementById('chartAccessLabel');
+    const trainerNameEl = document.getElementById('adminAccessTrainerName');
+    const noteEl = document.getElementById('adminAccessNote');
+    const backLink = document.getElementById('adminAccessBackLink');
+    const backLabel = document.getElementById('adminAccessBackLabel');
+
+    if (!banner) return;
+    if (accessLabel) accessLabel.textContent = fromRegistrar ? 'Registrar Access' : 'Admin Access';
+    if (trainerNameEl) trainerNameEl.textContent = 'Selected archived batch';
+    if (noteEl) noteEl.textContent = 'This chart is preloaded for the batch selected from the archive. Exporting uses the same trainer chart format.';
+    if (backLink) {
+        backLink.href = fromRegistrar
+            ? '/Hohoo-ville/frontend/html/registrar/pages/manage_batches.html'
+            : '/Hohoo-ville/frontend/html/admin/pages/view_batches.html';
+    }
+    if (backLabel) backLabel.textContent = 'Back to Batches';
 
     banner.classList.remove('hidden');
 }
 
 async function resolveTrainerContext(user) {
+    const batchId = getRequestedBatchId();
+    if (batchId) {
+        const source = isRegistrarUser(user)
+            ? 'registrar'
+            : (isAdminUser(user) ? 'admin' : getRequestedChartSource());
+
+        if (isAdminUser(user)) {
+            setHeaderUserLabel('Admin');
+            hideTrainerProfileLinkForAdmin();
+            showBatchAccessBanner(source);
+        } else if (isRegistrarUser(user)) {
+            setHeaderUserLabel('Registrar');
+            hideTrainerProfileLinkForAdmin();
+            showBatchAccessBanner(source);
+        }
+
+        applyBatchChartLinks(batchId, source);
+        return { batchId };
+    }
+
     if (isAdminUser(user)) {
         const trainerId = getRequestedTrainerId();
         setHeaderUserLabel('Admin');
@@ -185,7 +260,9 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     try {
         const context = await resolveTrainerContext(user);
-        if (context?.trainerId) {
+        if (context?.batchId) {
+            await loadRequestedBatchForChart(context.batchId);
+        } else if (context?.trainerId) {
             currentTrainerId = context.trainerId;
             loadBatchesForChart(currentTrainerId);
         } else {
@@ -316,6 +393,23 @@ async function loadBatchesForChart(trainerId) {
         }
     } catch (error) {
         console.error('Error loading batches:', error);
+    }
+}
+
+async function loadRequestedBatchForChart(batchId) {
+    const select = document.getElementById('batchSelectForChart');
+    if (!select) return;
+
+    select.disabled = true;
+    select.innerHTML = `<option value="${batchId}">Loading selected batch...</option>`;
+    select.value = String(batchId);
+
+    await generateLiveChart();
+
+    const batchInfo = currentLiveChartData?.batch_info || {};
+    if (currentLiveChartData && select.options.length) {
+        const qualification = batchInfo.qualification_name || batchInfo.course_name || 'Qualification';
+        select.options[0].textContent = `${batchInfo.batch_name || 'Selected batch'} - ${qualification}`;
     }
 }
 

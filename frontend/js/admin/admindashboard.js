@@ -20,7 +20,6 @@ const charts = {
     enrollmentByQualificationChart: null,
     enrollmentTrendChart: null,
     scholarshipDistributionChart: null,
-    monthlyRevenueChart: null,
     attendanceTrendChart: null,
     competencyChart: null
 };
@@ -208,13 +207,7 @@ async function loadFinancialSummary(cacheBustKey) {
         'Scholarships'
     );
 
-    renderLineChart(
-        'monthlyRevenueChart',
-        (data.monthly_revenue || []).map((item) => item.month || ''),
-        (data.monthly_revenue || []).map((item) => Number(item.revenue || 0)),
-        'Monthly Revenue (PHP)',
-        '#2563eb'
-    );
+    // Monthly revenue chart removed from dashboard layout; skip rendering.
 }
 
 async function loadEnrollmentStats(cacheBustKey) {

@@ -1,9 +1,19 @@
 const API_BASE_URL = window.location.origin + '/Hohoo-ville/api';
+const SCHEDULE_WORKFLOW_ROLE = String(window.SCHEDULE_WORKFLOW_ROLE || 'registrar').trim().toLowerCase() === 'admin'
+    ? 'admin'
+    : 'registrar';
+const SCHEDULE_ACTOR_LABEL = SCHEDULE_WORKFLOW_ROLE === 'admin' ? 'Admin' : 'Registrar';
+const SCHEDULE_API_URL = `${API_BASE_URL}/role/${SCHEDULE_WORKFLOW_ROLE}/schedule.php`;
+const SCHEDULE_BATCHES_API_URL = SCHEDULE_WORKFLOW_ROLE === 'admin'
+    ? `${API_BASE_URL}/role/admin/schedule_batches.php`
+    : `${API_BASE_URL}/role/registrar/batches.php`;
 let scheduleModal;
 let scheduleRequestModal;
+let timetableDetailsModal;
 let allTrainers = [];
 let allScheduleRows = [];
 let allScheduleTableRows = [];
+let timetableDisplayRows = [];
 let allBatches = [];
 let allRooms = [];
 let allScheduleRequests = [];
@@ -49,6 +59,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     scheduleModal = new SimpleModal(document.getElementById('assignScheduleModal'));
     scheduleRequestModal = new SimpleModal(document.getElementById('scheduleRequestModal'));
+    timetableDetailsModal = new SimpleModal(document.getElementById('timetableScheduleDetailsModal'));
     initScheduleTypeToggle();
     initRequestReviewActions();
     buildTimetable();
@@ -83,6 +94,18 @@ document.addEventListener('DOMContentLoaded', async function() {
             const btn = event.target.closest('.request-review-btn');
             if (!btn) return;
             openScheduleRequestModal(Number(btn.dataset.requestId || 0));
+        });
+    }
+
+    const timetableBody = document.getElementById('timetableBody');
+    if (timetableBody) {
+        timetableBody.addEventListener('click', (event) => {
+            const entry = event.target.closest('[data-timetable-row-index]');
+            if (!entry) return;
+
+            const rowIndex = Number(entry.dataset.timetableRowIndex);
+            const row = timetableDisplayRows[rowIndex];
+            if (row) openTimetableScheduleDetailsModal(row);
         });
     }
 
@@ -122,7 +145,7 @@ function hydrateHeaderUser() {
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         const userName = document.getElementById('userName');
         if (!userName) return;
-        const displayName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.full_name || user.name || user.username || 'Registrar';
+        const displayName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.full_name || user.name || user.username || SCHEDULE_ACTOR_LABEL;
         userName.textContent = displayName;
     } catch (error) {
         console.warn('Unable to parse user in localStorage:', error);
@@ -215,6 +238,9 @@ function initModalDismissers() {
                 scheduleRequestModal.hide();
                 clearScheduleRequestIntent();
             }
+            if (modalId === 'timetableScheduleDetailsModal' && timetableDetailsModal) {
+                timetableDetailsModal.hide();
+            }
         });
     });
 }
@@ -277,7 +303,7 @@ function setUnitAssignmentTab(tabName) {
 
 async function loadScheduleData() {
     try {
-        const response = await axios.get(`${API_BASE_URL}/role/registrar/schedule.php?action=get-data`);
+        const response = await axios.get(`${SCHEDULE_API_URL}?action=get-data`);
         if (!response.data.success) return;
 
         const { trainers, batches, schedule_rows: scheduleRows, schedule_requests: scheduleRequests } = response.data.data;
@@ -693,7 +719,7 @@ async function loadUnitAssignmentGroupsForBatch(batchId) {
             qualification_id: String(batch.qualification_id || ''),
             batch_id: normalizedBatchId
         });
-        const response = await axios.get(`${API_BASE_URL}/role/registrar/batches.php?${query.toString()}`);
+        const response = await axios.get(`${SCHEDULE_BATCHES_API_URL}?${query.toString()}`);
         if (loadToken !== latestUnitAssignmentLoadToken) {
             return;
         }
@@ -1074,7 +1100,7 @@ async function saveUnitAssignmentsForSelectedBatch(options = {}) {
         throw new Error('Please select a multiple-mode batch first.');
     }
 
-    const response = await axios.post(`${API_BASE_URL}/role/registrar/batches.php?action=save-unit-assignments`, {
+    const response = await axios.post(`${SCHEDULE_BATCHES_API_URL}?action=save-unit-assignments`, {
         batch_id: batchId,
         unit_assignments: collectUnitAssignments()
     });
@@ -1292,7 +1318,7 @@ function populateScheduleRequestModal(request) {
     document.getElementById('requestProposedRoom').textContent = `Room: ${request.room || 'TBA'}`;
     document.getElementById('requestProposedDate').textContent = `Effective date: ${formatDateLabel(request.resolved_effective_date || '')}`;
     document.getElementById('requestTrainerNote').textContent = request.trainer_note || 'No trainer note.';
-    document.getElementById('requestRegistrarNote').textContent = request.registrar_note || 'No registrar note.';
+    document.getElementById('requestRegistrarNote').textContent = request.registrar_note || `No ${SCHEDULE_ACTOR_LABEL.toLowerCase()} note.`;
     document.getElementById('requestReviewNote').value = request.registrar_note || '';
     document.getElementById('requestReviewSection').classList.toggle('opacity-70', !canReview);
     document.getElementById('requestReviewHint').textContent = canReview
@@ -1323,7 +1349,7 @@ async function submitScheduleRequestReview(reviewAction) {
     };
 
     try {
-        const response = await axios.post(`${API_BASE_URL}/role/registrar/schedule.php?action=review-request`, payload);
+        const response = await axios.post(`${SCHEDULE_API_URL}?action=review-request`, payload);
         if (!response.data.success) {
             throw new Error(response.data.message || 'Unable to review the schedule request.');
         }
@@ -1365,14 +1391,17 @@ function clearScheduleRequestIntent() {
 }
 
 function formatProposalSource(role) {
-    return String(role || '').toLowerCase() === 'trainer' ? 'Trainer' : 'Registrar';
+    const normalizedRole = String(role || '').toLowerCase();
+    if (normalizedRole === 'trainer') return 'Trainer';
+    if (normalizedRole === 'admin') return 'Admin';
+    return 'Registrar';
 }
 
 function formatRequestStatus(status) {
     const value = String(status || '').trim();
     const labels = {
         pending_trainer_response: 'Pending Trainer Response',
-        pending_registrar_approval: 'Pending Registrar Approval',
+        pending_registrar_approval: `Pending ${SCHEDULE_ACTOR_LABEL} Approval`,
         approved: 'Approved',
         rejected: 'Rejected',
         modification_requested: 'Changes Requested'
@@ -1562,14 +1591,6 @@ function getTimetableDescriptor(row) {
     return row.batch_name || 'Batch';
 }
 
-function getTimetableSubtitle(row) {
-    if (row.scope_type === 'module_group' && row.unit_count > 1) {
-        return row.trainer_name || 'Assigned trainer';
-    }
-
-    return row.trainer_name || 'No Trainer';
-}
-
 function getTimetableUnitSummary(row) {
     if (row.scope_type === 'module_group') {
         const labels = Array.from(new Set((row.scope_labels || []).filter(Boolean)));
@@ -1594,6 +1615,70 @@ function formatTimetableTimeRange(parsedSchedule) {
     return `${formatTime(parsedSchedule.startTime)} - ${formatTime(parsedSchedule.endTime)}`;
 }
 
+function getTimetableTrainerChipClass(row, fallbackIndex) {
+    const colorClasses = [
+        'bg-blue-100 text-blue-700 hover:bg-blue-200 focus-visible:ring-blue-500',
+        'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 focus-visible:ring-emerald-500',
+        'bg-pink-100 text-pink-700 hover:bg-pink-200 focus-visible:ring-pink-500',
+        'bg-cyan-100 text-cyan-700 hover:bg-cyan-200 focus-visible:ring-cyan-500',
+        'bg-amber-100 text-amber-700 hover:bg-amber-200 focus-visible:ring-amber-500',
+        'bg-violet-100 text-violet-700 hover:bg-violet-200 focus-visible:ring-violet-500'
+    ];
+    const identity = String(row?.trainer_id || row?.trainer_name || fallbackIndex || 0);
+    const hash = Array.from(identity).reduce((total, character) => total + character.charCodeAt(0), 0);
+    return colorClasses[hash % colorClasses.length];
+}
+
+function getTimetableEntryTitle(row, descriptor, unitSummary, timeRange) {
+    return [
+        row?.trainer_name || 'No trainer assigned',
+        descriptor,
+        unitSummary,
+        timeRange,
+        row?.room ? `Room: ${row.room}` : ''
+    ].filter(Boolean).join('\n');
+}
+
+function setTimetableCellDisplayMode(isCompactView) {
+    document.querySelectorAll('#timetableBody td:not(.bg-slate-50)').forEach((cell) => {
+        cell.classList.toggle('h-16', !isCompactView);
+        cell.classList.toggle('h-auto', isCompactView);
+        cell.classList.toggle('overflow-hidden', !isCompactView);
+        cell.classList.toggle('overflow-visible', isCompactView);
+        cell.classList.toggle('px-4', !isCompactView);
+        cell.classList.toggle('py-3', !isCompactView);
+        cell.classList.toggle('p-1', isCompactView);
+    });
+}
+
+function setTimetableDetailText(elementId, value, fallback = 'Not set') {
+    const element = document.getElementById(elementId);
+    if (element) element.textContent = value || fallback;
+}
+
+function openTimetableScheduleDetailsModal(row) {
+    if (!row) return;
+
+    const parsedSchedule = parseScheduleToDays(row.schedule || '');
+    const assignment = getTimetableUnitSummary(row) || row.scope_label || 'Full Batch';
+    const timeRange = formatTimetableTimeRange(parsedSchedule);
+    const daysAndTime = [parsedSchedule.days.join(', '), timeRange].filter(Boolean).join(' | ');
+
+    setTimetableDetailText('timetableDetailTrainerName', row.trainer_name || 'No trainer assigned');
+    setTimetableDetailText('timetableDetailBatchName', row.batch_name || 'Not set');
+    setTimetableDetailText('timetableDetailQualification', row.course_name || 'Not set');
+    setTimetableDetailText('timetableDetailAssignment', assignment);
+    setTimetableDetailText('timetableDetailRoom', row.room || 'Room not assigned');
+    setTimetableDetailText('timetableDetailSchedule', row.schedule || 'Not set');
+    setTimetableDetailText('timetableDetailDaysAndTime', daysAndTime);
+    setTimetableDetailText(
+        'timetableDetailTrainingPeriod',
+        `${formatDateLabel(row.start_date || '')} to ${formatDateLabel(row.end_date || '')}`
+    );
+
+    timetableDetailsModal?.show();
+}
+
 function toTimeMinutes(timeValue) {
     if (!timeValue) return -1;
     const [hours, minutes] = String(timeValue).split(':').map((value) => parseInt(value, 10));
@@ -1608,6 +1693,9 @@ function rebuildTimetable() {
 
     if (!timetableBody) return;
 
+    // Every filter state uses the same compact, clickable trainer cards.
+    setTimetableCellDisplayMode(true);
+
     timetableBody.querySelectorAll('td').forEach((cell) => {
         if (!cell.classList.contains('bg-slate-50')) {
             cell.innerHTML = '';
@@ -1615,8 +1703,7 @@ function rebuildTimetable() {
     });
 
     const filteredRows = buildTimetableDisplayRows(getFilteredScheduleRows());
-    const colors = ['bg-blue-100', 'bg-green-100', 'bg-orange-100', 'bg-pink-100', 'bg-yellow-100', 'bg-cyan-100'];
-
+    timetableDisplayRows = filteredRows;
     filteredRows.forEach((row, index) => {
         if (!row.schedule) return;
 
@@ -1624,13 +1711,12 @@ function rebuildTimetable() {
         const { days: scheduleDays, startTime, endTime } = parsedSchedule;
         if (!scheduleDays.length || !startTime || !endTime) return;
 
-        const color = colors[index % colors.length];
         const descriptor = getTimetableDescriptor(row);
-        const subtitle = getTimetableSubtitle(row);
         const unitSummary = getTimetableUnitSummary(row);
         const timeRange = formatTimetableTimeRange(parsedSchedule);
         const bodyRows = timetableBody.querySelectorAll('tr');
-        const scheduleTitle = [descriptor, subtitle, unitSummary, row.schedule].filter(Boolean).join('\n');
+        const scheduleTitle = getTimetableEntryTitle(row, descriptor, unitSummary, timeRange);
+        const trainerChipClass = getTimetableTrainerChipClass(row, index);
 
         timeSlots.forEach((timeSlot, timeIndex) => {
             if (!timeInRange(timeSlot, startTime, endTime)) return;
@@ -1644,22 +1730,18 @@ function rebuildTimetable() {
                 const cell = cells[dayIndex + 1];
                 if (!cell) return;
                 const isStartSlot = toTimeMinutes(timeSlot) === toTimeMinutes(startTime);
-                if (isStartSlot) {
-                    cell.innerHTML += `
-                        <div class="${color} mb-0.5 rounded p-1 text-xs leading-tight" title="${escapeAttr(scheduleTitle)}">
-                            <strong class="block text-[11px]">${escapeHtml(descriptor)}</strong>
-                            <small class="block">${escapeHtml(subtitle)}</small>
-                            ${unitSummary ? `<small class="block opacity-80">${escapeHtml(unitSummary)}</small>` : ''}
-                            ${timeRange ? `<small class="block opacity-70">${escapeHtml(timeRange)}</small>` : ''}
-                        </div>
-                    `;
-                    return;
-                }
 
+                if (!isStartSlot) return;
                 cell.innerHTML += `
-                    <div class="${color} mb-0.5 rounded p-1 text-[10px] leading-tight opacity-70" title="${escapeAttr(scheduleTitle)}">
-                        <span class="font-medium">${escapeHtml(subtitle)}</span>
-                    </div>
+                    <button
+                        type="button"
+                        class="mb-1 block w-full truncate rounded px-2 py-1 text-center text-[11px] font-medium transition focus-visible:outline-none focus-visible:ring-2 ${trainerChipClass}"
+                        data-timetable-row-index="${index}"
+                        aria-label="View schedule details for ${escapeAttr(row.trainer_name || 'the selected trainer')}"
+                        title="${escapeAttr(scheduleTitle)}"
+                    >
+                        ${escapeHtml(row.trainer_name || 'Unassigned trainer')}
+                    </button>
                 `;
             });
         });
@@ -1786,7 +1868,7 @@ async function populateRoomDropdown(selectedRoomId = '', referenceRow = currentS
             effective_date: getCurrentEffectiveDate(),
             request_id: ''
         });
-        const response = await axios.get(`${API_BASE_URL}/role/registrar/schedule.php?action=available-rooms&${params.toString()}`);
+        const response = await axios.get(`${SCHEDULE_API_URL}?action=available-rooms&${params.toString()}`);
         const availableRooms = response.data?.success && Array.isArray(response.data.data) ? response.data.data : [];
 
         if (!availableRooms.length) {
@@ -2102,7 +2184,11 @@ function convertTo24Hour(hour, minute, meridiem) {
 }
 
 function timeInRange(timeSlot, startTime, endTime) {
-    return timeSlot >= startTime && timeSlot < endTime;
+    const slotMinutes = toTimeMinutes(timeSlot);
+    const startMinutes = toTimeMinutes(startTime);
+    const endMinutes = toTimeMinutes(endTime);
+
+    return slotMinutes >= startMinutes && slotMinutes < endMinutes;
 }
 
 function timeRangesOverlap(startA, endA, startB, endB) {
@@ -2245,7 +2331,7 @@ async function saveSchedule(event) {
             user_id: getCurrentUserId()
         };
 
-        const response = await axios.post(`${API_BASE_URL}/role/registrar/schedule.php?action=assign`, payload);
+        const response = await axios.post(`${SCHEDULE_API_URL}?action=assign`, payload);
         if (response.data.success) {
             Swal.fire({ title: 'Success', text: response.data.message || 'Schedule proposal sent successfully.', icon: 'success' });
             if (scheduleModal) scheduleModal.hide();
@@ -2280,7 +2366,7 @@ async function removeCurrentAssignment() {
     }
 
     try {
-        const response = await axios.post(`${API_BASE_URL}/role/registrar/schedule.php?action=assign`, {
+        const response = await axios.post(`${SCHEDULE_API_URL}?action=assign`, {
             batch_id: batchId,
             module_id: moduleId,
             trainer_assignment_mode: 'multiple',

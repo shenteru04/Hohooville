@@ -2,9 +2,16 @@
  * Shared sidebar loader/controller for Admin and Registrar pages.
  * Works without Bootstrap JS APIs.
  */
-const NOTIFICATION_POLL_INTERVAL_MS = 10000;
-const NOTIFICATION_SOUND_FILE_URL = '/Hohoo-ville/frontend/audio/notification.mp3';
-const NOTIFICATION_RECENT_SOUND_WINDOW_MS = 30000;
+const __HOHOO_SIDEBAR_GUARD_COMMENT = true;
+
+if (window.__HohooSidebarLoaded) {
+    // Sidebar already loaded on this page — skip re-execution to avoid redeclaration errors.
+} else {
+    window.__HohooSidebarLoaded = true;
+
+    const NOTIFICATION_POLL_INTERVAL_MS = 10000;
+    const NOTIFICATION_SOUND_FILE_URL = '/Hohoo-ville/frontend/audio/notification.mp3';
+    const NOTIFICATION_RECENT_SOUND_WINDOW_MS = 30000;
 
 class SidebarManager {
     constructor() {
@@ -63,7 +70,9 @@ class SidebarManager {
             })
             .catch((error) => {
                 console.warn('Sidebar loading error:', error);
-                this.sidebarContainer.innerHTML = '<div style="padding: 1rem; color: #b91c1c;">Failed to load sidebar.</div>';
+                if (!this.sidebarContainer.querySelector('#sidebar')) {
+                    this.sidebarContainer.innerHTML = '<div style="padding: 1rem; color: #b91c1c;">Failed to load sidebar.</div>';
+                }
             });
     }
 
@@ -1057,4 +1066,6 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => new SidebarManager());
 } else {
     new SidebarManager();
+}
+
 }

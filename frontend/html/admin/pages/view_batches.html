@@ -48,13 +48,13 @@
         <main class="space-y-6 p-4 sm:p-6 lg:p-8">
             <article class="rounded-2xl border border-blue-100 bg-white shadow-sm">
                 <div class="flex items-center justify-between border-b border-blue-100 px-5 py-4">
-                    <h2 class="text-base font-semibold text-slate-900">Open Batches</h2>
+                    <h2 class="text-base font-semibold text-slate-900">Current Batches</h2>
                     <div class="flex items-center gap-2">
                         <button class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-700" id="createBatchBtn">
                             <i class="fas fa-plus"></i> Create New Batch
                         </button>
                         <button class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50" id="openClosedBatches">
-                            <i class="fas fa-eye"></i> View Closed Batches
+                            <i class="fas fa-box-archive"></i> View Batch Archive
                         </button>
                     </div>
                 </div>
@@ -79,7 +79,10 @@
         <div class="absolute inset-0 bg-slate-900/50" data-modal-hide="closedBatchesModal"></div>
         <div class="relative z-10 w-full max-w-4xl overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-2xl">
             <div class="flex items-center justify-between border-b border-blue-100 px-5 py-4">
-                <h3 class="text-lg font-semibold text-slate-900">Closed Batches</h3>
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-900">Batch Archive</h3>
+                    <p class="mt-0.5 text-sm text-slate-500">Completed batches are kept here for student and chart records.</p>
+                </div>
                 <button type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800" data-modal-hide="closedBatchesModal">
                     <i class="fas fa-times"></i>
                 </button>

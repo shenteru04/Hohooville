@@ -109,7 +109,7 @@
                         <h2 class="text-2xl font-semibold text-slate-900">Manage Batches</h2>
                         <div class="flex flex-wrap gap-2">
                             <button class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-blue-300 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="openClosedBatches">
-                                <i class="fas fa-eye"></i> View Closed Batches
+                                <i class="fas fa-box-archive"></i> View Batch Archive
                             </button>
                             <button class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onclick="openAddModal()">
                                 <i class="fas fa-plus"></i> Create New Batch
@@ -119,7 +119,7 @@
 
                     <section class="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm">
                         <div class="border-b border-blue-100 bg-blue-50/50 px-6 py-4">
-                            <h3 class="text-base font-semibold text-slate-900">Open Batches</h3>
+                            <h3 class="text-base font-semibold text-slate-900">Current Batches</h3>
                         </div>
                         <div class="p-4 sm:p-6">
                             <div class="overflow-x-auto">
@@ -151,7 +151,10 @@
         <div class="absolute inset-0 bg-slate-900/50" data-modal-hide="closedBatchesModal"></div>
         <div class="relative z-10 w-full max-w-6xl overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-2xl">
             <div class="flex items-center justify-between border-b border-blue-100 px-5 py-4">
-                <h5 class="text-lg font-semibold text-slate-900">Closed Batches</h5>
+                <div>
+                    <h5 class="text-lg font-semibold text-slate-900">Batch Archive</h5>
+                    <p class="mt-0.5 text-sm text-slate-500">Completed batches are kept here for student and chart records.</p>
+                </div>
                 <button type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800" data-modal-hide="closedBatchesModal" aria-label="Close modal">
                     <i class="fas fa-times"></i>
                 </button>

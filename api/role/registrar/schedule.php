@@ -9,9 +9,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-require_once '../../database/db.php';
-require_once '../../utils/trainer_assignment_helper.php';
-require_once '../../utils/schedule_workflow_helper.php';
+require_once __DIR__ . '/../../database/db.php';
+require_once __DIR__ . '/../../utils/trainer_assignment_helper.php';
+require_once __DIR__ . '/../../utils/schedule_workflow_helper.php';
 
 $database = new Database();
 $conn = $database->getConnection();
@@ -219,6 +219,20 @@ function getData(PDO $conn): void
     }
 }
 
+function scheduleWorkflowActorRole(): string
+{
+    $role = defined('SCHEDULE_WORKFLOW_ACTOR_ROLE')
+        ? strtolower(trim((string) constant('SCHEDULE_WORKFLOW_ACTOR_ROLE')))
+        : 'registrar';
+
+    return $role === 'admin' ? 'admin' : 'registrar';
+}
+
+function scheduleWorkflowActorLabel(): string
+{
+    return scheduleWorkflowActorRole() === 'admin' ? 'Admin' : 'Registrar';
+}
+
 function assignSchedule(PDO $conn): void
 {
     $data = json_decode(file_get_contents('php://input'), true);
@@ -288,7 +302,7 @@ function assignSchedule(PDO $conn): void
             'room_id' => $requestContext['room_id'],
             'effective_date' => $requestContext['effective_date'],
             'status' => 'pending_trainer_response',
-            'proposed_by_role' => 'registrar',
+            'proposed_by_role' => scheduleWorkflowActorRole(),
             'created_by_user_id' => normalizeNullableInt($data['user_id'] ?? null),
             'trainer_note' => null,
             'registrar_note' => trim((string)($data['registrar_note'] ?? '')) ?: null
@@ -586,6 +600,7 @@ function notifyTrainerOfRegistrarProposal(PDO $conn, ?array $requestRow, ?int $a
 
     $scopeLabel = trim((string)($requestRow['scope_label'] ?? 'schedule'));
     $batchName = trim((string)($requestRow['batch_name'] ?? 'this batch'));
+    $actorLabel = scheduleWorkflowActorLabel();
 
     try {
         sw_insert_notification($conn, [
@@ -594,7 +609,7 @@ function notifyTrainerOfRegistrarProposal(PDO $conn, ?array $requestRow, ?int $a
             'target_role' => 'trainer',
             'actor_id' => $actorUserId,
             'title' => 'New Schedule Proposal',
-            'message' => sprintf('Registrar proposed a schedule for %s - %s. Review it and accept or suggest changes.', $batchName, $scopeLabel),
+            'message' => sprintf('%s proposed a schedule for %s - %s. Review it and accept or suggest changes.', $actorLabel, $batchName, $scopeLabel),
             'link' => sw_build_trainer_request_link((int)$requestRow['request_id'], 'respond')
         ]);
     } catch (Exception $e) {
@@ -618,18 +633,19 @@ function notifyTrainerOfRegistrarDecision(PDO $conn, ?array $requestRow, string 
 
     $scopeLabel = trim((string)($requestRow['scope_label'] ?? 'schedule'));
     $batchName = trim((string)($requestRow['batch_name'] ?? 'this batch'));
+    $actorLabel = scheduleWorkflowActorLabel();
     $title = 'Schedule Update';
-    $message = sprintf('Registrar updated the %s request for %s - %s.', $scopeLabel, $batchName, $scopeLabel);
+    $message = sprintf('%s updated the %s request for %s - %s.', $actorLabel, $scopeLabel, $batchName, $scopeLabel);
 
     if ($decision === 'approved') {
         $title = 'Schedule Approved';
-        $message = sprintf('Registrar approved the schedule for %s - %s.', $batchName, $scopeLabel);
+        $message = sprintf('%s approved the schedule for %s - %s.', $actorLabel, $batchName, $scopeLabel);
     } elseif ($decision === 'rejected') {
         $title = 'Schedule Rejected';
-        $message = sprintf('Registrar rejected the proposed schedule for %s - %s.', $batchName, $scopeLabel);
+        $message = sprintf('%s rejected the proposed schedule for %s - %s.', $actorLabel, $batchName, $scopeLabel);
     } elseif ($decision === 'modification_requested') {
         $title = 'Schedule Needs Changes';
-        $message = sprintf('Registrar requested schedule changes for %s - %s.', $batchName, $scopeLabel);
+        $message = sprintf('%s requested schedule changes for %s - %s.', $actorLabel, $batchName, $scopeLabel);
     }
 
     try {

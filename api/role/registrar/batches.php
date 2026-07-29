@@ -10,8 +10,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-require_once '../../database/db.php';
-require_once '../../utils/trainer_assignment_helper.php';
+require_once __DIR__ . '/../../database/db.php';
+require_once __DIR__ . '/../../utils/trainer_assignment_helper.php';
 
 $database = new Database();
 $conn = $database->getConnection();
