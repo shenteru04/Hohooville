@@ -5,7 +5,7 @@ const apiClient = axios.create({
     headers: { 'Content-Type': 'application/json' }
 });
 
-const TIMETABLE_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const TIMETABLE_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const TIMETABLE_PALETTE = [
     { bg: '#dbeafe', border: '#93c5fd', text: '#1e3a8a' },
     { bg: '#dcfce7', border: '#86efac', text: '#166534' },
@@ -16,13 +16,8 @@ const TIMETABLE_PALETTE = [
 ];
 let latestScheduleItems = [];
 let currentTimetableDayFilter = 'today';
-let latestScheduleRequests = [];
-let trainerScheduleRequestModal = null;
-let currentScheduleRequest = null;
 let currentTrainerId = null;
-let pendingScheduleRequestId = null;
 let expandedTrainerScheduleBatchKeys = new Set();
-let expandedTrainerRequestBatchKeys = new Set();
 
 class SimpleModal {
     constructor(element) {
@@ -66,9 +61,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     initUserMenu();
     loadUserProfileImage();
     initTimetableDayFilter();
-    trainerScheduleRequestModal = new SimpleModal(document.getElementById('trainerScheduleRequestModal'));
-    initScheduleRequestModal();
-    hydrateScheduleRequestIntent();
 
     document.getElementById('logoutBtn').addEventListener('click', async function(e) {
         e.preventDefault();
@@ -131,7 +123,8 @@ document.addEventListener('DOMContentLoaded', async function () {
             } else {
                 document.getElementById('trainerName').textContent = user.username || 'Trainer';
             }
-            loadDashboardData(trainer.trainer_id);
+            await loadDashboardData(trainer.trainer_id);
+            await loadSchedulePresets(trainer.trainer_id);
         }
     } catch (error) {
         console.error('Error fetching trainer ID:', error);
@@ -230,8 +223,7 @@ async function loadDashboardData(trainerId) {
         await Promise.all([
             loadStatistics(trainerId),
             loadModulePerformance(trainerId),
-            loadSchedule(trainerId),
-            loadScheduleRequests(trainerId)
+            loadSchedule(trainerId)
         ]);
     } catch (error) {
         console.error('Error loading dashboard:', error);
@@ -274,6 +266,20 @@ async function loadModulePerformance(trainerId) {
     renderAvgGradesChart(labels, scores);
 }
 
+async function loadSchedulePresets(trainerId) {
+    try {
+        const response = await apiClient.get(`/role/trainer/trainer_dashboard.php?action=get-presets&trainer_id=${trainerId}`);
+        if (!response.data.success) {
+            return;
+        }
+
+        const presets = Array.isArray(response.data.data) ? response.data.data : [];
+        populateTrainerPresetSelect(presets);
+    } catch (error) {
+        console.error('Error loading trainer schedule presets:', error);
+    }
+}
+
 async function loadSchedule(trainerId) {
     try {
         const response = await apiClient.get(`/role/trainer/trainer_dashboard.php?action=schedule&trainer_id=${trainerId}`);
@@ -288,17 +294,25 @@ async function loadSchedule(trainerId) {
     }
 }
 
-async function loadScheduleRequests(trainerId) {
-    try {
-        const response = await apiClient.get(`/role/trainer/trainer_dashboard.php?action=schedule-requests&trainer_id=${trainerId}`);
-        if (response.data.success) {
-            latestScheduleRequests = Array.isArray(response.data.data) ? response.data.data : [];
-            renderScheduleRequests(latestScheduleRequests);
-            maybeOpenPendingScheduleRequest();
-        }
-    } catch (error) {
-        console.error('Schedule request load error:', error);
+function populateTrainerPresetSelect(presets) {
+    const presetSelect = document.getElementById('trainerRequestPresetSchedule');
+    if (!presetSelect) {
+        return;
     }
+
+    presetSelect.innerHTML = '<option value="">Not Set</option>';
+    presets.forEach((preset) => {
+        const presetSchedule = String(preset.schedule || '').trim();
+        if (!presetSchedule) {
+            return;
+        }
+
+        const option = document.createElement('option');
+        option.value = presetSchedule;
+        option.dataset.presetId = Number(preset.preset_id || 0) || '';
+        option.textContent = String(preset.preset_name || presetSchedule);
+        presetSelect.appendChild(option);
+    });
 }
 
 function getTrainerBatchGroupKey(batchId) {
@@ -348,49 +362,6 @@ function buildTrainerGroupedScheduleEntries(items) {
     return groupedEntries;
 }
 
-function shouldGroupTrainerRequestItem(item, countsByBatch) {
-    const batchKey = getTrainerBatchGroupKey(item?.batch_id);
-    return String(item?.trainer_assignment_mode || '').toLowerCase() === 'multiple' &&
-        String(item?.scope_type || '') === 'module' &&
-        (countsByBatch.get(batchKey) || 0) > 1;
-}
-
-function buildTrainerGroupedRequestEntries(items) {
-    const countsByBatch = new Map();
-    items.forEach((item) => {
-        if (String(item?.trainer_assignment_mode || '').toLowerCase() === 'multiple' && String(item?.scope_type || '') === 'module') {
-            const batchKey = getTrainerBatchGroupKey(item.batch_id);
-            countsByBatch.set(batchKey, (countsByBatch.get(batchKey) || 0) + 1);
-        }
-    });
-
-    const groupedEntries = [];
-    const handledBatchKeys = new Set();
-    items.forEach((item) => {
-        const batchKey = getTrainerBatchGroupKey(item.batch_id);
-        if (!shouldGroupTrainerRequestItem(item, countsByBatch)) {
-            groupedEntries.push({ type: 'item', item });
-            return;
-        }
-
-        if (handledBatchKeys.has(batchKey)) {
-            return;
-        }
-
-        groupedEntries.push({
-            type: 'group',
-            batchKey,
-            batch_id: item.batch_id,
-            batch_name: item.batch_name,
-            course_name: item.course_name,
-            items: items.filter((candidate) => getTrainerBatchGroupKey(candidate.batch_id) === batchKey && shouldGroupTrainerRequestItem(candidate, countsByBatch))
-        });
-        handledBatchKeys.add(batchKey);
-    });
-
-    return groupedEntries;
-}
-
 function buildTrainerScheduleGroupSummary(items) {
     const scheduledItems = items.filter((item) => String(item.schedule || '').trim() !== '');
     const uniqueSchedules = [...new Set(scheduledItems.map((item) => String(item.schedule || '').trim()).filter(Boolean))];
@@ -408,55 +379,6 @@ function buildTrainerScheduleGroupSummary(items) {
         : (roomNames.length === 1 ? roomNames[0] : `${roomNames[0]} + ${roomNames.length - 1} more`);
 
     return { scheduleText, roomText };
-}
-
-function buildTrainerRequestProposalText(request) {
-    return [request.schedule || 'Not set', request.room || 'TBA', formatDateLabel(request.resolved_effective_date || '')].join(' | ');
-}
-
-function buildTrainerRequestGroupSummary(items) {
-    const counts = {
-        pending_trainer_response: 0,
-        modification_requested: 0,
-        pending_registrar_approval: 0,
-        awaiting_schedule: 0,
-        approved: 0,
-        rejected: 0
-    };
-
-    items.forEach((item) => {
-        const status = String(item.status || '');
-        if (Object.prototype.hasOwnProperty.call(counts, status)) {
-            counts[status] += 1;
-        }
-    });
-
-    const latestItem = items.reduce((latest, item) => {
-        const latestTime = Date.parse(latest?.updated_at || latest?.created_at || '') || 0;
-        const itemTime = Date.parse(item?.updated_at || item?.created_at || '') || 0;
-        return itemTime > latestTime ? item : latest;
-    }, null);
-
-    const proposalCount = items.filter((item) => String(item.schedule || '').trim() !== '').length;
-    const summaryBits = [];
-    if (counts.pending_trainer_response) summaryBits.push(`${counts.pending_trainer_response} pending trainer`);
-    if (counts.modification_requested) summaryBits.push(`${counts.modification_requested} needs changes`);
-    if (counts.pending_registrar_approval) summaryBits.push(`${counts.pending_registrar_approval} pending registrar`);
-    if (counts.awaiting_schedule) summaryBits.push(`${counts.awaiting_schedule} awaiting schedule`);
-    if (!summaryBits.length && counts.approved) summaryBits.push(`${counts.approved} approved`);
-    if (!summaryBits.length && counts.rejected) summaryBits.push(`${counts.rejected} rejected`);
-
-    const primaryStatus = ['pending_trainer_response', 'modification_requested', 'pending_registrar_approval', 'awaiting_schedule', 'approved', 'rejected']
-        .find((status) => counts[status] > 0) || 'awaiting_schedule';
-
-    return {
-        primaryStatus,
-        summaryText: summaryBits.join(' | ') || 'No request activity yet',
-        proposalText: proposalCount > 0
-            ? `${proposalCount} proposal${proposalCount === 1 ? '' : 's'} ready`
-            : 'No registrar proposal yet',
-        updatedAt: latestItem?.updated_at || latestItem?.created_at || ''
-    };
 }
 
 function initTimetableDayFilter() {
@@ -556,148 +478,6 @@ function renderScheduleTable(items) {
     });
 }
 
-function renderScheduleRequests(items) {
-    const tbody = document.getElementById('trainerScheduleRequestsBody');
-    if (!tbody) return;
-
-    tbody.innerHTML = '';
-    if (!items.length) {
-        tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-sm text-slate-500">No schedule requests yet.</td></tr>';
-        return;
-    }
-
-    const entries = buildTrainerGroupedRequestEntries(items);
-    entries.forEach((entry) => {
-        if (entry.type === 'item') {
-            const request = entry.item;
-            const actionLabel = ['pending_trainer_response', 'modification_requested', 'awaiting_schedule'].includes(String(request.status || '')) ? 'Respond' : 'View';
-            const proposal = buildTrainerRequestProposalText(request);
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td class="px-4 py-3 text-sm text-slate-700">
-                    <div class="font-medium text-slate-900">${escapeHtml(request.batch_name || 'N/A')}</div>
-                    <div class="text-xs text-slate-500">${escapeHtml(request.course_name || 'N/A')}</div>
-                </td>
-                <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(request.scope_label || 'Schedule')}</td>
-                <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(proposal)}</td>
-                <td class="px-4 py-3 text-sm text-slate-700">${buildStatusBadgeHtml(request.status)}</td>
-                <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(formatDateTimeLabel(request.updated_at))}</td>
-                <td class="px-4 py-3 text-center">
-                    <button type="button" class="trainer-request-open inline-flex items-center gap-1 rounded-md border border-blue-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" data-request-key="${escapeHtml(String(request.scope_key || request.request_id || ''))}">
-                        <i class="fas fa-eye"></i> ${escapeHtml(actionLabel)}
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(row);
-            return;
-        }
-
-        const expanded = expandedTrainerRequestBatchKeys.has(entry.batchKey);
-        const summary = buildTrainerRequestGroupSummary(entry.items);
-        const row = document.createElement('tr');
-        row.className = 'bg-slate-50/60';
-        row.innerHTML = `
-            <td class="px-4 py-3 text-sm text-slate-700">
-                <div class="font-medium text-slate-900">${escapeHtml(entry.batch_name || 'N/A')}</div>
-                <div class="text-xs text-slate-500">${escapeHtml(entry.course_name || 'N/A')}</div>
-            </td>
-            <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(`${entry.items.length} unit requests`)}</td>
-            <td class="px-4 py-3 text-sm text-slate-700">
-                <div>${escapeHtml(summary.proposalText)}</div>
-                <div class="text-xs text-slate-500">${escapeHtml(summary.summaryText)}</div>
-            </td>
-            <td class="px-4 py-3 text-sm text-slate-700">${buildStatusBadgeHtml(summary.primaryStatus)}</td>
-            <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(formatDateTimeLabel(summary.updatedAt))}</td>
-            <td class="px-4 py-3 text-center">
-                <button type="button" class="trainer-request-group-toggle inline-flex items-center gap-1 rounded-md border border-blue-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" data-batch-key="${escapeHtml(entry.batchKey)}">
-                    <i class="fas fa-layer-group"></i> ${expanded ? 'Hide Requests' : `View ${entry.items.length} Requests`}
-                </button>
-            </td>
-        `;
-        tbody.appendChild(row);
-
-        const detailRow = document.createElement('tr');
-        detailRow.className = expanded ? '' : 'hidden';
-        detailRow.innerHTML = `
-            <td colspan="6" class="bg-slate-50/40 px-4 py-4">
-                <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
-                    <table class="min-w-full divide-y divide-slate-200">
-                        <thead class="bg-slate-50">
-                            <tr>
-                                <th scope="col" class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Assignment</th>
-                                <th scope="col" class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Proposal</th>
-                                <th scope="col" class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
-                                <th scope="col" class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Updated</th>
-                                <th scope="col" class="px-4 py-2 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            ${entry.items.map((request) => {
-                                const actionLabel = ['pending_trainer_response', 'modification_requested', 'awaiting_schedule'].includes(String(request.status || '')) ? 'Respond' : 'View';
-                                return `
-                                    <tr>
-                                        <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(request.scope_label || 'Schedule')}</td>
-                                        <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(buildTrainerRequestProposalText(request))}</td>
-                                        <td class="px-4 py-3 text-sm text-slate-700">${buildStatusBadgeHtml(request.status)}</td>
-                                        <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(formatDateTimeLabel(request.updated_at))}</td>
-                                        <td class="px-4 py-3 text-center">
-                                            <button type="button" class="trainer-request-open inline-flex items-center gap-1 rounded-md border border-blue-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" data-request-key="${escapeHtml(String(request.scope_key || request.request_id || ''))}">
-                                                <i class="fas fa-eye"></i> ${escapeHtml(actionLabel)}
-                                            </button>
-                                        </td>
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </td>
-        `;
-        tbody.appendChild(detailRow);
-    });
-}
-
-function initScheduleRequestModal() {
-    document.querySelectorAll('[data-modal-hide="trainerScheduleRequestModal"]').forEach((button) => {
-        button.addEventListener('click', () => {
-            trainerScheduleRequestModal?.hide();
-            clearScheduleRequestIntent();
-        });
-    });
-
-    document.getElementById('trainerScheduleRequestsBody')?.addEventListener('click', (event) => {
-        const groupButton = event.target.closest('.trainer-request-group-toggle');
-        if (groupButton) {
-            toggleTrainerRequestBatchDetails(groupButton.dataset.batchKey || '');
-            return;
-        }
-
-        const button = event.target.closest('.trainer-request-open');
-        if (!button) return;
-        openTrainerScheduleRequestModal(button.dataset.requestKey || '');
-    });
-
-    document.getElementById('scheduleTableBody')?.addEventListener('click', (event) => {
-        const button = event.target.closest('.trainer-schedule-group-toggle');
-        if (!button) return;
-        toggleTrainerScheduleBatchDetails(button.dataset.batchKey || '');
-    });
-
-    document.querySelectorAll('input[name="trainerScheduleType"]').forEach((radio) => {
-        radio.addEventListener('change', toggleTrainerScheduleType);
-    });
-
-    document.getElementById('trainerRequestPresetSchedule')?.addEventListener('change', refreshTrainerRoomOptions);
-    document.querySelectorAll('input[name="trainerCustomDays"]').forEach((checkbox) => {
-        checkbox.addEventListener('change', refreshTrainerRoomOptions);
-    });
-    document.getElementById('trainerRequestCustomStartTime')?.addEventListener('input', refreshTrainerRoomOptions);
-    document.getElementById('trainerRequestCustomEndTime')?.addEventListener('input', refreshTrainerRoomOptions);
-    document.getElementById('trainerRequestEffectiveDate')?.addEventListener('change', refreshTrainerRoomOptions);
-    document.getElementById('trainerSubmitProposalBtn')?.addEventListener('click', submitTrainerScheduleProposal);
-    document.getElementById('trainerAcceptProposalBtn')?.addEventListener('click', acceptTrainerScheduleProposal);
-}
-
 function toggleTrainerScheduleBatchDetails(batchKey) {
     if (!batchKey) {
         return;
@@ -710,415 +490,6 @@ function toggleTrainerScheduleBatchDetails(batchKey) {
     }
 
     renderScheduleTable(latestScheduleItems);
-}
-
-function toggleTrainerRequestBatchDetails(batchKey) {
-    if (!batchKey) {
-        return;
-    }
-
-    if (expandedTrainerRequestBatchKeys.has(batchKey)) {
-        expandedTrainerRequestBatchKeys.delete(batchKey);
-    } else {
-        expandedTrainerRequestBatchKeys.add(batchKey);
-    }
-
-    renderScheduleRequests(latestScheduleRequests);
-}
-
-function hydrateScheduleRequestIntent() {
-    const params = new URLSearchParams(window.location.search);
-    const requestId = Number(params.get('schedule_request_id') || 0);
-    pendingScheduleRequestId = requestId > 0 ? requestId : null;
-}
-
-function maybeOpenPendingScheduleRequest() {
-    if (!pendingScheduleRequestId) {
-        return;
-    }
-
-    openTrainerScheduleRequestModal(String(pendingScheduleRequestId));
-}
-
-function clearScheduleRequestIntent() {
-    pendingScheduleRequestId = null;
-    const url = new URL(window.location.href);
-    url.searchParams.delete('schedule_request_id');
-    url.searchParams.delete('schedule_action');
-    window.history.replaceState({}, document.title, url.toString());
-}
-
-function openTrainerScheduleRequestModal(requestKey) {
-    const request = latestScheduleRequests.find((item) => {
-        if (String(item.scope_key || '') === String(requestKey || '')) {
-            return true;
-        }
-        return Number(item.request_id || 0) === Number(requestKey || 0);
-    });
-    if (!request) {
-        return;
-    }
-
-    currentScheduleRequest = request;
-    populateTrainerScheduleRequestModal(request);
-    trainerScheduleRequestModal?.show();
-}
-
-function populateTrainerScheduleRequestModal(request) {
-    const status = String(request.status || '');
-    const canRespond = ['pending_trainer_response', 'modification_requested', 'awaiting_schedule'].includes(status);
-    const canAccept = status === 'pending_trainer_response';
-    const seedSchedule = getTrainerRequestSeedSchedule(request);
-    const seedRoomId = getTrainerRequestSeedRoomId(request);
-    const seedRoomName = getTrainerRequestSeedRoomName(request);
-    const preferredScheduleType = resolveTrainerScheduleInputMode(seedSchedule);
-
-    document.getElementById('trainerRequestModalSubtitle').textContent = status === 'awaiting_schedule'
-        ? 'No registrar proposal exists yet for this assignment. You can submit your preferred schedule for approval.'
-        : (canRespond
-            ? 'Accept the proposal or send an updated schedule for registrar approval.'
-            : 'This schedule request is shown for tracking and status visibility.');
-    document.getElementById('trainerRequestBatchName').textContent = request.batch_name || 'N/A';
-    document.getElementById('trainerRequestCourseName').textContent = request.course_name || 'N/A';
-    document.getElementById('trainerRequestScopeName').textContent = request.scope_label || 'Schedule';
-    document.getElementById('trainerRequestCurrentSchedule').textContent = `Current approved: ${request.current_schedule || 'Not set'} | ${request.current_room || 'TBA'}`;
-    document.getElementById('trainerRequestProposedSchedule').textContent = seedSchedule || 'Not set';
-    document.getElementById('trainerRequestProposedRoom').textContent = `Room: ${seedRoomName}`;
-    document.getElementById('trainerRequestProposedDate').textContent = `Effective date: ${formatDateLabel(request.resolved_effective_date || '')}`;
-    document.getElementById('trainerRequestRegistrarNote').textContent = request.registrar_note || (status === 'awaiting_schedule' ? 'No registrar proposal yet.' : 'No registrar note.');
-    document.getElementById('trainerRequestTrainerNote').textContent = request.trainer_note || 'No trainer note.';
-
-    const statusBadge = document.getElementById('trainerRequestStatusBadge');
-    if (statusBadge) {
-        statusBadge.textContent = formatRequestStatus(status);
-        statusBadge.className = `inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${getStatusBadgeClasses(status)}`;
-    }
-
-    document.getElementById('trainerResponseSection')?.classList.toggle('opacity-70', !canRespond);
-    document.getElementById('trainerSubmitProposalBtn')?.classList.toggle('hidden', !canRespond);
-    document.getElementById('trainerAcceptProposalBtn')?.classList.toggle('hidden', !canAccept);
-    document.getElementById('trainerRequestNoteInput').value = request.trainer_note || '';
-    resetTrainerScheduleRequestInputs(request, {
-        seedSchedule,
-        seedRoomId,
-        seedRoomName
-    });
-    updateTrainerScheduleModeControls({
-        preferredScheduleType,
-        hasProposal: Boolean(seedSchedule)
-    });
-    setTrainerResponseInputsDisabled(!canRespond);
-    refreshTrainerRoomOptions();
-}
-
-function setTrainerResponseInputsDisabled(disabled) {
-    document.querySelectorAll('input[name="trainerScheduleType"]').forEach((input) => {
-        input.disabled = disabled;
-    });
-    document.getElementById('trainerRequestPresetSchedule').disabled = disabled;
-    document.getElementById('trainerRequestCustomStartTime').disabled = disabled;
-    document.getElementById('trainerRequestCustomEndTime').disabled = disabled;
-    document.getElementById('trainerRequestEffectiveDate').disabled = disabled;
-    document.getElementById('trainerRequestRoomSelect').disabled = disabled;
-    document.getElementById('trainerRequestNoteInput').disabled = disabled;
-    updateTrainerCustomDayControls(disabled);
-}
-
-function resetTrainerScheduleRequestInputs(request, options = {}) {
-    const {
-        seedSchedule = '',
-        seedRoomId = '',
-        seedRoomName = 'TBA'
-    } = options;
-    document.querySelector('input[name="trainerScheduleType"][value="preset"]').checked = true;
-    document.querySelector('input[name="trainerScheduleType"][value="custom"]').checked = false;
-    document.getElementById('trainerRequestPresetSchedule').value = '';
-    document.querySelectorAll('input[name="trainerCustomDays"]').forEach((checkbox) => {
-        checkbox.checked = false;
-    });
-    document.getElementById('trainerRequestCustomStartTime').value = '';
-    document.getElementById('trainerRequestCustomEndTime').value = '';
-    document.getElementById('trainerRequestEffectiveDate').value = request.resolved_effective_date || request.start_date || '';
-    const roomSelect = document.getElementById('trainerRequestRoomSelect');
-    if (roomSelect) {
-        if (seedRoomId) {
-            roomSelect.innerHTML = `<option value="${escapeHtml(String(seedRoomId))}">${escapeHtml(seedRoomName)}</option>`;
-            roomSelect.value = String(seedRoomId);
-        } else {
-            roomSelect.innerHTML = '<option value="">Select schedule first</option>';
-        }
-    }
-    applyTrainerScheduleToInputs(seedSchedule);
-    toggleTrainerScheduleType();
-}
-
-function toggleTrainerScheduleType() {
-    const scheduleType = document.querySelector('input[name="trainerScheduleType"]:checked')?.value || 'preset';
-    document.getElementById('trainerPresetScheduleContainer').classList.toggle('hidden', scheduleType !== 'preset');
-    document.getElementById('trainerCustomScheduleContainer').classList.toggle('hidden', scheduleType !== 'custom');
-    refreshTrainerRoomOptions();
-}
-
-function getTrainerRequestSeedSchedule(request = currentScheduleRequest) {
-    if (!request) {
-        return '';
-    }
-
-    return String(request.schedule || request.current_schedule || '').trim();
-}
-
-function getTrainerRequestSeedRoomId(request = currentScheduleRequest) {
-    if (!request) {
-        return '';
-    }
-
-    return String(request.room_id || request.current_room_id || '').trim();
-}
-
-function getTrainerRequestSeedRoomName(request = currentScheduleRequest) {
-    if (!request) {
-        return 'TBA';
-    }
-
-    return request.room || request.current_room || 'TBA';
-}
-
-function resolveTrainerScheduleInputMode(schedule = '') {
-    const normalizedSchedule = String(schedule || '').trim();
-    if (!normalizedSchedule) {
-        return 'preset';
-    }
-
-    const presetSelect = document.getElementById('trainerRequestPresetSchedule');
-    const presetOption = presetSelect
-        ? Array.from(presetSelect.options).find((option) => option.value === normalizedSchedule)
-        : null;
-
-    return presetOption ? 'preset' : 'custom';
-}
-
-function updateTrainerScheduleModeControls(options = {}) {
-    const {
-        preferredScheduleType = 'preset',
-        hasProposal = false
-    } = options;
-    const daysHint = document.getElementById('trainerCustomDaysHint');
-
-    if (daysHint) {
-        if (!hasProposal) {
-            daysHint.textContent = 'Choose the training days for your preferred schedule.';
-        } else if (preferredScheduleType === 'custom') {
-            daysHint.textContent = 'The registrar custom schedule is loaded here. You can adjust the days, time, and room if needed.';
-        } else {
-            daysHint.textContent = 'The registrar preset schedule is loaded here. You can keep it or switch to a custom schedule if needed.';
-        }
-    }
-
-    updateTrainerCustomDayControls(false);
-    toggleTrainerScheduleType();
-}
-
-function updateTrainerCustomDayControls(forceDisabled = false) {
-    const disableDays = Boolean(forceDisabled);
-    document.querySelectorAll('input[name="trainerCustomDays"]').forEach((input) => {
-        input.disabled = disableDays;
-    });
-}
-
-function applyTrainerScheduleToInputs(schedule) {
-    if (!schedule) {
-        return;
-    }
-
-    const presetSelect = document.getElementById('trainerRequestPresetSchedule');
-    const presetOption = Array.from(presetSelect.options).find((option) => option.value === schedule);
-    if (presetOption) {
-        presetSelect.value = schedule;
-        document.querySelector('input[name="trainerScheduleType"][value="preset"]').checked = true;
-        toggleTrainerScheduleType();
-        return;
-    }
-
-    const parsed = parseScheduleToDays(schedule);
-    if (!parsed.days.length || !parsed.startTime || !parsed.endTime) {
-        return;
-    }
-
-    document.querySelector('input[name="trainerScheduleType"][value="custom"]').checked = true;
-    toggleTrainerScheduleType();
-    document.querySelectorAll('input[name="trainerCustomDays"]').forEach((checkbox) => {
-        checkbox.checked = parsed.days.includes(checkbox.value);
-    });
-    document.getElementById('trainerRequestCustomStartTime').value = parsed.startTime;
-    document.getElementById('trainerRequestCustomEndTime').value = parsed.endTime;
-}
-
-function getTrainerCustomScheduleString() {
-    const selectedDays = Array.from(document.querySelectorAll('input[name="trainerCustomDays"]:checked')).map((checkbox) => checkbox.value);
-    const startTime = document.getElementById('trainerRequestCustomStartTime').value;
-    const endTime = document.getElementById('trainerRequestCustomEndTime').value;
-
-    if (!selectedDays.length || !startTime || !endTime) {
-        return '';
-    }
-
-    const dayShortcuts = {
-        Monday: 'M',
-        Tuesday: 'T',
-        Wednesday: 'W',
-        Thursday: 'Th',
-        Friday: 'F',
-        Saturday: 'S'
-    };
-
-    return `${selectedDays.map((day) => dayShortcuts[day] || day).join('')} (${formatTime(startTime)} - ${formatTime(endTime)})`;
-}
-
-function getCurrentTrainerRequestSchedule() {
-    const scheduleType = document.querySelector('input[name="trainerScheduleType"]:checked')?.value || 'preset';
-    if (scheduleType === 'preset') {
-        return document.getElementById('trainerRequestPresetSchedule')?.value || '';
-    }
-
-    return getTrainerCustomScheduleString();
-}
-
-async function refreshTrainerRoomOptions() {
-    const roomSelect = document.getElementById('trainerRequestRoomSelect');
-    if (!roomSelect || !currentScheduleRequest) {
-        return;
-    }
-
-    const fallbackRoomId = getTrainerRequestSeedRoomId(currentScheduleRequest);
-    const fallbackRoomName = getTrainerRequestSeedRoomName(currentScheduleRequest);
-    const preferredRoomId = String(roomSelect.value || fallbackRoomId || '');
-
-    const canRespond = ['pending_trainer_response', 'modification_requested', 'awaiting_schedule'].includes(String(currentScheduleRequest.status || ''));
-    if (!canRespond) {
-        roomSelect.innerHTML = `<option value="${escapeHtml(fallbackRoomId)}">${escapeHtml(fallbackRoomName)}</option>`;
-        roomSelect.disabled = true;
-        return;
-    }
-
-    roomSelect.innerHTML = '<option value="">Select Room</option>';
-    roomSelect.disabled = false;
-
-    const schedule = getCurrentTrainerRequestSchedule();
-    if (!schedule) {
-        roomSelect.innerHTML = '<option value="">Select schedule first</option>';
-        roomSelect.disabled = true;
-        return;
-    }
-
-    try {
-        const params = new URLSearchParams({
-            batch_id: String(currentScheduleRequest.batch_id || ''),
-            module_id: String(currentScheduleRequest.module_id || ''),
-            trainer_id: String(currentScheduleRequest.trainer_id || ''),
-            scope_type: String(currentScheduleRequest.scope_type || ''),
-            trainer_assignment_mode: String(currentScheduleRequest.trainer_assignment_mode || 'single'),
-            schedule,
-            effective_date: document.getElementById('trainerRequestEffectiveDate')?.value || '',
-            request_id: String(currentScheduleRequest.request_id || '')
-        });
-        const response = await axios.get(`${API_BASE_URL}/role/registrar/schedule.php?action=available-rooms&${params.toString()}`);
-        const rooms = response.data?.success && Array.isArray(response.data.data) ? response.data.data : [];
-
-        if (!rooms.length) {
-            roomSelect.innerHTML = '<option value="">No available rooms for this schedule</option>';
-            roomSelect.disabled = true;
-            return;
-        }
-
-        rooms.forEach((room) => {
-            const option = document.createElement('option');
-            option.value = room.room_id;
-            option.textContent = room.room_name;
-            if (String(room.room_id) === preferredRoomId) {
-                option.selected = true;
-            }
-            roomSelect.appendChild(option);
-        });
-    } catch (error) {
-        if (fallbackRoomId) {
-            roomSelect.innerHTML = `<option value="${escapeHtml(fallbackRoomId)}">${escapeHtml(fallbackRoomName)}</option>`;
-            roomSelect.value = fallbackRoomId;
-            roomSelect.disabled = false;
-            return;
-        }
-
-        roomSelect.innerHTML = '<option value="">Unable to load rooms</option>';
-        roomSelect.disabled = true;
-    }
-}
-
-async function acceptTrainerScheduleProposal() {
-    if (!currentScheduleRequest || !currentTrainerId) {
-        return;
-    }
-
-    try {
-        const response = await axios.post(`${API_BASE_URL}/role/trainer/trainer_dashboard.php?action=respond-schedule-request`, {
-            trainer_id: currentTrainerId,
-            request_id: currentScheduleRequest.request_id,
-            response_action: 'accept',
-            trainer_note: document.getElementById('trainerRequestNoteInput')?.value?.trim() || '',
-            user_id: getCurrentUserId()
-        });
-
-        if (!response.data.success) {
-            throw new Error(response.data.message || 'Unable to accept the schedule.');
-        }
-
-        Swal.fire({ title: 'Success', text: response.data.message || 'Schedule accepted successfully.', icon: 'success' });
-        trainerScheduleRequestModal?.hide();
-        clearScheduleRequestIntent();
-        await loadDashboardData(currentTrainerId);
-    } catch (error) {
-        const message = error?.response?.data?.message || error.message || 'Unable to accept the schedule.';
-        Swal.fire({ title: 'Error', text: message, icon: 'error' });
-    }
-}
-
-async function submitTrainerScheduleProposal() {
-    if (!currentScheduleRequest || !currentTrainerId) {
-        return;
-    }
-
-    const schedule = getCurrentTrainerRequestSchedule();
-    if (!schedule) {
-        Swal.fire({ title: 'Error', text: 'Please choose a schedule before submitting your proposal.', icon: 'error' });
-        return;
-    }
-
-    try {
-        const response = await axios.post(`${API_BASE_URL}/role/trainer/trainer_dashboard.php?action=respond-schedule-request`, {
-            trainer_id: currentTrainerId,
-            request_id: currentScheduleRequest.request_id || '',
-            response_action: 'propose',
-            batch_id: currentScheduleRequest.batch_id,
-            module_id: currentScheduleRequest.module_id || '',
-            scope_type: currentScheduleRequest.scope_type || '',
-            trainer_assignment_mode: currentScheduleRequest.trainer_assignment_mode || 'single',
-            schedule,
-            room_id: document.getElementById('trainerRequestRoomSelect')?.value || getTrainerRequestSeedRoomId(currentScheduleRequest),
-            effective_date: document.getElementById('trainerRequestEffectiveDate')?.value || '',
-            trainer_note: document.getElementById('trainerRequestNoteInput')?.value?.trim() || '',
-            user_id: getCurrentUserId()
-        });
-
-        if (!response.data.success) {
-            throw new Error(response.data.message || 'Unable to submit the schedule proposal.');
-        }
-
-        Swal.fire({ title: 'Success', text: response.data.message || 'Schedule proposal sent successfully.', icon: 'success' });
-        trainerScheduleRequestModal?.hide();
-        clearScheduleRequestIntent();
-        await loadDashboardData(currentTrainerId);
-    } catch (error) {
-        const message = error?.response?.data?.message || error.message || 'Unable to submit the schedule proposal.';
-        Swal.fire({ title: 'Error', text: message, icon: 'error' });
-    }
 }
 
 function renderScheduleTimetable(items) {
@@ -1147,7 +518,7 @@ function renderScheduleTimetable(items) {
     const rows = tbody.querySelectorAll('tr');
     items.forEach((item, index) => {
         const parsed = parseScheduleToDays(item.schedule || '');
-        if (!parsed.days.length || !parsed.startTime || !parsed.endTime) {
+        if (!parsed.days.length || !parsed.timeRanges.length) {
             return;
         }
 
@@ -1164,8 +535,10 @@ function renderScheduleTimetable(items) {
             : room;
         const subtitle = truncateLabel(subtitleSource, 32);
 
+        const startTimes = parsed.timeRanges.map((range) => range.startTime);
+
         timeSlots.forEach((timeSlot, timeIndex) => {
-            if (!timeInRange(timeSlot, parsed.startTime, parsed.endTime)) {
+            if (!scheduleHasTimeSlot(parsed, timeSlot)) {
                 return;
             }
 
@@ -1179,6 +552,9 @@ function renderScheduleTimetable(items) {
 
                 const cell = cells[dayIndex + 1];
                 if (!cell) return;
+
+                const isStartSlot = startTimes.some((startTime) => toTimeMinutes(timeSlot) === toTimeMinutes(startTime));
+                if (!isStartSlot) return;
 
                 cell.innerHTML += `
                     <div class="mb-1.5 rounded-lg border px-2 py-1.5 text-[11px] leading-4 shadow-sm"
@@ -1263,19 +639,6 @@ function formatDateTimeLabel(value) {
     });
 }
 
-function formatRequestStatus(status) {
-    const labels = {
-        awaiting_schedule: 'Awaiting Schedule',
-        pending_trainer_response: 'Pending Trainer Response',
-        pending_registrar_approval: 'Pending Registrar Approval',
-        approved: 'Approved',
-        rejected: 'Rejected',
-        modification_requested: 'Changes Requested'
-    };
-
-    return labels[String(status || '')] || 'Pending';
-}
-
 function getStatusBadgeClasses(status) {
     if (status === 'awaiting_schedule') return 'bg-violet-100 text-violet-700';
     if (status === 'approved') return 'bg-emerald-100 text-emerald-700';
@@ -1283,10 +646,6 @@ function getStatusBadgeClasses(status) {
     if (status === 'modification_requested') return 'bg-amber-100 text-amber-700';
     if (status === 'pending_registrar_approval') return 'bg-blue-100 text-blue-700';
     return 'bg-slate-200 text-slate-700';
-}
-
-function buildStatusBadgeHtml(status) {
-    return `<span class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${getStatusBadgeClasses(String(status || ''))}">${escapeHtml(formatRequestStatus(status))}</span>`;
 }
 
 function getCurrentUserId() {
@@ -1320,24 +679,34 @@ function formatTime(time24) {
 
 function parseScheduleToDays(scheduleText) {
     if (!scheduleText) {
-        return { days: [], startTime: '', endTime: '' };
+        return { days: [], timeRanges: [], startTime: '', endTime: '' };
     }
 
     const rawText = String(scheduleText).trim();
     const text = rawText.toLowerCase();
-    let startTime = '';
-    let endTime = '';
+    const timeRanges = [];
 
-    const timeMatch24 = text.match(/(\d{2}):(\d{2})-(\d{2}):(\d{2})/);
-    const timeMatch12 = text.match(/(\d+):(\d+)\s*(am|pm)\s*-\s*(\d+):(\d+)\s*(am|pm)/i);
+    const rangeMatches = [...text.matchAll(/(\d{1,2}:\d{2}\s*(?:am|pm)|\d{2}:\d{2})\s*-\s*(\d{1,2}:\d{2}\s*(?:am|pm)|\d{2}:\d{2})/gi)];
+    rangeMatches.forEach((match) => {
+        const rawStart = match[1].trim();
+        const rawEnd = match[2].trim();
+        let startTime = '';
+        let endTime = '';
 
-    if (timeMatch24) {
-        startTime = `${timeMatch24[1]}:${timeMatch24[2]}`;
-        endTime = `${timeMatch24[3]}:${timeMatch24[4]}`;
-    } else if (timeMatch12) {
-        startTime = convertTo24Hour(timeMatch12[1], timeMatch12[2], timeMatch12[3]);
-        endTime = convertTo24Hour(timeMatch12[4], timeMatch12[5], timeMatch12[6]);
-    }
+        const start12Match = rawStart.match(/(\d+):(\d+)\s*(am|pm)/i);
+        const end12Match = rawEnd.match(/(\d+):(\d+)\s*(am|pm)/i);
+        if (start12Match && end12Match) {
+            startTime = convertTo24Hour(start12Match[1], start12Match[2], start12Match[3]);
+            endTime = convertTo24Hour(end12Match[1], end12Match[2], end12Match[3]);
+        } else if (/^\d{2}:\d{2}$/.test(rawStart) && /^\d{2}:\d{2}$/.test(rawEnd)) {
+            startTime = rawStart;
+            endTime = rawEnd;
+        }
+
+        if (startTime && endTime) {
+            timeRanges.push({ startTime, endTime });
+        }
+    });
 
     const explicitDays = new Set();
     const dayPatterns = [
@@ -1346,14 +715,9 @@ function parseScheduleToDays(scheduleText) {
         { pattern: /wednesday|wed\b/gi, day: 'Wednesday' },
         { pattern: /thursday|thu\b|thur\b/gi, day: 'Thursday' },
         { pattern: /friday|fri\b/gi, day: 'Friday' },
-        { pattern: /saturday|sat\b/gi, day: 'Saturday' }
+        { pattern: /saturday|sat\b/gi, day: 'Saturday' },
+        { pattern: /sunday|sun\b/gi, day: 'Sunday' }
     ];
-
-    dayPatterns.forEach(({ pattern, day }) => {
-        if (pattern.test(text)) {
-            explicitDays.add(day);
-        }
-    });
 
     if (text.includes('weekdays') || text.includes('day shift') || text.includes('night shift')) {
         ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].forEach((day) => explicitDays.add(day));
@@ -1368,14 +732,15 @@ function parseScheduleToDays(scheduleText) {
     }
 
     const compactPrefix = rawText.split('(')[0].replace(/[^A-Za-z]/g, '');
-    if (compactPrefix && /^(m|t|w|th|f|s)+$/i.test(compactPrefix)) {
+    if (compactPrefix && /^(m|t|w|th|f|s|su)+$/i.test(compactPrefix)) {
         extractCompactDayCodes(compactPrefix).forEach((day) => explicitDays.add(day));
     }
 
     return {
         days: TIMETABLE_DAYS.filter((day) => explicitDays.has(day)),
-        startTime,
-        endTime
+        timeRanges,
+        startTime: timeRanges[0]?.startTime || '',
+        endTime: timeRanges[0]?.endTime || ''
     };
 }
 
@@ -1414,8 +779,24 @@ function convertTo24Hour(hour, minute, meridiem) {
     return `${String(value).padStart(2, '0')}:${minute}`;
 }
 
+function toTimeMinutes(timeStr) {
+    if (!timeStr) return 0;
+    const [hours, minutes] = String(timeStr).split(':').map(Number);
+    return (hours || 0) * 60 + (minutes || 0);
+}
+
 function timeInRange(timeSlot, startTime, endTime) {
-    return timeSlot >= startTime && timeSlot < endTime;
+    const slotMinutes = toTimeMinutes(timeSlot);
+    const startMinutes = toTimeMinutes(startTime);
+    const endMinutes = toTimeMinutes(endTime);
+
+    return slotMinutes >= startMinutes && slotMinutes < endMinutes;
+}
+
+function scheduleHasTimeSlot(parsedSchedule, timeSlot) {
+    return Array.isArray(parsedSchedule.timeRanges) && parsedSchedule.timeRanges.some((range) => {
+        return timeInRange(timeSlot, range.startTime, range.endTime);
+    });
 }
 
 function renderModuleProgressChart(labels, scores) {

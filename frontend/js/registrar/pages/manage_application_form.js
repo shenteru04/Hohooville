@@ -294,9 +294,10 @@ async function loadOfferedCourses() {
                 ? 'border-amber-200 text-amber-700 hover:bg-amber-50'
                 : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50';
 
+            const qualificationLabel = c.qualification_name || c.course_name || 'Qualification';
             tbody.innerHTML += `
                 <tr class="hover:bg-slate-50">
-                    <td class="px-4 py-3 text-sm font-medium text-slate-800">${c.course_name}</td>
+                    <td class="px-4 py-3 text-sm font-medium text-slate-800">${qualificationLabel}</td>
                     <td class="px-4 py-3">
                         <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${statusClass}">${c.status}</span>
                     </td>

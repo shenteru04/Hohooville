@@ -45,11 +45,14 @@ class MyTrainees {
                     h.phone_number,
                     CONCAT(h.first_name, ' ', h.last_name) AS full_name,
                     b.batch_name,
-                    q.qualification_name AS course_name
+                    q.qualification_name,
+                    q.qualification_name AS course_name,
+                    ftr.digital_signature
                 FROM tbl_enrollment e
                 JOIN tbl_trainee_hdr h ON e.trainee_id = h.trainee_id
                 JOIN tbl_batch b ON e.batch_id = b.batch_id
                 LEFT JOIN tbl_qualifications q ON b.qualification_id = q.qualification_id
+                LEFT JOIN tbl_trainee_ftr ftr ON h.trainee_id = ftr.trainee_id
                 WHERE e.batch_id = ?
                   AND e.status = 'approved'
                 ORDER BY h.last_name, h.first_name

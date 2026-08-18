@@ -391,7 +391,9 @@ async function loadBatchesForChart(trainerId) {
         if (response.data.success) {
             select.innerHTML = '<option value="">Select a batch to generate live chart...</option>';
             response.data.data.forEach((batch) => {
-                select.innerHTML += `<option value="${batch.batch_id}">${escapeHtml(batch.batch_name)} - ${escapeHtml(batch.course_name)}</option>`;
+                const batchName = batch.batch_name || 'Batch';
+                const qualificationName = batch.qualification_name || batch.course_name || batch.qualification || 'Qualification';
+                select.innerHTML += `<option value="${batch.batch_id}">${escapeHtml(batchName)} - ${escapeHtml(qualificationName)}</option>`;
             });
         } else {
             select.innerHTML = '<option value="">Could not load batches.</option>';
@@ -1060,28 +1062,28 @@ async function buildExcelJsProgressChart(data, markOverrides, exportTitle) {
         getWorksheetName(exportTitle || batchInfo.qualification_name || 'Progress Chart')
     );
 
-    worksheet.properties.defaultRowHeight = 20;
+    worksheet.properties.defaultRowHeight = 22;
     worksheet.views = [{ state: 'frozen', xSplit: 2, ySplit: 10, topLeftCell: 'C11' }];
     worksheet.pageSetup = {
         orientation: 'landscape',
         paperSize: 9,
         fitToPage: true,
-        fitToWidth: 1,
-        fitToHeight: 0,
+        fitToWidth: 2,
+        fitToHeight: 1,
         margins: {
-            left: 0.5,
-            right: 0.5,
-            top: 0.5,
-            bottom: 0.5,
+            left: 0.4,
+            right: 0.4,
+            top: 0.4,
+            bottom: 0.4,
             header: 0.2,
             footer: 0.2
         }
     };
 
-    worksheet.getColumn(1).width = 5;
-    worksheet.getColumn(2).width = 30;
+    worksheet.getColumn(1).width = 6;
+    worksheet.getColumn(2).width = 35;
     for (let index = 0; index < totalOutcomeCount; index += 1) {
-        worksheet.getColumn(index + 3).width = 8;
+        worksheet.getColumn(index + 3).width = 12;
     }
 
     function cloneStyleObject(value) {
@@ -1182,7 +1184,7 @@ async function buildExcelJsProgressChart(data, markOverrides, exportTitle) {
     };
 
     const outcomeStyle = {
-        alignment: { horizontal: 'center', vertical: 'bottom', textRotation: 45, wrapText: true },
+        alignment: { horizontal: 'center', vertical: 'bottom', textRotation: 45, shrinkToFit: true },
         font: { name: 'Arial', size: 8, color: { argb: 'FF111827' } },
         fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF2A8' } },
         border: thinBorder
@@ -1301,7 +1303,7 @@ async function buildExcelJsProgressChart(data, markOverrides, exportTitle) {
         });
     });
 
-    worksheet.getRow(10).height = 118;
+    worksheet.getRow(10).height = 80;
     worksheet.getCell(10, 1).value = 'NO.';
     applyStyle(worksheet.getCell(10, 1), noHeaderStyle);
     worksheet.getCell(10, 2).value = 'Name of Trainee';

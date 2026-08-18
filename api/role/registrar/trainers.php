@@ -48,41 +48,43 @@ function listTrainers($conn) {
                                         t.email,
                                         t.address,
                                         t.address_id,
+                                        t.trainer_type,
                                         t.trainer_nc_level_id,
                                         t.status,
                                         t.qualification_id,
                                         COALESCE(t.profile_image, '') as profile_image,
                                         q_primary.qualification_name,
-                                        COALESCE(nc_trainer.nc_level_code, nc_q.nc_level_code, t.nc_level) AS nc_level_code,
-                                        COALESCE(nc_trainer.nc_level_name, nc_q.nc_level_name, t.nc_level) AS nc_level_name
+                                        COALESCE(nc_trainer.nc_level_code, nc_q.nc_level_code) AS nc_level_code,
+                                        COALESCE(nc_trainer.nc_level_name, nc_q.nc_level_name) AS nc_level_name
                                     FROM tbl_trainer t
                                     LEFT JOIN tbl_qualifications q_primary ON t.qualification_id = q_primary.qualification_id
                                     LEFT JOIN tbl_nc_levels nc_trainer ON t.trainer_nc_level_id = nc_trainer.nc_level_id
                                     LEFT JOIN tbl_nc_levels nc_q ON q_primary.nc_level_id = nc_q.nc_level_id
                                     ORDER BY t.trainer_id DESC");
             $stmt->execute();
-        } catch (Exception $schemaErr) {
-            // Legacy schema fallback (uses string nc_level columns without tbl_nc_levels table).
+            $trainers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $legacyListErr) {
             $stmt = $conn->prepare("SELECT 
                                         t.trainer_id,
                                         t.first_name,
                                         t.last_name,
                                         t.email,
                                         t.address,
-                                        NULL AS address_id,
-                                        NULL AS trainer_nc_level_id,
+                                        t.address_id,
+                                        t.trainer_type,
+                                        t.trainer_nc_level_id,
                                         t.status,
                                         t.qualification_id,
                                         COALESCE(t.profile_image, '') as profile_image,
                                         q_primary.qualification_name,
-                                        t.nc_level AS nc_level_code,
-                                        t.nc_level AS nc_level_name
+                                        COALESCE(t.nc_level, q_primary.nc_level_id) AS nc_level_code,
+                                        COALESCE(t.nc_level, q_primary.nc_level_id) AS nc_level_name
                                     FROM tbl_trainer t
                                     LEFT JOIN tbl_qualifications q_primary ON t.qualification_id = q_primary.qualification_id
                                     ORDER BY t.trainer_id DESC");
             $stmt->execute();
+            $trainers = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
-        $trainers = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         // Get qualifications and NC levels for each trainer
         foreach ($trainers as &$trainer) {
@@ -97,17 +99,20 @@ function listTrainers($conn) {
                     WHERE tq.trainer_id = ?
                 ");
                 $qualStmt->execute([$trainer['trainer_id']]);
-            } catch (Exception $schemaErr) {
+                $qualifications = $qualStmt->fetchAll(PDO::FETCH_ASSOC);
+            } catch (Exception $legacyQualErr) {
                 try {
                     $qualStmt = $conn->prepare("
-                        SELECT DISTINCT q.qualification_name, COALESCE(tq.nc_level, nc_q.nc_level_code) AS nc_level_code
+                        SELECT DISTINCT q.qualification_name, COALESCE(nc.nc_level_code, nc_q.nc_level_code, tq.nc_level) AS nc_level_code
                         FROM tbl_trainer_qualifications tq
                         LEFT JOIN tbl_qualifications q ON tq.qualification_id = q.qualification_id
+                        LEFT JOIN tbl_nc_levels nc ON nc.nc_level_code = tq.nc_level
                         LEFT JOIN tbl_nc_levels nc_q ON q.nc_level_id = nc_q.nc_level_id
                         WHERE tq.trainer_id = ?
                     ");
                     $qualStmt->execute([$trainer['trainer_id']]);
-                } catch (Exception $legacyErr) {
+                    $qualifications = $qualStmt->fetchAll(PDO::FETCH_ASSOC);
+                } catch (Exception $legacyQualFallbackErr) {
                     $qualStmt = $conn->prepare("
                         SELECT DISTINCT q.qualification_name, tq.nc_level AS nc_level_code
                         FROM tbl_trainer_qualifications tq
@@ -115,9 +120,9 @@ function listTrainers($conn) {
                         WHERE tq.trainer_id = ?
                     ");
                     $qualStmt->execute([$trainer['trainer_id']]);
+                    $qualifications = $qualStmt->fetchAll(PDO::FETCH_ASSOC);
                 }
             }
-            $qualifications = $qualStmt->fetchAll(PDO::FETCH_ASSOC);
             
             $qualNames = [];
             $ncLevels = [];
@@ -126,7 +131,7 @@ function listTrainers($conn) {
                 if ($qual['nc_level_code']) $ncLevels[] = $qual['nc_level_code'];
             }
             
-            // Add primary qualification  if not already in list
+            // Add primary qualification if not already in list
             if ($trainer['qualification_name'] && !in_array($trainer['qualification_name'], $qualNames)) {
                 array_unshift($qualNames, $trainer['qualification_name']);
             }
@@ -284,6 +289,11 @@ function addTrainer($conn) {
         $ncLevelIds = [$ncLevelIds];
     }
 
+    $trainerType = trim(strtolower($data['trainer_type'] ?? 'full timer'));
+    if (!in_array($trainerType, ['part timer', 'full timer'], true)) {
+        $trainerType = 'full timer';
+    }
+
     $requiredFields = ['first_name', 'last_name', 'email', 'phone', 'address'];
     foreach ($requiredFields as $field) {
         if (empty($data[$field])) {
@@ -366,24 +376,24 @@ function addTrainer($conn) {
         $primaryExpFile = $qualificationRows[0]['experience_file'] ?? null;
 
         try {
-            $query = "INSERT INTO tbl_trainer (user_id, first_name, last_name, email, phone_number, qualification_id, address, nttc_no, nttc_file, tm_file, trainer_nc_level_id, nc_file, experience_file, status) 
-                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')";
+            $query = "INSERT INTO tbl_trainer (user_id, first_name, last_name, email, phone_number, trainer_type, qualification_id, address, nttc_no, nttc_file, tm_file, trainer_nc_level_id, nc_file, experience_file, status) 
+                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')";
             $stmt = $conn->prepare($query);
             $stmt->execute([
                 $userId, $data['first_name'], $data['last_name'], $data['email'],
-                $data['phone'], $primaryQualificationId, $data['address'],
+                $data['phone'], $trainerType, $primaryQualificationId, $data['address'],
                 $data['nttc_no'],
                 $file_paths['nttc_file'] ?? null, $file_paths['tm_file'] ?? null,
                 $primaryNcLevelId,
                 $qualificationRows[0]['nc_file'], $qualificationRows[0]['experience_file']
             ]);
         } catch (Exception $schemaErr) {
-            $query = "INSERT INTO tbl_trainer (user_id, first_name, last_name, email, phone_number, qualification_id, address, nttc_no, nttc_file, tm_file, nc_level, nc_file, experience_file, status) 
-                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')";
+            $query = "INSERT INTO tbl_trainer (user_id, first_name, last_name, email, phone_number, trainer_type, qualification_id, address, nttc_no, nttc_file, tm_file, nc_level, nc_file, experience_file, status) 
+                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')";
             $stmt = $conn->prepare($query);
             $stmt->execute([
                 $userId, $data['first_name'], $data['last_name'], $data['email'],
-                $data['phone'], $primaryQualificationId, $data['address'],
+                $data['phone'], $trainerType, $primaryQualificationId, $data['address'],
                 $data['nttc_no'],
                 $file_paths['nttc_file'] ?? null, $file_paths['tm_file'] ?? null,
                 $qualificationRows[0]['nc_level_code'] ?? null,
@@ -439,6 +449,11 @@ function updateTrainer($conn) {
     }
     if (!is_array($ncLevelIds)) {
         $ncLevelIds = [$ncLevelIds];
+    }
+
+    $trainerType = trim(strtolower($data['trainer_type'] ?? 'full timer'));
+    if (!in_array($trainerType, ['part timer', 'full timer'], true)) {
+        $trainerType = 'full timer';
     }
 
     if (!$trainerId) {

@@ -8,7 +8,6 @@ const SCHEDULE_BATCHES_API_URL = SCHEDULE_WORKFLOW_ROLE === 'admin'
     ? `${API_BASE_URL}/role/admin/schedule_batches.php`
     : `${API_BASE_URL}/role/registrar/batches.php`;
 let scheduleModal;
-let scheduleRequestModal;
 let timetableDetailsModal;
 let allTrainers = [];
 let allScheduleRows = [];
@@ -16,14 +15,11 @@ let allScheduleTableRows = [];
 let timetableDisplayRows = [];
 let allBatches = [];
 let allRooms = [];
-let allScheduleRequests = [];
 let currentScheduleRow = null;
-let currentScheduleRequest = null;
 let currentUnitAssignmentBatchId = '';
 let currentUnitAssignmentGroups = [];
 let latestUnitAssignmentLoadToken = 0;
 let currentUnitAssignmentFocusGroupKey = '';
-let pendingScheduleRequestId = null;
 
 class SimpleModal {
     constructor(element) {
@@ -58,13 +54,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     initUnitAssignmentTabs();
 
     scheduleModal = new SimpleModal(document.getElementById('assignScheduleModal'));
-    scheduleRequestModal = new SimpleModal(document.getElementById('scheduleRequestModal'));
     timetableDetailsModal = new SimpleModal(document.getElementById('timetableScheduleDetailsModal'));
     initScheduleTypeToggle();
-    initRequestReviewActions();
     buildTimetable();
-    hydrateScheduleRequestIntent();
     await loadScheduleData();
+    await loadSchedulePresets();
 
     const assignScheduleForm = document.getElementById('assignScheduleForm');
     if (assignScheduleForm) {
@@ -88,14 +82,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    const requestsBody = document.getElementById('scheduleRequestsTableBody');
-    if (requestsBody) {
-        requestsBody.addEventListener('click', (event) => {
-            const btn = event.target.closest('.request-review-btn');
-            if (!btn) return;
-            openScheduleRequestModal(Number(btn.dataset.requestId || 0));
-        });
-    }
+
 
     const timetableBody = document.getElementById('timetableBody');
     if (timetableBody) {
@@ -124,8 +111,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.querySelectorAll('input[name="customDays"]').forEach((checkbox) => {
         checkbox.addEventListener('change', refreshRoomDropdownForCurrentModal);
     });
-    document.getElementById('customStartTime')?.addEventListener('input', refreshRoomDropdownForCurrentModal);
-    document.getElementById('customEndTime')?.addEventListener('input', refreshRoomDropdownForCurrentModal);
+    document.getElementById('customMorningStartTime')?.addEventListener('input', refreshRoomDropdownForCurrentModal);
+    document.getElementById('customMorningEndTime')?.addEventListener('input', refreshRoomDropdownForCurrentModal);
+    document.getElementById('customAfternoonStartTime')?.addEventListener('input', refreshRoomDropdownForCurrentModal);
+    document.getElementById('customAfternoonEndTime')?.addEventListener('input', refreshRoomDropdownForCurrentModal);
     document.getElementById('assignEffectiveDate')?.addEventListener('change', refreshRoomDropdownForCurrentModal);
 });
 
@@ -234,10 +223,6 @@ function initModalDismissers() {
         button.addEventListener('click', () => {
             const modalId = button.getAttribute('data-modal-hide');
             if (modalId === 'assignScheduleModal' && scheduleModal) scheduleModal.hide();
-            if (modalId === 'scheduleRequestModal' && scheduleRequestModal) {
-                scheduleRequestModal.hide();
-                clearScheduleRequestIntent();
-            }
             if (modalId === 'timetableScheduleDetailsModal' && timetableDetailsModal) {
                 timetableDetailsModal.hide();
             }
@@ -254,7 +239,7 @@ function initScheduleTabs() {
 }
 
 function showScheduleTab(tabName = 'timetable') {
-    const normalizedTab = ['timetable', 'batches', 'requests'].includes(String(tabName)) ? String(tabName) : 'timetable';
+    const normalizedTab = ['timetable', 'batches'].includes(String(tabName)) ? String(tabName) : 'timetable';
     const tabButtons = document.querySelectorAll('.schedule-tab-btn');
     const tabContents = document.querySelectorAll('.schedule-tab-content');
 
@@ -306,7 +291,7 @@ async function loadScheduleData() {
         const response = await axios.get(`${SCHEDULE_API_URL}?action=get-data`);
         if (!response.data.success) return;
 
-        const { trainers, batches, schedule_rows: scheduleRows, schedule_requests: scheduleRequests } = response.data.data;
+        const { trainers, batches, schedule_rows: scheduleRows } = response.data.data;
         allTrainers = (trainers || []).map((trainer) => ({
             ...trainer,
             qualification_ids: parseIdList(trainer.qualification_ids)
@@ -314,13 +299,11 @@ async function loadScheduleData() {
         allBatches = Array.isArray(batches) ? batches : [];
         allScheduleRows = (scheduleRows || []).map(normalizeScheduleRow);
         allScheduleTableRows = getScheduleTableRows();
-        allScheduleRequests = Array.isArray(scheduleRequests) ? scheduleRequests : [];
+        // Schedule requests feature has been removed from the system
 
         populateTimeTableFilters();
         renderScheduleTable();
-        renderScheduleRequestTable();
         rebuildTimetable();
-        maybeOpenPendingScheduleRequest();
     } catch (error) {
         console.error('Error loading schedule data:', error);
     }
@@ -381,7 +364,7 @@ function updateUnitAssignmentBatchMeta(batch) {
 
     if (qualification) {
         qualification.textContent = batch
-            ? (batch.course_name || 'Unknown qualification')
+            ? (batch.qualification_name || 'Unknown qualification')
             : 'Select a batch to view units';
     }
 }
@@ -460,7 +443,7 @@ function calculateScheduleSessions(schedule, startDateString, endDateString) {
     const parsedSchedule = parseScheduleToDays(schedule);
     const startDate = parseDateOnly(startDateString);
     const endDate = parseDateOnly(endDateString);
-    if (!parsedSchedule.days.length || !parsedSchedule.startTime || !parsedSchedule.endTime || !startDate || !endDate || startDate > endDate) {
+    if (!parsedSchedule.days.length || !parsedSchedule.timeRanges.length || !startDate || !endDate || startDate > endDate) {
         return {
             sessions: 0,
             hoursPerSession: 0,
@@ -468,9 +451,14 @@ function calculateScheduleSessions(schedule, startDateString, endDateString) {
         };
     }
 
-    const startMinutes = toTimeMinutes(parsedSchedule.startTime);
-    const endMinutes = toTimeMinutes(parsedSchedule.endTime);
-    if (startMinutes < 0 || endMinutes <= startMinutes) {
+    const totalMinutesPerSession = parsedSchedule.timeRanges.reduce((sum, range) => {
+        const startMinutes = toTimeMinutes(range.startTime);
+        const endMinutes = toTimeMinutes(range.endTime);
+        if (startMinutes < 0 || endMinutes <= startMinutes) return sum;
+        return sum + (endMinutes - startMinutes);
+    }, 0);
+
+    if (totalMinutesPerSession <= 0) {
         return {
             sessions: 0,
             hoursPerSession: 0,
@@ -509,7 +497,7 @@ function calculateScheduleSessions(schedule, startDateString, endDateString) {
         cursor.setDate(cursor.getDate() + 1);
     }
 
-    const hoursPerSession = (endMinutes - startMinutes) / 60;
+    const hoursPerSession = totalMinutesPerSession / 60;
     return {
         sessions,
         hoursPerSession,
@@ -1226,7 +1214,7 @@ function renderScheduleTable() {
                 <p class="font-medium text-slate-900">${escapeHtml(row.batch_name)}</p>
                 <p class="text-xs text-slate-500">${escapeHtml(modeText)}</p>
             </td>
-            <td class="px-4 py-3 text-sm text-slate-700">${row.course_name ? escapeHtml(row.course_name) : '<span class="text-slate-400">N/A</span>'}</td>
+            <td class="px-4 py-3 text-sm text-slate-700">${row.qualification_name ? escapeHtml(row.qualification_name) : '<span class="text-slate-400">N/A</span>'}</td>
             <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(assignmentText)}</td>
             <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(trainerText)}</td>
             <td class="px-4 py-3 text-sm text-slate-700">${scheduleText}</td>
@@ -1245,183 +1233,9 @@ function renderScheduleTable() {
     });
 }
 
-function renderScheduleRequestTable() {
-    const tbody = document.getElementById('scheduleRequestsTableBody');
-    if (!tbody) return;
 
-    tbody.innerHTML = '';
-    if (!allScheduleRequests.length) {
-        tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-6 text-center text-sm text-slate-500">No schedule requests yet.</td></tr>';
-        return;
-    }
 
-    allScheduleRequests.forEach((request) => {
-        const proposalLabel = [request.schedule || 'Not set', request.room || 'TBA', formatDateLabel(request.resolved_effective_date || '')].join(' | ');
-        const canReview = ['pending_registrar_approval', 'modification_requested'].includes(String(request.status || ''));
-        const actionLabel = canReview ? 'Review' : 'View';
-        const row = document.createElement('tr');
-        row.className = 'hover:bg-slate-50';
-        row.innerHTML = `
-            <td class="px-4 py-3 text-sm text-slate-800">
-                <p class="font-medium text-slate-900">${escapeHtml(request.batch_name || 'N/A')}</p>
-                <p class="text-xs text-slate-500">${escapeHtml(request.course_name || 'N/A')}</p>
-            </td>
-            <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(request.scope_label || 'Schedule')}</td>
-            <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(request.trainer_name || 'Unassigned')}</td>
-            <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(formatProposalSource(request.proposed_by_role))}</td>
-            <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(proposalLabel)}</td>
-            <td class="px-4 py-3 text-sm text-slate-700">${buildStatusBadgeHtml(request.status)}</td>
-            <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(formatDateTimeLabel(request.updated_at))}</td>
-            <td class="px-4 py-3 text-center">
-                <button type="button" class="request-review-btn inline-flex items-center gap-1 rounded-md border border-blue-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" data-request-id="${escapeAttr(request.request_id)}">
-                    <i class="fas fa-eye"></i> ${escapeHtml(actionLabel)}
-                </button>
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
-}
 
-function initRequestReviewActions() {
-    document.getElementById('requestApproveBtn')?.addEventListener('click', () => submitScheduleRequestReview('approve'));
-    document.getElementById('requestRejectBtn')?.addEventListener('click', () => submitScheduleRequestReview('reject'));
-    document.getElementById('requestModifyBtn')?.addEventListener('click', () => submitScheduleRequestReview('request_modifications'));
-}
-
-function openScheduleRequestModal(requestId) {
-    const request = allScheduleRequests.find((item) => Number(item.request_id) === Number(requestId));
-    if (!request) {
-        return;
-    }
-
-    currentScheduleRequest = request;
-    showScheduleTab('requests');
-    populateScheduleRequestModal(request);
-    scheduleRequestModal?.show();
-}
-
-function populateScheduleRequestModal(request) {
-    const statusBadge = document.getElementById('requestCurrentStatusBadge');
-    const canReview = ['pending_registrar_approval', 'modification_requested'].includes(String(request.status || ''));
-
-    document.getElementById('scheduleRequestModalSubtitle').textContent = canReview
-        ? 'Trainer-submitted schedules can be approved, rejected, or returned for changes.'
-        : 'This request is shown for tracking and status visibility.';
-    document.getElementById('requestBatchName').textContent = request.batch_name || 'N/A';
-    document.getElementById('requestCourseName').textContent = request.course_name || 'N/A';
-    document.getElementById('requestScopeName').textContent = request.scope_label || 'Schedule';
-    document.getElementById('requestTrainerName').textContent = request.trainer_name || 'Unassigned';
-    document.getElementById('requestCurrentSchedule').textContent = request.current_schedule || 'Not set';
-    document.getElementById('requestCurrentRoom').textContent = `Room: ${request.current_room || 'TBA'}`;
-    document.getElementById('requestCurrentDate').textContent = `Effective date: ${formatDateLabel(request.start_date || '')}`;
-    document.getElementById('requestProposedSchedule').textContent = request.schedule || 'Not set';
-    document.getElementById('requestProposedRoom').textContent = `Room: ${request.room || 'TBA'}`;
-    document.getElementById('requestProposedDate').textContent = `Effective date: ${formatDateLabel(request.resolved_effective_date || '')}`;
-    document.getElementById('requestTrainerNote').textContent = request.trainer_note || 'No trainer note.';
-    document.getElementById('requestRegistrarNote').textContent = request.registrar_note || `No ${SCHEDULE_ACTOR_LABEL.toLowerCase()} note.`;
-    document.getElementById('requestReviewNote').value = request.registrar_note || '';
-    document.getElementById('requestReviewSection').classList.toggle('opacity-70', !canReview);
-    document.getElementById('requestReviewHint').textContent = canReview
-        ? 'Use the note to explain your decision or request specific schedule changes.'
-        : 'Waiting on the trainer or already finalized. You can still view the proposal details here.';
-
-    if (statusBadge) {
-        statusBadge.textContent = formatRequestStatus(request.status);
-        statusBadge.className = `inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${getStatusBadgeClasses(request.status)}`;
-    }
-
-    document.getElementById('requestApproveBtn')?.classList.toggle('hidden', !canReview);
-    document.getElementById('requestRejectBtn')?.classList.toggle('hidden', !canReview);
-    document.getElementById('requestModifyBtn')?.classList.toggle('hidden', !canReview);
-    document.getElementById('requestReviewNote')?.toggleAttribute('disabled', !canReview);
-}
-
-async function submitScheduleRequestReview(reviewAction) {
-    if (!currentScheduleRequest) {
-        return;
-    }
-
-    const payload = {
-        request_id: currentScheduleRequest.request_id,
-        review_action: reviewAction,
-        registrar_note: document.getElementById('requestReviewNote')?.value?.trim() || '',
-        user_id: getCurrentUserId()
-    };
-
-    try {
-        const response = await axios.post(`${SCHEDULE_API_URL}?action=review-request`, payload);
-        if (!response.data.success) {
-            throw new Error(response.data.message || 'Unable to review the schedule request.');
-        }
-
-        Swal.fire({ title: 'Success', text: response.data.message || 'Schedule request updated successfully.', icon: 'success' });
-        scheduleRequestModal?.hide();
-        clearScheduleRequestIntent();
-        await loadScheduleData();
-    } catch (error) {
-        const message = error?.response?.data?.message || error.message || 'Unable to review the schedule request.';
-        Swal.fire({ title: 'Error', text: message, icon: 'error' });
-    }
-}
-
-function hydrateScheduleRequestIntent() {
-    const params = new URLSearchParams(window.location.search);
-    const requestId = Number(params.get('schedule_request_id') || 0);
-    pendingScheduleRequestId = requestId > 0 ? requestId : null;
-}
-
-function maybeOpenPendingScheduleRequest() {
-    if (!pendingScheduleRequestId) {
-        return;
-    }
-
-    const request = allScheduleRequests.find((item) => Number(item.request_id) === Number(pendingScheduleRequestId));
-    showScheduleTab('requests');
-    if (request) {
-        openScheduleRequestModal(pendingScheduleRequestId);
-    }
-}
-
-function clearScheduleRequestIntent() {
-    pendingScheduleRequestId = null;
-    const url = new URL(window.location.href);
-    url.searchParams.delete('schedule_request_id');
-    url.searchParams.delete('schedule_action');
-    window.history.replaceState({}, document.title, url.toString());
-}
-
-function formatProposalSource(role) {
-    const normalizedRole = String(role || '').toLowerCase();
-    if (normalizedRole === 'trainer') return 'Trainer';
-    if (normalizedRole === 'admin') return 'Admin';
-    return 'Registrar';
-}
-
-function formatRequestStatus(status) {
-    const value = String(status || '').trim();
-    const labels = {
-        pending_trainer_response: 'Pending Trainer Response',
-        pending_registrar_approval: `Pending ${SCHEDULE_ACTOR_LABEL} Approval`,
-        approved: 'Approved',
-        rejected: 'Rejected',
-        modification_requested: 'Changes Requested'
-    };
-
-    return labels[value] || 'Pending';
-}
-
-function getStatusBadgeClasses(status) {
-    const value = String(status || '').trim();
-    if (value === 'approved') return 'bg-emerald-100 text-emerald-700';
-    if (value === 'rejected') return 'bg-red-100 text-red-700';
-    if (value === 'modification_requested') return 'bg-amber-100 text-amber-700';
-    if (value === 'pending_registrar_approval') return 'bg-blue-100 text-blue-700';
-    return 'bg-slate-200 text-slate-700';
-}
-
-function buildStatusBadgeHtml(status) {
-    return `<span class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${getStatusBadgeClasses(status)}">${escapeHtml(formatRequestStatus(status))}</span>`;
-}
 
 function formatDateTimeLabel(value) {
     const date = value ? new Date(value) : null;
@@ -1480,10 +1294,10 @@ function updateQualificationFilter(trainerId) {
         : allScheduleRows;
 
     const quals = sourceRows
-        .filter((row) => row.course_name && row.qualification_id)
+        .filter((row) => row.qualification_name && row.qualification_id)
         .reduce((acc, row) => {
             if (!acc.find((item) => item.id === row.qualification_id)) {
-                acc.push({ id: row.qualification_id, name: row.course_name });
+                acc.push({ id: row.qualification_id, name: row.qualification_name });
             }
             return acc;
         }, [])
@@ -1608,11 +1422,13 @@ function getTimetableUnitSummary(row) {
 }
 
 function formatTimetableTimeRange(parsedSchedule) {
-    if (!parsedSchedule?.startTime || !parsedSchedule?.endTime) {
+    if (!parsedSchedule?.timeRanges?.length) {
         return '';
     }
 
-    return `${formatTime(parsedSchedule.startTime)} - ${formatTime(parsedSchedule.endTime)}`;
+    return parsedSchedule.timeRanges
+        .map((range) => `${formatTime(range.startTime)} - ${formatTime(range.endTime)}`)
+        .join(' / ');
 }
 
 function getTimetableTrainerChipClass(row, fallbackIndex) {
@@ -1666,7 +1482,7 @@ function openTimetableScheduleDetailsModal(row) {
 
     setTimetableDetailText('timetableDetailTrainerName', row.trainer_name || 'No trainer assigned');
     setTimetableDetailText('timetableDetailBatchName', row.batch_name || 'Not set');
-    setTimetableDetailText('timetableDetailQualification', row.course_name || 'Not set');
+    setTimetableDetailText('timetableDetailQualification', row.qualification_name || 'Not set');
     setTimetableDetailText('timetableDetailAssignment', assignment);
     setTimetableDetailText('timetableDetailRoom', row.room || 'Room not assigned');
     setTimetableDetailText('timetableDetailSchedule', row.schedule || 'Not set');
@@ -1688,7 +1504,7 @@ function toTimeMinutes(timeValue) {
 
 function rebuildTimetable() {
     const timeSlots = ['8:00', '9:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
-    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const timetableBody = document.getElementById('timetableBody');
 
     if (!timetableBody) return;
@@ -1708,8 +1524,8 @@ function rebuildTimetable() {
         if (!row.schedule) return;
 
         const parsedSchedule = parseScheduleToDays(row.schedule);
-        const { days: scheduleDays, startTime, endTime } = parsedSchedule;
-        if (!scheduleDays.length || !startTime || !endTime) return;
+        const { days: scheduleDays, timeRanges } = parsedSchedule;
+        if (!scheduleDays.length || !timeRanges.length) return;
 
         const descriptor = getTimetableDescriptor(row);
         const unitSummary = getTimetableUnitSummary(row);
@@ -1717,9 +1533,10 @@ function rebuildTimetable() {
         const bodyRows = timetableBody.querySelectorAll('tr');
         const scheduleTitle = getTimetableEntryTitle(row, descriptor, unitSummary, timeRange);
         const trainerChipClass = getTimetableTrainerChipClass(row, index);
+        const startTimes = timeRanges.map((range) => range.startTime);
 
         timeSlots.forEach((timeSlot, timeIndex) => {
-            if (!timeInRange(timeSlot, startTime, endTime)) return;
+            if (!scheduleHasTimeSlot(parsedSchedule, timeSlot)) return;
             const bodyRow = bodyRows[timeIndex];
             if (!bodyRow) return;
 
@@ -1729,7 +1546,7 @@ function rebuildTimetable() {
                 if (dayIndex < 0) return;
                 const cell = cells[dayIndex + 1];
                 if (!cell) return;
-                const isStartSlot = toTimeMinutes(timeSlot) === toTimeMinutes(startTime);
+                const isStartSlot = startTimes.some((startTime) => toTimeMinutes(timeSlot) === toTimeMinutes(startTime));
 
                 if (!isStartSlot) return;
                 cell.innerHTML += `
@@ -1913,8 +1730,10 @@ function resetScheduleInputs() {
     document.querySelectorAll('input[name="customDays"]').forEach((checkbox) => {
         checkbox.checked = false;
     });
-    document.getElementById('customStartTime').value = '';
-    document.getElementById('customEndTime').value = '';
+    document.getElementById('customMorningStartTime').value = '';
+    document.getElementById('customMorningEndTime').value = '';
+    document.getElementById('customAfternoonStartTime').value = '';
+    document.getElementById('customAfternoonEndTime').value = '';
     const customStartDate = document.getElementById('customStartDate');
     if (customStartDate) customStartDate.value = '';
     const effectiveDateInput = document.getElementById('assignEffectiveDate');
@@ -1947,7 +1766,7 @@ function applyScheduleToInputs(schedule) {
     }
 
     const parsed = parseScheduleToDays(schedule);
-    if (!parsed.days.length || !parsed.startTime || !parsed.endTime) {
+    if (!parsed.days.length || !parsed.timeRanges.length) {
         return;
     }
 
@@ -1957,8 +1776,13 @@ function applyScheduleToInputs(schedule) {
     document.querySelectorAll('input[name="customDays"]').forEach((checkbox) => {
         checkbox.checked = parsed.days.includes(checkbox.value);
     });
-    document.getElementById('customStartTime').value = parsed.startTime;
-    document.getElementById('customEndTime').value = parsed.endTime;
+
+    const morningRange = parsed.timeRanges[0] || { startTime: '', endTime: '' };
+    const afternoonRange = parsed.timeRanges[1] || { startTime: '', endTime: '' };
+    document.getElementById('customMorningStartTime').value = morningRange.startTime;
+    document.getElementById('customMorningEndTime').value = morningRange.endTime;
+    document.getElementById('customAfternoonStartTime').value = afternoonRange.startTime;
+    document.getElementById('customAfternoonEndTime').value = afternoonRange.endTime;
 }
 
 function parseIdList(value) {
@@ -2057,7 +1881,7 @@ function initScheduleTypeToggle() {
 
 function buildTimetable() {
     const timeSlots = ['8:00', '9:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
-    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const timetableBody = document.getElementById('timetableBody');
     if (!timetableBody) return;
 
@@ -2078,26 +1902,38 @@ function buildTimetable() {
 }
 
 function parseScheduleToDays(scheduleText) {
-    if (!scheduleText) return { days: [], startTime: '', endTime: '' };
+    if (!scheduleText) return { days: [], timeRanges: [] };
 
     const text = scheduleText.toLowerCase();
     let days = [];
-    let startTime = '';
-    let endTime = '';
+    const timeRanges = [];
 
-    const timeMatch24 = text.match(/(\d{2}):(\d{2})-(\d{2}):(\d{2})/);
-    const timeMatch12 = text.match(/(\d+):(\d+)\s*(am|pm)\s*-\s*(\d+):(\d+)\s*(am|pm)/i);
+    const rangeMatches = [...text.matchAll(/(\d{1,2}:\d{2}\s*(?:am|pm)|\d{2}:\d{2})\s*-\s*(\d{1,2}:\d{2}\s*(?:am|pm)|\d{2}:\d{2})/gi)];
+    rangeMatches.forEach((match) => {
+        const rawStart = match[1].trim();
+        const rawEnd = match[2].trim();
+        let startTime = '';
+        let endTime = '';
 
-    if (timeMatch24) {
-        startTime = `${timeMatch24[1]}:${timeMatch24[2]}`;
-        endTime = `${timeMatch24[3]}:${timeMatch24[4]}`;
-    } else if (timeMatch12) {
-        startTime = convertTo24Hour(timeMatch12[1], timeMatch12[2], timeMatch12[3]);
-        endTime = convertTo24Hour(timeMatch12[4], timeMatch12[5], timeMatch12[6]);
-    }
+        const start12Match = rawStart.match(/(\d+):(\d+)\s*(am|pm)/i);
+        const end12Match = rawEnd.match(/(\d+):(\d+)\s*(am|pm)/i);
+        if (start12Match && end12Match) {
+            startTime = convertTo24Hour(start12Match[1], start12Match[2], start12Match[3]);
+            endTime = convertTo24Hour(end12Match[1], end12Match[2], end12Match[3]);
+        } else if (/^\d{2}:\d{2}$/.test(rawStart) && /^\d{2}:\d{2}$/.test(rawEnd)) {
+            startTime = rawStart;
+            endTime = rawEnd;
+        }
+
+        if (startTime && endTime) {
+            timeRanges.push({ startTime, endTime });
+        }
+    });
 
     const shorthandMap = {
         weekday: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+        weekends: ['Saturday', 'Sunday'],
+        weekend: ['Saturday', 'Sunday'],
         mwf: ['Monday', 'Wednesday', 'Friday'],
         tth: ['Tuesday', 'Thursday'],
         mon: ['Monday'],
@@ -2105,9 +1941,9 @@ function parseScheduleToDays(scheduleText) {
         wed: ['Wednesday'],
         thu: ['Thursday'],
         fri: ['Friday'],
-        sat: ['Saturday']
+        sat: ['Saturday'],
+        sun: ['Sunday']
     };
-
     const compactPrefixDays = parseCompactScheduleDays(scheduleText);
     if (compactPrefixDays.length) {
         days = Array.from(new Set([...days, ...compactPrefixDays]));
@@ -2126,7 +1962,8 @@ function parseScheduleToDays(scheduleText) {
             { pattern: /wed(?:nesday)?/gi, day: 'Wednesday' },
             { pattern: /thu(?:rsday)?/gi, day: 'Thursday' },
             { pattern: /fri(?:day)?/gi, day: 'Friday' },
-            { pattern: /sat(?:urday)?/gi, day: 'Saturday' }
+            { pattern: /sat(?:urday)?/gi, day: 'Saturday' },
+            { pattern: /sun(?:day)?/gi, day: 'Sunday' }
         ];
         patterns.forEach(({ pattern, day }) => {
             if (pattern.test(text)) days.push(day);
@@ -2137,13 +1974,13 @@ function parseScheduleToDays(scheduleText) {
         days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
     }
 
-    return { days, startTime, endTime };
+    return { days, timeRanges };
 }
 
 function parseCompactScheduleDays(scheduleText) {
     const prefix = String(scheduleText || '').split('(')[0].trim();
     const compactCode = prefix.replace(/[^A-Za-z]/g, '').toLowerCase();
-    if (!compactCode || !/^(?:m|t|w|th|f|s)+$/.test(compactCode)) {
+    if (!compactCode || !/^(?:m|t|w|th|f|s|su)+$/.test(compactCode)) {
         return [];
     }
 
@@ -2153,12 +1990,19 @@ function parseCompactScheduleDays(scheduleText) {
         w: 'Wednesday',
         th: 'Thursday',
         f: 'Friday',
-        s: 'Saturday'
+        s: 'Saturday',
+        su: 'Sunday'
     };
     const parsedDays = [];
     let index = 0;
 
     while (index < compactCode.length) {
+        if (compactCode.slice(index, index + 2) === 'su') {
+            parsedDays.push(dayMap.su);
+            index += 2;
+            continue;
+        }
+
         if (compactCode.slice(index, index + 2) === 'th') {
             parsedDays.push(dayMap.th);
             index += 2;
@@ -2191,6 +2035,12 @@ function timeInRange(timeSlot, startTime, endTime) {
     return slotMinutes >= startMinutes && slotMinutes < endMinutes;
 }
 
+function scheduleHasTimeSlot(parsedSchedule, timeSlot) {
+    return Array.isArray(parsedSchedule.timeRanges) && parsedSchedule.timeRanges.some((range) => {
+        return timeInRange(timeSlot, range.startTime, range.endTime);
+    });
+}
+
 function timeRangesOverlap(startA, endA, startB, endB) {
     return startA < endB && startB < endA;
 }
@@ -2198,14 +2048,16 @@ function timeRangesOverlap(startA, endA, startB, endB) {
 function schedulesOverlap(leftSchedule, rightSchedule) {
     const left = parseScheduleToDays(leftSchedule);
     const right = parseScheduleToDays(rightSchedule);
-    if (!left.days.length || !right.days.length || !left.startTime || !left.endTime || !right.startTime || !right.endTime) {
+    if (!left.days.length || !right.days.length || !left.timeRanges.length || !right.timeRanges.length) {
         return false;
     }
 
     const sharedDays = left.days.filter((day) => right.days.includes(day));
     if (!sharedDays.length) return false;
 
-    return timeRangesOverlap(left.startTime, left.endTime, right.startTime, right.endTime);
+    return left.timeRanges.some((leftRange) => right.timeRanges.some((rightRange) => {
+        return timeRangesOverlap(leftRange.startTime, leftRange.endTime, rightRange.startTime, rightRange.endTime);
+    }));
 }
 
 function getCurrentScheduleForRoomFilter() {
@@ -2244,10 +2096,31 @@ function isRoomOccupiedForSchedule(roomId, targetSchedule, referenceRow) {
 
 function getCustomScheduleString() {
     const selectedDays = Array.from(document.querySelectorAll('input[name="customDays"]:checked')).map((checkbox) => checkbox.value);
-    const startTime = document.getElementById('customStartTime').value;
-    const endTime = document.getElementById('customEndTime').value;
+    const morningStartTime = document.getElementById('customMorningStartTime').value;
+    const morningEndTime = document.getElementById('customMorningEndTime').value;
+    const afternoonStartTime = document.getElementById('customAfternoonStartTime').value;
+    const afternoonEndTime = document.getElementById('customAfternoonEndTime').value;
 
-    if (!selectedDays.length || !startTime || !endTime) {
+    if (!selectedDays.length) {
+        return '';
+    }
+
+    const segments = [];
+    if (morningStartTime || morningEndTime) {
+        if (!morningStartTime || !morningEndTime) {
+            return '';
+        }
+        segments.push(`${formatTime(morningStartTime)} - ${formatTime(morningEndTime)}`);
+    }
+
+    if (afternoonStartTime || afternoonEndTime) {
+        if (!afternoonStartTime || !afternoonEndTime) {
+            return '';
+        }
+        segments.push(`${formatTime(afternoonStartTime)} - ${formatTime(afternoonEndTime)}`);
+    }
+
+    if (!segments.length) {
         return '';
     }
 
@@ -2257,11 +2130,12 @@ function getCustomScheduleString() {
         Wednesday: 'W',
         Thursday: 'Th',
         Friday: 'F',
-        Saturday: 'S'
+        Saturday: 'S',
+        Sunday: 'Su'
     };
 
     const dayCode = selectedDays.map((day) => dayShortcuts[day] || day).join('');
-    return `${dayCode} (${formatTime(startTime)} - ${formatTime(endTime)})`;
+    return `${dayCode} (${segments.join(' / ')})`;
 }
 
 function formatTime(time24) {
@@ -2272,14 +2146,54 @@ function formatTime(time24) {
     return `${displayHour}:${minute} ${suffix}`;
 }
 
+async function loadSchedulePresets() {
+    try {
+        const response = await axios.get(`${SCHEDULE_API_URL}?action=get-presets`);
+        if (!response.data.success) {
+            return;
+        }
+
+        const presets = Array.isArray(response.data.data) ? response.data.data : [];
+        populateRegistrarPresetSelect(presets);
+    } catch (error) {
+        console.error('Error loading schedule presets:', error);
+    }
+}
+
+function populateRegistrarPresetSelect(presets) {
+    const presetSelect = document.getElementById('assignScheduleSelect');
+    if (!presetSelect) {
+        return;
+    }
+
+    presetSelect.innerHTML = '<option value="">Not Set</option>';
+    presets.forEach((preset) => {
+        const presetSchedule = String(preset.schedule || '').trim();
+        if (!presetSchedule) {
+            return;
+        }
+
+        const option = document.createElement('option');
+        option.value = presetSchedule;
+        option.dataset.presetId = Number(preset.preset_id || 0) || '';
+        option.textContent = String(preset.preset_name || presetSchedule);
+        presetSelect.appendChild(option);
+    });
+}
+
 async function saveSchedule(event) {
     event.preventDefault();
 
     const scheduleType = document.querySelector('input[name="scheduleType"]:checked')?.value || 'preset';
     let schedule = '';
+    const requestPayload = {
+        preset_id: null
+    };
 
     if (scheduleType === 'preset') {
-        schedule = document.getElementById('assignScheduleSelect').value;
+        const presetSelect = document.getElementById('assignScheduleSelect');
+        schedule = presetSelect.value;
+        requestPayload.preset_id = Number(presetSelect.selectedOptions[0]?.dataset?.presetId || 0) || null;
     } else {
         schedule = getCustomScheduleString();
         if (!schedule) {
@@ -2316,7 +2230,7 @@ async function saveSchedule(event) {
             }
         }
 
-        const payload = {
+        Object.assign(requestPayload, {
             batch_id: document.getElementById('assignBatchId').value,
             module_id: selectedUnitModuleId,
             trainer_assignment_mode: mode,
@@ -2329,9 +2243,9 @@ async function saveSchedule(event) {
             effective_date: getCurrentEffectiveDate(),
             registrar_note: document.getElementById('assignRegistrarNote')?.value?.trim() || '',
             user_id: getCurrentUserId()
-        };
+        });
 
-        const response = await axios.post(`${SCHEDULE_API_URL}?action=assign`, payload);
+        const response = await axios.post(`${SCHEDULE_API_URL}?action=assign`, requestPayload);
         if (response.data.success) {
             Swal.fire({ title: 'Success', text: response.data.message || 'Schedule proposal sent successfully.', icon: 'success' });
             if (scheduleModal) scheduleModal.hide();

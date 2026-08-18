@@ -26,6 +26,9 @@ class ActivityLogs {
             case 'list':
                 $this->getLogs();
                 break;
+            case 'action-types':
+                $this->getActionTypes();
+                break;
             case 'clear':
                 $this->clearLogs();
                 break;
@@ -97,9 +100,58 @@ class ActivityLogs {
         ]);
     }
 
+    private function getActionTypes() {
+        try {
+            $stmt = $this->conn->query("SELECT DISTINCT action FROM " . $this->table . " WHERE action IS NOT NULL AND action <> '' ORDER BY action");
+            echo json_encode(['success' => true, 'data' => $stmt->fetchAll(PDO::FETCH_COLUMN)]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Unable to load activity types.']);
+        }
+    }
+
     private function clearLogs() {
-        // Implementation for clearing logs if needed
-        echo json_encode(['success' => false, 'message' => 'Feature not implemented yet']);
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Clear logs requires a POST request.']);
+            return;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $days = isset($input['days']) ? filter_var($input['days'], FILTER_VALIDATE_INT) : false;
+
+        if ($days === false || $days < 1) {
+            http_response_code(422);
+            echo json_encode(['success' => false, 'message' => 'Days to keep must be a whole number of at least 1.']);
+            return;
+        }
+
+        try {
+            $cutoff = (new DateTimeImmutable())->modify("-{$days} days")->format('Y-m-d H:i:s');
+            $stmt = $this->conn->prepare("DELETE FROM " . $this->table . " WHERE timestamp < :cutoff");
+            $stmt->execute([':cutoff' => $cutoff]);
+            $deleted = $stmt->rowCount();
+
+            $auditStmt = $this->conn->prepare(
+                "INSERT INTO " . $this->table . " (user_id, action, table_name, details, ip_address) VALUES (NULL, :action, :table_name, :details, :ip_address)"
+            );
+            $auditStmt->execute([
+                ':action' => 'delete',
+                ':table_name' => $this->table,
+                ':details' => "Cleared {$deleted} activity log(s) older than {$days} day(s).",
+                ':ip_address' => $_SERVER['REMOTE_ADDR'] ?? null
+            ]);
+
+            echo json_encode([
+                'success' => true,
+                'message' => $deleted . ' log' . ($deleted === 1 ? '' : 's') . ' older than ' . $days . ' day' . ($days === 1 ? '' : 's') . ' cleared.',
+                'deleted_count' => $deleted
+            ]);
+        } catch (Exception $e) {
+            error_log('Unable to clear activity logs: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Unable to clear activity logs.']);
+        }
     }
 }
 

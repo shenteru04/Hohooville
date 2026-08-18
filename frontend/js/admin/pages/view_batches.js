@@ -165,9 +165,6 @@ function bindActions() {
     if (createBatchBtn) {
         createBatchBtn.addEventListener('click', openCreateBatchModal);
     }
-
-    document.getElementById('newBatchMaxTrainees')?.addEventListener('input', updateProjectedBatchValue);
-    document.getElementById('newBatchTrainingCost')?.addEventListener('input', updateProjectedBatchValue);
 }
 
 async function loadBatches() {
@@ -458,7 +455,6 @@ function formatQualificationOptionLabel(qualification) {
 async function openCreateBatchModal() {
     const form = document.getElementById('createBatchForm');
     if (form) form.reset();
-    setText('newBatchProjectedTotal', 'PHP 0.00');
     setValueIfPresent('newBatchId', '');
     setValueIfPresent('newBatchStatus', 'open');
     setValueIfPresent('newBatchMaxTrainees', '25');
@@ -466,7 +462,6 @@ async function openCreateBatchModal() {
     
     // Load form data
     await loadCreateBatchFormData();
-    updateProjectedBatchValue();
     
     if (createBatchModal) createBatchModal.show();
 }
@@ -509,14 +504,11 @@ async function loadCreateBatchFormData() {
                     batchNameField.value = generateBatchName(selectedOption.dataset.qualificationName || selectedOption.textContent, parseInt(qualId, 10));
                     // Filter trainers by selected qualification
                     filterTrainersByQualification(selectedOption.value);
-                    populateTrainingCostFromQualification(selectedOption.value);
                 } else {
                     batchNameField.value = '';
                     // Show all trainers if no qualification selected
                     populateAllTrainers();
-                    populateTrainingCostFromQualification('');
                 }
-                updateProjectedBatchValue();
             });
         }
 
@@ -620,10 +612,10 @@ async function handleCreateBatch(event) {
     const startDate = document.getElementById('newBatchStartDate')?.value;
     const endDate = document.getElementById('newBatchEndDate')?.value;
     const maxTrainees = document.getElementById('newBatchMaxTrainees')?.value;
-    const trainingCost = document.getElementById('newBatchTrainingCost')?.value;
+    // batch-level training_cost field removed; use qualification.training_cost for projections
     const status = document.getElementById('newBatchStatus')?.value || 'open';
 
-    if (!batchName || !qualificationId || !trainerId || !startDate || !endDate || !maxTrainees || trainingCost === '') {
+    if (!batchName || !qualificationId || !trainerId || !startDate || !endDate || !maxTrainees) {
         showError('Please fill in all required fields');
         return;
     }
@@ -638,11 +630,6 @@ async function handleCreateBatch(event) {
         return;
     }
 
-    if (Number(trainingCost) < 0) {
-        showError('Training cost cannot be negative');
-        return;
-    }
-
     const payload = {
         batch_name: batchName,
         qualification_id: parseInt(qualificationId),
@@ -652,7 +639,7 @@ async function handleCreateBatch(event) {
         end_date: endDate,
         status: status,
         max_trainees: maxTrainees ? parseInt(maxTrainees) : null,
-        training_cost: Number(trainingCost)
+        // training_cost removed from payload; qualification.training_cost used for projections
     };
 
     if (batchId) {
@@ -699,11 +686,10 @@ window.editBatch = async function(id) {
             document.getElementById('newBatchStartDate').value = batch.start_date;
             document.getElementById('newBatchEndDate').value = batch.end_date;
             document.getElementById('newBatchMaxTrainees').value = batch.max_trainees || 25;
-            document.getElementById('newBatchTrainingCost').value = batch.training_cost || '';
+            // training_cost removed from modal; qualification.training_cost used for projections
             document.getElementById('newBatchStatus').value = batch.status;
 
             setBatchModalMode(true);
-            updateProjectedBatchValue();
             
             if (createBatchModal) createBatchModal.show();
         }
@@ -721,29 +707,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-function populateTrainingCostFromQualification(qualificationId) {
-    const trainingCostField = document.getElementById('newBatchTrainingCost');
-    if (!trainingCostField) return;
-
-    if (!qualificationId) {
-        trainingCostField.value = '';
-        return;
-    }
-
-    const qualification = availableQualifications.find((item) => String(item.qualification_id) === String(qualificationId));
-    if (!qualification) return;
-
-    trainingCostField.value = qualification.training_cost !== undefined && qualification.training_cost !== null
-        ? String(qualification.training_cost)
-        : '';
-}
-
-function updateProjectedBatchValue() {
-    const maxTrainees = Number(document.getElementById('newBatchMaxTrainees')?.value || 0);
-    const trainingCost = Number(document.getElementById('newBatchTrainingCost')?.value || 0);
-    const projectedValue = maxTrainees > 0 && trainingCost >= 0 ? maxTrainees * trainingCost : 0;
-    setText('newBatchProjectedTotal', `PHP ${projectedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
-}
+// Removed populateTrainingCostFromQualification: batch-level training_cost removed.
 
 function setBatchModalMode(isEditing) {
     const modalLabel = document.querySelector('#createBatchModal h3');

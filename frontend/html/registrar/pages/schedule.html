@@ -118,9 +118,7 @@
                             <button class="schedule-tab-btn flex-1 px-4 py-3 text-sm font-semibold text-slate-600 border-b-2 border-transparent hover:text-slate-800" data-tab="batches">
                                 <i class="fas fa-list mr-2"></i>Scheduled Batches
                             </button>
-                            <button class="schedule-tab-btn flex-1 px-4 py-3 text-sm font-semibold text-slate-600 border-b-2 border-transparent hover:text-slate-800" data-tab="requests">
-                                <i class="fas fa-inbox mr-2"></i>Schedule Requests
-                            </button>
+
                         </div>
 
                         <!-- Weekly Timetable Tab -->
@@ -160,6 +158,7 @@
                                             <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-600">Thursday</th>
                                             <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-600">Friday</th>
                                             <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-600">Saturday</th>
+                                            <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-600">Sunday</th>
                                         </tr>
                                     </thead>
                                     <tbody id="timetableBody" class="divide-y divide-slate-100 bg-white">
@@ -185,28 +184,6 @@
                                             </tr>
                                         </thead>
                                         <tbody id="schedulesTableBody" class="divide-y divide-slate-100 bg-white"></tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="schedule-tab-content hidden" id="requests-tab">
-                            <div class="p-4 sm:p-6">
-                                <div class="overflow-x-auto">
-                                    <table class="min-w-full divide-y divide-slate-200" id="scheduleRequestsTable">
-                                        <thead class="bg-slate-50">
-                                            <tr>
-                                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Batch</th>
-                                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Assignment</th>
-                                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Trainer</th>
-                                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Submitted By</th>
-                                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Proposal</th>
-                                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th>
-                                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Updated</th>
-                                                <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-600">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="scheduleRequestsTableBody" class="divide-y divide-slate-100 bg-white"></tbody>
                                     </table>
                                 </div>
                             </div>
@@ -348,15 +325,6 @@
                             <label for="assignScheduleSelect" class="mb-1 block text-sm font-medium text-slate-700">Preset Schedules</label>
                             <select id="assignScheduleSelect" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
                                 <option value="">Not Set</option>
-                                <option value="MWF (8:00 AM - 12:00 PM)">MWF (8:00 AM - 12:00 PM)</option>
-                                <option value="MWF (1:00 PM - 5:00 PM)">MWF (1:00 PM - 5:00 PM)</option>
-                                <option value="TTH (8:00 AM - 12:00 PM)">TTH (8:00 AM - 12:00 PM)</option>
-                                <option value="TTH (1:00 PM - 5:00 PM)">TTH (1:00 PM - 5:00 PM)</option>
-                                <option value="Weekdays (8:00 AM - 12:00 PM)">Weekdays (8:00 AM - 12:00 PM)</option>
-                                <option value="Weekdays (1:00 PM - 5:00 PM)">Weekdays (1:00 PM - 5:00 PM)</option>
-                                <option value="Saturday (8:00 AM - 5:00 PM)">Saturday (8:00 AM - 5:00 PM)</option>
-                                <option value="Day Shift (8:00 AM - 5:00 PM)">Day Shift (8:00 AM - 5:00 PM)</option>
-                                <option value="Night Shift (6:00 PM - 10:00 PM)">Night Shift (6:00 PM - 10:00 PM)</option>
                             </select>
                         </div>
 
@@ -389,16 +357,30 @@
                                         <input type="checkbox" name="customDays" value="Saturday" class="h-4 w-4 text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
                                         <span class="text-xs font-medium text-slate-700">Sat</span>
                                     </label>
+                                    <label class="flex items-center gap-2 rounded-lg border border-slate-300 p-2 cursor-pointer hover:bg-blue-50">
+                                        <input type="checkbox" name="customDays" value="Sunday" class="h-4 w-4 text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                        <span class="text-xs font-medium text-slate-700">Sun</span>
+                                    </label>
                                 </div>
                             </div>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label for="customStartTime" class="mb-1 block text-sm font-medium text-slate-700">Start Time</label>
-                                    <input type="time" id="customStartTime" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                    <label for="customMorningStartTime" class="mb-1 block text-sm font-medium text-slate-700">Morning Start</label>
+                                    <input type="time" id="customMorningStartTime" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
                                 </div>
                                 <div>
-                                    <label for="customEndTime" class="mb-1 block text-sm font-medium text-slate-700">End Time</label>
-                                    <input type="time" id="customEndTime" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                    <label for="customMorningEndTime" class="mb-1 block text-sm font-medium text-slate-700">Morning End</label>
+                                    <input type="time" id="customMorningEndTime" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="customAfternoonStartTime" class="mb-1 block text-sm font-medium text-slate-700">Afternoon Start</label>
+                                    <input type="time" id="customAfternoonStartTime" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label for="customAfternoonEndTime" class="mb-1 block text-sm font-medium text-slate-700">Afternoon End</label>
+                                    <input type="time" id="customAfternoonEndTime" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
                                 </div>
                             </div>
                         </div>

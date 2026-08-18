@@ -3,13 +3,17 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../database/db.php';
 
 class EmailService {
     private $mailer;
     private $fromEmail;
     private $fromName;
+    private $conn;
 
     public function __construct() {
+        $this->conn = (new Database())->getConnection();
+        $this->ensureTemplateSchema();
         $this->mailer = new PHPMailer(true);
         
         // Configure SMTP
@@ -32,6 +36,14 @@ class EmailService {
      * Send trainee account credentials email
      */
     public function sendTraineeAccountCredentials($traineeEmail, $traineeName, $username, $password) {
+        return $this->sendTemplateEmail('trainee_account_created', $traineeEmail, [
+            'user_name' => $traineeName,
+            'trainee_name' => $traineeName,
+            'user_email' => $traineeEmail,
+            'username' => $username,
+            'password' => $password
+        ]);
+
         try {
             // Set recipient
             $this->mailer->addAddress($traineeEmail);
@@ -70,6 +82,14 @@ class EmailService {
      * Send trainer account credentials email
      */
     public function sendTrainerAccountCredentials($trainerEmail, $trainerName, $username, $password) {
+        return $this->sendTemplateEmail('trainer_account_created', $trainerEmail, [
+            'user_name' => $trainerName,
+            'trainee_name' => $trainerName,
+            'user_email' => $trainerEmail,
+            'username' => $username,
+            'password' => $password
+        ]);
+
         try {
             $this->mailer->addAddress($trainerEmail);
             $this->mailer->Subject = 'Your Hohoo-ville Trainer Account Credentials';
@@ -303,6 +323,79 @@ This is an automated email. Please do not reply to this message.
         </body>
         </html>
         ";
+    }
+
+    /**
+     * Sends a database-managed template after replacing its {{placeholders}}.
+     */
+    public function sendTemplateEmail($templateKey, $to, array $data = []) {
+        if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
+            return ['success' => false, 'message' => 'A valid recipient email address is required.'];
+        }
+
+        try {
+            $stmt = $this->conn->prepare('SELECT subject, body_html, body_text, is_active FROM tbl_email_templates WHERE template_key = ? LIMIT 1');
+            $stmt->execute([$templateKey]);
+            $template = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$template) return ['success' => false, 'message' => "Email template '{$templateKey}' was not found."];
+            if (!(int)$template['is_active']) return ['success' => false, 'message' => "Email template '{$templateKey}' is disabled."];
+
+            $data += ['date' => date('F j, Y'), 'system_name' => 'Hohoo-ville Training System'];
+            $missing = [];
+            foreach ([$template['subject'], $template['body_html'], $template['body_text'] ?? ''] as $content) {
+                preg_match_all('/{{\s*([a-zA-Z0-9_]+)\s*}}/', $content, $matches);
+                foreach ($matches[1] as $key) if (!array_key_exists($key, $data) || $data[$key] === null || $data[$key] === '') $missing[$key] = true;
+            }
+            if ($missing) return ['success' => false, 'message' => 'Template data is missing: ' . implode(', ', array_keys($missing)) . '.'];
+
+            $subject = $this->replaceTemplateValues($template['subject'], $data, false);
+            $body = $this->replaceTemplateValues($template['body_html'], $data, true);
+            $altBody = $template['body_text'] ? $this->replaceTemplateValues($template['body_text'], $data, false) : trim(strip_tags($body));
+            return $this->sendPreparedEmail($to, $subject, $body, $altBody);
+        } catch (Exception $e) {
+            error_log('Template email error: ' . $e->getMessage());
+            return ['success' => false, 'message' => 'Unable to prepare the email template.'];
+        }
+    }
+
+    private function sendPreparedEmail($to, $subject, $body, $altBody = '') {
+        try {
+            $this->mailer->addAddress($to);
+            $this->mailer->Subject = $subject;
+            $this->mailer->isHTML(true);
+            $this->mailer->Body = $body;
+            $this->mailer->AltBody = $altBody ?: trim(strip_tags($body));
+            $this->mailer->send();
+            return ['success' => true, 'message' => 'Email sent successfully'];
+        } catch (Exception $e) {
+            error_log('Email Error: ' . $e->getMessage());
+            return ['success' => false, 'message' => 'Email could not be sent. Reason: ' . $this->mailer->ErrorInfo];
+        } finally {
+            $this->mailer->clearAddresses();
+        }
+    }
+
+    private function replaceTemplateValues($content, array $data, $escapeHtml) {
+        return preg_replace_callback('/{{\s*([a-zA-Z0-9_]+)\s*}}/', function ($match) use ($data, $escapeHtml) {
+            $value = (string)$data[$match[1]];
+            return $escapeHtml ? htmlspecialchars($value, ENT_QUOTES, 'UTF-8') : $value;
+        }, $content);
+    }
+
+    private function ensureTemplateSchema() {
+        $this->conn->exec("CREATE TABLE IF NOT EXISTS tbl_email_templates (template_id INT AUTO_INCREMENT PRIMARY KEY, template_key VARCHAR(100) UNIQUE NULL, template_name VARCHAR(255) UNIQUE NOT NULL, subject VARCHAR(255) NOT NULL, body_html TEXT NOT NULL, body_text TEXT NULL, variables TEXT NULL, is_active TINYINT(1) DEFAULT 1, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
+        $columns = $this->conn->query("SHOW COLUMNS FROM tbl_email_templates LIKE 'template_key'")->fetch();
+        if (!$columns) $this->conn->exec("ALTER TABLE tbl_email_templates ADD COLUMN template_key VARCHAR(100) NULL UNIQUE AFTER template_id");
+
+        $defaults = [
+            ['trainee_account_created','Trainee Account Created','Your Hohoo-ville Account Credentials','<p>Hello {{user_name}},</p><p>Your account is ready.</p><p>Username: {{username}}<br>Password: {{password}}</p>',['user_name','user_email','username','password','system_name']],
+            ['trainer_account_created','Trainer Account Created','Your Hohoo-ville Trainer Account Credentials','<p>Hello {{user_name}},</p><p>Your trainer account is ready.</p><p>Username: {{username}}<br>Password: {{password}}</p>',['user_name','user_email','username','password','system_name']],
+            ['enrollment_approved','Enrollment Approved','Your enrollment has been approved','<p>Hello {{user_name}},</p><p>Your enrollment for {{course_name}} in {{batch_name}} has been approved.</p>',['user_name','user_email','course_name','batch_name','application_status','approval_date','system_name']],
+            ['application_rejected','Application Rejected','Application {{application_id}} - Rejected','<p>Hello {{user_name}},</p><p>Your application for {{course_name}} was rejected.</p><p>Reason: {{rejection_reason}}</p>',['user_name','user_email','application_id','course_name','batch_name','application_status','rejection_reason','application_date','date','system_name']],
+            ['application_qualified','Application Qualified','Your application passed initial review','<p>Hello {{user_name}},</p><p>Your application for {{course_name}} has passed initial review.</p>',['user_name','user_email','application_id','course_name','batch_name','application_status','application_date','date','system_name']]
+        ];
+        $stmt = $this->conn->prepare('INSERT INTO tbl_email_templates (template_key, template_name, subject, body_html, body_text, variables, is_active) VALUES (?, ?, ?, ?, ?, ?, 1) ON DUPLICATE KEY UPDATE template_key = COALESCE(template_key, VALUES(template_key))');
+        foreach ($defaults as $item) $stmt->execute([$item[0], $item[1], $item[2], $item[3], strip_tags($item[3]), json_encode($item[4])]);
     }
 
     /**

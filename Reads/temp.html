@@ -1,0 +1,115 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hohoo-Ville Testing Plan</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 16mm; }
+  * { box-sizing: border-box; }
+  body { color:#111; font-family:"Times New Roman", Times, serif; font-size:10.4pt; line-height:1.32; }
+  h1,h2,h3 { color:#0a396d; margin:0; } h1 { font-size:23pt; text-align:center; line-height:1.2; } h2 { font-size:15pt; border-bottom:1.5px solid #0a396d; margin:18px 0 8px; padding-bottom:3px; } h3 { font-size:12pt; margin:12px 0 5px; }
+  p { margin:5px 0 8px; } .cover { min-height:247mm; display:flex; flex-direction:column; text-align:center; padding-top:48mm; } .cover .school { font-size:14pt; font-weight:bold; color:#0a396d; letter-spacing:.3px; } .cover .subtitle { margin-top:10px; font-size:13pt; } .cover .bar { width:105mm; border-top:2px solid #0a396d; margin:18px auto; } .cover .details { margin-top:42mm; text-align:left; width:125mm; align-self:center; font-size:11pt; } .page-break { break-before:page; page-break-before:always; }
+  table { width:100%; border-collapse:collapse; margin:7px 0 12px; font-size:9.1pt; } th,td { border:1px solid #555; padding:4px 5px; vertical-align:top; } th { background:#d9e7f5; text-align:center; color:#082e58; font-weight:bold; } .compact { font-size:8.15pt; line-height:1.22; } .survey { font-size:9.3pt; } .survey td:last-child { width:18%; } .note { border-left:3px solid #0a396d; background:#f1f6fb; padding:7px 10px; margin:8px 0; } ul,ol { margin:4px 0 8px 22px; padding:0; } li { margin-bottom:2px; } .center { text-align:center; } .signature td { height:20mm; vertical-align:bottom; } .small { font-size:8.8pt; } .nowrap { white-space:nowrap; }
+  @media print { h2 { break-after:avoid; } tr { break-inside:avoid; } }
+</style>
+</head>
+<body>
+<section class="cover">
+  <div class="school">HOHOO-VILLE TECHNICAL SCHOOL</div>
+  <div class="bar"></div>
+  <h1>TESTING PLAN</h1>
+  <p class="subtitle">Hohoo-Ville Training Management System</p>
+  <p class="subtitle">ISO/IEC 25010-Aligned Functional Testing<br>and User Acceptance Evaluation</p>
+  <div class="details">
+    <p><b>System under test:</b> Hohoo-Ville Training Management System</p>
+    <p><b>Prepared for:</b> Hohoo-Ville Technical School</p>
+    <p><b>Test type:</b> Functional, integration, usability, security, performance, reliability, and user acceptance testing</p>
+    <p><b>Document status:</b> Ready for execution</p>
+    <p><b>Date:</b> ____________________</p>
+  </div>
+</section>
+
+<section class="page-break">
+  <h1>PART 1: PARTICIPANT PROFILE MATRIX</h1>
+  <p class="center">Complete this form before performing the assigned test cases and survey evaluation.</p>
+  <table>
+    <tr><th style="width:33%">Participant information</th><th>Response</th></tr>
+    <tr><td>Participant name (optional)</td><td></td></tr><tr><td>Role</td><td>â˜ Administrator &nbsp; â˜ Registrar &nbsp; â˜ Trainer &nbsp; â˜ Trainee</td></tr>
+    <tr><td>Department / Batch</td><td></td></tr><tr><td>Date of testing</td><td></td></tr><tr><td>Device and browser used</td><td></td></tr>
+    <tr><td>Experience using the system</td><td>â˜ First-time user &nbsp; â˜ Occasional user &nbsp; â˜ Regular user</td></tr>
+  </table>
+  <h2>1. Test Objectives</h2>
+  <ol><li>Confirm that each role can perform only its authorised tasks.</li><li>Validate the complete process from trainee application to completion.</li><li>Verify that information saved by one role is accurately available to the next authorised role.</li><li>Assess quality using ISO/IEC 25010 criteria.</li></ol>
+  <h2>2. Test Environment</h2>
+  <table><tr><th>Item</th><th>Required setup</th></tr><tr><td>Application</td><td>Hohoo-Ville deployed in an isolated XAMPP test/staging environment.</td></tr><tr><td>Database</td><td>Current schema/migrations and safe test data; no production personal data.</td></tr><tr><td>Browsers</td><td>Latest Chrome or Edge plus a mobile/responsive browser view.</td></tr><tr><td>Accounts</td><td>Active Admin, Registrar, Trainer and Trainee accounts; one inactive and one archived account.</td></tr><tr><td>Evidence</td><td>Executed-case result and screenshot/API response where useful.</td></tr></table>
+  <h2>3. Test Rules</h2>
+  <div class="note">Record every case as <b>Pass</b>, <b>Fail</b>, <b>Blocked</b>, or <b>Not Run</b>. Record failed cases with repeatable steps, actual result, expected result, evidence, and severity.</div>
+  <table><tr><th>Severity</th><th>Definition</th></tr><tr><td>Critical</td><td>Blocks login or training lifecycle, corrupts/loses data, or exposes sensitive data.</td></tr><tr><td>High</td><td>Major role function is unavailable with no reasonable workaround.</td></tr><tr><td>Medium</td><td>Function is incorrect but a workaround exists.</td></tr><tr><td>Low</td><td>Minor visual, wording or usability concern.</td></tr></table>
+</section>
+
+<section class="page-break">
+  <h1>FUNCTIONAL TEST CASE MATRIX</h1>
+  <p class="small">The requested ID series is used throughout: 100 for access and administration, 200 for registrar setup and enrolment, and 300 for training delivery, trainee experience, and shared quality checks. Run cases in order where possible.</p>
+  <table class="compact"><tr><th>ID</th><th>Module / Role</th><th>Test scenario and steps</th><th>Expected result</th><th>Priority</th></tr>
+    <tr><td>TC-101</td><td>All users</td><td>Log in with a valid active account for each role.</td><td>Login succeeds and the correct role dashboard opens.</td><td>Critical</td></tr>
+    <tr><td>TC-102</td><td>All users</td><td>Log in with invalid password and nonexistent username.</td><td>Access is denied; no session is created.</td><td>High</td></tr>
+    <tr><td>TC-103</td><td>All users</td><td>Log out, then use Back or a protected URL.</td><td>Protected content is unavailable and login is required.</td><td>High</td></tr>
+    <tr><td>TC-104</td><td>All users</td><td>Attempt to open another roleâ€™s page by changing the URL.</td><td>Access is denied/redirected; no restricted data is exposed.</td><td>Critical</td></tr>
+    <tr><td>TC-105</td><td>Admin</td><td>Create Registrar, Trainer and Trainee accounts using valid details.</td><td>Accounts are saved with the selected role and can log in.</td><td>High</td></tr>
+    <tr><td>TC-106</td><td>Admin</td><td>Create account using duplicate username/email or missing required values.</td><td>Validation identifies the issue; duplicate record is not created.</td><td>High</td></tr>
+    <tr><td>TC-107</td><td>Admin</td><td>Set a user inactive, confirm login is blocked, then reactivate.</td><td>Status persists; inactive user cannot log in; reactivated user can.</td><td>High</td></tr>
+    <tr><td>TC-108</td><td>Admin</td><td>Archive an active trainer/trainee, view archives, then unarchive.</td><td>User moves from active list to archive and is restored with original role/status.</td><td>High</td></tr>
+    <tr><td>TC-109</td><td>Admin</td><td>Use user tabs, search, filters and pagination.</td><td>Each tab shows only its role and results are correct.</td><td>Medium</td></tr>
+    <tr><td>TC-110</td><td>Admin</td><td>Review logs after account, qualification or batch changes.</td><td>Action, user and timestamp are captured where logging is enabled.</td><td>Medium</td></tr>
+  </table>
+</section>
+
+<section class="page-break">
+  <h1>FUNCTIONAL TEST CASE MATRIX <span class="small">(continued)</span></h1>
+  <table class="compact"><tr><th>ID</th><th>Module / Role</th><th>Test scenario and steps</th><th>Expected result</th><th>Priority</th></tr>
+    <tr><td>TC-201</td><td>Registrar/Public</td><td>Open application form and submit a complete trainee application with files.</td><td>Application saves; permitted files upload; registrar can view it.</td><td>Critical</td></tr><tr><td>TC-202</td><td>Registrar/Public</td><td>Submit missing/invalid fields, invalid email/phone, or unsupported/oversized upload.</td><td>Clear validation; invalid/unsafe file is not stored.</td><td>High</td></tr><tr><td>TC-203</td><td>Registrar</td><td>Approve one applicant and reject another.</td><td>Status and any notification are accurate.</td><td>High</td></tr><tr><td>TC-204</td><td>Registrar</td><td>Create qualification with valid, duplicate and incomplete information.</td><td>Valid qualification is available; invalid data is rejected.</td><td>High</td></tr><tr><td>TC-205</td><td>Registrar</td><td>Assign trainer to qualification; check trainer access.</td><td>Assignment persists and trainer sees only assigned information.</td><td>High</td></tr><tr><td>TC-206</td><td>Registrar</td><td>Create batch/schedule and assign approved trainee.</td><td>Batch/schedule persist; trainee is visible to trainer and trainee.</td><td>Critical</td></tr><tr><td>TC-207</td><td>Registrar</td><td>Assign unapproved/duplicate trainee or conflicting schedule.</td><td>Invalid assignment is prevented with an understandable message.</td><td>High</td></tr>
+    <tr><td>TC-301</td><td>Trainer</td><td>Open My Batches and review batch, trainee and qualification details.</td><td>Only assigned batches are visible.</td><td>High</td></tr><tr><td>TC-302</td><td>Trainer</td><td>Create/edit module or lesson and attach material/task sheet.</td><td>Module saves and is available to enrolled trainees.</td><td>High</td></tr><tr><td>TC-303</td><td>Trainer</td><td>Create task/quiz with due date; try invalid/incomplete data.</td><td>Valid task is published; invalid data is blocked.</td><td>High</td></tr><tr><td>TC-304</td><td>Trainer</td><td>Record/update grades and open progress/achievement charts.</td><td>Grades persist and calculations/charts are correct.</td><td>Critical</td></tr><tr><td>TC-305</td><td>Trainer</td><td>Attempt to grade a trainee outside assigned batch.</td><td>Action is blocked and unrelated data is unchanged.</td><td>Critical</td></tr>
+  </table>
+</section>
+
+<section class="page-break">
+  <h1>FUNCTIONAL TEST CASE MATRIX <span class="small">(continued)</span></h1>
+  <table class="compact"><tr><th>ID</th><th>Module / Role</th><th>Test scenario and steps</th><th>Expected result</th><th>Priority</th></tr>
+    <tr><td>TC-306</td><td>Trainee</td><td>After approval, open dashboard, My Training/Learning Path and My Grades.</td><td>Trainee sees only own batch, content, tasks and grades.</td><td>Critical</td></tr><tr><td>TC-307</td><td>Trainee</td><td>Open learning material and submit/complete an assigned task.</td><td>Material is accessible; completion/submission is saved for trainer.</td><td>High</td></tr><tr><td>TC-308</td><td>Trainee</td><td>Try to access another traineeâ€™s grade, file, task or profile.</td><td>Access is denied; private information is not revealed.</td><td>Critical</td></tr>
+    <tr><td>TC-309</td><td>All roles</td><td>Trigger application decision, batch assignment, task publication and grade update.</td><td>Intended recipient gets one correct in-app notice; check email if configured.</td><td>High</td></tr><tr><td>TC-310</td><td>Admin/Trainer</td><td>Open reports, analytics, progress and achievement views using known data.</td><td>Totals, filters and charts match test records.</td><td>High</td></tr><tr><td>TC-311</td><td>All roles</td><td>Use dashboards, sidebar, profile menu and logout on desktop/mobile width.</td><td>Navigation works and content remains usable.</td><td>Medium</td></tr><tr><td>TC-312</td><td>All forms</td><td>Enter script/HTML, SQL-like and very long text input.</td><td>Input is safely handled; no script/query error/page break occurs.</td><td>Critical</td></tr><tr><td>TC-313</td><td>All roles</td><td>Refresh during saving and briefly interrupt network on a non-destructive form.</td><td>Clear status; no duplicate/corrupt record is created.</td><td>High</td></tr><tr><td>TC-314</td><td>All roles</td><td>Load dashboards/lists and common save actions under normal test data.</td><td>Pages load within 3 seconds; common saves respond within 2 seconds.</td><td>Medium</td></tr>
+  </table>
+  <h2>Test Execution Log</h2>
+  <table><tr><th>Test ID</th><th>Tester</th><th>Date</th><th>Result</th><th>Defect ID / evidence</th><th>Actual result / remarks</th></tr><tr><td style="height:14mm"></td><td></td><td></td><td>â˜ Pass<br>â˜ Fail<br>â˜ Blocked<br>â˜ Not Run</td><td></td><td></td></tr><tr><td style="height:14mm"></td><td></td><td></td><td>â˜ Pass<br>â˜ Fail<br>â˜ Blocked<br>â˜ Not Run</td><td></td><td></td></tr></table>
+</section>
+
+<section class="page-break">
+  <h1>PART 2: FULL ISO/IEC 25010-ALIGNED SURVEY EVALUATION</h1>
+  <p>After completing the relevant test cases, rate each statement using the scale below.</p>
+  <table><tr><th>Score</th><th>Interpretation</th></tr><tr><td class="center">5</td><td>Strongly Agree</td></tr><tr><td class="center">4</td><td>Agree</td></tr><tr><td class="center">3</td><td>Neutral</td></tr><tr><td class="center">2</td><td>Disagree</td></tr><tr><td class="center">1</td><td>Strongly Disagree</td></tr></table>
+  <h2>1. Functional Suitability</h2><table class="survey"><tr><th>Code</th><th>Evaluation statement</th><th>Score (1â€“5)</th></tr><tr><td>FS-1</td><td>The functions I need for my role are available.</td><td></td></tr><tr><td>FS-2</td><td>The system produces correct results for information I enter or view.</td><td></td></tr><tr><td>FS-3</td><td>Application, batch, module, task and grading functions support the training process.</td><td></td></tr><tr><td>FS-4</td><td>The system prevents incomplete or invalid information from being saved.</td><td></td></tr></table>
+  <h2>2. Usability</h2><table class="survey"><tr><th>Code</th><th>Evaluation statement</th><th>Score (1â€“5)</th></tr><tr><td>US-1</td><td>Menus, labels and icons make the system easy to navigate.</td><td></td></tr><tr><td>US-2</td><td>I can complete usual tasks without frequent assistance.</td><td></td></tr><tr><td>US-3</td><td>Error and validation messages clearly tell me what to correct.</td><td></td></tr><tr><td>US-4</td><td>The interface is understandable and usable on my device/screen size.</td><td></td></tr></table>
+  <h2>3. Performance Efficiency</h2><table class="survey"><tr><th>Code</th><th>Evaluation statement</th><th>Score (1â€“5)</th></tr><tr><td>PE-1</td><td>Pages and dashboards load within an acceptable time.</td><td></td></tr><tr><td>PE-2</td><td>Saving forms, grades and assignments responds promptly.</td><td></td></tr><tr><td>PE-3</td><td>Searching, filtering and opening reports performs acceptably.</td><td></td></tr><tr><td>PE-4</td><td>The system remains responsive while I move between pages.</td><td></td></tr></table>
+</section>
+
+<section class="page-break">
+  <h1>ISO/IEC 25010 SURVEY EVALUATION <span class="small">(continued)</span></h1>
+  <h2>4. Security</h2><table class="survey"><tr><th>Code</th><th>Evaluation statement</th><th>Score (1â€“5)</th></tr><tr><td>SE-1</td><td>I can access only pages and data appropriate to my role.</td><td></td></tr><tr><td>SE-2</td><td>Valid credentials are required before protected information is shown.</td><td></td></tr><tr><td>SE-3</td><td>I trust the system to protect trainee data and uploaded documents.</td><td></td></tr><tr><td>SE-4</td><td>Logging out prevents another person from continuing to use my session.</td><td></td></tr></table>
+  <h2>5. Reliability</h2><table class="survey"><tr><th>Code</th><th>Evaluation statement</th><th>Score (1â€“5)</th></tr><tr><td>RE-1</td><td>The system performs consistently when I repeat the same task.</td><td></td></tr><tr><td>RE-2</td><td>Saved records remain correct after refresh, logout and later login.</td><td></td></tr><tr><td>RE-3</td><td>The system handles errors without losing or duplicating work.</td><td></td></tr><tr><td>RE-4</td><td>Notifications, assignments and grades appear consistently for the intended user.</td><td></td></tr></table>
+  <h2>6. Maintainability</h2><table class="survey"><tr><th>Code</th><th>Evaluation statement</th><th>Score (1â€“5)</th></tr><tr><td>MA-1</td><td>Screens and functions are organised consistently across the system.</td><td></td></tr><tr><td>MA-2</td><td>Changes to one function do not appear to break related functions.</td><td></td></tr><tr><td>MA-3</td><td>The system provides enough messages/logs to help identify a problem.</td><td></td></tr><tr><td>MA-4</td><td>The system appears easy to update or improve without disrupting users.</td><td></td></tr></table>
+  <h2>Open-Ended Feedback</h2>
+  <p>1. Which feature helped you most? ______________________________________________________________</p><p>2. Which task was difficult or unclear? _____________________________________________________________</p><p>3. What should be improved before deployment? _____________________________________________________</p><p>4. Other comments: ____________________________________________________________________________</p>
+  <h2>Scoring Interpretation</h2><table><tr><th>Mean range</th><th>Interpretation</th></tr><tr><td>4.21â€“5.00</td><td>Excellent / highly acceptable</td></tr><tr><td>3.41â€“4.20</td><td>Acceptable</td></tr><tr><td>2.61â€“3.40</td><td>Moderately acceptable; improvement required</td></tr><tr><td>1.81â€“2.60</td><td>Low acceptability; major improvement required</td></tr><tr><td>1.00â€“1.80</td><td>Unacceptable</td></tr></table>
+</section>
+
+<section class="page-break">
+  <h1>PART 3: FORMAL CLIENT ACCEPTANCE</h1>
+  <h2>Acceptance Statement</h2>
+  <p>We confirm that the Hohoo-Ville Training Management System has undergone functional testing and user evaluation based on this testing plan. The results, reported defects and agreed corrective actions have been reviewed. Subject to the conditions stated below, the system is accepted for the agreed deployment or use.</p>
+  <table><tr><th>Acceptance item</th><th>Result / remarks</th></tr><tr><td>Number of planned test cases</td><td>31</td></tr><tr><td>Test cases passed</td><td>______ / 31</td></tr><tr><td>Test cases failed/blocked</td><td>______ / 31</td></tr><tr><td>Open Critical defects</td><td>______</td></tr><tr><td>Open High defects</td><td>______</td></tr><tr><td>Overall ISO/IEC 25010 mean score</td><td>______ / 5.00</td></tr><tr><td>Deployment decision</td><td>â˜ Accepted &nbsp;&nbsp; â˜ Accepted with conditions &nbsp;&nbsp; â˜ Not accepted</td></tr><tr><td>Conditions / required corrections</td><td style="height:20mm"></td></tr></table>
+  <h2>Approval Signatures</h2>
+  <table class="signature"><tr><th>Name and role</th><th>Signature</th><th>Date</th></tr><tr><td>Client representative</td><td></td><td></td></tr><tr><td>System administrator</td><td></td><td></td></tr><tr><td>Test facilitator / project representative</td><td></td><td></td></tr></table>
+</section>
+</body>
+</html>
+

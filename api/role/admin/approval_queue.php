@@ -95,7 +95,7 @@ function getReservedEnrollments($conn) {
                 e.enrollment_date, 
                 e.status,
                 h.trainee_id, h.first_name, h.last_name, h.photo_file,
-                c.qualification_id, c.qualification_name as course_name
+                c.qualification_id, c.qualification_name
             FROM tbl_enrollment e
             JOIN tbl_trainee_hdr h ON e.trainee_id = h.trainee_id
             LEFT JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
@@ -128,8 +128,8 @@ function processEnrollment($conn, $status) {
         // Fetch trainee details for email notification
         $stmtDetails = $conn->prepare("
             SELECT 
-                h.email, h.first_name, h.last_name,
-                b.batch_name, c.qualification_name as course_name
+                e.enrollment_id, h.email, h.first_name, h.last_name,
+                b.batch_name, c.qualification_name
             FROM tbl_enrollment e
             JOIN tbl_trainee_hdr h ON e.trainee_id = h.trainee_id
             LEFT JOIN tbl_batch b ON e.batch_id = b.batch_id
@@ -321,8 +321,23 @@ function reassignBatch($conn) {
 function sendNotificationEmail($details, $status, $reason = '') {
     $to = $details['email'];
     $name = $details['first_name'] . ' ' . $details['last_name'];
-    $course = $details['course_name'] ?? 'Course';
+    $course = $details['course_name'] ?? $details['qualification_name'] ?? 'Course';
     $batch = $details['batch_name'] ?? 'Batch';
+
+    $templateKey = $status === 'approved' ? 'enrollment_approved' : ($status === 'rejected' ? 'application_rejected' : null);
+    if ($templateKey) {
+        $emailSvc = new EmailService();
+        $result = $emailSvc->sendTemplateEmail($templateKey, $to, [
+            'user_name' => trim($name), 'trainee_name' => trim($name), 'user_email' => $to,
+            'application_id' => $details['enrollment_id'] ?? 'N/A',
+            'course_name' => $course, 'batch_name' => $batch,
+            'application_status' => $status,
+            'rejection_reason' => $reason !== '' ? $reason : 'No reason provided.',
+            'approval_date' => date('F j, Y'), 'application_date' => date('F j, Y')
+        ]);
+        if (!($result['success'] ?? false)) error_log('Template email failed: ' . ($result['message'] ?? 'Unknown error'));
+        return $result['success'] ?? false;
+    }
     
     $brandColor = '#4e73df';
     $successColor = '#28a745';

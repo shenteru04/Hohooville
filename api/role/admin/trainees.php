@@ -21,7 +21,6 @@ $action = isset($_GET['action']) ? $_GET['action'] : '';
 
 try {
     // Get JWT token from headers
-    $headers = getallheaders();
     $authHeader = $headers['Authorization'] ?? '';
     
     // If no auth header, allow access for now (graceful degradation)
@@ -113,7 +112,7 @@ function base64url_decode($data) {
 
 function getFormData($conn) {
     try {
-        $stmtCourses = $conn->query("SELECT qualification_id as course_id, qualification_name as course_name FROM tbl_qualifications WHERE status = 'active' ORDER BY qualification_name ASC");
+        $stmtCourses = $conn->query("SELECT qualification_id, qualification_name FROM tbl_qualifications WHERE status = 'active' ORDER BY qualification_name ASC");
         $courses = $stmtCourses->fetchAll(PDO::FETCH_ASSOC);
 
         $stmtBatches = $conn->query("
@@ -482,7 +481,7 @@ function checkAndCloseBatch($conn, $batchId) {
     if (!$batchId) return;
     
     // Get batch info including max_trainees
-    $stmtBatch = $conn->prepare("SELECT batch_id, qualification_id, max_trainees, training_cost, batch_name, trainer_id, scholarship_type, scholarship_type_id, status FROM tbl_batch WHERE batch_id = ?");
+    $stmtBatch = $conn->prepare("SELECT batch_id, qualification_id, max_trainees, batch_name, trainer_id, scholarship_type, scholarship_type_id, status FROM tbl_batch WHERE batch_id = ?");
     $stmtBatch->execute([$batchId]);
     $batch = $stmtBatch->fetch(PDO::FETCH_ASSOC);
     
@@ -533,7 +532,7 @@ function createNextBatch($conn, $previousBatch) {
         $endDate = date('Y-m-d', strtotime('+1 month'));
         
         // Create new batch with same properties as previous
-        $stmtInsert = $conn->prepare("INSERT INTO tbl_batch (qualification_id, trainer_id, batch_name, scholarship_type, scholarship_type_id, start_date, end_date, status, max_trainees, training_cost) VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)");
+        $stmtInsert = $conn->prepare("INSERT INTO tbl_batch (qualification_id, trainer_id, batch_name, scholarship_type, scholarship_type_id, start_date, end_date, status, max_trainees) VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?)");
         $stmtInsert->execute([
             $qualId,
             $previousBatch['trainer_id'],
@@ -542,8 +541,7 @@ function createNextBatch($conn, $previousBatch) {
             $previousBatch['scholarship_type_id'],
             $startDate,
             $endDate,
-            $previousBatch['max_trainees'],
-            $previousBatch['training_cost'] ?? null
+            $previousBatch['max_trainees']
         ]);
         
         return $conn->lastInsertId();
@@ -697,15 +695,16 @@ function checkAndCloseBatches($conn) {
                 b.qualification_id, 
                 b.batch_name, 
                 b.max_trainees,
-                b.training_cost,
+                q.training_cost,
                 b.trainer_id,
                 b.scholarship_type,
                 b.scholarship_type_id,
                 COUNT(e.enrollment_id) as enrolled_count
             FROM tbl_batch b
             LEFT JOIN tbl_enrollment e ON b.batch_id = e.batch_id AND e.status = 'approved'
+            LEFT JOIN tbl_qualifications q ON b.qualification_id = q.qualification_id
             WHERE b.status = 'open'
-            GROUP BY b.batch_id, b.qualification_id, b.batch_name, b.max_trainees, b.trainer_id, b.scholarship_type, b.scholarship_type_id
+            GROUP BY b.batch_id, b.qualification_id, b.batch_name, b.max_trainees, q.training_cost, b.trainer_id, b.scholarship_type, b.scholarship_type_id
             HAVING enrolled_count >= b.max_trainees
         ");
         $stmtBatches->execute();
@@ -749,8 +748,8 @@ function checkAndCloseBatches($conn) {
 
                     $stmtInsert = $conn->prepare("
                         INSERT INTO tbl_batch 
-                        (qualification_id, trainer_id, batch_name, scholarship_type, scholarship_type_id, start_date, end_date, status, max_trainees, training_cost) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)
+                        (qualification_id, trainer_id, batch_name, scholarship_type, scholarship_type_id, start_date, end_date, status, max_trainees) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?)
                     ");
                     $stmtInsert->execute([
                         $batch['qualification_id'],
@@ -760,8 +759,7 @@ function checkAndCloseBatches($conn) {
                         $batch['scholarship_type_id'],
                         $startDate,
                         $endDate,
-                        $batch['max_trainees'],
-                        $batch['training_cost'] ?? null
+                        $batch['max_trainees']
                     ]);
                     $createdCount++;
                     $details[] = "Created new batch: $newBatchName";

@@ -244,7 +244,8 @@ async function loadDashboardData(traineeId) {
             displayRoom = displayRoom || '-';
 
             // Update Course Info
-            document.getElementById('activeCourseName').textContent = course.course_name || 'Not Enrolled';
+            const displayedCourseName = course.qualification_name || course.course_name || 'Not Enrolled';
+            document.getElementById('activeCourseName').textContent = displayedCourseName;
             document.getElementById('batchName').textContent = course.batch_name || '-';
             document.getElementById('startDate').textContent = course.start_date || '-';
             document.getElementById('endDate').textContent = course.end_date || '-';
@@ -274,7 +275,7 @@ async function loadDashboardData(traineeId) {
 
             // Add Archive Button if course is active and competent
             const archiveContainer = document.getElementById('archiveButtonContainer') || createArchiveContainer();
-            if (course.course_name && course.course_name !== 'Not Enrolled' && competencyStatus === 'Competent' && data.can_archive) {
+            if ((course.qualification_name || course.course_name) && (course.qualification_name || course.course_name) !== 'Not Enrolled' && competencyStatus === 'Competent' && data.can_archive) {
                 archiveContainer.innerHTML = `
                     <button class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-yellow-500 hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500" onclick="archiveCourse(${course.enrollment_id}, ${traineeId})">
                         <i class="fas fa-archive mr-2"></i> Archive This Course
@@ -387,7 +388,7 @@ function renderArchivedCoursesModal(archivedCourses, traineeId) {
         return `
             <tr class="border-b border-slate-100 last:border-b-0">
                 <td class="px-4 py-4 align-top">
-                    <p class="font-semibold text-slate-900">${escapeHtml(course.course_name || 'Unnamed Qualification')}</p>
+                    <p class="font-semibold text-slate-900">${escapeHtml(course.qualification_name || course.course_name || 'Unnamed Qualification')}</p>
                 </td>
                 <td class="px-4 py-4 align-top text-slate-700">${escapeHtml(course.batch_name || 'N/A')}</td>
                 <td class="px-4 py-4 align-top text-slate-700">${escapeHtml(course.completion_date || 'N/A')}</td>

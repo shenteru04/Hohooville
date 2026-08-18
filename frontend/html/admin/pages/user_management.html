@@ -65,6 +65,9 @@
                         <button class="tab-role-btn rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" id="registrar-tab" data-tab-group="roles" data-tab-target="#registrarPane" type="button" role="tab">
                             <i class="fas fa-clipboard-list mr-2"></i> Registrars
                         </button>
+                        <button class="tab-role-btn rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" id="deactivated-users-tab" data-tab-group="roles" data-tab-target="#deactivatedUsersPane" type="button" role="tab">
+                            <i class="fas fa-user-slash mr-2"></i> Deactivated Users
+                        </button>
                     </div>
                 </div>
 
@@ -163,6 +166,11 @@
                                 </tbody>
                             </table>
                         </div>
+                    </section>
+
+                    <section class="tab-role-pane hidden" id="deactivatedUsersPane" role="tabpanel">
+                        <div class="border-b border-slate-200 bg-slate-50 p-4"><p class="text-sm text-slate-600">Deactivated users can be reactivated here.</p></div>
+                        <div class="overflow-x-auto"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">User</th><th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Role</th><th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Deactivated Date</th><th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-600">Actions</th></tr></thead><tbody id="deactivatedUsersBody" class="divide-y divide-slate-100 bg-white"></tbody></table></div>
                     </section>
                 </div>
             </article>

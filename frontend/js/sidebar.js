@@ -50,6 +50,15 @@ class SidebarManager {
         this.sidebarContainer = document.getElementById('sidebar-container');
         if (!this.sidebarContainer) return;
 
+        // Create Schedule supplies an embedded sidebar while the shared
+        // component loads. Populate it through the same profile loader used
+        // by all other Admin pages so it never remains on the User placeholder.
+        this.sidebar = this.sidebarContainer.querySelector('#sidebar');
+        if (this.sidebar) {
+            this.mainContent = document.querySelector('.main-content');
+            this.loadUserProfileInSidebar();
+        }
+
         fetch(this.getSidebarPath())
             .then((response) => {
                 if (!response.ok) throw new Error(`Failed to load sidebar: ${response.status}`);
@@ -70,9 +79,21 @@ class SidebarManager {
             })
             .catch((error) => {
                 console.warn('Sidebar loading error:', error);
-                if (!this.sidebarContainer.querySelector('#sidebar')) {
-                    this.sidebarContainer.innerHTML = '<div style="padding: 1rem; color: #b91c1c;">Failed to load sidebar.</div>';
+                this.sidebar = this.sidebarContainer.querySelector('#sidebar');
+                if (this.sidebar) {
+                    this.mainContent = document.querySelector('.main-content');
+                    this.ensureSidebarOverlay();
+                    this.normalizeLinks();
+                    this.setActiveLink();
+                    this.setupEventListeners();
+                    this.applyCollapsedState();
+                    this.loadUserProfileInSidebar();
+                    this.loadNotification();
+                    window.refreshHeaderProfileChip = () => this.loadUserProfileInSidebar();
+                    return;
                 }
+
+                this.sidebarContainer.innerHTML = '<div style="padding: 1rem; color: #b91c1c;">Failed to load sidebar.</div>';
             });
     }
 
@@ -470,8 +491,9 @@ class SidebarManager {
             }
 
             // Fetch profile image from API
-            if (imgEl && user.user_id) {
-                const response = await fetch(this.getProfileEndpoint(user.user_id), {
+            const userId = this.getCurrentUserId();
+            if (imgEl && userId) {
+                const response = await fetch(this.getProfileEndpoint(userId), {
                     headers: this.getAuthHeaders()
                 });
                 if (response.ok) {

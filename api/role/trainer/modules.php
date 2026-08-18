@@ -490,7 +490,7 @@ function listModules($conn) {
             SELECT *
             FROM tbl_module
             WHERE qualification_id = ? AND competency_type = ? AND trainer_id = ?
-            ORDER BY CASE WHEN module_status = 'draft' THEN 0 ELSE 1 END, module_order, module_id DESC
+            ORDER BY CASE WHEN module_status = 'draft' THEN 0 ELSE 1 END, module_id DESC
         ");
         $stmt->execute([$qualificationId, $type, $trainerId]);
         $modules = $stmt->fetchAll(PDO::FETCH_ASSOC);

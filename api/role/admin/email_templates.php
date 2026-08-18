@@ -10,9 +10,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../../database/db.php';
+require_once '../../utils/EmailService.php';
 
 $database = new Database();
 $conn = $database->getConnection();
+// Keeps the management page and email delivery on the same template schema/defaults.
+$templateEmailService = new EmailService();
 
 $action = $_GET['action'] ?? '';
 
@@ -121,30 +124,18 @@ function testTemplate($conn) {
             throw new Exception('Template ID and test email required');
         }
         
-        $stmt = $conn->prepare("SELECT subject, body_html FROM tbl_email_templates WHERE template_id = ?");
+        $stmt = $conn->prepare("SELECT template_key, subject, body_html, body_text, is_active FROM tbl_email_templates WHERE template_id = ?");
         $stmt->execute([$templateId]);
         $template = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if (!$template) throw new Exception('Template not found');
         
-        // Replace variables in template
-        $subject = $template['subject'];
-        $body = $template['body_html'];
-        
-        foreach ($variables as $key => $value) {
-            $subject = str_replace("{{$key}}", $value, $subject);
-            $body = str_replace("{{$key}}", $value, $body);
-        }
-        
-        // Send test email
-        $headers = "MIME-Version: 1.0" . "\r\n";
-        $headers .= "Content-type: text/html; charset=UTF-8" . "\r\n";
-        
-        $result = mail($testEmail, $subject, $body, $headers);
+        if (empty($template['template_key'])) throw new Exception('This template needs a template key before it can be tested.');
+        $result = (new EmailService())->sendTemplateEmail($template['template_key'], $testEmail, $variables);
         
         echo json_encode([
-            'success' => $result,
-            'message' => $result ? 'Test email sent' : 'Failed to send test email'
+            'success' => $result['success'] ?? false,
+            'message' => $result['message'] ?? 'Failed to send test email'
         ]);
     } catch (Exception $e) {
         http_response_code(500);

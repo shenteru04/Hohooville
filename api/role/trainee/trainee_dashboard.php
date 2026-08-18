@@ -171,7 +171,7 @@ class TraineeDashboard {
             $this->repairPrematureAutoArchivedEnrollments($traineeId);
 
             // 1. Get Active Course/Batch (not archived and still active, or completed but not archived after end date)
-            $courseQuery = "SELECT th.trainee_school_id, c.qualification_id AS course_id, c.qualification_name AS course_name, 
+            $courseQuery = "SELECT th.trainee_school_id, c.qualification_id, c.qualification_name, 
                                 b.batch_name, b.start_date, b.end_date, 
                                 COALESCE(s.schedule, oc.schedule) as schedule, 
                                 s.room_id as room_id, 
@@ -198,10 +198,14 @@ class TraineeDashboard {
             $stmt = $this->conn->prepare($courseQuery);
             $stmt->execute([$traineeId]);
             $activeCourse = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+            if ($activeCourse) {
+                $activeCourse['course_id'] = $activeCourse['qualification_id'] ?? null;
+                $activeCourse['course_name'] = $activeCourse['qualification_name'] ?? null;
+            }
             // DEBUG OUTPUT
             file_put_contents(__DIR__ . '/debug_active_course.log', print_r($activeCourse, true));
 
-            $qualificationId = $activeCourse ? $activeCourse['course_id'] : null;
+            $qualificationId = $activeCourse ? ($activeCourse['qualification_id'] ?? $activeCourse['course_id'] ?? null) : null;
 
             // 2. Get Progress Rate (quiz + task sheet completion)
             $progressRate = $this->calculateProgressRate($traineeId, $qualificationId);
@@ -217,7 +221,7 @@ class TraineeDashboard {
             // 4. Get Upcoming Schedule (Mock logic based on batch schedule string)
             // In a real app, this would query a calendar table.
             $schedule = [
-                'course' => $activeCourse ? ($activeCourse['course_name'] ?? 'No Active Course') : 'No Active Course',
+                'course' => $activeCourse ? ($activeCourse['qualification_name'] ?? $activeCourse['course_name'] ?? 'No Active Course') : 'No Active Course',
                 'time' => $activeCourse ? ($activeCourse['schedule'] ?? 'N/A') : 'N/A',
                 'room' => $activeCourse ? ($activeCourse['room_name'] ?? 'N/A') : 'N/A'
             ];

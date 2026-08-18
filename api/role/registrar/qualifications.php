@@ -24,7 +24,7 @@ switch ($action) {
 function getApprovedQualifications($conn) {
     try {
         autoActivatePendingQualifications($conn);
-        $stmt = $conn->query("SELECT q.qualification_id, q.qualification_name, q.qualification_name as course_name, q.ctpr_number, q.duration, q.training_cost, q.status, q.nc_level_id, nc.nc_level_code, nc.nc_level_name FROM tbl_qualifications q LEFT JOIN tbl_nc_levels nc ON q.nc_level_id = nc.nc_level_id WHERE q.status = 'active' AND q.is_archived = 0 ORDER BY q.qualification_name ASC");
+        $stmt = $conn->query("SELECT q.qualification_id, q.qualification_name, q.ctpr_number, q.duration, q.training_cost, q.status, q.nc_level_id, nc.nc_level_code, nc.nc_level_name FROM tbl_qualifications q LEFT JOIN tbl_nc_levels nc ON q.nc_level_id = nc.nc_level_id WHERE q.status = 'active' AND q.is_archived = 0 ORDER BY q.qualification_name ASC");
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(['success' => true, 'data' => $data]);
     } catch (Exception $e) {

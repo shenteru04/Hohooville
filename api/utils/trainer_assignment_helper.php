@@ -55,15 +55,7 @@ if (!function_exists('ta_ensure_schema')) {
             error_log('Unable to ensure tbl_batch.trainer_assignment_mode: ' . $e->getMessage());
         }
 
-        try {
-            if (!ta_column_exists($conn, 'tbl_batch', 'training_cost')) {
-                $conn->exec("ALTER TABLE `tbl_batch`
-                    ADD COLUMN `training_cost` DECIMAL(10,2) NULL DEFAULT NULL
-                    AFTER `max_trainees`");
-            }
-        } catch (Exception $e) {
-            error_log('Unable to ensure tbl_batch.training_cost: ' . $e->getMessage());
-        }
+        
 
         try {
             if (!ta_column_exists($conn, 'tbl_lessons', 'lesson_resource_url')) {
@@ -85,17 +77,7 @@ if (!function_exists('ta_ensure_schema')) {
             error_log('Unable to normalize trainer assignment modes: ' . $e->getMessage());
         }
 
-        try {
-            if (ta_column_exists($conn, 'tbl_batch', 'training_cost') && ta_table_exists($conn, 'tbl_qualifications')) {
-                $conn->exec("UPDATE `tbl_batch` b
-                    LEFT JOIN `tbl_qualifications` q ON q.`qualification_id` = b.`qualification_id`
-                    SET b.`training_cost` = q.`training_cost`
-                    WHERE b.`training_cost` IS NULL
-                      AND q.`training_cost` IS NOT NULL");
-            }
-        } catch (Exception $e) {
-            error_log('Unable to backfill tbl_batch.training_cost: ' . $e->getMessage());
-        }
+        
 
         try {
             $conn->exec("CREATE TABLE IF NOT EXISTS `tbl_batch_trainer_assignments` (
@@ -529,15 +511,19 @@ if (!function_exists('ta_fetch_trainee_accessible_module_ids')) {
         }
 
         $moduleIds = [];
+        $publishedModuleFilter = ta_column_exists($conn, 'tbl_module', 'module_status')
+            ? " AND COALESCE(m.module_status, 'published') = 'published'"
+            : '';
 
         $singleTrainerIds = array_values(array_unique(array_filter(array_merge($singleTrainerIds, $multiFallbackTrainerIds))));
         if (!empty($singleTrainerIds)) {
             $placeholders = implode(',', array_fill(0, count($singleTrainerIds), '?'));
             $stmt = $conn->prepare("
-                SELECT DISTINCT module_id
-                FROM tbl_module
-                WHERE qualification_id = ?
-                  AND trainer_id IN ($placeholders)
+                SELECT DISTINCT m.module_id
+                FROM tbl_module m
+                WHERE m.qualification_id = ?
+                  AND m.trainer_id IN ($placeholders)
+                  $publishedModuleFilter
             ");
             $stmt->execute(array_merge([$qualificationId], $singleTrainerIds));
             $moduleIds = array_merge($moduleIds, array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN) ?: []));
@@ -547,9 +533,11 @@ if (!function_exists('ta_fetch_trainee_accessible_module_ids')) {
         if (!empty($multiBatchIds)) {
             $placeholders = implode(',', array_fill(0, count($multiBatchIds), '?'));
             $stmt = $conn->prepare("
-                SELECT DISTINCT module_id
-                FROM tbl_batch_trainer_assignments
-                WHERE batch_id IN ($placeholders)
+                SELECT DISTINCT bta.module_id
+                FROM tbl_batch_trainer_assignments bta
+                INNER JOIN tbl_module m ON m.module_id = bta.module_id
+                WHERE bta.batch_id IN ($placeholders)
+                  $publishedModuleFilter
             ");
             $stmt->execute($multiBatchIds);
             $moduleIds = array_merge($moduleIds, array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN) ?: []));

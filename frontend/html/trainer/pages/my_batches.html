@@ -124,9 +124,14 @@
                     <section id="traineesContainer" class="hidden bg-white rounded-2xl border border-blue-100 shadow-sm overflow-hidden">
                         <div class="px-6 py-4 border-b border-blue-100 bg-blue-50/50 flex flex-wrap items-center justify-between gap-3">
                             <h3 class="text-base font-semibold text-slate-900">Trainees in Selected Batch</h3>
-                            <button id="downloadAttendanceBtn" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-                                <i class="fas fa-download"></i> Download Attendance Sheet
-                            </button>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <button id="recordAttendanceBtn" class="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
+                                    <i class="fas fa-clipboard-check"></i> Record Attendance
+                                </button>
+                                <button id="downloadAttendanceBtn" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                    <i class="fas fa-download"></i> Download Attendance Sheet
+                                </button>
+                            </div>
                         </div>
                         <div class="p-4 sm:p-6">
                             <div class="overflow-x-auto">
@@ -148,6 +153,63 @@
                     </section>
                 </div>
             </main>
+        </div>
+    </div>
+
+    <div id="attendanceModal" class="fixed inset-0 z-50 hidden bg-slate-900/45 p-4">
+        <div class="mx-auto flex h-full max-w-4xl items-center justify-center">
+            <div class="flex w-full max-h-[88vh] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                <div class="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-4">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">Attendance</p>
+                        <h4 class="mt-1 text-xl font-bold text-slate-900">Record Batch Attendance</h4>
+                    </div>
+                    <button type="button" id="closeAttendanceModalBtn" class="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-slate-600 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                        <i class="fas fa-xmark"></i>
+                    </button>
+                </div>
+
+                <div class="border-b border-slate-200 bg-white px-5 py-4">
+                    <label class="block text-sm font-medium text-slate-700">Attendance Date</label>
+                    <input id="attendanceModalDate" type="date" class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                </div>
+
+                <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+                    <div id="attendanceModalList" class="space-y-3"></div>
+                </div>
+
+                <div class="flex shrink-0 items-center justify-end gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4">
+                    <button type="button" id="cancelAttendanceBtn" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">Cancel</button>
+                    <button type="button" id="saveAttendanceModalBtn" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="signatureCaptureModal" class="fixed inset-0 z-[60] hidden bg-slate-900/55 p-4">
+        <div class="mx-auto flex h-full max-w-lg items-center justify-center">
+            <div class="w-full rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">Signature</p>
+                        <h4 id="signatureModalTitle" class="mt-1 text-xl font-bold text-slate-900">Trainee Signature</h4>
+                    </div>
+                    <button type="button" id="closeSignatureModalBtn" class="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-slate-600 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                        <i class="fas fa-xmark"></i>
+                    </button>
+                </div>
+
+                <div class="p-5">
+                    <canvas id="attendanceSignatureCanvas" width="520" height="220" class="w-full rounded-xl border border-slate-300 bg-slate-50 shadow-inner"></canvas>
+                    <div class="mt-4 flex items-center justify-between gap-3">
+                        <button type="button" id="clearSignaturePadBtn" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">Clear</button>
+                        <div class="flex items-center gap-2">
+                            <button type="button" id="cancelSignatureBtn" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">Cancel</button>
+                            <button type="button" id="saveSignatureBtn" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">Save Signature</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

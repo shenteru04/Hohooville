@@ -1281,7 +1281,7 @@ class BulkImport {
         }
 
         $stmtBatch = $this->conn->prepare(
-            "SELECT batch_id, qualification_id, max_trainees, training_cost, batch_name, trainer_id, scholarship_type, scholarship_type_id, status
+            "SELECT batch_id, qualification_id, max_trainees, batch_name, trainer_id, scholarship_type, scholarship_type_id, status
              FROM tbl_batch WHERE batch_id = ?"
         );
         $stmtBatch->execute([$batchId]);
@@ -1341,8 +1341,8 @@ class BulkImport {
             $stmtInsert = $this->conn->prepare(
                 "INSERT INTO tbl_batch (
                     qualification_id, trainer_id, batch_name, scholarship_type, scholarship_type_id,
-                    start_date, end_date, status, max_trainees, training_cost
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)"
+                    start_date, end_date, status, max_trainees
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?)"
             );
             $stmtInsert->execute([
                 $previousBatch['qualification_id'],
@@ -1352,8 +1352,7 @@ class BulkImport {
                 $previousBatch['scholarship_type_id'] ?? null,
                 $startDate,
                 $endDate,
-                $previousBatch['max_trainees'],
-                $previousBatch['training_cost'] ?? null
+                $previousBatch['max_trainees']
             ]);
 
             return (int)$this->conn->lastInsertId();

@@ -1,5 +1,5 @@
 const API_BASE_URL = `${window.location.origin}/Hohoo-ville/api`;
-const TRAINER_UPLOADS_URL = `${window.location.origin}/Hohoo-ville/api/uploads/trainers/`;
+const TRAINER_UPLOADS_URL = `${window.location.origin}/Hohoo-ville/uploads/trainers/`;
 const PROFILE_IMAGE_UPLOADS_URL = `${window.location.origin}/Hohoo-ville/uploads/profile_images/`;
 const TRAINER_PROGRESS_CHART_URL = `${window.location.origin}/Hohoo-ville/frontend/html/trainer/pages/progress_chart.html`;
 const TRAINER_ACHIEVEMENT_CHART_URL = `${window.location.origin}/Hohoo-ville/frontend/html/trainer/pages/achievement_chart.html`;
@@ -596,6 +596,7 @@ function renderTable(data) {
                 <td class="px-3 py-3 text-sm text-slate-700">${profileImageHtml}</td>
                 <td class="px-3 py-3 text-sm text-slate-900">${escapeHtml(`${trainer.last_name || ''}, ${trainer.first_name || ''}`)}</td>
                 <td class="px-3 py-3 text-sm text-slate-700">${escapeHtml(trainer.email || 'N/A')}</td>
+                <td class="px-3 py-3 text-sm text-slate-700">${escapeHtml(trainer.trainer_type || 'full timer')}</td>
                 <td class="px-3 py-3 text-sm">
                     <div class="flex flex-wrap items-center gap-2">
                         ${countBadge}
@@ -1114,6 +1115,7 @@ async function openEditModal(id) {
         setValue('newTrainerLastName', trainer.last_name || '');
         setValue('newTrainerEmail', trainer.email || '');
         setValue('newTrainerPhone', trainer.phone_number || '');
+        setValue('newTrainerType', trainer.trainer_type || 'full timer');
         setValue('newNttcNo', trainer.nttc_no || '');
 
         const container = document.getElementById('newQualificationsContainer');
@@ -1242,6 +1244,7 @@ async function handleCreateTrainer(event) {
     payload.append('last_name', document.getElementById('newTrainerLastName')?.value?.trim() || '');
     payload.append('email', document.getElementById('newTrainerEmail')?.value?.trim() || '');
     payload.append('phone', document.getElementById('newTrainerPhone')?.value?.trim() || '');
+    payload.append('trainer_type', document.getElementById('newTrainerType')?.value || 'full timer');
     payload.append('address', address);
     payload.append('address_house', document.getElementById('newAddrHouse')?.value?.trim() || '');
     payload.append('address_barangay', document.getElementById('newAddrBarangay')?.value?.trim() || '');

@@ -1,0 +1,80 @@
+*** Begin Patch
+*** Update File: frontend/js/admin/pages/view_batches.js
+@@
+-    document.getElementById('newBatchMaxTrainees')?.addEventListener('input', updateProjectedBatchValue);
+-    document.getElementById('newBatchTrainingCost')?.addEventListener('input', updateProjectedBatchValue);
++    document.getElementById('newBatchMaxTrainees')?.addEventListener('input', updateProjectedBatchValue);
+@@
+-    const trainingCost = document.getElementById('newBatchTrainingCost')?.value;
++    // training_cost removed from batch level; qualification cost used for projections
+@@
+-    if (!batchName || !qualificationId || !trainerId || !startDate || !endDate || !maxTrainees || trainingCost === '') {
+-        showError('Please fill in all required fields');
+-        return;
+-    }
++    if (!batchName || !qualificationId || !trainerId || !startDate || !endDate || !maxTrainees) {
++        showError('Please fill in all required fields');
++        return;
++    }
+@@
+-    if (Number(trainingCost) < 0) {
+-        showError('Training cost cannot be negative');
+-        return;
+-    }
+-
+-    const payload = {
++    const payload = {
+         batch_name: batchName,
+         qualification_id: parseInt(qualificationId),
+         trainer_id: parseInt(trainerId),
+         scholarship_type_id: scholarshipTypeId ? parseInt(scholarshipTypeId) : null,
+         start_date: startDate,
+         end_date: endDate,
+         status: status,
+         max_trainees: maxTrainees ? parseInt(maxTrainees) : null,
+-        training_cost: Number(trainingCost)
++        // training_cost removed from payload
+     };
+@@
+-            document.getElementById('newBatchTrainingCost').value = batch.training_cost || '';
++            // training_cost field removed from modal; qualification-level cost will be used for projections
+@@
+-function populateTrainingCostFromQualification(qualificationId) {
+-    const trainingCostField = document.getElementById('newBatchTrainingCost');
+-    if (!trainingCostField) return;
+-
+-    if (!qualificationId) {
+-        trainingCostField.value = '';
+-        return;
+-    }
+-
+-    const qualification = availableQualifications.find((item) => String(item.qualification_id) === String(qualificationId));
+-    if (!qualification) return;
+-
+-    trainingCostField.value = qualification.training_cost !== undefined && qualification.training_cost !== null
+-        ? String(qualification.training_cost)
+-        : '';
+-}
++// Removed populateTrainingCostFromQualification: batch-level training_cost removed.
+@@
+-function updateProjectedBatchValue() {
+-    const maxTrainees = Number(document.getElementById('newBatchMaxTrainees')?.value || 0);
+-    const trainingCost = Number(document.getElementById('newBatchTrainingCost')?.value || 0);
+-    const projectedValue = maxTrainees > 0 && trainingCost >= 0 ? maxTrainees * trainingCost : 0;
+-    setText('newBatchProjectedTotal', `PHP ${projectedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+-}
++function getQualificationTrainingCost(qualificationId) {
++    if (!qualificationId) return 0;
++    const qual = availableQualifications.find(q => String(q.qualification_id) === String(qualificationId));
++    if (!qual) return 0;
++    return Number(qual.training_cost || 0);
++}
++
++function updateProjectedBatchValue() {
++    const maxTrainees = Number(document.getElementById('newBatchMaxTrainees')?.value || 0);
++    const qualificationId = document.getElementById('newBatchQualificationId')?.value || '';
++    const trainingCost = getQualificationTrainingCost(qualificationId);
++    const projectedValue = maxTrainees > 0 && trainingCost >= 0 ? maxTrainees * trainingCost : 0;
++    setText('newBatchProjectedTotal', `PHP ${projectedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
++}
+*** End Patch

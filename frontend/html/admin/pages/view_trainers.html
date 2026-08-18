@@ -73,6 +73,7 @@
                                     <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Photo</th>
                                     <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Name</th>
                                     <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Email</th>
+                                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Trainer Type</th>
                                     <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Qualifications</th>
                                     <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">NC Level</th>
                                     <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th>
@@ -402,6 +403,13 @@
                         <div>
                             <label class="mb-1 block text-sm font-medium text-slate-700">Phone <span class="text-rose-600">*</span></label>
                             <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="newTrainerPhone" required>
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700">Trainer Type <span class="text-rose-600">*</span></label>
+                            <select id="newTrainerType" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" required>
+                                <option value="full timer">Full Time</option>
+                                <option value="part timer">Part Time</option>
+                            </select>
                         </div>
                     </div>
                     <div>

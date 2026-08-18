@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hohoo-Ville Testing Plan</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 16mm; }
+  * { box-sizing: border-box; }
+  body { color:#111; font-family:"Times New Roman", Times, serif; font-size:10.4pt; line-height:1.32; }
+  h1,h2,h3 { color:#0a396d; margin:0; } h1 { font-size:23pt; text-align:center; line-height:1.2; } h2 { font-size:15pt; border-bottom:1.5px solid #0a396d; margin:18px 0 8px; padding-bottom:3px; } h3 { font-size:12pt; margin:12px 0 5px; }
+  p { margin:5px 0 8px; } .cover { min-height:247mm; display:flex; flex-direction:column; text-align:center; padding-top:48mm; } .cover .school { font-size:14pt; font-weight:bold; color:#0a396d; letter-spacing:.3px; } .cover .subtitle { margin-top:10px; font-size:13pt; } .cover .bar { width:105mm; border-top:2px solid #0a396d; margin:18px auto; } .cover .details { margin-top:42mm; text-align:left; width:125mm; align-self:center; font-size:11pt; } .page-break { break-before:page; page-break-before:always; }
+  table { width:100%; border-collapse:collapse; margin:7px 0 12px; font-size:9.1pt; } th,td { border:1px solid #555; padding:4px 5px; vertical-align:top; } th { background:#d9e7f5; text-align:center; color:#082e58; font-weight:bold; } .compact { font-size:8.15pt; line-height:1.22; } .survey { font-size:9.3pt; } .survey td:last-child { width:18%; } .note { border-left:3px solid #0a396d; background:#f1f6fb; padding:7px 10px; margin:8px 0; } ul,ol { margin:4px 0 8px 22px; padding:0; } li { margin-bottom:2px; } .center { text-align:center; } .signature td { height:20mm; vertical-align:bottom; } .small { font-size:8.8pt; } .nowrap { white-space:nowrap; }
+  @media print { h2 { break-after:avoid; } tr { break-inside:avoid; } }
+</style>
+</head>
+<body>
+<section class="cover">
+  <div class="school">HOHOO-VILLE TECHNICAL SCHOOL</div>
+  <div class="bar"></div>
+  <h1>TESTING PLAN</h1>
+  <p class="subtitle">Hohoo-Ville Training Management System</p>
+  <p class="subtitle">ISO/IEC 25010-Aligned Functional Testing<br>and User Acceptance Evaluation</p>
+  <div class="details">
+    <p><b>System under test:</b> Hohoo-Ville Training Management System</p>
+    <p><b>Prepared for:</b> Hohoo-Ville Technical School</p>
+    <p><b>Test type:</b> Functional, integration, usability, security, performance, reliability, and user acceptance testing</p>
+    <p><b>Document status:</b> Ready for execution</p>
+    <p><b>Date:</b> ____________________</p>
+  </div>
+</section>
+
+<section class="page-break">
+  <h1>TESTING FRAMEWORK: THREE-LEVEL HIERARCHY</h1>
+  
+  <h2>LEVEL 1: Master Unit Testing Registry</h2>
+  <h3>Series 100: User Authentication, Security & Session Management</h3>
+  <p>Focuses on crypto hashes, formatting rules, token lifetimes, and gatekeeping rules.</p>
+  
+  <h2>LEVEL 2: Master Integration Testing Registry</h2>
+  <h3>Series 100: Frontend Interface ↔ Backend API Integration</h3>
+  <p>Validates the data-sharing bridge between user input screens and server-side processing controllers.</p>
+  
+  <h2>LEVEL 3: Master System Testing Registry</h2>
+  <h3>Series 100: User Authentication, Security & Account Management</h3>
+  <p>Ensures that access gates work perfectly and user accounts are managed securely.</p>
+  
+  <h3>Series 200: Core Data Management & Transaction Processing (CRUD)</h3>
+  <p>Validates the system's ability to smoothly Create, Read, Update, and Delete information.</p>
+  
+  <h3>Series 300: Search, Filtering & Information Retrieval</h3>
+  <p>Ensures users can efficiently query, sort, and look up information in the database.</p>
+  
+  <h3>Series 400: Reporting, Document Exports & Analytic Computations</h3>
+  <p>Tests mathematical reliability and the generation of business reporting files.</p>
+  
+  <h3>Series 500: System Configurations & Notifications</h3>
+  <p>Tests backend automation, profile modifications, and interface status alert behaviors.</p>
+</section>
+
+<section class="page-break">
+  <h1>PART 1: PARTICIPANT PROFILE MATRIX</h1>
+  <p class="center">Complete this form before performing the assigned test cases and survey evaluation.</p>
+  <table>
+    <tr><th style="width:33%">Participant information</th><th>Response</th></tr>
+    <tr><td>Participant name (optional)</td><td></td></tr><tr><td>Role</td><td>☐ Administrator &nbsp; ☐ Registrar &nbsp; ☐ Trainer &nbsp; ☐ Trainee</td></tr>
+    <tr><td>Department / Batch</td><td></td></tr><tr><td>Date of testing</td><td></td></tr><tr><td>Device and browser used</td><td></td></tr>
+    <tr><td>Experience using the system</td><td>☐ First-time user &nbsp; ☐ Occasional user &nbsp; ☐ Regular user</td></tr>
+  </table>
+  <h2>1. Test Objectives</h2>
+  <ol><li>Confirm that each role can perform only its authorised tasks.</li><li>Validate the complete process from trainee application to completion.</li><li>Verify that information saved by one role is accurately available to the next authorised role.</li><li>Assess quality using ISO/IEC 25010 criteria.</li></ol>
+  <h2>2. Test Environment</h2>
+  <table><tr><th>Item</th><th>Required setup</th></tr><tr><td>Application</td><td>Hohoo-Ville deployed in an isolated XAMPP test/staging environment.</td></tr><tr><td>Database</td><td>Current schema/migrations and safe test data; no production personal data.</td></tr><tr><td>Browsers</td><td>Latest Chrome or Edge plus a mobile/responsive browser view.</td></tr><tr><td>Accounts</td><td>Active Admin, Registrar, Trainer and Trainee accounts; one inactive and one archived account.</td></tr><tr><td>Evidence</td><td>Executed-case result and screenshot/API response where useful.</td></tr></table>
+  <h2>3. Test Rules</h2>
+  <div class="note">Record every case as <b>Pass</b>, <b>Fail</b>, <b>Blocked</b>, or <b>Not Run</b>. Record failed cases with repeatable steps, actual result, expected result, evidence, and severity.</div>
+  <table><tr><th>Severity</th><th>Definition</th></tr><tr><td>Critical</td><td>Blocks login or training lifecycle, corrupts/loses data, or exposes sensitive data.</td></tr><tr><td>High</td><td>Major role function is unavailable with no reasonable workaround.</td></tr><tr><td>Medium</td><td>Function is incorrect but a workaround exists.</td></tr><tr><td>Low</td><td>Minor visual, wording or usability concern.</td></tr></table>
+</section>
+
+<section class="page-break">
+  <h1>LEVEL 1: Master Unit Testing Registry</h1>
+  <h2>Series 100: User Authentication, Security & Session Management</h2>
+  <p>Focuses on crypto hashes, formatting rules, token lifetimes, and gatekeeping rules.</p>
+  <table class="compact"><tr><th>Unit ID</th><th>Target Function / Code Method</th><th>Testing Scenario Profile</th><th>Expected Isolation Output</th></tr>
+    <tr><td>UT-101</td><td>validateEmailFormat(email)</td><td>Input contains structural typos (e.g., test@com, a@domain.com)</td><td>Return false (Rejected)</td></tr>
+    <tr><td>UT-102</td><td>validatePasswordStrength(pwd)</td><td>Input is less than 8 characters or misses a special character.</td><td>Return false (Weak password)</td></tr>
+    <tr><td>UT-103</td><td>hashUserPassword(plainText)</td><td>Raw string is passed into the cryptographic library (e.g., BCrypt).</td><td>Return a unique 60+ char secure salt hash</td></tr>
+    <tr><td>UT-104</td><td>verifyPasswordMatch(plain, hash)</td><td>Matching a user login password attempt against database hash record</td><td>Return true if match, false if modified</td></tr>
+    <tr><td>UT-105</td><td>generateSessionToken(userId)</td><td>User authenticates successfully; token generation</td><td>Return structured JWT or secure random state string</td></tr>
+    <tr><td>UT-106</td><td>isTokenExpired(timestamp)</td><td>Token expiry timestamp is older than current server system time.</td><td>Return true (Trigger auto-logout routine)</td></tr>
+    <tr><td>UT-107</td><td>sanitizeHtmlInput(userInput)</td><td>Input contains unsafe script tags (e.g., &lt;script&gt;malicious()&lt;/script&gt;).</td><td>Return stripped or encoded clean string (XSS protection)</td></tr>
+  </table>
+</section>
+
+<section class="page-break">
+  <h1>LEVEL 2: Master Integration Testing Registry</h1>
+  <h2>Series 100: Frontend Interface ↔ Backend API Integration</h2>
+  <p>Validates the data-sharing bridge between user input screens and server-side processing controllers.</p>
+  <table class="compact"><tr><th>Integration ID</th><th>Interoperating Subsystems</th><th>Testing Scenario Profile</th><th>Expected Cross-Module Integration Behavior</th></tr>
+    <tr><td>IT-101</td><td>UI Registration Form → Auth Controller</td><td>A user gathers the form registration details on the screen and clicks "Submit".</td><td>The frontend gathers the form array, serializes it to JSON, dispatches an HTTP POST request, handles the server's HTTP 201 Created status code, and redirects to login.</td></tr>
+    <tr><td>IT-102</td><td>Login Screen ↔ State/Session Manager</td><td>A user logs into an authenticated account profile.</td><td>The backend API returns a session token, the client-side framework catches it, securely commits it to storage (localStorage or cookies), and updates global application access states.</td></tr>
+    <tr><td>IT-103</td><td>Live Search Bar UI ↔ Query Controller</td><td>A user types a partial search string (e.g., keyword query) into an auto-suggest field.</td><td>The frontend captures keypress events, applies debounce timing logic, fires an API query request, and dynamically updates the data grid array without refreshing the web view</td></tr>
+    <tr><td>IT-104</td><td>Client File Uploader ↔ Storage Controller</td><td>A user attaches and uploads an image/document file attachment.</td><td>The client app wraps files into a Multipart/Form-Data boundary stream, the backend parses the object, generates storage pathways, and returns a public URL</td></tr>
+  </table>
+</section>
+
+<section class="page-break">
+  <h1>LEVEL 3: Master System Testing Registry</h1>
+  <h2>Series 100: User Authentication, Security & Account Management</h2>
+  <p>Ensures that access gates work perfectly and user accounts are managed securely.</p>
+  <table class="compact"><tr><th>System Test ID</th><th>Module</th><th>Step-by-Step Execution Procedure</th><th>Test Data / Inputs</th><th>Expected System Response</th></tr>
+    <tr><td>ST-101</td><td>Account Registration</td><td>1. Navigate to Registration page 2. Fill fields using an email format that already exists in database 3. Click "Register".</td><td>Email: existing_user@gmail.com</td><td>Form submission is blocked. A clear warning message states, "Email is already registered ".</td></tr>
+    <tr><td>ST-102</td><td>Login Security</td><td>1. Navigate to Login page 2. Enter a valid username but an incorrect password 3. Click "Login".</td><td>Password: WrongPass123</td><td>Login fails. System displays an error message: "Invalid credentials ". Password field is wiped clean</td></tr>
+    <tr><td>ST-103</td><td>Password Masking</td><td>1. Navigate to Login page 2. Type values into the password field</td><td>Any input string</td><td>Input values are visually masked using bullet dots (•••) to prevent shoulder surfing.</td></tr>
+    <tr><td>ST-104</td><td>Form Validation</td><td>1. Navigate to Registration page. 2. Leave required fields blank. 3. Click "Register".</td><td>Blank fields</td><td>Form submission fails. Inline error messages label each blank field with "This field is required."</td></tr>
+    <tr><td>ST-105</td><td>Access Control</td><td>1. Log in as Admin user 2. Change URL to /trainer/dashboard 3. Attempt direct access without admin role.</td><td>Role: Trainee</td><td>System blocks the action and returns 403 Forbidden or redirects to user's authorized dashboard. No restricted data is shown.</td></tr>
+  </table>
+
+  <h2>Series 200: Core Data Management & Transaction Processing (CRUD)</h2>
+  <p>Validates the system's ability to smoothly Create, Read, Update, and Delete information.</p>
+  <table class="compact"><tr><th>System Test ID</th><th>Module</th><th>Step-by-Step Execution Procedure</th><th>Test Data / Inputs</th><th>Expected System Response</th></tr>
+    <tr><td>ST-201</td><td>Record Creation</td><td>1. Navigate to the core creation form [e.g., Add New Qualification, Add Student Record] 2. Populate valid data fields. 3. Click "Save"</td><td>Valid record values</td><td>A success popup alert confirms saving. The system automatically redirects the user back to the master list view</td></tr>
+    <tr><td>ST-202</td><td>Input Data Boundaries</td><td>1. Open the data entry form. 2. Type text characters into fields explicitly meant for numbers. 3. Click "Save"</td><td>Stock Quantity "Five"</td><td>System rejects input stops processing, and displays a validation alert "Please enter a valid numeric value ".</td></tr>
+    <tr><td>ST-203</td><td>Record Modification</td><td>1. Select an existing entry row from the data table. 2. Click "Edit", modify a field value, and click "Update"</td><td>Updated name/value string</td><td>Data grid instantly updates with the new modifications. Changes are successfully preserved upon page refresh.</td></tr>
+    <tr><td>ST-204</td><td>Record Removal</td><td>1. Select a record entry row from the data table. 2. Click the "Delete" trash icon.</td><td>Click action button</td><td>A modal popup asks "Are you sure you want to delete this record?" Data is dropped only after confirmation</td></tr>
+    <tr><td>ST-205</td><td>Table Pagination</td><td>1. Navigate to a heavy data grid list containing more entries than the display limit [e.g., 50 rows total, limit 10]. 2. Interact with footer page controls.</td><td>Click "Next" / "Page 2"</td><td>System retrieves the next batch of records. The grid updates smoothly without flickering. Pagination does not mix or duplicate records.</td></tr>
+  </table>
+
+  <h2>Series 300: Search, Filtering & Information Retrieval</h2>
+  <p>Ensures users can efficiently query, sort, and look up information in the database.</p>
+  <table class="compact"><tr><th>System Test ID</th><th>Module</th><th>Step-by-Step Execution Procedure</th><th>Test Data / Inputs</th><th>Expected System Response</th></tr>
+    <tr><td>ST-301</td><td>Global Text Search</td><td>1. Open a master list registry view. 2. Type a known, specific keyword identifier into the search input box.</td><td>Keyword query</td><td>Data grid filters rows instantly, displaying only records that contain the specified search keyword string.</td></tr>
+    <tr><td>ST-302</td><td>Empty Search State</td><td>1. Type a random, non-existent keyword string into the search input box.</td><td>Query: "xyz789abc"</td><td>The data table clears out its row views and displays a clear message card stating: "No matching records found".</td></tr>
+    <tr><td>ST-303</td><td>Multi-Filter Sorting</td><td>1. Open the data tracking grid panel. 2. Select filter criteria properties [e.g., Status: Active, Category: Training] and click apply.</td><td>Drop-down selection filters</td><td>Table hides irrelevant entries and groups matching rows accurately according to the active filters selected.</td></tr>
+  </table>
+
+  <h2>Series 400: Reporting, Document Exports & Analytic Computations</h2>
+  <p>Tests mathematical reliability and the generation of business reporting files.</p>
+  <table class="compact"><tr><th>System Test ID</th><th>Module</th><th>Step-by-Step Execution Procedure</th><th>Test Data / Inputs</th><th>Expected System Response</th></tr>
+    <tr><td>ST-401</td><td>Mathematical Audit</td><td>1. Run transactions with manual reference calculations. 2. Open the system's analytics view</td><td>Simulated record data</td><td>System-calculated values (sums, averages, totals) exactly match the verified manual calculation totals.</td></tr>
+    <tr><td>ST-402</td><td>PDF Document Export</td><td>1. Navigate to a reporting table summary screen. 2. Click the "Export to PDF" download button.</td><td>Click action button</td><td>System compiles the current data and initiates a browser download of a clean, structured .pdf file asset.</td></tr>
+    <tr><td>ST-403</td><td>Spreadsheet Export</td><td>1. Navigate to a reporting table summary screen. 2. Click the "Export to Excel/CSV" download button.</td><td>Click action button</td><td>System cleanly formats records into comma-separated rows and downloads an uninterrupted Excel-readable file.</td></tr>
+  </table>
+
+  <h2>Series 500: System Configurations & Notifications</h2>
+  <p>Tests backend automation, profile modifications, and interface status alert behaviors.</p>
+  <table class="compact"><tr><th>System Test ID</th><th>Module</th><th>Step-by-Step Execution Procedure</th><th>Test Data / Inputs</th><th>Expected System Response</th></tr>
+    <tr><td>ST-501</td><td>UI Feedback Alerts</td><td>1. Trigger a background process activity [e.g., Processing Application, Sending Notifications] via form action.</td><td>Click trigger switch</td><td>A loading animation display blocks the UI screen temporarily, preventing duplicate form submissions from rapid clicks.</td></tr>
+    <tr><td>ST-502</td><td>Settings Profiling</td><td>1. Navigate to user settings or general options panel. 2. Change system configurations and save.</td><td>Update configuration choices</td><td>System persists the modified configuration settings. No user-facing errors occur, and the interface remains stable.</td></tr>
+  </table>
+</section>
+
+<section class="page-break">
+  <h1>LEVEL 4: COMPREHENSIVE USER ACCEPTANCE TESTING (UAT) SURVEY</h1>
+  <p>Students must document exactly who tested the system. A minimum of 3 to 5 domain experts/clients and 10 to 15 end-users is standard for an IT Capstone.</p>
+  
+  <h2>PART 1: UAT PARTICIPANT PROFILE MATRIX</h2>
+  <table><tr><th>Participant ID</th><th>Target User Role / Position</th><th>Organization / Department</th><th>Testing Date</th><th>Signature / Initials</th></tr>
+    <tr><td>UAT-EX-01</td><td>IT Department Head (Expert)</td><td>Client Organization</td><td>07/15/2026</td><td>Signed</td></tr>
+    <tr><td>UAT-EX-02</td><td>Systems Administrator (Expert)</td><td>College IT Office</td><td>07/15/2026</td><td>Signed</td></tr>
+    <tr><td>UAT-EU-01</td><td>Front Desk Clerk (End-User)</td><td>Operations Dept.</td><td>07/16/2026</td><td>Signed</td></tr>
+    <tr><td>UAT-EU-02</td><td>General Customer (End-User)</td><td>External Stakeholder</td><td>07/16/2026</td><td>Signed</td></tr>
+  </table>
+</section>
+    <tr><td>TC-101</td><td>All users</td><td>Log in with a valid active account for each role.</td><td>Login succeeds and the correct role dashboard opens.</td><td>Critical</td></tr>
+    <tr><td>TC-102</td><td>All users</td><td>Log in with invalid password and nonexistent username.</td><td>Access is denied; no session is created.</td><td>High</td></tr>
+    <tr><td>TC-103</td><td>All users</td><td>Log out, then use Back or a protected URL.</td><td>Protected content is unavailable and login is required.</td><td>High</td></tr>
+    <tr><td>TC-104</td><td>All users</td><td>Attempt to open another role’s page by changing the URL.</td><td>Access is denied/redirected; no restricted data is exposed.</td><td>Critical</td></tr>
+    <tr><td>TC-105</td><td>Admin</td><td>Create Registrar, Trainer and Trainee accounts using valid details.</td><td>Accounts are saved with the selected role and can log in.</td><td>High</td></tr>
+    <tr><td>TC-106</td><td>Admin</td><td>Create account using duplicate username/email or missing required values.</td><td>Validation identifies the issue; duplicate record is not created.</td><td>High</td></tr>
+    <tr><td>TC-107</td><td>Admin</td><td>Set a user inactive, confirm login is blocked, then reactivate.</td><td>Status persists; inactive user cannot log in; reactivated user can.</td><td>High</td></tr>
+    <tr><td>TC-108</td><td>Admin</td><td>Archive an active trainer/trainee, view archives, then unarchive.</td><td>User moves from active list to archive and is restored with original role/status.</td><td>High</td></tr>
+    <tr><td>TC-109</td><td>Admin</td><td>Use user tabs, search, filters and pagination.</td><td>Each tab shows only its role and results are correct.</td><td>Medium</td></tr>
+    <tr><td>TC-110</td><td>Admin</td><td>Review logs after account, qualification or batch changes.</td><td>Action, user and timestamp are captured where logging is enabled.</td><td>Medium</td></tr>
+  </table>
+</section>
+
+<section class="page-break">
+  <h1>FUNCTIONAL TEST CASE MATRIX <span class="small">(continued)</span></h1>
+  <table class="compact"><tr><th>ID</th><th>Module / Role</th><th>Test scenario and steps</th><th>Expected result</th><th>Priority</th></tr>
+    <tr><td>TC-201</td><td>Registrar/Public</td><td>Open application form and submit a complete trainee application with files.</td><td>Application saves; permitted files upload; registrar can view it.</td><td>Critical</td></tr><tr><td>TC-202</td><td>Registrar/Public</td><td>Submit missing/invalid fields, invalid email/phone, or unsupported/oversized upload.</td><td>Clear validation; invalid/unsafe file is not stored.</td><td>High</td></tr><tr><td>TC-203</td><td>Registrar</td><td>Approve one applicant and reject another.</td><td>Status and any notification are accurate.</td><td>High</td></tr><tr><td>TC-204</td><td>Registrar</td><td>Create qualification with valid, duplicate and incomplete information.</td><td>Valid qualification is available; invalid data is rejected.</td><td>High</td></tr><tr><td>TC-205</td><td>Registrar</td><td>Assign trainer to qualification; check trainer access.</td><td>Assignment persists and trainer sees only assigned information.</td><td>High</td></tr><tr><td>TC-206</td><td>Registrar</td><td>Create batch/schedule and assign approved trainee.</td><td>Batch/schedule persist; trainee is visible to trainer and trainee.</td><td>Critical</td></tr><tr><td>TC-207</td><td>Registrar</td><td>Assign unapproved/duplicate trainee or conflicting schedule.</td><td>Invalid assignment is prevented with an understandable message.</td><td>High</td></tr>
+    <tr><td>TC-301</td><td>Trainer</td><td>Open My Batches and review batch, trainee and qualification details.</td><td>Only assigned batches are visible.</td><td>High</td></tr><tr><td>TC-302</td><td>Trainer</td><td>Create/edit module or lesson and attach material/task sheet.</td><td>Module saves and is available to enrolled trainees.</td><td>High</td></tr><tr><td>TC-303</td><td>Trainer</td><td>Create task/quiz with due date; try invalid/incomplete data.</td><td>Valid task is published; invalid data is blocked.</td><td>High</td></tr><tr><td>TC-304</td><td>Trainer</td><td>Record/update grades and open progress/achievement charts.</td><td>Grades persist and calculations/charts are correct.</td><td>Critical</td></tr><tr><td>TC-305</td><td>Trainer</td><td>Attempt to grade a trainee outside assigned batch.</td><td>Action is blocked and unrelated data is unchanged.</td><td>Critical</td></tr>
+  </table>
+</section>
+
+<section class="page-break">
+  <h1>FUNCTIONAL TEST CASE MATRIX <span class="small">(continued)</span></h1>
+  <table class="compact"><tr><th>ID</th><th>Module / Role</th><th>Test scenario and steps</th><th>Expected result</th><th>Priority</th></tr>
+    <tr><td>TC-306</td><td>Trainee</td><td>After approval, open dashboard, My Training/Learning Path and My Grades.</td><td>Trainee sees only own batch, content, tasks and grades.</td><td>Critical</td></tr><tr><td>TC-307</td><td>Trainee</td><td>Open learning material and submit/complete an assigned task.</td><td>Material is accessible; completion/submission is saved for trainer.</td><td>High</td></tr><tr><td>TC-308</td><td>Trainee</td><td>Try to access another trainee’s grade, file, task or profile.</td><td>Access is denied; private information is not revealed.</td><td>Critical</td></tr>
+    <tr><td>TC-309</td><td>All roles</td><td>Trigger application decision, batch assignment, task publication and grade update.</td><td>Intended recipient gets one correct in-app notice; check email if configured.</td><td>High</td></tr><tr><td>TC-310</td><td>Admin/Trainer</td><td>Open reports, analytics, progress and achievement views using known data.</td><td>Totals, filters and charts match test records.</td><td>High</td></tr><tr><td>TC-311</td><td>All roles</td><td>Use dashboards, sidebar, profile menu and logout on desktop/mobile width.</td><td>Navigation works and content remains usable.</td><td>Medium</td></tr><tr><td>TC-312</td><td>All forms</td><td>Enter script/HTML, SQL-like and very long text input.</td><td>Input is safely handled; no script/query error/page break occurs.</td><td>Critical</td></tr><tr><td>TC-313</td><td>All roles</td><td>Refresh during saving and briefly interrupt network on a non-destructive form.</td><td>Clear status; no duplicate/corrupt record is created.</td><td>High</td></tr><tr><td>TC-314</td><td>All roles</td><td>Load dashboards/lists and common save actions under normal test data.</td><td>Pages load within 3 seconds; common saves respond within 2 seconds.</td><td>Medium</td></tr>
+  </table>
+  <h2>Test Execution Log</h2>
+  <table><tr><th>Test ID</th><th>Tester</th><th>Date</th><th>Result</th><th>Defect ID / evidence</th><th>Actual result / remarks</th></tr><tr><td style="height:14mm"></td><td></td><td></td><td>☐ Pass<br>☐ Fail<br>☐ Blocked<br>☐ Not Run</td><td></td><td></td></tr><tr><td style="height:14mm"></td><td></td><td></td><td>☐ Pass<br>☐ Fail<br>☐ Blocked<br>☐ Not Run</td><td></td><td></td></tr></table>
+</section>
+
+<section class="page-break">
+  <h1>PART 2: FULL ISO/IEC 25010-ALIGNED SURVEY EVALUATION</h1>
+  <p>After completing the relevant test cases, rate each statement using the scale below.</p>
+  <table><tr><th>Score</th><th>Interpretation</th></tr><tr><td class="center">5</td><td>Strongly Agree</td></tr><tr><td class="center">4</td><td>Agree</td></tr><tr><td class="center">3</td><td>Neutral</td></tr><tr><td class="center">2</td><td>Disagree</td></tr><tr><td class="center">1</td><td>Strongly Disagree</td></tr></table>
+  <h2>1. Functional Suitability</h2><table class="survey"><tr><th>Code</th><th>Evaluation statement</th><th>Score (1–5)</th></tr><tr><td>FS-1</td><td>The functions I need for my role are available.</td><td></td></tr><tr><td>FS-2</td><td>The system produces correct results for information I enter or view.</td><td></td></tr><tr><td>FS-3</td><td>Application, batch, module, task and grading functions support the training process.</td><td></td></tr><tr><td>FS-4</td><td>The system prevents incomplete or invalid information from being saved.</td><td></td></tr></table>
+  <h2>2. Usability</h2><table class="survey"><tr><th>Code</th><th>Evaluation statement</th><th>Score (1–5)</th></tr><tr><td>US-1</td><td>Menus, labels and icons make the system easy to navigate.</td><td></td></tr><tr><td>US-2</td><td>I can complete usual tasks without frequent assistance.</td><td></td></tr><tr><td>US-3</td><td>Error and validation messages clearly tell me what to correct.</td><td></td></tr><tr><td>US-4</td><td>The interface is understandable and usable on my device/screen size.</td><td></td></tr></table>
+  <h2>3. Performance Efficiency</h2><table class="survey"><tr><th>Code</th><th>Evaluation statement</th><th>Score (1–5)</th></tr><tr><td>PE-1</td><td>Pages and dashboards load within an acceptable time.</td><td></td></tr><tr><td>PE-2</td><td>Saving forms, grades and assignments responds promptly.</td><td></td></tr><tr><td>PE-3</td><td>Searching, filtering and opening reports performs acceptably.</td><td></td></tr><tr><td>PE-4</td><td>The system remains responsive while I move between pages.</td><td></td></tr></table>
+</section>
+
+<section class="page-break">
+  <h1>ISO/IEC 25010 SURVEY EVALUATION <span class="small">(continued)</span></h1>
+  <h2>4. Security</h2><table class="survey"><tr><th>Code</th><th>Evaluation statement</th><th>Score (1–5)</th></tr><tr><td>SE-1</td><td>I can access only pages and data appropriate to my role.</td><td></td></tr><tr><td>SE-2</td><td>Valid credentials are required before protected information is shown.</td><td></td></tr><tr><td>SE-3</td><td>I trust the system to protect trainee data and uploaded documents.</td><td></td></tr><tr><td>SE-4</td><td>Logging out prevents another person from continuing to use my session.</td><td></td></tr></table>
+  <h2>5. Reliability</h2><table class="survey"><tr><th>Code</th><th>Evaluation statement</th><th>Score (1–5)</th></tr><tr><td>RE-1</td><td>The system performs consistently when I repeat the same task.</td><td></td></tr><tr><td>RE-2</td><td>Saved records remain correct after refresh, logout and later login.</td><td></td></tr><tr><td>RE-3</td><td>The system handles errors without losing or duplicating work.</td><td></td></tr><tr><td>RE-4</td><td>Notifications, assignments and grades appear consistently for the intended user.</td><td></td></tr></table>
+  <h2>6. Maintainability</h2><table class="survey"><tr><th>Code</th><th>Evaluation statement</th><th>Score (1–5)</th></tr><tr><td>MA-1</td><td>Screens and functions are organised consistently across the system.</td><td></td></tr><tr><td>MA-2</td><td>Changes to one function do not appear to break related functions.</td><td></td></tr><tr><td>MA-3</td><td>The system provides enough messages/logs to help identify a problem.</td><td></td></tr><tr><td>MA-4</td><td>The system appears easy to update or improve without disrupting users.</td><td></td></tr></table>
+  <h2>Open-Ended Feedback</h2>
+  <p>1. Which feature helped you most? ______________________________________________________________</p><p>2. Which task was difficult or unclear? _____________________________________________________________</p><p>3. What should be improved before deployment? _____________________________________________________</p><p>4. Other comments: ____________________________________________________________________________</p>
+  <h2>Scoring Interpretation</h2><table><tr><th>Mean range</th><th>Interpretation</th></tr><tr><td>4.21–5.00</td><td>Excellent / highly acceptable</td></tr><tr><td>3.41–4.20</td><td>Acceptable</td></tr><tr><td>2.61–3.40</td><td>Moderately acceptable; improvement required</td></tr><tr><td>1.81–2.60</td><td>Low acceptability; major improvement required</td></tr><tr><td>1.00–1.80</td><td>Unacceptable</td></tr></table>
+</section>
+
+<section class="page-break">
+  <h1>PART 3: FORMAL CLIENT ACCEPTANCE</h1>
+  <h2>Acceptance Statement</h2>
+  <p>We confirm that the Hohoo-Ville Training Management System has undergone functional testing and user evaluation based on this testing plan. The results, reported defects and agreed corrective actions have been reviewed. Subject to the conditions stated below, the system is accepted for the agreed deployment or use.</p>
+  <table><tr><th>Acceptance item</th><th>Result / remarks</th></tr><tr><td>Number of planned test cases</td><td>31</td></tr><tr><td>Test cases passed</td><td>______ / 31</td></tr><tr><td>Test cases failed/blocked</td><td>______ / 31</td></tr><tr><td>Open Critical defects</td><td>______</td></tr><tr><td>Open High defects</td><td>______</td></tr><tr><td>Overall ISO/IEC 25010 mean score</td><td>______ / 5.00</td></tr><tr><td>Deployment decision</td><td>☐ Accepted &nbsp;&nbsp; ☐ Accepted with conditions &nbsp;&nbsp; ☐ Not accepted</td></tr><tr><td>Conditions / required corrections</td><td style="height:20mm"></td></tr></table>
+  <h2>Approval Signatures</h2>
+  <table class="signature"><tr><th>Name and role</th><th>Signature</th><th>Date</th></tr><tr><td>Client representative</td><td></td><td></td></tr><tr><td>System administrator</td><td></td><td></td></tr><tr><td>Test facilitator / project representative</td><td></td><td></td></tr></table>
+</section>
+</body>
+</html>

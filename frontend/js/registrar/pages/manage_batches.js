@@ -62,8 +62,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     const qualificationSelect = document.getElementById('qualificationSelect');
     if (qualificationSelect) qualificationSelect.addEventListener('change', handleQualificationChange);
-    document.getElementById('maxTrainees')?.addEventListener('input', updateProjectedBatchValue);
-    document.getElementById('trainingCost')?.addEventListener('input', updateProjectedBatchValue);
     document.querySelectorAll('input[name="trainerAssignmentMode"]').forEach((input) => {
         input.addEventListener('change', () => applyTrainerAssignmentMode(input.value));
     });
@@ -101,7 +99,7 @@ function hydrateHeaderUser() {
 }
 
 function formatQualificationOptionLabel(qualification) {
-    const baseName = qualification?.course_name || qualification?.qualification_name || 'Unnamed Qualification';
+    const baseName = qualification?.qualification_name || qualification?.course_name || 'Unnamed Qualification';
     const ncLevel = qualification?.nc_level_code || qualification?.nc_level_name || '';
     return ncLevel ? `${baseName} (${ncLevel})` : baseName;
 }
@@ -413,7 +411,7 @@ function renderBatchesTable(data, tbodyId, isArchive = false) {
         tbody.innerHTML += `
             <tr class="hover:bg-slate-50">
                 <td class="px-4 py-3 text-sm text-slate-800">${escapeHtml(batch.batch_name || '')}</td>
-                <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(batch.course_name || 'N/A')}</td>
+                <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(batch.qualification_name || batch.course_name || 'N/A')}</td>
                 <td class="px-4 py-3 text-sm text-slate-700">
                     <p class="font-medium text-slate-800">${escapeHtml(trainerSummary)}</p>
                     <p class="text-xs text-slate-500">${modeLabel}</p>
@@ -479,10 +477,9 @@ window.openAddModal = function() {
     document.getElementById('submitBtn').textContent = 'Create Batch';
     document.getElementById('trainerSelect').innerHTML = '<option value="">Select Trainer</option>';
     document.getElementById('maxTrainees').value = '25';
-    document.getElementById('trainingCost').value = '';
+    // training_cost removed from batch-level form; qualification cost used for projections
     document.getElementById('status').value = 'open';
     setTrainerAssignmentMode('single');
-    updateProjectedBatchValue();
     batchModal.show();
 }
 
@@ -501,12 +498,11 @@ window.editBatch = async function(id) {
         document.getElementById('startDate').value = batch.start_date;
         document.getElementById('endDate').value = batch.end_date;
         document.getElementById('maxTrainees').value = batch.max_trainees || 25;
-        document.getElementById('trainingCost').value = batch.training_cost || '';
+        // training_cost removed from batch-level form; qualification cost used for projections
         document.getElementById('status').value = batch.status;
         
         document.getElementById('batchModalLabel').textContent = 'Edit Batch';
         document.getElementById('submitBtn').textContent = 'Save Changes';
-        updateProjectedBatchValue();
         batchModal.show();
     }
 }
@@ -552,30 +548,18 @@ function handleQualificationChange() {
     if (!document.getElementById('batchId').value) {
         const qual = allQualifications.find(q => q.qualification_id == qualId);
         const count = batchesData.filter(b => b.qualification_id == qualId).length + 1;
-        document.getElementById('batchName').value = qual ? `${qual.course_name} - Batch ${count}` : '';
+        document.getElementById('batchName').value = qual ? `${qual.qualification_name || qual.course_name || 'Qualification'} - Batch ${count}` : '';
     }
-
-    const qual = allQualifications.find(q => String(q.qualification_id) === String(qualId));
-    document.getElementById('trainingCost').value = qual && qual.training_cost !== undefined && qual.training_cost !== null
-        ? qual.training_cost
-        : '';
-    updateProjectedBatchValue();
 }
 
 async function saveBatch(e) {
     e.preventDefault();
     const id = document.getElementById('batchId').value;
     const maxTrainees = document.getElementById('maxTrainees').value;
-    const trainingCost = document.getElementById('trainingCost').value;
     const assignmentMode = getSelectedTrainerAssignmentMode();
 
     if (!maxTrainees || Number(maxTrainees) <= 0) {
         Swal.fire('Error', 'Max trainees must be greater than zero.', 'error');
-        return;
-    }
-
-    if (trainingCost === '' || Number(trainingCost) < 0) {
-        Swal.fire('Error', 'Training cost must be zero or greater.', 'error');
         return;
     }
 
@@ -589,7 +573,6 @@ async function saveBatch(e) {
         start_date: document.getElementById('startDate').value,
         end_date: document.getElementById('endDate').value,
         max_trainees: maxTrainees,
-        training_cost: trainingCost,
         status: document.getElementById('status').value
     };
 
@@ -654,16 +637,6 @@ function applyTrainerAssignmentMode(mode) {
 
 function normalizeTrainerAssignmentMode(mode) {
     return String(mode || '').toLowerCase() === 'multiple' ? 'multiple' : 'single';
-}
-
-function updateProjectedBatchValue() {
-    const maxTrainees = Number(document.getElementById('maxTrainees')?.value || 0);
-    const trainingCost = Number(document.getElementById('trainingCost')?.value || 0);
-    const projectedValue = maxTrainees > 0 && trainingCost >= 0 ? maxTrainees * trainingCost : 0;
-    const output = document.getElementById('projectedBatchValue');
-    if (output) {
-        output.textContent = `PHP ${projectedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
 }
 
 function escapeHtml(value) {
@@ -757,7 +730,7 @@ function getEnrollmentLabel(trainee) {
 }
 
 function getProgramLabel(trainee) {
-    return trainee?.course_name || trainee?.qualification_name || 'Not Assigned';
+    return trainee?.qualification_name || trainee?.course_name || 'Not Assigned';
 }
 
 function getFacebookHref(value) {
@@ -2204,7 +2177,7 @@ function buildTesdaLearnerProfileForm(profile, options = {}) {
                     </div>
 
                     <div class="tesda-section-title">7. Name of Course/Qualification</div>
-                    ${renderTesdaLine('Name of Course/Qualification', p.course_name || '')}
+                    ${renderTesdaLine('Name of Course/Qualification', p.qualification_name || p.course_name || '')}
 
                     <div class="tesda-section-title">8. If Scholar, What Type of Scholarship Package (TWSP, PESFA, STEP, others)?</div>
                     ${renderTesdaLine('Scholarship Package', p.scholarship_type || '')}

@@ -1,6 +1,5 @@
 const API_URL = '/Hohoo-ville/api/role/admin/system_settings.php';
 const EMAIL_API_URL = '/Hohoo-ville/api/role/admin/email_templates.php';
-const ARCHIVAL_API_URL = '/Hohoo-ville/api/role/admin/user_archival.php';
 const ACCOUNT_SETTINGS_API_URL = '/Hohoo-ville/api/role/admin/settings.php';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -9,15 +8,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     initLogout();
     initTabs();
     initModalDismissers();
-    bindAccountSettingsForm();
     bindGeneralSystemSettingsForm();
     bindQuickActions();
 
     loadGeneralSystemSettings();
-    loadHolidays();
     loadEmailTemplates();
     loadCertificateStats();
-    loadArchivalData();
 });
 
 async function ensureSwal() {
@@ -81,7 +77,6 @@ async function initLogout() {
 
 function initTabs() {
     initTabGroup('main', '.tab-pane-main');
-    initTabGroup('archival', '.tab-pane-archival');
 }
 
 function initTabGroup(groupName, paneSelector) {
@@ -127,7 +122,7 @@ function initModalDismissers() {
 
     document.addEventListener('keydown', (event) => {
         if (event.key !== 'Escape') return;
-        ['holidayModal', 'emailTemplateModal'].forEach((id) => {
+        ['emailTemplateModal'].forEach((id) => {
             const modal = document.getElementById(id);
             if (modal && !modal.classList.contains('hidden')) {
                 hideModal(id);
@@ -172,10 +167,6 @@ function roleBadge(role) {
     return `<span class="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">${role || 'Unknown'}</span>`;
 }
 
-function holidayTypeBadge(type) {
-    return `<span class="inline-flex rounded-full bg-sky-100 px-2 py-1 text-xs font-semibold capitalize text-sky-700">${type || 'N/A'}</span>`;
-}
-
 function safeText(value) {
     if (value === null || value === undefined || value === '') return 'N/A';
     return String(value);
@@ -215,42 +206,6 @@ function showToast(text, icon = 'success') {
         return;
     }
     alert(text);
-}
-
-function bindAccountSettingsForm() {
-    const accountForm = document.getElementById('accountSettingsForm');
-    if (!accountForm) return;
-
-    accountForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-
-        const currentPassword = document.getElementById('currentPassword')?.value || '';
-        const newPassword = document.getElementById('newPassword')?.value || '';
-        const confirmPassword = document.getElementById('confirmPassword')?.value || '';
-
-        if (newPassword !== confirmPassword) {
-            showAlert('Password Mismatch', 'New passwords do not match.', 'warning');
-            return;
-        }
-
-        try {
-            const response = await axios.post(`${ACCOUNT_SETTINGS_API_URL}?action=change-password`, {
-                user_id: getCurrentUserId(),
-                current_password: currentPassword,
-                new_password: newPassword
-            });
-
-            if (!response.data.success) {
-                throw new Error(response.data.message || 'Failed to change password');
-            }
-
-            accountForm.reset();
-            showToast('Password changed successfully.');
-        } catch (error) {
-            console.error('Error changing password:', error);
-            showAlert('Error', error.response?.data?.message || error.message || 'Failed to change password.', 'error');
-        }
-    });
 }
 
 function bindGeneralSystemSettingsForm() {
@@ -342,125 +297,9 @@ async function loadGeneralSystemSettings() {
     }
 }
 
-function getCurrentUserId() {
-    const rawUser = localStorage.getItem('user');
-    if (!rawUser) return 1;
-
-    try {
-        const user = JSON.parse(rawUser);
-        return Number(user?.user_id || user?.id || user?.uid) || 1;
-    } catch (error) {
-        return 1;
-    }
-}
-
-function openHolidayModal() {
-    setValue('holidayName', '');
-    setValue('holidayDate', '');
-    setValue('holidayType', 'national');
-    setValue('holidayDesc', '');
-    showModal('holidayModal');
-}
-
 function setValue(id, value) {
     const el = document.getElementById(id);
     if (el) el.value = value;
-}
-
-async function saveHoliday() {
-    const name = document.getElementById('holidayName')?.value?.trim();
-    const date = document.getElementById('holidayDate')?.value;
-    const type = document.getElementById('holidayType')?.value || 'national';
-    const desc = document.getElementById('holidayDesc')?.value?.trim() || '';
-
-    if (!name || !date) {
-        showAlert('Missing Fields', 'Please provide holiday name and date.', 'warning');
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('action', 'save-holiday');
-    formData.append('holiday_name', name);
-    formData.append('holiday_date', date);
-    formData.append('holiday_type', type);
-    formData.append('description', desc);
-
-    try {
-        const response = await axios.post(API_URL, formData);
-        if (!response.data.success) {
-            throw new Error(response.data.message || 'Failed to save holiday');
-        }
-        hideModal('holidayModal');
-        loadHolidays();
-        showToast('Holiday saved successfully.');
-    } catch (error) {
-        console.error('Error saving holiday:', error);
-        showAlert('Error', error.message || 'Failed to save holiday.', 'error');
-    }
-}
-
-async function loadHolidays() {
-    const tbody = document.getElementById('holidaysBody');
-    if (!tbody) return;
-    tbody.innerHTML = showLoadingRow(5);
-
-    try {
-        const response = await axios.get(API_URL, { params: { action: 'get-holidays' } });
-        if (!response.data.success) {
-            throw new Error(response.data.message || 'Failed to load holidays');
-        }
-
-        const holidays = Array.isArray(response.data.data) ? response.data.data : [];
-        if (!holidays.length) {
-            tbody.innerHTML = showEmptyRow(5, 'No holidays found.');
-            return;
-        }
-
-        tbody.innerHTML = holidays.map((holiday) => `
-            <tr class="hover:bg-slate-50">
-                <td class="px-3 py-3 text-sm text-slate-700">${formatDate(holiday.holiday_date)}</td>
-                <td class="px-3 py-3 text-sm text-slate-900">${safeText(holiday.holiday_name)}</td>
-                <td class="px-3 py-3 text-sm">${holidayTypeBadge(holiday.holiday_type)}</td>
-                <td class="px-3 py-3 text-sm text-slate-700">${safeText(holiday.description)}</td>
-                <td class="px-3 py-3 text-sm">
-                    <button type="button" class="inline-flex items-center rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100" onclick="deleteHoliday(${holiday.holiday_id})">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        `).join('');
-    } catch (error) {
-        console.error('Error loading holidays:', error);
-        tbody.innerHTML = showErrorRow(5, error.message || 'Error loading holidays.');
-    }
-}
-
-async function deleteHoliday(id) {
-    const result = await Swal.fire({
-        title: 'Delete Holiday?',
-        text: 'Are you sure you want to delete this holiday?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, delete it',
-        confirmButtonColor: '#dc2626'
-    });
-    if (!result.isConfirmed) return;
-
-    const formData = new FormData();
-    formData.append('action', 'delete-holiday');
-    formData.append('holiday_id', id);
-
-    try {
-        const response = await axios.post(API_URL, formData);
-        if (!response.data.success) {
-            throw new Error(response.data.message || 'Failed to delete holiday');
-        }
-        loadHolidays();
-        showToast('Holiday deleted.');
-    } catch (error) {
-        console.error('Error deleting holiday:', error);
-        showAlert('Error', error.message || 'Failed to delete holiday.', 'error');
-    }
 }
 
 async function loadEmailTemplates() {
@@ -508,6 +347,8 @@ async function openTemplateModal(id) {
         setValue('templateId', t.template_id || '');
         setValue('templateName', t.template_name || '');
         setValue('templateSubject', t.subject || '');
+        const templateIsActive = document.getElementById('templateIsActive');
+        if (templateIsActive) templateIsActive.checked = Number(t.is_active) === 1;
 
         const decoder = document.createElement('textarea');
         decoder.innerHTML = t.body_html || '';
@@ -529,7 +370,8 @@ async function saveTemplate() {
     const payload = {
         template_id: document.getElementById('templateId')?.value || '',
         subject: document.getElementById('templateSubject')?.value || '',
-        body_html: document.getElementById('templateBody')?.value || ''
+        body_html: document.getElementById('templateBody')?.value || '',
+        is_active: document.getElementById('templateIsActive')?.checked ? 1 : 0
     };
 
     try {
@@ -790,16 +632,9 @@ function editUserFromSettings() {
     showAlert('Info', 'To edit this user, please go to User Management page.', 'info');
 }
 
-window.openHolidayModal = openHolidayModal;
-window.saveHoliday = saveHoliday;
-window.deleteHoliday = deleteHoliday;
 window.openTemplateModal = openTemplateModal;
 window.saveTemplate = saveTemplate;
 window.loadEligibleTrainees = loadEligibleTrainees;
 window.toggleAllCheckboxes = toggleAllCheckboxes;
 window.generateCertificates = generateCertificates;
-window.loadArchivalData = loadArchivalData;
-window.restoreUser = restoreUser;
-window.loadInactiveUsers = loadInactiveUsers;
-window.reactivateUser = reactivateUser;
 window.editUserFromSettings = editUserFromSettings;

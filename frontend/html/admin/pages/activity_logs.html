@@ -52,12 +52,6 @@
                         <label class="mb-1 block text-sm font-medium text-slate-700">Action Type</label>
                         <select id="filterAction" onchange="loadLogs()" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
                             <option value="">All Actions</option>
-                            <option value="create">Create</option>
-                            <option value="update">Update</option>
-                            <option value="delete">Delete</option>
-                            <option value="login">Login</option>
-                            <option value="logout">Logout</option>
-                            <option value="export">Export</option>
                         </select>
                     </div>
                     <div>
@@ -80,15 +74,15 @@
                             <tr>
                                 <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Timestamp</th>
                                 <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">User</th>
-                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Action</th>
-                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Entity Type</th>
-                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Entity ID</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Action Performed</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Affected Record</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Activity Details</th>
                                 <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">IP Address</th>
                                 <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Details</th>
                             </tr>
                         </thead>
                         <tbody id="logsTableBody" class="divide-y divide-slate-100 bg-white">
-                            <tr><td colspan="7" class="px-4 py-6 text-center text-sm text-slate-500">Loading...</td></tr>
+                            <tr><td colspan="8" class="px-4 py-6 text-center text-sm text-slate-500">Loading...</td></tr>
                         </tbody>
                     </table>
                 </div>

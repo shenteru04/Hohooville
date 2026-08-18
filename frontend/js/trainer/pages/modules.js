@@ -816,7 +816,7 @@ async function loadTrainerQualifications(trainerId) {
                     seen.add(b.qualification_id);
                     uniqueQuals.push({
                         id: b.qualification_id,
-                        name: b.course_name,
+                        name: b.qualification_name || b.course_name || 'Qualification',
                         courseCode: b.course_code || ''
                     });
                 }
@@ -887,8 +887,7 @@ async function loadModules(qualificationId, competencyType = 'core') {
                 const leftDraft = (left.module_status || 'published') === 'draft' ? 0 : 1;
                 const rightDraft = (right.module_status || 'published') === 'draft' ? 0 : 1;
                 if (leftDraft !== rightDraft) return leftDraft - rightDraft;
-                return (Number(left.module_order) || 0) - (Number(right.module_order) || 0)
-                    || Number(left.module_id) - Number(right.module_id);
+                return Number(right.module_id) - Number(left.module_id);
             });
             const spineColors = ['#34495e', '#2980b9', '#27ae60', '#8e44ad', '#c0392b', '#d35400'];
 

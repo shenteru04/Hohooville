@@ -276,6 +276,7 @@ async function loadUsers() {
         usersByRole.registrar = [];
 
         allUsers.forEach((user) => {
+            if (String(user.status).toLowerCase() === 'inactive' || Number(user.is_archived) === 1) return;
             const role = resolveRole(user);
             if (usersByRole[role]) usersByRole[role].push(user);
         });
@@ -283,10 +284,46 @@ async function loadUsers() {
         renderRoleUsersTable('trainer');
         renderRoleUsersTable('trainee');
         renderRoleUsersTable('registrar');
+        renderDeactivatedUsers();
     } catch (error) {
         console.error('Error loading users:', error);
         showAlert('Error loading users. Please try again.', 'danger');
     }
+}
+
+function renderDeactivatedUsers() {
+    const tbody = document.getElementById('deactivatedUsersBody');
+    if (!tbody) return;
+    const users = allUsers.filter((user) => String(user.status).toLowerCase() === 'inactive' || Number(user.is_archived) === 1);
+    if (!users.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-6 text-center text-sm text-slate-500">No deactivated users found.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = users.map((user) => `
+        <tr class="hover:bg-slate-50">
+            <td class="px-4 py-3"><p class="font-semibold text-slate-900">${escapeHtml(user.username || 'Unknown')}</p><p class="text-sm text-slate-500">${escapeHtml(user.email || '')}</p></td>
+            <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(user.role_name || resolveRole(user))}</td>
+            <td class="px-4 py-3 text-sm text-slate-700">${user.archived_at ? new Date(user.archived_at).toLocaleDateString() : '—'}</td>
+            <td class="px-4 py-3 text-right"><button type="button" class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100" onclick="reactivateDeactivatedUser(${Number(user.user_id)})"><i class="fas fa-user-check mr-1"></i> Reactivate</button></td>
+        </tr>
+    `).join('');
+}
+
+async function reactivateDeactivatedUser(userId) {
+    try {
+        const response = await apiClient.get(`/role/admin/user_management.php?action=reactivate&id=${userId}`);
+        if (!response.data.success) throw new Error(response.data.message || 'Failed to reactivate user.');
+        showAlert('User reactivated successfully.', 'success');
+        await loadUsers();
+    } catch (error) {
+        showAlert(error.response?.data?.message || error.message || 'Failed to reactivate user.', 'danger');
+    }
+}
+
+function escapeHtml(value) {
+    const element = document.createElement('div');
+    element.textContent = String(value ?? '');
+    return element.innerHTML;
 }
 
 function resolveRole(user) {

@@ -1,8 +1,8 @@
 Array
 (
     [trainee_school_id] => 2-2026-0001
-    [course_id] => 1
-    [course_name] => Electrical Installation and Maintenance
+    [qualification_id] => 1
+    [qualification_name] => Electrical Installation and Maintenance
     [batch_name] => Electrical Installation and Maintenance NC II - Batch 1
     [start_date] => 2027-02-01
     [end_date] => 2027-02-24
@@ -11,4 +11,6 @@ Array
     [room_name] => Room 2
     [enrollment_id] => 4
     [enrollment_status] => approved
+    [course_id] => 1
+    [course_name] => Electrical Installation and Maintenance
 )

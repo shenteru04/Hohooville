@@ -1,5 +1,5 @@
 const API_BASE_URL = window.location.origin + '/Hohoo-ville/api';
-const TRAINER_UPLOADS_URL = window.location.origin + '/Hohoo-ville/api/uploads/trainers/';
+const TRAINER_UPLOADS_URL = window.location.origin + '/Hohoo-ville/uploads/trainers/';
 const PROFILE_IMAGE_UPLOADS_URL = window.location.origin + '/Hohoo-ville/uploads/profile_images/';
 let trainerModal;
 let viewModal;
@@ -529,13 +529,14 @@ function renderTrainersTable(trainers) {
     const tbody = document.getElementById('trainersTableBody');
     tbody.innerHTML = '';
     if (!trainers || trainers.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-sm text-slate-500">No trainers found.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-sm text-slate-500">No trainers found.</td></tr>';
         return;
     }
 
     trainers.forEach((trainer, index) => {
         const row = document.createElement('tr');
         const qualificationLabel = trainer.qualification_names || trainer.qualification_name || 'N/A';
+        const typeLabel = trainer.trainer_type || 'N/A';
         const statusClass = trainer.status === 'active'
             ? 'bg-emerald-100 text-emerald-700'
             : 'bg-slate-200 text-slate-700';
@@ -558,6 +559,7 @@ function renderTrainersTable(trainers) {
             <td class="px-4 py-3 text-sm text-slate-700">${profileImageHtml}</td>
             <td class="px-4 py-3 text-sm font-medium text-slate-800">${trainer.first_name} ${trainer.last_name}</td>
             <td class="px-4 py-3 text-sm text-slate-700">${trainer.email}</td>
+            <td class="px-4 py-3 text-sm text-slate-700">${typeLabel}</td>
             <td class="px-4 py-3 text-sm text-slate-700">${qualificationLabel}</td>
             <td class="px-4 py-3">
                 <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${statusClass}">${trainer.status}</span>
@@ -1135,6 +1137,7 @@ async function saveTrainer() {
     formData.append('last_name', document.getElementById('lastName').value);
     formData.append('email', document.getElementById('email').value);
     formData.append('phone', document.getElementById('phone').value);
+    formData.append('trainer_type', document.getElementById('trainerType')?.value || 'full timer');
     qualificationPayload.forEach((q, idx) => {
         formData.append(`qualification_ids[${idx}]`, q.qualificationId);
         formData.append(`nc_level_ids[${idx}]`, q.ncLevelId);
@@ -1187,6 +1190,7 @@ window.editTrainer = async function(id) {
             document.getElementById('lastName').value = trainer.last_name;
             document.getElementById('email').value = trainer.email;
             document.getElementById('phone').value = trainer.phone_number;
+            document.getElementById('trainerType').value = trainer.trainer_type || 'full timer';
             // Re-apply email validation listeners after setting value
             if (typeof setupEmailValidation === 'function') setupEmailValidation();
             currentAddressValue = trainer.address || '';

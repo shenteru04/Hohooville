@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     loadLogs();
     loadUsers();
+    loadActionTypes();
 });
 
 async function ensureSwal() {
@@ -124,6 +125,28 @@ async function loadUsers() {
     }
 }
 
+async function loadActionTypes() {
+    const token = localStorage.getItem('token');
+    const select = document.getElementById('filterAction');
+    if (!select) return;
+
+    try {
+        const response = await axios.get(`${API_BASE}/activity_logs.php?action=action-types`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!response.data.success) return;
+
+        response.data.data.forEach((action) => {
+            const option = document.createElement('option');
+            option.value = action;
+            option.textContent = formatAction(action);
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.warn('Could not load activity types');
+    }
+}
+
 window.loadLogs = async function () {
     const actionType = document.getElementById('filterAction').value;
     const date = document.getElementById('filterDate').value;
@@ -145,11 +168,11 @@ window.loadLogs = async function () {
             renderLogs(response.data.data || []);
             renderPagination(response.data.pagination || { page: 1, pages: 1 });
         } else {
-            document.getElementById('logsTableBody').innerHTML = `<tr><td colspan="7" class="px-4 py-6 text-center text-sm text-rose-600">${response.data.message || 'Error loading logs'}</td></tr>`;
+            document.getElementById('logsTableBody').innerHTML = `<tr><td colspan="8" class="px-4 py-6 text-center text-sm text-rose-600">${response.data.message || 'Error loading logs'}</td></tr>`;
         }
     } catch (error) {
         console.error('Error loading logs:', error);
-        document.getElementById('logsTableBody').innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-sm text-rose-600">Error loading logs. Please check console.</td></tr>';
+        document.getElementById('logsTableBody').innerHTML = '<tr><td colspan="8" class="px-4 py-6 text-center text-sm text-rose-600">Error loading logs. Please check console.</td></tr>';
     }
 };
 
@@ -158,7 +181,7 @@ function renderLogs(logs) {
     if (!tbody) return;
 
     if (!logs.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-sm text-slate-500">No logs found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-6 text-center text-sm text-slate-500">No logs found</td></tr>';
         return;
     }
 
@@ -166,9 +189,9 @@ function renderLogs(logs) {
         <tr class="hover:bg-slate-50">
             <td class="px-3 py-3 text-xs text-slate-700">${new Date(log.created_at).toLocaleString()}</td>
             <td class="px-3 py-3 text-sm text-slate-800">${log.username || 'System'}</td>
-            <td class="px-3 py-3 text-sm"><span class="inline-flex rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-700">${log.action_type}</span></td>
-            <td class="px-3 py-3 text-sm text-slate-700">${log.entity_type || '-'}</td>
-            <td class="px-3 py-3 text-sm text-slate-700">${log.entity_id || '-'}</td>
+            <td class="px-3 py-3 text-sm"><span class="inline-flex rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-700">${formatAction(log.action_type)}</span></td>
+            <td class="px-3 py-3 text-sm text-slate-700">${formatEntity(log.entity_type, log.entity_id)}</td>
+            <td class="max-w-xs px-3 py-3 text-sm text-slate-700">${escapeHtml(log.details || 'No additional details recorded.')}</td>
             <td class="px-3 py-3 text-xs text-slate-600">${log.ip_address || '-'}</td>
             <td class="px-3 py-3 text-sm">
                 <button class="inline-flex items-center rounded-md border border-blue-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onclick="showDetails('${encodeURIComponent(JSON.stringify(log))}')">
@@ -177,6 +200,41 @@ function renderLogs(logs) {
             </td>
         </tr>
     `).join('');
+}
+
+function formatAction(action) {
+    const labels = {
+        add: 'Created',
+        create: 'Created',
+        update: 'Updated',
+        edit: 'Edited',
+        delete: 'Deleted',
+        submit: 'Submitted',
+        approve: 'Approved',
+        reject: 'Rejected',
+        archive: 'Archived',
+        reactivate: 'Reactivated',
+        login_success: 'Logged in',
+        login_failed: 'Login failed',
+        login_locked: 'Login blocked',
+        logout: 'Logged out',
+        password_changed: 'Changed password',
+        password_reset: 'Reset password',
+        export: 'Exported'
+    };
+    return labels[action] || String(action || 'Unknown action').replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function formatEntity(entityType, entityId) {
+    const entity = entityType ? String(entityType).replace(/^tbl_/, '').replace(/_/g, ' ') : 'System';
+    const label = entity.replace(/\b\w/g, (letter) => letter.toUpperCase());
+    return entityId ? `${label} #${entityId}` : label;
+}
+
+function escapeHtml(value) {
+    const element = document.createElement('div');
+    element.textContent = String(value);
+    return element.innerHTML;
 }
 
 function renderPagination(pagination) {
@@ -226,9 +284,18 @@ window.showDetails = function (logString) {
 };
 
 window.clearOldLogs = async function () {
+    const daysInput = document.getElementById('daysToKeep');
+    const days = Number(daysInput?.value);
+
+    if (!Number.isInteger(days) || days < 1) {
+        await Swal.fire('Invalid retention period', 'Enter a whole number of days to keep (at least 1).', 'error');
+        daysInput?.focus();
+        return;
+    }
+
     const result = await Swal.fire({
         title: 'Clear old logs?',
-        text: 'This action cannot be undone.',
+        text: `Logs older than ${days} day${days === 1 ? '' : 's'} will be permanently deleted. This action cannot be undone.`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#dc2626',
@@ -236,16 +303,21 @@ window.clearOldLogs = async function () {
     });
     if (!result.isConfirmed) return;
 
-    const days = document.getElementById('daysToKeep').value;
     const token = localStorage.getItem('token');
     try {
         const response = await axios.post(`${API_BASE}/activity_logs.php?action=clear`, { days }, {
             headers: { Authorization: `Bearer ${token}` }
         });
-        Swal.fire('Success', response.data.message, 'success');
+        if (!response.data.success) {
+            throw new Error(response.data.message || 'Unable to clear activity logs.');
+        }
+
+        currentPage = 1;
+        await Swal.fire('Success', response.data.message, 'success');
         loadLogs();
     } catch (error) {
-        Swal.fire('Error', `Error: ${error.message}`, 'error');
+        const message = error.response?.data?.message || error.message || 'Unable to clear activity logs.';
+        Swal.fire('Error', message, 'error');
     }
 };
 

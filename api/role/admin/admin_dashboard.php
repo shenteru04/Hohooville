@@ -167,14 +167,14 @@ class AdminDashboard {
                     COALESCE(SUM(
                         CASE
                             WHEN b.end_date IS NOT NULL AND b.end_date < CURDATE()
-                                THEN COALESCE(b.training_cost, q.training_cost, 0) * COALESCE(b.max_trainees, 0)
+                                THEN COALESCE(q.training_cost, 0) * COALESCE(b.max_trainees, 0)
                             ELSE 0
                         END
                     ), 0) AS total_collected,
                     COALESCE(SUM(
                         CASE
                             WHEN b.end_date IS NULL OR b.end_date >= CURDATE()
-                                THEN COALESCE(b.training_cost, q.training_cost, 0) * COALESCE(b.max_trainees, 0)
+                                THEN COALESCE(q.training_cost, 0) * COALESCE(b.max_trainees, 0)
                             ELSE 0
                         END
                     ), 0) AS total_pending

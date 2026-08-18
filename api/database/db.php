@@ -61,8 +61,11 @@ class DatabaseSetup {
                 date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 last_login TIMESTAMP NULL,
+                failed_login_attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
+                login_locked_until DATETIME NULL DEFAULT NULL,
                 INDEX idx_role (role),
-                INDEX idx_status (status)
+                INDEX idx_status (status),
+                INDEX idx_login_locked_until (login_locked_until)
             )",
 
             // Roles table
@@ -113,7 +116,6 @@ class DatabaseSetup {
                 start_date DATE,
                 end_date DATE,
                 max_trainees INT DEFAULT 30,
-                training_cost DECIMAL(10,2) DEFAULT NULL,
                 status ENUM('open', 'closed', 'upcoming', 'ongoing', 'completed', 'cancelled') DEFAULT 'open',
                 scholarship_type VARCHAR(50),
                 scholarship_type_id INT,
@@ -131,6 +133,7 @@ class DatabaseSetup {
                 last_name VARCHAR(100),
                 email VARCHAR(150),
                 phone_number VARCHAR(20),
+                trainer_type ENUM('part timer', 'full timer') DEFAULT 'full timer',
                 qualification_id INT,
                 trainer_nc_level_id INT,
                 address VARCHAR(255),

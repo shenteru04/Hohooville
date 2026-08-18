@@ -5,6 +5,7 @@ header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 
 require_once '../../database/db.php';
 require_once '../../utils/EnrollmentStatusConstraint.php';
+require_once '../../utils/EmailService.php';
 
 $database = new Database();
 $conn = $database->getConnection();
@@ -97,7 +98,7 @@ function updateStatus($conn, $status) {
         // Fetch details for email notification
         $stmtDetails = $conn->prepare("
             SELECT 
-                h.email, h.first_name, h.last_name,
+                e.enrollment_id, h.email, h.first_name, h.last_name,
                 b.batch_name, c.qualification_name as course_name
             FROM tbl_enrollment e
             JOIN tbl_trainee_hdr h ON e.trainee_id = h.trainee_id
@@ -133,6 +134,18 @@ function sendQualificationEmail($details, $status) {
     $name = trim(($details['first_name'] ?? '') . ' ' . ($details['last_name'] ?? ''));
     $course = $details['course_name'] ?? 'your course';
     $batch = $details['batch_name'] ?? 'your batch';
+
+    if ($status === 'qualified') {
+        $emailSvc = new EmailService();
+        $result = $emailSvc->sendTemplateEmail('application_qualified', $to, [
+            'user_name' => $name, 'trainee_name' => $name, 'user_email' => $to,
+            'application_id' => $details['enrollment_id'] ?? 'N/A',
+            'course_name' => $course, 'batch_name' => $batch,
+            'application_status' => $status, 'application_date' => date('F j, Y')
+        ]);
+        if (!($result['success'] ?? false)) error_log('Template email failed: ' . ($result['message'] ?? 'Unknown error'));
+        return $result['success'] ?? false;
+    }
 
     $brandColor = '#4e73df';
     $successColor = '#28a745';

@@ -24,12 +24,8 @@ switch ($action) {
         getData($conn);
         break;
 
-    case 'assign':
-        assignSchedule($conn);
-        break;
-
-    case 'review-request':
-        reviewScheduleRequest($conn);
+    case 'get-presets':
+        getPresets($conn);
         break;
 
     case 'available-rooms':
@@ -39,6 +35,17 @@ switch ($action) {
     default:
         echo json_encode(['success' => false, 'message' => 'Invalid action']);
         http_response_code(400);
+}
+
+function getPresets(PDO $conn): void
+{
+    try {
+        $presets = sw_fetch_schedule_presets($conn);
+        echo json_encode(['success' => true, 'data' => $presets]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => 'Error loading schedule presets: ' . $e->getMessage()]);
+        http_response_code(500);
+    }
 }
 
 function getData(PDO $conn): void
@@ -68,7 +75,7 @@ function getData(PDO $conn): void
                             b.qualification_id,
                             b.start_date,
                             b.end_date,
-                            c.qualification_name AS course_name,
+                            c.qualification_name,
                             b.trainer_id,
                             COALESCE(b.trainer_assignment_mode, 'single') AS trainer_assignment_mode,
                             TRIM(CONCAT_WS(' ', t.first_name, t.last_name)) AS lead_trainer_name,
@@ -116,7 +123,7 @@ function getData(PDO $conn): void
                         'qualification_id' => (int)$batch['qualification_id'],
                         'start_date' => $batch['start_date'] ?? null,
                         'end_date' => $batch['end_date'] ?? null,
-                        'course_name' => $batch['course_name'],
+                        'qualification_name' => $batch['qualification_name'],
                         'batch_status' => $batch['batch_status'],
                         'trainer_assignment_mode' => 'multiple',
                         'scope_type' => 'lead_batch',
@@ -148,7 +155,7 @@ function getData(PDO $conn): void
                         'qualification_id' => (int)$batch['qualification_id'],
                         'start_date' => $batch['start_date'] ?? null,
                         'end_date' => $batch['end_date'] ?? null,
-                        'course_name' => $batch['course_name'],
+                        'qualification_name' => $batch['qualification_name'],
                         'batch_status' => $batch['batch_status'],
                         'trainer_assignment_mode' => 'multiple',
                         'scope_type' => 'module',
@@ -181,7 +188,7 @@ function getData(PDO $conn): void
                 'qualification_id' => (int)$batch['qualification_id'],
                 'start_date' => $batch['start_date'] ?? null,
                 'end_date' => $batch['end_date'] ?? null,
-                'course_name' => $batch['course_name'],
+                'qualification_name' => $batch['qualification_name'],
                 'batch_status' => $batch['batch_status'],
                 'trainer_assignment_mode' => 'single',
                 'scope_type' => 'batch',
@@ -200,242 +207,16 @@ function getData(PDO $conn): void
         }
         unset($batch);
 
-        $scheduleRequests = sw_fetch_schedule_request_rows($conn, [
-            'batch_ids' => array_column($batches, 'batch_id')
-        ]);
-
         echo json_encode([
             'success' => true,
             'data' => [
                 'trainers' => $trainers,
                 'batches' => $batches,
-                'schedule_rows' => $scheduleRows,
-                'schedule_requests' => $scheduleRequests
+                'schedule_rows' => $scheduleRows
             ]
         ]);
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'message' => 'Error fetching data: ' . $e->getMessage()]);
-        http_response_code(500);
-    }
-}
-
-function scheduleWorkflowActorRole(): string
-{
-    $role = defined('SCHEDULE_WORKFLOW_ACTOR_ROLE')
-        ? strtolower(trim((string) constant('SCHEDULE_WORKFLOW_ACTOR_ROLE')))
-        : 'registrar';
-
-    return $role === 'admin' ? 'admin' : 'registrar';
-}
-
-function scheduleWorkflowActorLabel(): string
-{
-    return scheduleWorkflowActorRole() === 'admin' ? 'Admin' : 'Registrar';
-}
-
-function assignSchedule(PDO $conn): void
-{
-    $data = json_decode(file_get_contents('php://input'), true);
-    $batchId = (int)($data['batch_id'] ?? 0);
-
-    if ($batchId <= 0) {
-        echo json_encode(['success' => false, 'message' => 'Batch ID is required.']);
-        http_response_code(400);
-        return;
-    }
-
-    try {
-        $batch = sw_fetch_batch_context($conn, $batchId);
-        if (!$batch) {
-            throw new Exception('Batch not found.');
-        }
-
-        $mode = ta_normalize_mode($data['trainer_assignment_mode'] ?? $batch['trainer_assignment_mode'] ?? 'single');
-        $moduleId = normalizeNullableInt($data['module_id'] ?? null);
-        $scopeType = sw_normalize_scope_type($data['scope_type'] ?? '', $moduleId, $mode);
-        $removeAssignment = !empty($data['remove_assignment']);
-
-        if ($removeAssignment) {
-            if ($mode !== 'multiple' || $moduleId === null || $moduleId <= 0) {
-                throw new Exception('Only unit-based assignments can be removed here.');
-            }
-
-            $moduleGroup = findQualificationUnitGroupByModuleId($conn, (int)$batch['qualification_id'], $moduleId);
-            if ($moduleGroup === null) {
-                throw new Exception('That unit could not be resolved for this batch.');
-            }
-
-            $equivalentModuleIds = array_values(array_unique(array_filter(array_map('intval', $moduleGroup['module_ids'] ?? [$moduleId]))));
-            if (empty($equivalentModuleIds)) {
-                $equivalentModuleIds = [$moduleId];
-            }
-
-            $conn->beginTransaction();
-            deleteBatchAssignmentsForModuleIds($conn, $batchId, $equivalentModuleIds);
-
-            $scopeKeys = array_map(static function (int $candidateModuleId) use ($batchId): string {
-                return sw_build_scope_key($batchId, 'module', $candidateModuleId);
-            }, $equivalentModuleIds);
-            $deleteStmt = $conn->prepare('DELETE FROM tbl_schedule_requests WHERE scope_key = ?');
-            foreach ($scopeKeys as $scopeKey) {
-                $deleteStmt->execute([$scopeKey]);
-            }
-
-            $conn->commit();
-            echo json_encode(['success' => true, 'message' => 'Unit assignment removed successfully.']);
-            return;
-        }
-
-        $requestContext = resolveScheduleProposalContext($conn, $data, $batch, $mode, $scopeType, $moduleId);
-        $conflicts = sw_find_conflicts($conn, $requestContext);
-        if (!empty($conflicts)) {
-            throw new Exception(sw_format_conflict_message($conflicts[0]));
-        }
-
-        $conn->beginTransaction();
-        $requestId = sw_persist_schedule_request($conn, [
-            'batch_id' => $requestContext['batch_id'],
-            'module_id' => $requestContext['module_id'],
-            'trainer_id' => $requestContext['trainer_id'],
-            'scope_type' => $requestContext['scope_type'],
-            'schedule' => $requestContext['schedule'],
-            'room_id' => $requestContext['room_id'],
-            'effective_date' => $requestContext['effective_date'],
-            'status' => 'pending_trainer_response',
-            'proposed_by_role' => scheduleWorkflowActorRole(),
-            'created_by_user_id' => normalizeNullableInt($data['user_id'] ?? null),
-            'trainer_note' => null,
-            'registrar_note' => trim((string)($data['registrar_note'] ?? '')) ?: null
-        ]);
-        $requestRow = sw_fetch_schedule_request_by_id($conn, $requestId);
-        notifyTrainerOfRegistrarProposal($conn, $requestRow, normalizeNullableInt($data['user_id'] ?? null));
-        $conn->commit();
-
-        echo json_encode([
-            'success' => true,
-            'message' => 'Schedule proposal sent to the trainer for review.',
-            'request_id' => $requestId
-        ]);
-    } catch (Exception $e) {
-        if ($conn->inTransaction()) {
-            $conn->rollBack();
-        }
-
-        echo json_encode(['success' => false, 'message' => 'Error assigning schedule: ' . $e->getMessage()]);
-        http_response_code(500);
-    }
-}
-
-function reviewScheduleRequest(PDO $conn): void
-{
-    $data = json_decode(file_get_contents('php://input'), true);
-    $requestId = (int)($data['request_id'] ?? 0);
-    $reviewAction = strtolower(trim((string)($data['review_action'] ?? '')));
-    $registrarNote = trim((string)($data['registrar_note'] ?? '')) ?: null;
-    $actorUserId = normalizeNullableInt($data['user_id'] ?? null);
-
-    if ($requestId <= 0) {
-        echo json_encode(['success' => false, 'message' => 'Schedule request ID is required.']);
-        http_response_code(400);
-        return;
-    }
-
-    if (!in_array($reviewAction, ['approve', 'reject', 'request_modifications'], true)) {
-        echo json_encode(['success' => false, 'message' => 'Invalid review action.']);
-        http_response_code(400);
-        return;
-    }
-
-    try {
-        $request = sw_fetch_schedule_request_by_id($conn, $requestId);
-        if (!$request) {
-            throw new Exception('Schedule request not found.');
-        }
-
-        if (!in_array($request['status'], ['pending_registrar_approval', 'modification_requested'], true) && $reviewAction !== 'approve') {
-            throw new Exception('Only trainer-submitted schedule proposals can be reviewed here.');
-        }
-
-        if ($reviewAction === 'approve' && !in_array($request['status'], ['pending_registrar_approval', 'modification_requested'], true)) {
-            throw new Exception('This schedule is not waiting for registrar approval.');
-        }
-
-        $conn->beginTransaction();
-
-        if ($reviewAction === 'approve') {
-            $conflicts = sw_find_conflicts($conn, [
-                'request_id' => $request['request_id'],
-                'batch_id' => $request['batch_id'],
-                'module_id' => $request['module_id'],
-                'trainer_id' => $request['trainer_id'],
-                'scope_type' => $request['scope_type'],
-                'trainer_assignment_mode' => $request['trainer_assignment_mode'],
-                'schedule' => $request['schedule'],
-                'room_id' => $request['room_id'],
-                'effective_date' => $request['resolved_effective_date'],
-                'module_title' => $request['module_title'] ?? '',
-                'competency_type' => $request['competency_type'] ?? '',
-                'unit_code' => $request['unit_code'] ?? ''
-            ]);
-            if (!empty($conflicts)) {
-                throw new Exception(sw_format_conflict_message($conflicts[0]));
-            }
-
-            sw_apply_request_approval($conn, $request);
-            $stmt = $conn->prepare("
-                UPDATE tbl_schedule_requests
-                SET status = 'approved',
-                    registrar_note = :registrar_note,
-                    created_by_user_id = :created_by_user_id,
-                    updated_at = NOW()
-                WHERE request_id = :request_id
-            ");
-            $stmt->execute([
-                ':registrar_note' => $registrarNote,
-                ':created_by_user_id' => $actorUserId,
-                ':request_id' => $requestId
-            ]);
-
-            $updatedRequest = sw_fetch_schedule_request_by_id($conn, $requestId);
-            notifyTrainerOfRegistrarDecision($conn, $updatedRequest, 'approved', $actorUserId);
-            $conn->commit();
-
-            echo json_encode(['success' => true, 'message' => 'Schedule approved successfully.']);
-            return;
-        }
-
-        $nextStatus = $reviewAction === 'reject' ? 'rejected' : 'modification_requested';
-        $stmt = $conn->prepare("
-            UPDATE tbl_schedule_requests
-            SET status = :status,
-                registrar_note = :registrar_note,
-                created_by_user_id = :created_by_user_id,
-                updated_at = NOW()
-            WHERE request_id = :request_id
-        ");
-        $stmt->execute([
-            ':status' => $nextStatus,
-            ':registrar_note' => $registrarNote,
-            ':created_by_user_id' => $actorUserId,
-            ':request_id' => $requestId
-        ]);
-
-        $updatedRequest = sw_fetch_schedule_request_by_id($conn, $requestId);
-        notifyTrainerOfRegistrarDecision($conn, $updatedRequest, $nextStatus, $actorUserId);
-        $conn->commit();
-
-        echo json_encode([
-            'success' => true,
-            'message' => $nextStatus === 'rejected'
-                ? 'Schedule request rejected.'
-                : 'Modification request sent to the trainer.'
-        ]);
-    } catch (Exception $e) {
-        if ($conn->inTransaction()) {
-            $conn->rollBack();
-        }
-
-        echo json_encode(['success' => false, 'message' => 'Error reviewing schedule request: ' . $e->getMessage()]);
         http_response_code(500);
     }
 }
@@ -474,192 +255,6 @@ function getAvailableRooms(PDO $conn): void
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         http_response_code(400);
-    }
-}
-
-function resolveScheduleProposalContext(PDO $conn, array $data, array $batch, string $mode, string $scopeType, ?int $moduleId): array
-{
-    $schedule = trim((string)($data['schedule'] ?? ''));
-    $roomId = normalizeNullableInt($data['room_id'] ?? null);
-    $trainerId = normalizeNullableInt($data['trainer_id'] ?? null);
-    $effectiveDate = sw_resolve_effective_date($batch, $data['effective_date'] ?? null);
-    $moduleTitle = '';
-    $competencyType = '';
-    $unitCode = '';
-
-    if ($schedule === '') {
-        throw new Exception('Schedule is required.');
-    }
-
-    if ($mode === 'single') {
-        if ($trainerId === null) {
-            throw new Exception('Please select a trainer first.');
-        }
-
-        return [
-            'batch_id' => (int)$batch['batch_id'],
-            'module_id' => null,
-            'trainer_id' => $trainerId,
-            'scope_type' => 'batch',
-            'trainer_assignment_mode' => 'single',
-            'schedule' => $schedule,
-            'room_id' => $roomId,
-            'effective_date' => $effectiveDate,
-            'module_title' => $moduleTitle,
-            'competency_type' => $competencyType,
-            'unit_code' => $unitCode
-        ];
-    }
-
-    if ($scopeType === 'lead_batch') {
-        $resolvedTrainerId = $trainerId ?: normalizeNullableInt($batch['trainer_id'] ?? null);
-        if ($resolvedTrainerId === null) {
-            throw new Exception('Assign a lead trainer before proposing a batch schedule.');
-        }
-
-        return [
-            'batch_id' => (int)$batch['batch_id'],
-            'module_id' => null,
-            'trainer_id' => $resolvedTrainerId,
-            'scope_type' => 'lead_batch',
-            'trainer_assignment_mode' => 'multiple',
-            'schedule' => $schedule,
-            'room_id' => $roomId,
-            'effective_date' => $effectiveDate,
-            'module_title' => $moduleTitle,
-            'competency_type' => $competencyType,
-            'unit_code' => $unitCode
-        ];
-    }
-
-    if ($moduleId === null || $moduleId <= 0) {
-        throw new Exception('Please select a trainer for this unit before saving its schedule.');
-    }
-
-    $moduleStmt = $conn->prepare("
-        SELECT
-            module_id,
-            qualification_id,
-            trainer_id,
-            module_title,
-            competency_type" . (ta_column_exists($conn, 'tbl_module', 'unit_code') ? ",
-            COALESCE(unit_code, '') AS unit_code" : ",
-            '' AS unit_code") . "
-        FROM tbl_module
-        WHERE module_id = ?
-        LIMIT 1
-    ");
-    $moduleStmt->execute([$moduleId]);
-    $module = $moduleStmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$module) {
-        throw new Exception('Selected unit was not found.');
-    }
-
-    if ((int)$module['qualification_id'] !== (int)$batch['qualification_id']) {
-        throw new Exception('That unit does not belong to the selected batch qualification.');
-    }
-
-    $resolvedTrainerId = $trainerId ?: normalizeNullableInt($module['trainer_id'] ?? null);
-    if ($resolvedTrainerId === null) {
-        throw new Exception('This unit has no trainer assigned yet.');
-    }
-
-    $moduleTitle = trim((string)($module['module_title'] ?? ''));
-    $competencyType = trim((string)($module['competency_type'] ?? ''));
-    $unitCode = trim((string)($module['unit_code'] ?? ''));
-
-    return [
-        'batch_id' => (int)$batch['batch_id'],
-        'module_id' => $moduleId,
-        'trainer_id' => $resolvedTrainerId,
-        'scope_type' => 'module',
-        'trainer_assignment_mode' => 'multiple',
-        'schedule' => $schedule,
-        'room_id' => $roomId,
-        'effective_date' => $effectiveDate,
-        'module_title' => $moduleTitle,
-        'competency_type' => $competencyType,
-        'unit_code' => $unitCode
-    ];
-}
-
-function notifyTrainerOfRegistrarProposal(PDO $conn, ?array $requestRow, ?int $actorUserId = null): void
-{
-    if (!$requestRow) {
-        return;
-    }
-
-    $trainerUserId = !empty($requestRow['trainer_user_id'])
-        ? (int)$requestRow['trainer_user_id']
-        : sw_fetch_trainer_user_id($conn, (int)($requestRow['trainer_id'] ?? 0));
-
-    if ($trainerUserId <= 0) {
-        return;
-    }
-
-    $scopeLabel = trim((string)($requestRow['scope_label'] ?? 'schedule'));
-    $batchName = trim((string)($requestRow['batch_name'] ?? 'this batch'));
-    $actorLabel = scheduleWorkflowActorLabel();
-
-    try {
-        sw_insert_notification($conn, [
-            'user_id' => $trainerUserId,
-            'target_user_id' => $trainerUserId,
-            'target_role' => 'trainer',
-            'actor_id' => $actorUserId,
-            'title' => 'New Schedule Proposal',
-            'message' => sprintf('%s proposed a schedule for %s - %s. Review it and accept or suggest changes.', $actorLabel, $batchName, $scopeLabel),
-            'link' => sw_build_trainer_request_link((int)$requestRow['request_id'], 'respond')
-        ]);
-    } catch (Exception $e) {
-        error_log('Unable to notify trainer of registrar proposal: ' . $e->getMessage());
-    }
-}
-
-function notifyTrainerOfRegistrarDecision(PDO $conn, ?array $requestRow, string $decision, ?int $actorUserId = null): void
-{
-    if (!$requestRow) {
-        return;
-    }
-
-    $trainerUserId = !empty($requestRow['trainer_user_id'])
-        ? (int)$requestRow['trainer_user_id']
-        : sw_fetch_trainer_user_id($conn, (int)($requestRow['trainer_id'] ?? 0));
-
-    if ($trainerUserId <= 0) {
-        return;
-    }
-
-    $scopeLabel = trim((string)($requestRow['scope_label'] ?? 'schedule'));
-    $batchName = trim((string)($requestRow['batch_name'] ?? 'this batch'));
-    $actorLabel = scheduleWorkflowActorLabel();
-    $title = 'Schedule Update';
-    $message = sprintf('%s updated the %s request for %s - %s.', $actorLabel, $scopeLabel, $batchName, $scopeLabel);
-
-    if ($decision === 'approved') {
-        $title = 'Schedule Approved';
-        $message = sprintf('%s approved the schedule for %s - %s.', $actorLabel, $batchName, $scopeLabel);
-    } elseif ($decision === 'rejected') {
-        $title = 'Schedule Rejected';
-        $message = sprintf('%s rejected the proposed schedule for %s - %s.', $actorLabel, $batchName, $scopeLabel);
-    } elseif ($decision === 'modification_requested') {
-        $title = 'Schedule Needs Changes';
-        $message = sprintf('%s requested schedule changes for %s - %s.', $actorLabel, $batchName, $scopeLabel);
-    }
-
-    try {
-        sw_insert_notification($conn, [
-            'user_id' => $trainerUserId,
-            'target_user_id' => $trainerUserId,
-            'target_role' => 'trainer',
-            'actor_id' => $actorUserId,
-            'title' => $title,
-            'message' => $message,
-            'link' => sw_build_trainer_request_link((int)$requestRow['request_id'], 'respond')
-        ]);
-    } catch (Exception $e) {
-        error_log('Unable to notify trainer of registrar decision: ' . $e->getMessage());
     }
 }
 

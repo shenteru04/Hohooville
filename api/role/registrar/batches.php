@@ -50,7 +50,7 @@ switch ($action) {
     default:
         echo json_encode(['success' => false, 'message' => 'Invalid action specified.']);
         http_response_code(400);
-        break;
+            // Removed stray query assignment
 }
 
 function listBatches($conn) {
@@ -63,16 +63,15 @@ function listBatches($conn) {
                     b.batch_name,
                     b.qualification_id,
                     b.start_date,
-                    b.end_date,
                     b.status,
                     b.scholarship_type_id,
                     COALESCE(b.trainer_assignment_mode, 'single') AS trainer_assignment_mode,
-                    st.scholarship_name as scholarship_type,
+                    COALESCE(st.scholarship_name, 'No Scholarship') as scholarship_type,
                     b.trainer_id,
                     b.max_trainees,
-                    COALESCE(b.training_cost, c.training_cost, 0) AS training_cost,
-                    COALESCE(b.training_cost, c.training_cost, 0) * COALESCE(b.max_trainees, 0) AS projected_total,
-                    c.qualification_name as course_name,
+                    COALESCE(c.training_cost, 0) AS training_cost,
+                    COALESCE(c.training_cost, 0) * COALESCE(b.max_trainees, 0) AS projected_total,
+                    c.qualification_name,
                     CONCAT(t.first_name, ' ', t.last_name) AS trainer_name
                 FROM
                     tbl_batch AS b
@@ -102,6 +101,7 @@ function listBatches($conn) {
         unset($batch);
 
         echo json_encode(['success' => true, 'data' => $batches]);
+
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'message' => 'Error fetching batches: ' . $e->getMessage()]);
         http_response_code(500);
@@ -110,7 +110,21 @@ function listBatches($conn) {
 
 function getFormData($conn) {
     try {
-        // Get trainers
+        $qual_query = "SELECT
+                            q.qualification_id,
+                            q.qualification_name,
+                            COALESCE(q.training_cost, 0) AS training_cost,
+                            q.nc_level_id,
+                            nc.nc_level_code,
+                            nc.nc_level_name
+                       FROM tbl_qualifications q
+                       LEFT JOIN tbl_nc_levels nc ON nc.nc_level_id = q.nc_level_id
+                       WHERE q.status = 'active'
+                       ORDER BY q.qualification_name";
+        $qual_stmt = $conn->prepare($qual_query);
+        $qual_stmt->execute();
+        $qualifications = $qual_stmt->fetchAll(PDO::FETCH_ASSOC);
+
         $trainer_query = "SELECT
                             t.trainer_id,
                             t.first_name,
@@ -127,7 +141,6 @@ function getFormData($conn) {
         $trainer_stmt->execute();
         $trainers = $trainer_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Get scholarship types
         $scholarship_query = "SELECT scholarship_type_id, scholarship_name FROM tbl_scholarship_type WHERE status = 'active'";
         $scholarship_stmt = $conn->prepare($scholarship_query);
         $scholarship_stmt->execute();
@@ -136,6 +149,7 @@ function getFormData($conn) {
         echo json_encode([
             'success' => true,
             'data' => [
+                'qualifications' => $qualifications,
                 'trainers' => $trainers,
                 'scholarships' => $scholarships
             ]
@@ -145,6 +159,7 @@ function getFormData($conn) {
         http_response_code(500);
     }
 }
+
 
 function getQualificationUnits(PDO $conn): void
 {
@@ -278,15 +293,14 @@ function addBatch($conn) {
         $trainerAssignmentMode = ta_normalize_mode($data->trainer_assignment_mode ?? 'single');
         $trainerId = normalizeNullableInt($data->trainer_id ?? null);
         $scholarshipTypeId = normalizeNullableInt($data->scholarship_type_id ?? null);
-        $trainingCost = normalizeMoneyValue($data->training_cost ?? null);
         $maxTrainees = normalizeMaxTrainees($data->max_trainees ?? null);
         $status = normalizeBatchStatus($data->status ?? 'open');
         $unitAssignments = normalizeUnitAssignments($data->unit_assignments ?? []);
 
         $conn->beginTransaction();
 
-        $query = "INSERT INTO tbl_batch (qualification_id, batch_name, trainer_id, trainer_assignment_mode, scholarship_type_id, start_date, end_date, status, max_trainees, training_cost) 
-                  VALUES (:qualification_id, :batch_name, :trainer_id, :trainer_assignment_mode, :scholarship_type_id, :start_date, :end_date, :status, :max_trainees, :training_cost)";
+        $query = "INSERT INTO tbl_batch (qualification_id, batch_name, trainer_id, trainer_assignment_mode, scholarship_type_id, start_date, end_date, status, max_trainees) 
+                  VALUES (:qualification_id, :batch_name, :trainer_id, :trainer_assignment_mode, :scholarship_type_id, :start_date, :end_date, :status, :max_trainees)";
         $stmt = $conn->prepare($query);
 
         $stmt->bindParam(':qualification_id', $data->qualification_id, PDO::PARAM_INT);
@@ -298,7 +312,6 @@ function addBatch($conn) {
         $stmt->bindParam(':end_date', $data->end_date);
         $stmt->bindValue(':status', $status);
         $stmt->bindValue(':max_trainees', $maxTrainees, PDO::PARAM_INT);
-        $stmt->bindValue(':training_cost', $trainingCost);
 
         if ($stmt->execute()) {
             $batchId = (int)$conn->lastInsertId();
@@ -336,38 +349,35 @@ function updateBatch($conn) {
         $trainerAssignmentMode = ta_normalize_mode($data->trainer_assignment_mode ?? 'single');
         $trainerId = normalizeNullableInt($data->trainer_id ?? null);
         $scholarshipTypeId = normalizeNullableInt($data->scholarship_type_id ?? null);
-        $trainingCost = normalizeMoneyValue($data->training_cost ?? null);
-        $maxTrainees = normalizeMaxTrainees($data->max_trainees ?? null);
-        $status = normalizeBatchStatus($data->status ?? 'open');
-        $unitAssignments = normalizeUnitAssignments($data->unit_assignments ?? []);
+                $maxTrainees = normalizeMaxTrainees($data->max_trainees ?? null);
+                $status = normalizeBatchStatus($data->status ?? 'open');
+                $unitAssignments = normalizeUnitAssignments($data->unit_assignments ?? []);
 
-        $conn->beginTransaction();
+                $conn->beginTransaction();
 
-        $query = "UPDATE tbl_batch SET 
-                    qualification_id = :qualification_id, 
-                    batch_name = :batch_name, 
-                    trainer_id = :trainer_id, 
-                    trainer_assignment_mode = :trainer_assignment_mode,
-                    scholarship_type_id = :scholarship_type_id, 
-                    start_date = :start_date, 
-                    end_date = :end_date, 
-                    status = :status,
-                    max_trainees = :max_trainees,
-                    training_cost = :training_cost
-                  WHERE batch_id = :batch_id";
-        $stmt = $conn->prepare($query);
+                $query = "UPDATE tbl_batch SET 
+                                        qualification_id = :qualification_id, 
+                                        batch_name = :batch_name, 
+                                        trainer_id = :trainer_id, 
+                                        trainer_assignment_mode = :trainer_assignment_mode,
+                                        scholarship_type_id = :scholarship_type_id, 
+                                        start_date = :start_date, 
+                                        end_date = :end_date, 
+                                        status = :status,
+                                        max_trainees = :max_trainees
+                                    WHERE batch_id = :batch_id";
+                $stmt = $conn->prepare($query);
 
-        $stmt->bindParam(':qualification_id', $data->qualification_id, PDO::PARAM_INT);
-        $stmt->bindParam(':batch_name', $data->batch_name);
-        $stmt->bindValue(':trainer_id', $trainerId, $trainerId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
-        $stmt->bindValue(':trainer_assignment_mode', $trainerAssignmentMode);
-        $stmt->bindValue(':scholarship_type_id', $scholarshipTypeId, $scholarshipTypeId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
-        $stmt->bindParam(':start_date', $data->start_date);
-        $stmt->bindParam(':end_date', $data->end_date);
-        $stmt->bindValue(':status', $status);
-        $stmt->bindValue(':max_trainees', $maxTrainees, PDO::PARAM_INT);
-        $stmt->bindValue(':training_cost', $trainingCost);
-        $stmt->bindParam(':batch_id', $data->batch_id, PDO::PARAM_INT);
+                $stmt->bindParam(':qualification_id', $data->qualification_id, PDO::PARAM_INT);
+                $stmt->bindParam(':batch_name', $data->batch_name);
+                $stmt->bindValue(':trainer_id', $trainerId, $trainerId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+                $stmt->bindValue(':trainer_assignment_mode', $trainerAssignmentMode);
+                $stmt->bindValue(':scholarship_type_id', $scholarshipTypeId, $scholarshipTypeId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+                $stmt->bindParam(':start_date', $data->start_date);
+                $stmt->bindParam(':end_date', $data->end_date);
+                $stmt->bindValue(':status', $status);
+                $stmt->bindValue(':max_trainees', $maxTrainees, PDO::PARAM_INT);
+                $stmt->bindParam(':batch_id', $data->batch_id, PDO::PARAM_INT);
 
         if ($stmt->execute()) {
             if ($trainerAssignmentMode === 'multiple') {
@@ -480,7 +490,7 @@ function getTraineeDetails($conn) {
                     COALESCE(st.scholarship_name, NULLIF(e.scholarship_type, ''), NULLIF(b.scholarship_type, ''), 'No Scholarship') AS scholarship_type,
                     e.batch_id,
                     b.batch_name,
-                    c.qualification_name AS course_name,
+                    c.qualification_name,
                     e.enrollment_date,
                     DATE_FORMAT(e.enrollment_date, '%Y-%m-%d %H:%i:%s') AS formatted_enrollment_date,
                     e.status AS enrollment_status

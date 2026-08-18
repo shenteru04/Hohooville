@@ -40,6 +40,9 @@ switch ($action) {
     case 'get-profile':
         getProfile($conn);
         break;
+    case 'get-certificates':
+        getIssuedCertificates($conn);
+        break;
     case 'submit-quiz':
         submitQuiz($conn);
         break;
@@ -78,6 +81,27 @@ function traineePublishedModuleFilter($conn, $alias = 'm') {
     return traineeModuleStatusColumnExists($conn)
         ? " AND COALESCE($alias.module_status, 'published') = 'published'"
         : '';
+}
+
+function getIssuedCertificates($conn) {
+    $traineeId = $_SESSION['trainee_id'] ?? 0;
+    if (!$traineeId) {
+        echo json_encode(['success' => false, 'message' => 'Trainee session not found.']);
+        return;
+    }
+
+    try {
+        $stmt = $conn->prepare("SELECT c.certificate_id, c.issue_date, c.certificate_status, q.qualification_name
+            FROM tbl_certificate c
+            LEFT JOIN tbl_qualifications q ON c.qualification_id = q.qualification_id
+            WHERE c.trainee_id = ?
+            ORDER BY c.issue_date DESC, c.certificate_id DESC");
+        $stmt->execute([$traineeId]);
+        echo json_encode(['success' => true, 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+    } catch (Exception $e) {
+        error_log('Unable to load trainee certificates: ' . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Unable to load issued certificates.']);
+    }
 }
 
 function ensureNotificationsTable($conn) {
@@ -698,10 +722,7 @@ function getLessonsForTrainee($conn) {
         $task_sheet_stmt = $conn->prepare("
             SELECT ts.lesson_id, ts.task_sheet_id, ts.title
             FROM tbl_task_sheets ts
-            JOIN tbl_lessons l ON l.lesson_id = ts.lesson_id
-            JOIN tbl_module m ON m.module_id = l.module_id
-            WHERE m.competency_type = 'core'
-              AND ts.lesson_id IN ($in)
+            WHERE ts.lesson_id IN ($in)
             ORDER BY ts.display_order, ts.task_sheet_id
         ");
         $task_sheet_stmt->execute($lesson_ids);
@@ -816,7 +837,6 @@ function getLessonItem($conn, $table, $id_column) {
                 JOIN tbl_lessons l ON l.lesson_id = ts.lesson_id
                 JOIN tbl_module m ON m.module_id = l.module_id
                 WHERE ts.$id_column = ?
-                  AND m.competency_type = 'core'
             ");
         } else {
             $stmt = $conn->prepare("SELECT title, content FROM $table WHERE $id_column = ?");

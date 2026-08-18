@@ -99,7 +99,6 @@ function getUsers($conn) {
             LEFT JOIN tbl_employee e ON u.user_id = e.user_id AND u.role_id IN (1, 4)
             LEFT JOIN tbl_trainer tr ON u.user_id = tr.user_id AND u.role_id = 2
             LEFT JOIN tbl_trainee_hdr th ON u.user_id = th.user_id AND u.role_id = 3
-            WHERE u.is_archived = 0
             ORDER BY u.user_id DESC
         ");
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -322,6 +321,14 @@ function archiveUser($conn) {
         $current_user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : NULL;
         
         if ($stmt->execute([$current_user_id, $id])) {
+            // Also mark the user's status as inactive to prevent login
+            try {
+                $statusStmt = $conn->prepare("UPDATE tbl_users SET status = 'inactive' WHERE user_id = ?");
+                $statusStmt->execute([$id]);
+            } catch (Exception $e) {
+                // non-fatal: continue even if status update fails
+            }
+
             echo json_encode([
                 'success' => true, 
                 'message' => 'User archived successfully. Move to Archived section in System Settings. Data retained for recovery.'
@@ -358,6 +365,14 @@ function reactivateUser($conn) {
         // Unarchive user by setting is_archived back to 0
         $stmt = $conn->prepare("UPDATE tbl_users SET is_archived = 0, archived_at = NULL, archived_by = NULL WHERE user_id = ?");
         if ($stmt->execute([$id])) {
+            // Restore user's status to active when unarchiving
+            try {
+                $statusStmt = $conn->prepare("UPDATE tbl_users SET status = 'active' WHERE user_id = ?");
+                $statusStmt->execute([$id]);
+            } catch (Exception $e) {
+                // non-fatal
+            }
+
             echo json_encode([
                 'success' => true, 
                 'message' => 'User unarchived successfully. Can now manage in User Management.'

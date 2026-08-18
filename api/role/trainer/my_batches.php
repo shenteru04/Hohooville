@@ -43,7 +43,7 @@ class TrainerBatches {
                     b.batch_name,
                     b.qualification_id,
                     COALESCE(b.trainer_assignment_mode, 'single') AS trainer_assignment_mode,
-                    c.qualification_name AS course_name,
+                    c.qualification_name,
                     $courseCodeSelect
                     c.duration,
                     s.schedule,

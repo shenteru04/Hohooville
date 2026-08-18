@@ -386,7 +386,9 @@ async function loadBatchesForChart(trainerId) {
         if (response.data.success) {
             select.innerHTML = '<option value="">Select a batch to generate achievement chart...</option>';
             response.data.data.forEach((batch) => {
-                select.innerHTML += `<option value="${batch.batch_id}">${escapeHtml(batch.batch_name)} - ${escapeHtml(batch.course_name)}</option>`;
+                const batchName = batch.batch_name || 'Batch';
+                const qualificationName = batch.qualification_name || batch.course_name || batch.qualification || 'Qualification';
+                select.innerHTML += `<option value="${batch.batch_id}">${escapeHtml(batchName)} - ${escapeHtml(qualificationName)}</option>`;
             });
         } else {
             select.innerHTML = '<option value="">Could not load batches.</option>';

@@ -996,6 +996,9 @@ async function loadTrainingData(options = {}) {
         if (response.data.success) {
             trainingModulesState = Array.isArray(response.data.data) ? response.data.data : [];
             renderModules(trainingModulesState);
+            renderCompetencyProgressCards(trainingModulesState);
+            renderCertificateTab(trainingModulesState);
+            loadIssuedCertificates();
             return trainingModulesState;
         } else {
             trainingModulesState = [];
@@ -1019,67 +1022,905 @@ async function loadTrainingData(options = {}) {
     return trainingModulesState;
 }
 
+async function loadIssuedCertificates() {
+    const container = document.getElementById('certificateContent');
+    if (!container) return;
+    try {
+        const response = await axios.get(`${API_BASE_URL}/role/trainee/training.php?action=get-certificates`, getRequestConfig());
+        if (!response.data.success) throw new Error(response.data.message || 'Unable to load certificates.');
+        const certificates = Array.isArray(response.data.data) ? response.data.data : [];
+        if (!certificates.length) return;
+
+        const issuedHtml = certificates.map((certificate) => `
+            <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                <div class="flex items-center justify-between gap-3">
+                    <div><p class="font-semibold text-emerald-900">${escapeHtml(certificate.qualification_name || 'Issued Certificate')}</p><p class="mt-1 text-sm text-emerald-700">Issued ${escapeHtml(certificate.issue_date || '')}</p></div>
+                    <div class="flex items-center gap-2"><span class="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">${escapeHtml(certificate.certificate_status || 'valid')}</span><button type="button" data-issued-certificate-id="${Number(certificate.certificate_id)}" data-issued-certificate-name="${escapeHtml(certificate.qualification_name || 'Issued Certificate')}" data-issued-certificate-date="${escapeHtml(certificate.issue_date || '')}" class="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"><i class="fas fa-download mr-1"></i> Download</button></div>
+                </div>
+            </div>
+        `).join('');
+        container.insertAdjacentHTML('afterbegin', `<div class="mb-6"><h3 class="mb-3 text-xl font-bold text-slate-900">Issued Certificates</h3><div class="space-y-3">${issuedHtml}</div></div>`);
+        container.querySelectorAll('[data-issued-certificate-id]').forEach((button) => {
+            button.addEventListener('click', () => downloadIssuedCertificate(button));
+        });
+    } catch (error) {
+        console.warn('Unable to load issued certificates:', error);
+    }
+}
+
+function getLessonProgress(lesson = {}) {
+    const quiz = getQuizMeta(lesson);
+    const taskSheets = Array.isArray(lesson.task_sheets) ? lesson.task_sheets : [];
+    const taskSheetStatus = String(lesson.task_sheet_status || '').toLowerCase();
+    let completed = 0;
+    let total = 0;
+
+    if (lesson.has_quiz) {
+        total++;
+        if (quiz.hasScore) completed++;
+    }
+
+    if (taskSheets.length > 0) {
+        total++;
+        if (taskSheetStatus === 'approved' || taskSheetStatus === 'recorded') completed++;
+    }
+
+    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+    return {
+        completed,
+        total,
+        percentage,
+        isCompetent: total > 0 && completed === total,
+        status: total === 0 ? 'Not Started' : (completed === total ? 'Competent' : 'In Progress'),
+        quiz,
+        taskSheets,
+        taskSheetStatus
+    };
+}
+
+function getModuleProgress(module = {}) {
+    const lessons = Array.isArray(module.lessons) ? module.lessons : [];
+    const lessonProgress = lessons.map(getLessonProgress);
+    const completed = lessonProgress.reduce((total, progress) => total + progress.completed, 0);
+    const requirements = lessonProgress.reduce((total, progress) => total + progress.total, 0);
+    const percentage = requirements > 0 ? Math.round((completed / requirements) * 100) : 0;
+    const isCompetent = lessons.length > 0 && lessonProgress.every((progress) => progress.isCompetent);
+
+    return {
+        lessons: lessonProgress,
+        completed,
+        requirements,
+        percentage,
+        isCompetent,
+        status: isCompetent ? 'Competent' : (percentage > 0 ? 'In Progress' : 'Not Started')
+    };
+}
+
+function getProgressBadgeHtml(status) {
+    const variants = {
+        Competent: 'bg-emerald-100 text-emerald-700',
+        'In Progress': 'bg-amber-100 text-amber-700',
+        'Not Started': 'bg-slate-100 text-slate-600'
+    };
+
+    return '<span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ' +
+        (variants[status] || variants['Not Started']) + '">' + escapeHtml(status) + '</span>';
+}
+
+function getTaskSheetProgressLabel(progress) {
+    if (!progress.taskSheets.length) return 'N/A';
+    if (progress.taskSheetStatus === 'approved' || progress.taskSheetStatus === 'recorded') return 'Approved';
+    if (progress.taskSheetStatus === 'submitted') return 'Pending approval';
+    return 'Pending';
+}
+
+function isModuleLocked(moduleIndex, modulesByType) {
+    // The first module in the training sequence is never locked.
+    if (moduleIndex <= 0) return false;
+
+    const previousModule = modulesByType[moduleIndex - 1];
+    if (!previousModule) return false;
+
+    const previousProgress = getModuleProgress(previousModule);
+    return previousProgress.percentage < 100;
+}
+
+function organizeModulesByType(modules) {
+    const normalized = Array.isArray(modules) ? modules : [];
+    const organized = { core: [], common: [], basic: [] };
+
+    normalized.forEach((module) => {
+        const type = String(module.competency_type || 'core').toLowerCase();
+        if (organized.hasOwnProperty(type)) {
+            organized[type].push(module);
+        }
+    });
+
+    return organized;
+}
+
+function updateOverallProgress(modules) {
+    const moduleProgress = modules.map(getModuleProgress);
+    const completed = moduleProgress.reduce((total, progress) => total + progress.completed, 0);
+    const requirements = moduleProgress.reduce((total, progress) => total + progress.requirements, 0);
+    const percentage = requirements > 0 ? Math.round((completed / requirements) * 100) : 0;
+    const bar = document.getElementById('overallProgressBar');
+    const text = document.getElementById('overallProgressText');
+    const badge = document.getElementById('overallProgressBadge');
+    const meta = document.getElementById('overallProgressMeta');
+
+    if (bar) {
+        bar.style.width = percentage + '%';
+        bar.classList.toggle('bg-emerald-500', percentage === 100);
+        bar.classList.toggle('bg-blue-500', percentage > 0 && percentage < 100);
+        bar.classList.toggle('bg-slate-400', percentage === 0);
+    }
+    if (text) text.textContent = percentage + '%';
+    if (badge) {
+        badge.textContent = percentage + '% Completed';
+        badge.className = 'inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-semibold ' +
+            (percentage === 100 ? 'bg-emerald-100 text-emerald-700' : (percentage > 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'));
+    }
+    if (meta) {
+        meta.textContent = requirements > 0
+            ? completed + ' of ' + requirements + ' learning requirements complete.'
+            : 'Progress is based on completed quizzes and approved task sheets.';
+    }
+}
+
 function renderModules(modules) {
     const coreContainer = document.getElementById('accordionCore');
     const commonContainer = document.getElementById('accordionCommon');
     const basicContainer = document.getElementById('accordionBasic');
+    const containers = {
+        core: coreContainer,
+        common: commonContainer,
+        basic: basicContainer
+    };
+    const normalizedModules = Array.isArray(modules) ? modules : [];
+    const organizedModules = organizeModulesByType(normalizedModules);
 
-    coreContainer.innerHTML = '';
-    commonContainer.innerHTML = '';
-    basicContainer.innerHTML = '';
+    Object.values(containers).forEach((container) => {
+        if (container) container.innerHTML = '';
+    });
+    updateOverallProgress(normalizedModules);
 
-    if (modules.length === 0) {
-        coreContainer.innerHTML = '<div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded relative">No training modules are available at this time.</div>';
+    if (normalizedModules.length === 0) {
+        if (coreContainer) {
+            coreContainer.innerHTML = '<div class="rounded-xl border border-blue-200 bg-blue-50 px-4 py-5 text-center text-sm text-blue-700">No training modules are available at this time.</div>';
+        }
         return;
     }
 
-    modules.forEach(module => {
-        let lessonsHtml = '';
-        if (module.lessons && module.lessons.length > 0) {
-            module.lessons.forEach(lesson => {
-                const quizButtonHtml = buildQuizActionButton(lesson);
+    Object.entries(organizedModules).forEach(([type, typeModules]) => {
+        const container = containers[type];
+        if (!container) return;
+        
+        typeModules.forEach((module, moduleIndex) => {
+            const locked = isModuleLocked(moduleIndex, typeModules);
+            renderSingleModule(module, locked, container);
+        });
+    });
 
-                lessonsHtml += `
-                    <div class="p-4 border-b border-gray-100 last:border-0 flex justify-between items-center hover:bg-gray-50 transition-colors">
-                        <div class="flex items-center">
-                            <i class="fas fa-book-reader mr-3 text-blue-500"></i>
-                            <span class="text-gray-700 font-medium">${lesson.lesson_title}</span>
+    Object.entries(containers).forEach(([type, container]) => {
+        if (container && !container.innerHTML.trim()) {
+            container.innerHTML = '<div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-5 text-center text-sm text-slate-500">No ' + escapeHtml(type) + ' competencies are available.</div>';
+        }
+    });
+}
+
+function renderSingleModule(module, locked, container) {
+    const moduleProgress = getModuleProgress(module);
+    const lessons = Array.isArray(module.lessons) ? module.lessons : [];
+
+    const lessonsHtml = lessons.length
+        ? lessons.map((lesson, index) => {
+            const progress = moduleProgress.lessons[index];
+            const quizLabel = !lesson.has_quiz
+                ? 'N/A'
+                : (progress.quiz.hasScore
+                    ? 'Score: ' + formatQuizScoreValue(progress.quiz.score) + '/' + (progress.quiz.totalQuestions || 'N/A')
+                    : 'Pending');
+            const lessonId = Number(lesson.lesson_id) || 0;
+            const encodedTitle = encodeInlineValue(lesson.lesson_title || 'Learning Outcome');
+            const materialsClass = locked ? 'opacity-50 cursor-not-allowed' : '';
+            const materialOnClick = locked ? 'return false;' : `viewLessonItems(${lessonId}, '${encodedTitle}');`;
+            const materialsButton = '<button type="button" class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 ' + materialsClass + '" onclick="' + materialOnClick + '"' + (locked ? ' title="Complete the previous module to unlock"' : '') + '><i class="fas fa-folder-open mr-1.5"></i> View Materials</button>';
+            const barColor = progress.isCompetent ? 'bg-emerald-500' : (progress.percentage > 0 ? 'bg-amber-400' : 'bg-slate-300');
+
+            return [
+                '<article class="border-b border-slate-100 px-4 py-4 last:border-b-0 sm:px-5' + (locked ? ' opacity-60' : '') + '">',
+                '  <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">',
+                '    <div class="min-w-0 flex-1">',
+                '      <div class="flex items-start gap-2">',
+                '        <h4 class="font-semibold text-blue-600">' + escapeHtml(lesson.lesson_title || 'Learning Outcome') + '</h4>',
+                (locked ? '        <i class="fas fa-lock text-slate-400 text-sm mt-0.5"></i>' : ''),
+                '      </div>',
+                '      <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">',
+                '        <span><i class="fas fa-pen mr-1.5 text-slate-400"></i>Quiz: <strong class="text-slate-700">' + escapeHtml(quizLabel) + '</strong></span>',
+                '        <span><i class="fas fa-list-check mr-1.5 text-slate-400"></i>Task Sheet: <strong class="text-slate-700">' + escapeHtml(getTaskSheetProgressLabel(progress)) + '</strong></span>',
+                '      </div>',
+                '    </div>',
+                '    <div class="shrink-0">' + getProgressBadgeHtml(progress.status) + '</div>',
+                '  </div>',
+                '  <div class="mt-4 flex items-center gap-3">',
+                '    <div class="h-2 flex-1 overflow-hidden rounded-full bg-slate-200"><div class="h-full rounded-full ' + barColor + ' transition-all duration-500" style="width: ' + progress.percentage + '%"></div></div>',
+                '    <span class="min-w-[3.25rem] text-right text-sm font-bold text-slate-700">' + progress.percentage + '%</span>',
+                '  </div>',
+                '  <div class="mt-4 flex flex-wrap gap-2">',
+                materialsButton,
+                (locked ? '' : buildQuizActionButton(lesson)),
+                '  </div>',
+                '</article>'
+            ].join('');
+        }).join('')
+        : '<div class="px-5 py-5 text-sm italic text-slate-500">No learning outcomes in this module yet.</div>';
+
+    const moduleHtml = [
+        '<details class="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm' + (locked ? ' opacity-75' : '') + '">',
+        '  <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 transition ' + (locked ? 'hover:bg-slate-100' : 'hover:bg-slate-50') + ' sm:px-5' + (locked ? ' pointer-events-none' : '') + '">',
+        '    <div class="flex min-w-0 items-center gap-3">',
+        '      <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ' + (locked ? 'bg-slate-100 text-slate-400' : 'bg-blue-50 text-blue-600') + '"><i class="fas ' + (locked ? 'fa-lock' : 'fa-folder-open') + '"></i></span>',
+        '      <div class="min-w-0"><h3 class="font-bold text-slate-900' + (locked ? ' text-slate-600' : '') + '">' + escapeHtml(module.module_title || 'Untitled Module') + '</h3><p class="mt-0.5 text-xs text-slate-500">' + moduleProgress.percentage + '% complete · ' + moduleProgress.completed + ' of ' + moduleProgress.requirements + ' requirements' + (locked ? ' <span class="font-semibold">• Locked</span>' : '') + '</p></div>',
+        '    </div>',
+        '    <div class="flex shrink-0 items-center gap-3">',
+        (locked ? '<span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-slate-200 text-slate-700"><i class="fas fa-lock mr-1"></i> Locked</span>' : getProgressBadgeHtml(moduleProgress.status)),
+        '      <i class="fas fa-chevron-down text-slate-400 transition-transform group-open:rotate-180"></i>',
+        '    </div>',
+        '  </summary>',
+        '  <div class="border-t border-slate-100 bg-slate-50/40' + (locked ? ' pointer-events-none' : '') + '">' + lessonsHtml + (locked ? '<div class="px-5 py-4 text-center text-sm text-slate-500"><i class="fas fa-lock mr-2"></i>Complete the previous module to unlock this one.</div>' : '') + '</div>',
+        '</details>'
+    ].join('');
+
+    container.insertAdjacentHTML('beforeend', moduleHtml);
+}
+
+function renderCompetencyProgressCards(modules) {
+    const cardsContainer = document.getElementById('competencyProgressCards');
+    if (!cardsContainer) return;
+
+    const normalizedModules = Array.isArray(modules) ? modules : [];
+    const organizedModules = organizeModulesByType(normalizedModules);
+    cardsContainer.innerHTML = '';
+
+    if (normalizedModules.length === 0) {
+        cardsContainer.innerHTML = '<div class="col-span-full text-center py-10 text-slate-500">No competencies available.</div>';
+        return;
+    }
+
+    Object.entries(organizedModules).forEach(([type, typeModules]) => {
+        typeModules.forEach((module, moduleIndex) => {
+            const locked = isModuleLocked(moduleIndex, typeModules);
+            const moduleProgress = getModuleProgress(module);
+            const barColor = moduleProgress.isCompetent ? 'bg-emerald-500' : (moduleProgress.percentage > 0 ? 'bg-amber-400' : 'bg-slate-300');
+            const badgeColor = locked ? 'bg-slate-200 text-slate-700' : (moduleProgress.isCompetent ? 'bg-emerald-100 text-emerald-700' : (moduleProgress.percentage > 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'));
+            const statusText = locked ? 'Locked' : moduleProgress.status;
+            
+            const cardHtml = [
+                '<div class="rounded-2xl border border-blue-100 bg-white shadow-sm p-5 hover:shadow-md transition-shadow' + (locked ? ' opacity-75' : '') + '">',
+                '  <div class="flex items-start justify-between gap-3 mb-4">',
+                '    <div class="min-w-0 flex-1">',
+                '      <div class="flex items-center gap-2">',
+                '        <h3 class="font-bold text-slate-900 text-base leading-tight' + (locked ? ' text-slate-600' : '') + '">' + escapeHtml(module.module_title || 'Untitled Module') + '</h3>',
+                (locked ? '        <i class="fas fa-lock text-slate-400 text-sm"></i>' : ''),
+                '      </div>',
+                '      <p class="mt-1 text-xs text-slate-500">' + moduleProgress.completed + ' of ' + moduleProgress.requirements + ' requirements</p>',
+                '    </div>',
+                '    <span class="inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-xs font-semibold ' + badgeColor + '">' + (locked ? '<i class="fas fa-lock mr-1"></i>' : '') + statusText + '</span>',
+                '  </div>',
+                '  <div class="mb-3">',
+                '    <div class="flex items-center justify-between mb-2">',
+                '      <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Progress</span>',
+                '      <span class="text-sm font-bold text-slate-700">' + moduleProgress.percentage + '%</span>',
+                '    </div>',
+                '    <div class="h-2.5 overflow-hidden rounded-full bg-slate-200">',
+                '      <div class="h-full rounded-full ' + barColor + ' transition-all duration-500" style="width: ' + moduleProgress.percentage + '%"></div>',
+                '    </div>',
+                '  </div>',
+                (locked ? '  <div class="text-xs text-slate-500 text-center"><i class="fas fa-lock mr-1"></i>Complete the previous module to unlock</div>' : ''),
+                '</div>'
+            ].join('');
+
+            cardsContainer.insertAdjacentHTML('beforeend', cardHtml);
+        });
+    });
+}
+
+function getTraineeCertificateName() {
+    const user = getStoredUser();
+    if (user) {
+        if (user.full_name) return user.full_name;
+        if (user.first_name || user.last_name) {
+            return `${user.first_name || ''} ${user.last_name || ''}`.trim();
+        }
+        if (user.username) return user.username;
+    }
+    return 'Trainee';
+}
+
+function getCertificateQualificationName(modules) {
+    const normalized = Array.isArray(modules) ? modules : [];
+    if (!normalized.length) return 'Technical Vocational Training';
+
+    const module = normalized.find(m => m && (m.qualification_name || m.qualification || m.qualification_title));
+    if (!module) return 'Technical Vocational Training';
+
+    return module.qualification_name || module.qualification || module.qualification_title || 'Technical Vocational Training';
+}
+
+function buildCertificateDocumentHtml({ type, traineeName, qualificationName, moduleTitle, competencyList, issueDate, certificateNumber, logoBase64, profilePhotoBase64 }) {
+    const title = type === 'achievement' ? 'CERTIFICATE OF ACHIEVEMENT' : 'CERTIFICATE OF COMPETENCY';
+    const subtitle = type === 'achievement'
+        ? 'This certifies that the trainee has completed all required core competencies for the program.'
+        : 'This certifies that the trainee has successfully completed the required competency module.';
+
+    const competencyItems = Array.isArray(competencyList) && competencyList.length
+        ? competencyList.map(item => `
+            <li class="mb-2 flex items-start gap-2 text-[15px] text-slate-800">
+                <span class="mt-1 inline-block h-2.5 w-2.5 rounded-full bg-blue-700"></span>
+                <span>${escapeHtml(item)}</span>
+            </li>`).join('')
+        : '<li class="text-slate-700">Completed competency requirements.</li>';
+
+    const firstLine = type === 'achievement' ? 'In acknowledgment of his exceptional proficiency and successful completion of the required core competencies' : 'In acknowledgment of his successful completion of the required competency module';
+
+    const logoImg = logoBase64 ? `<img src="${logoBase64}" alt="Hohoo Ville logo" />` : '<span>Logo</span>';
+    const photoDiv = profilePhotoBase64 ? `<img src="${profilePhotoBase64}" alt="Trainee photo" style="width: 100%; height: 100%; object-fit: cover;" />` : '<span>Photo</span>';
+
+    return `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <title>${escapeHtml(title)}</title>
+            <style>
+                :root {
+                    --gold: #d4af37;
+                    --dark-blue: #0b2c5f;
+                    --blue: #0f4c81;
+                    --ivory: #f5f2ee;
+                    --paper: #f8f6f4;
+                    --ink: #1f2937;
+                }
+                * { box-sizing: border-box; }
+                body {
+                    margin: 0;
+                    font-family: Georgia, 'Times New Roman', serif;
+                    background: #e8edf3;
+                    color: var(--ink);
+                    padding: 24px;
+                }
+                .certificate {
+                    width: 100%;
+                    max-width: 1200px;
+                    min-height: 860px;
+                    margin: 0 auto;
+                    background: linear-gradient(135deg, rgba(255,255,255,0.75), rgba(245,242,238,0.95));
+                    border: 6px solid var(--gold);
+                    box-shadow: inset 0 0 0 3px rgba(11,44,95,0.9), 0 22px 40px rgba(15,28,56,0.12);
+                    padding: 30px 36px 18px;
+                    position: relative;
+                    overflow: hidden;
+                }
+                .certificate::before, .certificate::after {
+                    content: "";
+                    position: absolute;
+                    width: 100%;
+                    height: 100%;
+                    inset: 0;
+                    pointer-events: none;
+                    background-image: linear-gradient(120deg, rgba(255,255,255,0.4), rgba(255,255,255,0));
+                }
+                .inner {
+                    position: relative;
+                    z-index: 1;
+                    display: grid;
+                    grid-template-columns: 1.2fr 0.8fr;
+                    gap: 28px;
+                    min-height: 800px;
+                }
+                .brand {
+                    display: flex;
+                    align-items: center;
+                    gap: 18px;
+                    margin-top: 12px;
+                }
+                .seal {
+                    width: 82px;
+                    height: 82px;
+                    border-radius: 50%;
+                    border: 4px solid var(--blue);
+                    background: radial-gradient(circle at center, rgba(13,59,110,0.25), rgba(13,59,110,0.05));
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    overflow: hidden;
+                    box-shadow: inset 0 0 0 3px rgba(212,175,55,0.9);
+                }
+                .seal img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    display: block;
+                }
+                .brand-name {
+                    font-size: 28px;
+                    font-weight: 700;
+                    color: var(--dark-blue);
+                    letter-spacing: 0.5px;
+                }
+                .brand-meta {
+                    margin-top: 4px;
+                    font-size: 14px;
+                    color: var(--dark-blue);
+                    line-height: 1.4;
+                    font-weight: 600;
+                }
+                .title-wrap {
+                    text-align: center;
+                    margin-top: 40px;
+                    margin-bottom: 28px;
+                }
+                .title {
+                    font-size: clamp(34px, 4vw, 66px);
+                    font-weight: 700;
+                    letter-spacing: 2px;
+                    color: var(--dark-blue);
+                    margin: 0;
+                    line-height: 1.1;
+                }
+                .subtitle {
+                    font-size: clamp(20px, 2.5vw, 36px);
+                    font-weight: 700;
+                    color: var(--dark-blue);
+                    margin-top: 10px;
+                    line-height: 1.2;
+                    font-style: italic;
+                }
+                .awarded-to {
+                    margin-top: 22px;
+                    text-align: center;
+                    font-size: clamp(24px, 2vw, 42px);
+                    color: var(--dark-blue);
+                    font-style: italic;
+                    font-weight: 700;
+                }
+                .statement {
+                    margin-top: 22px;
+                    text-align: center;
+                    font-size: clamp(18px, 1.6vw, 28px);
+                    line-height: 1.5;
+                    color: var(--ink);
+                    font-style: italic;
+                }
+                .program-name {
+                    text-align: center;
+                    font-size: clamp(20px, 1.8vw, 30px);
+                    font-weight: 700;
+                    line-height: 1.3;
+                    color: var(--dark-blue);
+                    margin-top: 10px;
+                }
+                .cert-notes {
+                    margin-top: 30px;
+                    text-align: center;
+                    font-size: 15px;
+                    font-style: italic;
+                    color: var(--ink);
+                }
+                .signature-row {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-end;
+                    gap: 30px;
+                    margin-top: 38px;
+                    text-align: center;
+                }
+                .signature-box {
+                    width: 220px;
+                    border-top: 2px solid rgba(11,44,95,0.7);
+                    padding-top: 8px;
+                    font-size: 15px;
+                    color: var(--ink);
+                }
+                .signature-box strong {
+                    display: block;
+                    font-size: 16px;
+                    margin-top: 6px;
+                    color: var(--dark-blue);
+                }
+                .side-panel {
+                    padding-top: 110px;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: flex-start;
+                }
+                .list-box {
+                    background: rgba(255,255,255,0.18);
+                    border-left: 3px solid var(--gold);
+                    padding-left: 18px;
+                    margin-top: 12px;
+                }
+                .list-box h4 {
+                    margin: 0 0 12px;
+                    font-size: 26px;
+                    letter-spacing: 0.04em;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    color: var(--dark-blue);
+                }
+                ul {
+                    margin: 0;
+                    padding-left: 0;
+                    list-style: none;
+                }
+                .photo {
+                    width: 100%;
+                    max-width: 320px;
+                    height: 300px;
+                    margin: 24px auto 0;
+                    border: 4px solid rgba(11,44,95,0.9);
+                    background: linear-gradient(135deg, rgba(21,87,181,0.7), rgba(6,39,84,0.9));
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                    font-weight: 700;
+                    font-size: 36px;
+                    box-shadow: 0 10px 24px rgba(5,24,52,0.16);
+                }
+                .footer {
+                    text-align: center;
+                    font-size: 15px;
+                    letter-spacing: 0.08em;
+                    color: var(--dark-blue);
+                    margin-top: 18px;
+                    padding-top: 12px;
+                    border-top: 2px solid rgba(11,44,95,0.5);
+                }
+                @media (max-width: 900px) {
+                    .inner { grid-template-columns: 1fr; }
+                    .side-panel { padding-top: 0; }
+                    .certificate { padding: 20px 18px; }
+                    .signature-row { flex-direction: column; align-items: center; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="certificate">
+                <div class="inner">
+                    <div>
+                        <div class="brand">
+                            <div class="seal">
+                                ${logoImg}
+                            </div>
+                            <div>
+                                <div class="brand-name">Hohoo Ville Technical School Inc.</div>
+                                <div class="brand-meta">Purok 6A, Poblacion, Lagonglong, Misamis Oriental, 9000<br />hohooville@gmail.com | 0905-162-8921 | 0921-696-8538</div>
+                            </div>
                         </div>
-                        <div class="flex items-center gap-2 w-96">
-                            <button class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition flex-1" onclick="viewLessonItems(${lesson.lesson_id}, '${encodeInlineValue(lesson.lesson_title)}')">
-                                <i class="fas fa-folder-open mr-1"></i> View Materials
-                            </button>
-                            <div class="flex-1">
-                                ${quizButtonHtml}
+
+                        <div class="title-wrap">
+                            <h1 class="title">${escapeHtml(title)}</h1>
+                            <div class="subtitle">${escapeHtml(type === 'achievement' ? 'of Achievement' : 'of Competency')}</div>
+                        </div>
+
+                        <div class="awarded-to">${escapeHtml(traineeName)}</div>
+
+                        <div class="statement">
+                            ${escapeHtml(firstLine)}<br />
+                            ${escapeHtml(qualificationName)} &nbsp; ${escapeHtml(moduleTitle || '')}
+                        </div>
+
+                        <div class="program-name">${escapeHtml(type === 'achievement' ? 'Core Competency Completion' : moduleTitle || 'Competency Module')}</div>
+
+                        <div class="cert-notes">In accordance with the standards set forth by the Technical Education and Skills Development Authority (TESDA).</div>
+
+                        <div class="cert-notes">Given this ${escapeHtml(issueDate)}</div>
+
+                        <div class="signature-row">
+                            <div class="signature-box">
+                                <div>IvY Mae O. Bagongon</div>
+                                <strong>Trainer</strong>
+                            </div>
+                            <div class="signature-box">
+                                <div>George Z. Bagongon</div>
+                                <strong>Registrar, HVTS</strong>
+                            </div>
+                            <div class="signature-box">
+                                <div>James Christian G. Puertas</div>
+                                <strong>Vice-President, HVTS</strong>
                             </div>
                         </div>
                     </div>
-                `;
-            });
-        } else {
-            lessonsHtml = '<div class="p-4 text-gray-500 text-sm italic">No learning outcomes in this module yet.</div>';
-        }
 
-        const moduleHtml = `
-            <details class="group mb-4 bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-                <summary class="flex items-center justify-between w-full p-4 text-left cursor-pointer list-none bg-white hover:bg-gray-50 transition-colors focus:outline-none">
-                    <span class="font-bold text-gray-800">${module.module_title}</span>
-                    <i class="fas fa-chevron-down text-gray-400 transition-transform group-open:rotate-180"></i>
-                </summary>
-                <div class="border-t border-gray-100 bg-white">
-                    ${lessonsHtml}
+                    <aside class="side-panel">
+                        <div class="list-box">
+                            <h4>Competencies</h4>
+                            <ul>${competencyItems}</ul>
+                        </div>
+                        <div class="photo">${photoDiv}</div>
+                    </aside>
                 </div>
-            </details>
-        `;
 
-        if (module.competency_type === 'core') coreContainer.innerHTML += moduleHtml;
-        else if (module.competency_type === 'common') commonContainer.innerHTML += moduleHtml;
-        else if (module.competency_type === 'basic') basicContainer.innerHTML += moduleHtml;
+                <div class="footer">Certificate No. ${escapeHtml(certificateNumber)}</div>
+            </div>
+        </body>
+        </html>
+    `;
+}
+
+function downloadIssuedCertificate(button) {
+    const certificateId = button.dataset.issuedCertificateId;
+    const qualificationName = button.dataset.issuedCertificateName || 'Issued Certificate';
+    const issueDate = button.dataset.issuedCertificateDate || '';
+    downloadCertificateDocument('achievement', qualificationName, [qualificationName], {
+        qualificationName,
+        issueDate,
+        certificateNumber: `CERT-${certificateId}`
+    });
+}
+
+function downloadCertificateDocument(type, moduleTitle, competencyList, issuedCertificate = {}) {
+    const modules = Array.isArray(trainingModulesState) ? trainingModulesState : [];
+    const qualificationName = issuedCertificate.qualificationName || getCertificateQualificationName(modules);
+    const issueDate = issuedCertificate.issueDate || new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+    const certificateNumber = issuedCertificate.certificateNumber || `${type === 'achievement' ? 'COA' : 'COC'}-${Math.random().toString(36).slice(2, 9).toUpperCase()}`;
+    const user = getStoredUser();
+
+    const toDataUrl = (blob) => {
+        if (!blob) return Promise.resolve(null);
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result || null);
+            reader.readAsDataURL(blob);
+        });
+    };
+
+    const getFullName = (profileData) => {
+        if (profileData) {
+            if (profileData.full_name) return profileData.full_name;
+            const firstName = profileData.first_name || '';
+            const lastName = profileData.last_name || '';
+            if (firstName || lastName) return `${firstName} ${lastName}`.trim();
+        }
+        return getTraineeCertificateName();
+    };
+
+    const logoPromise = fetch(`${window.location.origin}/Hohoo-ville/img/logo.jpg`)
+        .then(response => response.blob())
+        .then(toDataUrl)
+        .catch((error) => {
+            console.error('Error loading logo:', error);
+            return null;
+        });
+
+    const profilePromise = (user && user.trainee_id)
+        ? fetch(`${API_BASE_URL}/role/trainee/profile.php?action=get&trainee_id=${user.trainee_id}`, getRequestConfig())
+            .then(response => response.json())
+            .then(data => (data && data.success && data.data ? data.data : null))
+            .catch((error) => {
+                console.error('Error fetching profile:', error);
+                return null;
+            })
+        : Promise.resolve(null);
+
+    const getPhotoPromise = (profileData) => {
+        if (!profileData || !profileData.photo_url) return Promise.resolve(null);
+
+        const photoUrl = `${window.location.origin}${profileData.photo_url}`;
+        return fetch(photoUrl, getRequestConfig())
+            .then(response => response.blob())
+            .then(toDataUrl)
+            .catch((error) => {
+                console.error('Error loading profile photo:', error);
+                return null;
+            });
+    };
+
+    Promise.all([logoPromise, profilePromise])
+        .then(([logoBase64, profileData]) => {
+            const traineeName = getFullName(profileData);
+            return getPhotoPromise(profileData).then((profilePhotoBase64) => {
+                const html = buildCertificateDocumentHtml({
+                    type,
+                    traineeName,
+                    qualificationName,
+                    moduleTitle,
+                    competencyList,
+                    issueDate,
+                    certificateNumber,
+                    logoBase64,
+                    profilePhotoBase64
+                });
+
+                const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${certificateNumber.toLowerCase()}-${(moduleTitle || 'certificate').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.html`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+            });
+        })
+        .catch((error) => {
+            console.error('Error generating certificate:', error);
+            const traineeName = getTraineeCertificateName();
+            const html = buildCertificateDocumentHtml({
+                type,
+                traineeName,
+                qualificationName,
+                moduleTitle,
+                competencyList,
+                issueDate,
+                certificateNumber,
+                logoBase64: null,
+                profilePhotoBase64: null
+            });
+
+            const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${certificateNumber.toLowerCase()}-${(moduleTitle || 'certificate').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.html`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        });
+}
+
+function renderCertificateTab(modules) {
+    const container = document.getElementById('certificateContent');
+    if (!container) return;
+
+    const typeModules = Array.isArray(modules) ? modules.filter(m => String(m.competency_type || 'core').toLowerCase() === 'core') : [];
+    const completedModules = typeModules.filter(m => getModuleProgress(m).percentage >= 100);
+    const allCoreCompleted = typeModules.length > 0 && typeModules.every(m => getModuleProgress(m).percentage >= 100);
+
+    if (!typeModules.length || !completedModules.length) {
+        container.innerHTML = `
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-600">
+                No completed core competencies yet. Reach 100% progress on a module to unlock your certificate.
+            </div>
+        `;
+        return;
+    }
+
+    const competencyList = completedModules.map(module => module.module_title || 'Competency');
+
+    const achievementCard = allCoreCompleted ? `
+        <div class="rounded-2xl border border-amber-200 bg-white shadow-sm overflow-hidden">
+            <div class="border-b border-amber-100 bg-amber-50 px-5 py-4">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">Certificate of Achievement</p>
+                        <h3 class="mt-1 text-xl font-bold text-slate-900">All Core Competencies Completed</h3>
+                    </div>
+                    <span class="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
+                        <i class="fas fa-certificate mr-1"></i>Eligible
+                    </span>
+                </div>
+            </div>
+            <div class="px-5 py-5">
+                <div class="grid gap-4 md:grid-cols-3">
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Program</p>
+                        <p class="mt-2 text-sm font-semibold text-slate-800">${escapeHtml(getCertificateQualificationName(typeModules))}</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Completed</p>
+                        <p class="mt-2 text-sm font-semibold text-slate-800">${completedModules.length} of ${typeModules.length} competencies</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Action</p>
+                        <button type="button" data-download-certificate="achievement" data-module-title="${escapeHtml(getCertificateQualificationName(typeModules))}" class="mt-2 inline-flex items-center justify-center w-full rounded-md bg-amber-500 px-3 py-2 text-sm font-semibold text-white hover:bg-amber-600">
+                            <i class="fas fa-download mr-2"></i>Download COA
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    ` : '';
+
+    const competencyCards = completedModules.map((module) => {
+        const moduleProgress = getModuleProgress(module);
+        const issuedDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+
+        return `
+            <div class="rounded-2xl border border-blue-200 bg-white shadow-sm overflow-hidden">
+                <div class="border-b border-blue-100 bg-blue-50 px-5 py-4">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">Certificate of Competency</p>
+                            <h3 class="mt-1 text-xl font-bold text-slate-900">${escapeHtml(module.module_title || 'Completed Competency')}</h3>
+                        </div>
+                        <span class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+                            <i class="fas fa-check-circle mr-1"></i>100%
+                        </span>
+                    </div>
+                </div>
+                <div class="px-5 py-5">
+                    <div class="grid gap-4 md:grid-cols-3">
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                            <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Competency</p>
+                            <p class="mt-2 text-sm font-semibold text-slate-800">${escapeHtml(module.module_title || 'Competency')}</p>
+                        </div>
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                            <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Progress</p>
+                            <p class="mt-2 text-sm font-semibold text-slate-800">${moduleProgress.percentage}% complete</p>
+                        </div>
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                            <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Issued</p>
+                            <p class="mt-2 text-sm font-semibold text-slate-800">${escapeHtml(issuedDate)}</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 flex flex-wrap gap-3">
+                        <button type="button" data-download-certificate="competency" data-module-title="${escapeHtml(module.module_title || 'Competency')}" class="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+                            <i class="fas fa-download mr-2"></i>Download Certificate
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = `
+        <div class="mb-4 flex items-center justify-between gap-3">
+            <div>
+                <h3 class="text-xl font-bold text-slate-900">Certificates</h3>
+                <p class="text-sm text-slate-500">Certificates are issued only when a module reaches 100% completion.</p>
+            </div>
+            <span class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">${completedModules.length} ready</span>
+        </div>
+        <div class="space-y-5">
+            ${achievementCard || ''}
+            ${competencyCards}
+        </div>
+    `;
+
+    container.querySelectorAll('[data-download-certificate]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const type = button.dataset.downloadCertificate;
+            const moduleTitle = button.dataset.moduleTitle || 'Competency';
+            const selectedCompetencies = type === 'achievement'
+                ? competencyList
+                : [moduleTitle];
+
+            downloadCertificateDocument(type, moduleTitle, selectedCompetencies);
+        });
     });
 }
 
 window.viewLessonItems = async function(lessonId, encodedLessonTitle) {
     const lessonTitle = decodeInlineValue(encodedLessonTitle);
+    
+    // Check if the lesson's module is locked
+    let lesson = findLessonById(lessonId);
+    if (!lesson) {
+        await loadTrainingData({ forceFresh: true, suppressAlerts: true });
+        lesson = findLessonById(lessonId);
+    }
+    
+    if (lesson) {
+        // Find the module that contains this lesson
+        const module = trainingModulesState.find(m => m.lessons && m.lessons.some(l => l.lesson_id == lessonId));
+        if (module) {
+            const competencyType = String(module.competency_type || 'core').toLowerCase();
+            const modules = trainingModulesState.filter(m => String(m.competency_type || 'core').toLowerCase() === competencyType);
+            const moduleIndex = modules.indexOf(module);
+
+            if (isModuleLocked(moduleIndex, modules)) {
+                swal('Module Locked', 'Please complete the previous module first to unlock this one.', 'warning');
+                return;
+            }
+        }
+    }
+    
     document.getElementById('lessonItemsTitle').textContent = lessonTitle;
     const contentsList = document.getElementById('lessonItemsContentsList');
     const taskSheetsList = document.getElementById('lessonItemsTaskSheetsList');
@@ -1090,7 +1931,6 @@ window.viewLessonItems = async function(lessonId, encodedLessonTitle) {
     lessonItemsModal.show();
 
     try {
-        let lesson = findLessonById(lessonId);
         if (!lesson) {
             await loadTrainingData({ forceFresh: true, suppressAlerts: true });
             lesson = findLessonById(lessonId);
@@ -1464,6 +2304,7 @@ async function performQuizSubmission(lessonId, answers) {
             const numericLessonId = Number(lessonId);
             if (patchLessonQuizState(numericLessonId, result)) {
                 renderModules(trainingModulesState);
+                renderCompetencyProgressCards(trainingModulesState);
             }
 
             document.getElementById('quizResultScore').textContent = `${formatQuizScoreValue(result.score)} / ${result.total_questions}`;

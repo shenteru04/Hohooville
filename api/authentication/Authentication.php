@@ -20,6 +20,8 @@ use PHPMailer\PHPMailer\Exception;
 class Authentication {
     private $conn;
     private $table = 'tbl_users';
+    private const LOGIN_RETRY_LIMIT = 5;
+    private const LOGIN_LOCKOUT_MINUTES = 15;
 
     public function __construct($db) {
         $this->conn = $db;
@@ -124,11 +126,21 @@ class Authentication {
             return;
         }
 
-        if (!password_verify($data->password, $user['password'])) {
-            $this->logActivity($user['user_id'], 'login_failed', 'tbl_users', $user['user_id'], 'Invalid password');
-            $this->sendResponse(401, false, 'Invalid credentials');
+        $lockoutMessage = $this->getActiveLoginLockoutMessage($user);
+        if ($lockoutMessage !== null) {
+            $this->logActivity($user['user_id'], 'login_locked', 'tbl_users', $user['user_id'], 'Login blocked while account lockout is active');
+            $this->sendResponse(429, false, $lockoutMessage);
             return;
         }
+
+        if (!password_verify($data->password, $user['password'])) {
+            $retryState = $this->recordFailedLoginAttempt((int)$user['user_id']);
+            $this->logActivity($user['user_id'], 'login_failed', 'tbl_users', $user['user_id'], 'Invalid password');
+            $this->sendResponse($retryState['locked'] ? 429 : 401, false, $retryState['message']);
+            return;
+        }
+
+        $this->clearLoginRetryState((int)$user['user_id']);
 
         // --- Role-Based Security Check ---
         
@@ -179,6 +191,109 @@ class Authentication {
         ];
 
         $this->sendResponse(200, true, 'Login successful', $response);
+    }
+
+    private function getActiveLoginLockoutMessage(array $user) {
+        $lockedUntil = $user['login_locked_until'] ?? null;
+        if (empty($lockedUntil)) {
+            return null;
+        }
+
+        $lockedUntilTimestamp = strtotime($lockedUntil);
+        if ($lockedUntilTimestamp === false || $lockedUntilTimestamp <= time()) {
+            return null;
+        }
+
+        $remainingMinutes = max(1, (int)ceil(($lockedUntilTimestamp - time()) / 60));
+        return "Too many incorrect password attempts. Please try again in {$remainingMinutes} minute(s).";
+    }
+
+    private function recordFailedLoginAttempt($userId) {
+        $fallback = [
+            'locked' => false,
+            'message' => 'Invalid credentials'
+        ];
+
+        try {
+            $this->conn->beginTransaction();
+
+            $selectStmt = $this->conn->prepare("
+                SELECT failed_login_attempts, login_locked_until
+                FROM {$this->table}
+                WHERE user_id = ?
+                FOR UPDATE
+            ");
+            $selectStmt->execute([$userId]);
+            $state = $selectStmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$state) {
+                $this->conn->rollBack();
+                return $fallback;
+            }
+
+            $lockedUntilTimestamp = !empty($state['login_locked_until'])
+                ? strtotime($state['login_locked_until'])
+                : false;
+            if ($lockedUntilTimestamp !== false && $lockedUntilTimestamp > time()) {
+                $this->conn->commit();
+                return [
+                    'locked' => true,
+                    'message' => $this->getActiveLoginLockoutMessage($state)
+                ];
+            }
+
+            $attempts = $lockedUntilTimestamp !== false
+                ? 0
+                : max(0, (int)($state['failed_login_attempts'] ?? 0));
+            $attempts++;
+            $isLocked = $attempts >= self::LOGIN_RETRY_LIMIT;
+            $newLockedUntil = $isLocked
+                ? date('Y-m-d H:i:s', time() + (self::LOGIN_LOCKOUT_MINUTES * 60))
+                : null;
+
+            $updateStmt = $this->conn->prepare("
+                UPDATE {$this->table}
+                SET failed_login_attempts = ?,
+                    login_locked_until = ?
+                WHERE user_id = ?
+            ");
+            $updateStmt->execute([$attempts, $newLockedUntil, $userId]);
+            $this->conn->commit();
+
+            if ($isLocked) {
+                return [
+                    'locked' => true,
+                    'message' => 'Too many incorrect password attempts. Please try again in 15 minutes.'
+                ];
+            }
+
+            $remainingAttempts = self::LOGIN_RETRY_LIMIT - $attempts;
+            return [
+                'locked' => false,
+                'message' => "Invalid credentials. {$remainingAttempts} password attempt(s) remaining."
+            ];
+        } catch (Exception $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+
+            error_log('Unable to record failed login attempt: ' . $e->getMessage());
+            return $fallback;
+        }
+    }
+
+    private function clearLoginRetryState($userId) {
+        try {
+            $stmt = $this->conn->prepare("
+                UPDATE {$this->table}
+                SET failed_login_attempts = 0,
+                    login_locked_until = NULL
+                WHERE user_id = ?
+            ");
+            $stmt->execute([$userId]);
+        } catch (Exception $e) {
+            error_log('Unable to clear failed login attempts: ' . $e->getMessage());
+        }
     }
 
     private function verifyOtp() {

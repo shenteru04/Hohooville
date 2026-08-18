@@ -3,6 +3,9 @@ const REMEMBERED_USERNAME_KEY = 'remembered_username';
 const SESSION_TIMEOUT_LAST_ACTIVITY_KEY = 'session_timeout_last_activity_at';
 const SESSION_TIMEOUT_EXPIRES_AT_KEY = 'session_timeout_expires_at';
 const SESSION_TIMEOUT_EXPIRED_AT_KEY = 'session_timeout_expired_at';
+const LOGIN_RETRY_KEY_PREFIX = 'login_retry_state:';
+const LOGIN_RETRY_LIMIT = 5;
+const LOGIN_LOCKOUT_MS = 15 * 60 * 1000;
 
 document.addEventListener('DOMContentLoaded', () => {
     if (redirectIfLoggedIn()) {
@@ -117,6 +120,12 @@ async function handleLogin(event, elements, getCaptchaAnswer, setCaptchaAnswer) 
         return;
     }
 
+    const activeLockout = getActiveLoginLockout(username);
+    if (activeLockout) {
+        showMessage(elements, activeLockout, 'danger');
+        return;
+    }
+
     setButtonLoading(elements.loginSubmit, true, 'Checking credentials');
 
     try {
@@ -128,6 +137,7 @@ async function handleLogin(event, elements, getCaptchaAnswer, setCaptchaAnswer) 
         });
 
         if (response.data?.success) {
+            clearLoginRetryState(username);
             if (response.data.data?.require_otp) {
                 persistRememberedUsername(elements.rememberMe.checked, username);
                 sessionStorage.setItem('temp_user_id', response.data.data.user_id);
@@ -148,7 +158,9 @@ async function handleLogin(event, elements, getCaptchaAnswer, setCaptchaAnswer) 
     } catch (error) {
         console.error('Login failed:', error);
 
-        if (error.response?.data?.message) {
+        if (error.response?.status === 401) {
+            showMessage(elements, recordFailedLoginAttempt(username), 'danger');
+        } else if (error.response?.data?.message) {
             showMessage(elements, error.response.data.message, 'danger');
         } else if (error.request) {
             showMessage(elements, 'No response from server. Please check your connection and try again.', 'danger');
@@ -160,6 +172,60 @@ async function handleLogin(event, elements, getCaptchaAnswer, setCaptchaAnswer) 
     } finally {
         setButtonLoading(elements.loginSubmit, false);
     }
+}
+
+function getLoginRetryKey(username) {
+    return `${LOGIN_RETRY_KEY_PREFIX}${username.toLowerCase()}`;
+}
+
+function getActiveLoginLockout(username) {
+    const key = getLoginRetryKey(username);
+
+    try {
+        const state = JSON.parse(localStorage.getItem(key));
+        if (!state?.lockedUntil) {
+            return null;
+        }
+
+        const remainingMs = state.lockedUntil - Date.now();
+        if (remainingMs <= 0) {
+            localStorage.removeItem(key);
+            return null;
+        }
+
+        const remainingMinutes = Math.max(1, Math.ceil(remainingMs / 60000));
+        return `Too many incorrect password attempts. Please try again in ${remainingMinutes} minute(s).`;
+    } catch (error) {
+        localStorage.removeItem(key);
+        return null;
+    }
+}
+
+function recordFailedLoginAttempt(username) {
+    const key = getLoginRetryKey(username);
+    let state = { attempts: 0, lockedUntil: null };
+
+    try {
+        state = { ...state, ...JSON.parse(localStorage.getItem(key)) };
+    } catch (error) {
+        // Start over if browser storage contains an invalid value.
+    }
+
+    state.attempts += 1;
+    if (state.attempts >= LOGIN_RETRY_LIMIT) {
+        state.lockedUntil = Date.now() + LOGIN_LOCKOUT_MS;
+        state.attempts = 0;
+        localStorage.setItem(key, JSON.stringify(state));
+        return 'Too many incorrect password attempts. Please try again in 15 minutes.';
+    }
+
+    localStorage.setItem(key, JSON.stringify(state));
+    const remainingAttempts = LOGIN_RETRY_LIMIT - state.attempts;
+    return `Invalid credentials. ${remainingAttempts} password attempt(s) remaining.`;
+}
+
+function clearLoginRetryState(username) {
+    localStorage.removeItem(getLoginRetryKey(username));
 }
 
 async function handleOtp(event, elements, setCaptchaAnswer) {
