@@ -659,20 +659,24 @@
                             <div class="row mb-3">
                                 <div class="col-md-4">
                                     <label class="form-label">Valid ID (Scanned/Photo) <span class="text-danger">*</span></label>
-                                    <input type="file" class="form-control" name="valid_id" accept="image/*,.pdf" required>
+                                    <input type="file" class="form-control" name="valid_id" accept="image/jpeg,image/png,image/webp,application/pdf,.jpg,.jpeg,.png,.webp,.pdf" required>
+                                    <div class="form-text" data-file-validation="valid_id">JPG, PNG, WEBP, or PDF; maximum 10 MB.</div>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">Birth Certificate <span class="text-danger">*</span></label>
-                                    <input type="file" class="form-control" name="birth_cert" accept="image/*,.pdf" required>
+                                    <input type="file" class="form-control" name="birth_cert" accept="image/jpeg,image/png,image/webp,application/pdf,.jpg,.jpeg,.png,.webp,.pdf" required>
+                                    <div class="form-text" data-file-validation="birth_cert">JPG, PNG, WEBP, or PDF; maximum 10 MB.</div>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">1x1 or 2x2 ID Picture <span class="text-danger">*</span></label>
-                                    <input type="file" class="form-control" name="photo" accept="image/*" required>
+                                    <input type="file" class="form-control" name="photo" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" required>
+                                    <div class="form-text" data-file-validation="photo">JPG, PNG, or WEBP; maximum 5 MB.</div>
                                 </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Additional Documents (Optional)</label>
-                                <input type="file" class="form-control" name="additional_docs" accept="image/*,.pdf">
+                                <input type="file" class="form-control" name="additional_docs" accept="image/jpeg,image/png,image/webp,application/pdf,.jpg,.jpeg,.png,.webp,.pdf">
+                                <div class="form-text" data-file-validation="additional_docs">JPG, PNG, WEBP, or PDF; maximum 10 MB.</div>
                             </div>
                         </div>
 

@@ -37,6 +37,80 @@ document.addEventListener('DOMContentLoaded', function() {
     const phoneError = document.getElementById('phoneError');
     const emailError = document.getElementById('emailError');
     const checkSchoolIdInput = document.getElementById('check_school_id');
+    const DOCUMENT_FILE_RULES = {
+        valid_id: { label: 'Valid ID', required: true, maxBytes: 10 * 1024 * 1024, allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'] },
+        birth_cert: { label: 'Birth Certificate', required: true, maxBytes: 10 * 1024 * 1024, allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'] },
+        photo: { label: 'ID Picture', required: true, maxBytes: 5 * 1024 * 1024, allowedTypes: ['image/jpeg', 'image/png', 'image/webp'] },
+        additional_docs: { label: 'Additional Document', required: false, maxBytes: 10 * 1024 * 1024, allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'] }
+    };
+
+    function setDocumentValidationMessage(name, message = '', isError = false) {
+        const help = document.querySelector(`[data-file-validation="${name}"]`);
+        if (!help) return;
+        if (!help.dataset.defaultMessage) help.dataset.defaultMessage = help.textContent;
+        help.textContent = message || help.dataset.defaultMessage || '';
+        help.classList.toggle('text-danger', isError);
+        help.classList.toggle('text-success', !isError && Boolean(message));
+    }
+
+    async function validateDocumentFileInput(input) {
+        const rule = DOCUMENT_FILE_RULES[input?.name];
+        const file = input?.files?.[0];
+        if (!rule) return true;
+        if (!file) {
+            if (rule.required && !isReturningTrainee) {
+                setDocumentValidationMessage(input.name, `${rule.label} is required.`, true);
+                return false;
+            }
+            setDocumentValidationMessage(input.name);
+            return true;
+        }
+        if (file.size <= 0 || file.size > rule.maxBytes) {
+            setDocumentValidationMessage(input.name, `${rule.label} must be no larger than ${rule.maxBytes / 1024 / 1024} MB.`, true);
+            return false;
+        }
+        if (!rule.allowedTypes.includes(file.type)) {
+            setDocumentValidationMessage(input.name, `${rule.label} must be a JPG, PNG, WEBP${rule.allowedTypes.includes('application/pdf') ? ', or PDF' : ''} file.`, true);
+            return false;
+        }
+        if (file.type === 'application/pdf') {
+            const header = await file.slice(0, 5).text();
+            if (header !== '%PDF-') {
+                setDocumentValidationMessage(input.name, `${rule.label} is not a readable PDF file.`, true);
+                return false;
+            }
+        } else {
+            const imageIsReadable = await new Promise(resolve => {
+                const image = new Image();
+                const url = URL.createObjectURL(file);
+                image.onload = () => { URL.revokeObjectURL(url); resolve(image.naturalWidth > 0 && image.naturalHeight > 0); };
+                image.onerror = () => { URL.revokeObjectURL(url); resolve(false); };
+                image.src = url;
+            });
+            if (!imageIsReadable) {
+                setDocumentValidationMessage(input.name, `${rule.label} is not a readable image file.`, true);
+                return false;
+            }
+        }
+        setDocumentValidationMessage(input.name, `${rule.label} file is valid and ready to submit.`);
+        return true;
+    }
+
+    async function validateAllDocumentFiles() {
+        const inputs = Object.keys(DOCUMENT_FILE_RULES)
+            .map(name => applicationForm?.querySelector(`input[name="${name}"]`))
+            .filter(Boolean);
+        const results = await Promise.all(inputs.map(validateDocumentFileInput));
+        return results.every(Boolean);
+    }
+
+    Object.keys(DOCUMENT_FILE_RULES).forEach(name => {
+        const input = applicationForm?.querySelector(`input[name="${name}"]`);
+        input?.addEventListener('change', async () => {
+            const valid = await validateDocumentFileInput(input);
+            if (!valid) input.value = '';
+        });
+    });
 
     // --- Section visibility + required handling ---
     function initRequiredMarkers(section) {
@@ -944,6 +1018,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 : 'Please enter a valid email address.';
             Swal.fire('Invalid Input', invalidMessage, 'warning');
             invalidInput?.focus();
+            return;
+        }
+
+        if (!isReturningTrainee && !(await validateAllDocumentFiles())) {
+            Swal.fire('Invalid Document', 'Please attach valid, readable files for all required documents.', 'warning');
             return;
         }
 

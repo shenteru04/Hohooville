@@ -317,13 +317,63 @@ function renderTraineesTable(trainees) {
                 <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold bg-emerald-100 text-emerald-700">${trainee.enrollment_status || 'Approved'}</span>
             </td>
             <td class="px-4 py-3 text-sm">
-                <a href="trainee_details.html?id=${trainee.trainee_id}" class="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50" title="View Trainee Details">
+                <div class="flex flex-wrap gap-2">
+                    <a href="trainee_details.html?id=${trainee.trainee_id}" class="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50" title="View Trainee Details">
                     <i class="fas fa-eye"></i> View
-                </a>
+                    </a>
+                    ${trainee.certificate_id
+                        ? '<span class="inline-flex items-center gap-1 rounded-lg bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-700"><i class="fas fa-certificate"></i> Issued</span>'
+                        : trainee.certificate_eligible
+                            ? '<button type="button" class="issue-certificate-btn inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"><i class="fas fa-certificate"></i> Issue Certificate</button>'
+                            : '<span class="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600" title="' + (trainee.core_outcomes_completed || 0) + ' of ' + (trainee.core_outcomes_total || 0) + ' core outcomes completed"><i class="fas fa-lock"></i> Core competencies incomplete</span>'}
+                </div>
             </td>
         `;
+        const issueButton = row.querySelector('.issue-certificate-btn');
+        if (issueButton) {
+            issueButton.addEventListener('click', () => issueCertificateForBatch(trainee));
+        }
         tbody.appendChild(row);
     });
+}
+
+async function issueCertificateForBatch(trainee) {
+    if (!currentTrainerId || !trainee.trainee_id || !trainee.qualification_id) {
+        Swal.fire({ title: 'Unable to issue certificate', text: 'The selected batch or qualification details are missing.', icon: 'error' });
+        return;
+    }
+
+    const confirmation = await Swal.fire({
+        title: 'Issue certificate?',
+        text: `Issue a certificate to ${trainee.full_name || 'this trainee'} for ${trainee.qualification_name || trainee.course_name || 'this qualification'}?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Issue Certificate',
+        confirmButtonColor: '#2563eb'
+    });
+
+    if (!confirmation.isConfirmed) return;
+
+    try {
+        const response = await axios.post(
+            `${API_BASE_URL}/role/trainer/trainees.php?action=issue-certificate&trainer_id=${currentTrainerId}`,
+            {
+                trainee_id: trainee.trainee_id,
+                batch_id: trainee.batch_id || currentSelectedBatchId,
+                qualification_id: trainee.qualification_id
+            }
+        );
+
+        if (!response.data.success) {
+            throw new Error(response.data.message || 'Unable to issue certificate.');
+        }
+
+        await Swal.fire({ title: 'Certificate issued', text: response.data.message || 'The certificate is now available to the trainee.', icon: 'success' });
+        loadTraineesForBatch(currentSelectedBatchId);
+    } catch (error) {
+        console.error('Error issuing certificate:', error);
+        Swal.fire({ title: 'Unable to issue certificate', text: error.response?.data?.message || error.message || 'Please try again.', icon: 'error' });
+    }
 }
 
 function openAttendanceModal(batchId) {

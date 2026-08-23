@@ -24,7 +24,8 @@ class SystemSettings {
         } elseif ($action === 'get-eligible-trainees') {
             $this->getEligibleTrainees();
         } elseif ($action === 'generate-certificates') {
-            $this->generateCertificates();
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Certificates can only be issued by the assigned trainer.']);
         } elseif ($action === 'get-certificate-stats') {
             $this->getCertificateStats();
         } else {

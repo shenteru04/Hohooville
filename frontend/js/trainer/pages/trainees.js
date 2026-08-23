@@ -1,4 +1,5 @@
 const API_BASE_URL = window.location.origin + '/Hohoo-ville/api';
+let currentTrainerId = 0;
 
 async function ensureSwal() {
     if (typeof window.Swal !== 'undefined') return;
@@ -26,12 +27,13 @@ document.addEventListener('DOMContentLoaded', async function () {
         const response = await axios.get(`${API_BASE_URL}/role/trainer/profile.php?action=get-trainer-id&user_id=${user.user_id}`);
         if (response.data.success) {
             const trainer = response.data.data;
+            currentTrainerId = Number(trainer.trainer_id || 0);
             if (trainer.first_name && trainer.last_name) {
                 document.getElementById('trainerName').textContent = `${trainer.first_name} ${trainer.last_name}`;
             } else {
                 document.getElementById('trainerName').textContent = user.username || 'Trainer';
             }
-            loadTrainees(trainer.trainer_id);
+            loadTrainees(currentTrainerId);
         }
     } catch (error) {
         console.error('Error fetching trainer ID:', error);
@@ -165,13 +167,15 @@ async function loadTrainees(trainerId) {
                     <td class="px-4 py-3">
                         <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${statusClass}">${trainee.status || 'N/A'}</span>
                     </td>
-                    <td class="px-4 py-3">
+                    <td class="px-4 py-3"><div class="flex flex-wrap gap-2">
                         <a href="trainee_details.html?id=${trainee.trainee_id}" class="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">
                             <i class="fas fa-eye"></i> View
                         </a>
-                    </td>
+                        ${trainee.certificate_id ? `<span class="inline-flex items-center gap-1 rounded-lg bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-700"><i class="fas fa-certificate"></i> Issued</span>` : `<button type="button" class="issue-certificate-btn inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700" data-trainee-id="${trainee.trainee_id}" data-batch-id="${trainee.batch_id}" data-qualification-id="${trainee.qualification_id}"><i class="fas fa-certificate"></i> Issue Certificate</button>`}
+                    </div></td>
                 `;
                 tbody.appendChild(row);
+                row.querySelector('.issue-certificate-btn')?.addEventListener('click', () => issueCertificate(trainee));
             });
         } else {
             tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-6 text-center text-sm text-slate-500">No trainees found.</td></tr>';
@@ -182,5 +186,22 @@ async function loadTrainees(trainerId) {
         if (tbody) {
             tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-6 text-center text-sm text-red-600">Failed to load trainees.</td></tr>';
         }
+    }
+}
+
+async function issueCertificate(trainee) {
+    await ensureSwal();
+    const confirmed = window.Swal ? (await Swal.fire({ title: 'Issue certificate?', text: `Issue a certificate for ${trainee.first_name} ${trainee.last_name} in ${trainee.course_name}?`, icon: 'question', showCancelButton: true, confirmButtonText: 'Issue Certificate' })).isConfirmed : confirm('Issue this certificate?');
+    if (!confirmed) return;
+    try {
+        const response = await axios.post(`${API_BASE_URL}/role/trainer/trainees.php?action=issue-certificate&trainer_id=${currentTrainerId}`, {
+            trainee_id: trainee.trainee_id, batch_id: trainee.batch_id, qualification_id: trainee.qualification_id
+        });
+        if (!response.data.success) throw new Error(response.data.message || 'Unable to issue certificate.');
+        if (window.Swal) Swal.fire('Issued', response.data.message, 'success');
+        await loadTrainees(currentTrainerId);
+    } catch (error) {
+        const message = error.response?.data?.message || error.message || 'Unable to issue certificate.';
+        if (window.Swal) Swal.fire('Error', message, 'error'); else alert(message);
     }
 }

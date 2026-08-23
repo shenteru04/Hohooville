@@ -110,10 +110,16 @@ function checkTrainee($conn) {
 function submitApplication($conn) {
     try {
         $conn->beginTransaction();
+        $email = trim((string)($_POST['email'] ?? ''));
+        $firstName = trim((string)($_POST['first_name'] ?? ''));
+        $lastName = trim((string)($_POST['last_name'] ?? ''));
+        if ($email === '' || $firstName === '' || $lastName === '') {
+            throw new Exception('First name, last name, and email are required.');
+        }
         
         // Check if trainee already exists
         $checkStmt = $conn->prepare("SELECT trainee_id FROM tbl_trainee_hdr WHERE email = ? AND first_name = ? AND last_name = ?");
-        $checkStmt->execute([$_POST['email'], $_POST['first_name'], $_POST['last_name']]);
+        $checkStmt->execute([$email, $firstName, $lastName]);
         $existingTrainee = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
         if ($existingTrainee) {
@@ -123,9 +129,9 @@ function submitApplication($conn) {
             $uploadDir = '../../uploads/trainees/';
             if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
 
-            $validId = isset($_FILES['valid_id']) ? uploadFile($_FILES['valid_id'], $uploadDir, 'valid_id_') : null;
-            $birthCert = isset($_FILES['birth_cert']) ? uploadFile($_FILES['birth_cert'], $uploadDir, 'birth_') : null;
-            $photo = isset($_FILES['photo']) ? uploadFile($_FILES['photo'], $uploadDir, 'photo_') : null;
+            $validId = uploadFile($_FILES['valid_id'] ?? null, $uploadDir, 'valid_id_', ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'], 10 * 1024 * 1024, 'Valid ID');
+            $birthCert = uploadFile($_FILES['birth_cert'] ?? null, $uploadDir, 'birth_', ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'], 10 * 1024 * 1024, 'Birth Certificate');
+            $photo = uploadFile($_FILES['photo'] ?? null, $uploadDir, 'photo_', ['image/jpeg', 'image/png', 'image/webp'], 5 * 1024 * 1024, 'ID Picture');
 
             // Handle Digital Signature (Base64 to Image)
             $signatureContent = $_POST['digital_signature'] ?? '';
@@ -285,14 +291,38 @@ function submitApplication($conn) {
     }
 }
 
-function uploadFile($file, $dir, $prefix) {
-    if ($file['error'] === UPLOAD_ERR_OK) {
-        $filename = $prefix . time() . '_' . basename($file['name']);
-        if (move_uploaded_file($file['tmp_name'], $dir . $filename)) {
-            return $filename;
-        }
+function uploadFile($file, $dir, $prefix, array $allowedMimeTypes, int $maxBytes, string $label) {
+    if (!$file || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        throw new Exception("$label is required.");
     }
-    return null;
+    if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+        throw new Exception("$label could not be uploaded.");
+    }
+    if (($file['size'] ?? 0) <= 0 || $file['size'] > $maxBytes) {
+        throw new Exception("$label must be no larger than " . ($maxBytes / 1024 / 1024) . ' MB.');
+    }
+
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mimeType = $finfo->file($file['tmp_name']);
+    if (!in_array($mimeType, $allowedMimeTypes, true)) {
+        throw new Exception("$label must be a valid JPG, PNG, WEBP, or PDF file.");
+    }
+    if (strpos($mimeType, 'image/') === 0 && @getimagesize($file['tmp_name']) === false) {
+        throw new Exception("$label is not a readable image file.");
+    }
+    if ($mimeType === 'application/pdf') {
+        $handle = fopen($file['tmp_name'], 'rb');
+        $header = $handle ? fread($handle, 5) : false;
+        if ($handle) fclose($handle);
+        if ($header !== '%PDF-') throw new Exception("$label is not a readable PDF file.");
+    }
+
+    $extensions = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'application/pdf' => 'pdf'];
+    $filename = $prefix . time() . '_' . bin2hex(random_bytes(6)) . '.' . $extensions[$mimeType];
+    if (!move_uploaded_file($file['tmp_name'], $dir . $filename)) {
+        throw new Exception("$label could not be saved.");
+    }
+    return $filename;
 }
 
 function updateApplicationStatus($conn) {
