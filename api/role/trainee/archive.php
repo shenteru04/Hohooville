@@ -10,6 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../../database/db.php';
+require_once '../../utils/AuthGuard.php';
 
 class ArchiveManager {
     private $conn;
@@ -17,6 +18,7 @@ class ArchiveManager {
 
     public function __construct($db) {
         $this->conn = $db;
+        AuthGuard::requireRole($this->conn, ['trainee']);
         $this->requestData = json_decode(file_get_contents('php://input'), true);
         if (!is_array($this->requestData)) {
             $this->requestData = [];
@@ -65,6 +67,7 @@ class ArchiveManager {
             echo json_encode(['success' => false, 'message' => 'Trainee ID is required']);
             return;
         }
+        AuthGuard::requireTraineeAccess($this->conn, (int)$traineeId);
 
         switch ($action) {
             case 'archive-course':

@@ -10,6 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../../database/db.php';
+require_once '../../utils/AuthGuard.php';
 
 /**
  * Extract abbreviation from qualification name
@@ -174,6 +175,7 @@ class RegistrarDashboard {
 
 $database = new Database();
 $db = $database->getConnection();
+$identity = AuthGuard::requireRole($db, ['registrar']);
 $api = new RegistrarDashboard($db);
 $api->handleRequest();
 ?>

@@ -11,6 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once '../../database/db.php';
 require_once '../../utils/PermissionChecker.php';
+require_once '../../utils/AuthGuard.php';
 require_once '../../utils/trainer_assignment_helper.php';
 
 $database = new Database();
@@ -20,78 +21,53 @@ ta_ensure_schema($conn);
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
 try {
-    // Get JWT token from headers
-    $authHeader = $headers['Authorization'] ?? '';
-    
-    // If no auth header, allow access for now (graceful degradation)
-    if (!$authHeader) {
-        $permissionChecker = null;
-    } else {
-        // Extract token
-        $token = str_replace('Bearer ', '', $authHeader);
-        
-        // Decode JWT to get user_id and role_id
-        $tokenParts = explode('.', $token);
-        if (count($tokenParts) !== 3) {
-            $permissionChecker = null;
-        } else {
-            $payload = json_decode(base64url_decode($tokenParts[1]), true);
-            $userId = $payload['user_id'] ?? null;
-            $roleId = $payload['role_id'] ?? null;
+    $identity = AuthGuard::requireRole($conn, ['admin']);
+    $permissionChecker = new PermissionChecker($conn, $identity['user_id'], $identity['role_id']);
 
-            if (!$userId || !$roleId) {
-                $permissionChecker = null;
-            } else {
-                // Initialize permission checker
-                $permissionChecker = new PermissionChecker($conn, $userId, $roleId);
-            }
-        }
-    }
-
-    // Check permissions based on action (only if permission checker is available)
     switch ($action) {
         case 'get-form-data':
-            if ($permissionChecker) $permissionChecker->requirePermission('trainees.view');
+            $permissionChecker->requirePermission('trainees.view');
             getFormData($conn);
             break;
         case 'list':
-            if ($permissionChecker) $permissionChecker->requirePermission('trainees.view');
+            $permissionChecker->requirePermission('trainees.view');
             getTrainees($conn);
             break;
         case 'add':
-            if ($permissionChecker) $permissionChecker->requirePermission('trainees.create');
+            $permissionChecker->requirePermission('trainees.create');
             addTrainee($conn);
             break;
         case 'update':
-            if ($permissionChecker) $permissionChecker->requirePermission('trainees.update');
+            $permissionChecker->requirePermission('trainees.update');
             updateTrainee($conn);
             break;
         case 'toggle-status':
-            if ($permissionChecker) $permissionChecker->requirePermission('trainees.update');
+            $permissionChecker->requirePermission('trainees.update');
             toggleStatus($conn);
             break;
         case 'create-account':
-            if ($permissionChecker) $permissionChecker->requirePermission('trainees.create');
+            $permissionChecker->requirePermission('trainees.create');
             createAccount($conn);
             break;
         case 'approve-enrollment':
-            if ($permissionChecker) $permissionChecker->requirePermission('trainees.approve');
+            $permissionChecker->requirePermission('trainees.approve');
             approveEnrollment($conn);
             break;
         case 'delete':
-            if ($permissionChecker) $permissionChecker->requirePermission('trainees.delete');
+        case 'archive':
+            $permissionChecker->requirePermission('trainees.delete');
             deleteTrainee($conn);
             break;
         case 'get-batches':
-            if ($permissionChecker) $permissionChecker->requirePermission('trainees.view');
+            $permissionChecker->requirePermission('trainees.view');
             getBatches($conn);
             break;
         case 'get-batch-trainees':
-            if ($permissionChecker) $permissionChecker->requirePermission('trainees.view');
+            $permissionChecker->requirePermission('trainees.view');
             getBatchTrainees($conn);
             break;
         case 'check-and-close-batches':
-            if ($permissionChecker) $permissionChecker->requirePermission('batches.manage');
+            $permissionChecker->requirePermission('batches.manage');
             checkAndCloseBatches($conn);
             break;
         default:
@@ -142,13 +118,14 @@ function getTrainees($conn) {
             SELECT
                 t.trainee_id, t.user_id, t.trainee_school_id, t.first_name, t.last_name, t.email, t.phone_number, t.status,
                 t.photo_file, t.valid_id_file, t.birth_cert_file, t.address, COALESCE(t.profile_image, '') as profile_image,
-                e.batch_id, b.batch_name, c.qualification_name as course_name, e.enrollment_date, DATE_FORMAT(e.enrollment_date, '%Y-%m-%d %H:%i:%s') as formatted_enrollment_date
+                e.batch_id, b.batch_name, c.qualification_name as course_name, e.status AS enrollment_status,
+                e.enrollment_date, DATE_FORMAT(e.enrollment_date, '%Y-%m-%d %H:%i:%s') as formatted_enrollment_date
             FROM tbl_trainee_hdr t
             JOIN tbl_enrollment e ON t.trainee_id = e.trainee_id
             JOIN tbl_batch b ON e.batch_id = b.batch_id
             LEFT JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
             LEFT JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id
-            WHERE e.status = 'approved'
+            WHERE e.status IN ('approved', 'completed')
               AND e.batch_id IS NOT NULL
             ORDER BY t.trainee_id DESC
         ");
@@ -620,15 +597,15 @@ function deleteTrainee($conn) {
         $stmt->execute([$id]);
         $trainee = $stmt->fetch(PDO::FETCH_ASSOC);
 
+        // Keep the trainee and enrollment audit trail. Disable related access instead.
+        $stmt = $conn->prepare("UPDATE tbl_trainee_hdr SET status = 'inactive' WHERE trainee_id = ?");
+        $stmt->execute([$id]);
         if ($trainee && $trainee['user_id']) {
-            $stmt = $conn->prepare("DELETE FROM tbl_users WHERE user_id = ?");
+            $stmt = $conn->prepare("UPDATE tbl_users SET status = 'inactive', is_archived = 1, archived_at = NOW(), active_session_id = NULL, active_session_started_at = NULL WHERE user_id = ?");
             $stmt->execute([$trainee['user_id']]);
-        } else {
-            $stmt = $conn->prepare("DELETE FROM tbl_trainee_hdr WHERE trainee_id = ?");
-            $stmt->execute([$id]);
         }
         
-        echo json_encode(['success' => true]);
+        echo json_encode(['success' => true, 'message' => 'Trainee archived successfully']);
     } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);

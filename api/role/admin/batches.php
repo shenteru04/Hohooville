@@ -19,6 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once '../../database/db.php';
 require_once '../../utils/PermissionChecker.php';
+require_once '../../utils/AuthGuard.php';
 require_once '../../utils/trainer_assignment_helper.php';
 
 $database = new Database();
@@ -28,59 +29,34 @@ ta_ensure_schema($conn);
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
 try {
-    // Get JWT token from headers
-    $headers = getallheaders();
-    $authHeader = $headers['Authorization'] ?? '';
-    
-    // If no auth header, allow access for now (graceful degradation)
-    if (!$authHeader) {
-        $permissionChecker = null;
-    } else {
-        // Extract token
-        $token = str_replace('Bearer ', '', $authHeader);
-        
-        // Decode JWT to get user_id and role_id
-        $tokenParts = explode('.', $token);
-        if (count($tokenParts) !== 3) {
-            $permissionChecker = null;
-        } else {
-            $payload = json_decode(base64url_decode($tokenParts[1]), true);
-            $userId = $payload['user_id'] ?? null;
-            $roleId = $payload['role_id'] ?? null;
-
-            if (!$userId || !$roleId) {
-                $permissionChecker = null;
-            } else {
-                // Initialize permission checker
-                $permissionChecker = new PermissionChecker($conn, $userId, $roleId);
-            }
-        }
-    }
+    $identity = AuthGuard::requireAuthenticated($conn);
+    $permissionChecker = new PermissionChecker($conn, $identity['user_id'], $identity['role_id']);
 
     // Check permissions based on action (only if permission checker is available)
     switch ($action) {
         case 'list':
-            if ($permissionChecker) $permissionChecker->requirePermission('batches.view');
+            $permissionChecker->requirePermission('batches.view');
             listBatches($conn);
             break;
         case 'get-form-data':
-            if ($permissionChecker) $permissionChecker->requirePermission('batches.view');
+            $permissionChecker->requirePermission('batches.view');
             getFormData($conn);
             break;
         case 'add':
-            if ($permissionChecker) $permissionChecker->requirePermission('batches.create');
+            $permissionChecker->requirePermission('batches.create');
             addBatch($conn);
             break;
         case 'update':
-            if ($permissionChecker) $permissionChecker->requirePermission('batches.update');
+            // The permission registered in tbl_permissions is batches.edit.
+            $permissionChecker->requirePermission('batches.edit');
             updateBatch($conn);
             break;
         case 'delete':
-            if ($permissionChecker) $permissionChecker->requirePermission('batches.delete');
+            $permissionChecker->requirePermission('batches.delete');
             deleteBatch($conn);
             break;
         case 'get-trainees':
-            if ($permissionChecker) $permissionChecker->requirePermission('trainees.view');
+            $permissionChecker->requirePermission('trainees.view');
             getBatchTrainees($conn);
             break;
         default:
@@ -214,13 +190,24 @@ function addBatch($conn) {
         http_response_code(400);
         return;
     }
+    if (!isValidBatchStartDate($data['start_date'])) {
+        echo json_encode(['success' => false, 'message' => 'Start date cannot be before today.']);
+        http_response_code(400);
+        return;
+    }
+    if (!isValidBatchDateRange($data['start_date'], $data['end_date'])) {
+        echo json_encode(['success' => false, 'message' => 'End date must be on or after the start date.']);
+        http_response_code(400);
+        return;
+    }
 
     try {
         $trainerAssignmentMode = ta_normalize_mode($data['trainer_assignment_mode'] ?? 'single');
         $trainerId = normalizeNullableInt($data['trainer_id'] ?? null);
         $scholarshipTypeId = normalizeNullableInt($data['scholarship_type_id'] ?? null);
         $maxTrainees = normalizeMaxTrainees($data['max_trainees'] ?? null);
-        $status = normalizeBatchStatus($data['status'] ?? 'open');
+        // A new batch always opens; clients cannot select its initial status.
+        $status = 'open';
         $query = "INSERT INTO tbl_batch (qualification_id, batch_name, trainer_id, trainer_assignment_mode, scholarship_type_id, start_date, end_date, status, max_trainees) 
               VALUES (:qualification_id, :batch_name, :trainer_id, :trainer_assignment_mode, :scholarship_type_id, :start_date, :end_date, :status, :max_trainees)";
         $stmt = $conn->prepare($query);
@@ -253,6 +240,11 @@ function updateBatch($conn) {
 
     if (empty($data['batch_id']) || empty($data['batch_name']) || empty($data['start_date']) || empty($data['end_date']) || empty($data['qualification_id'])) {
         echo json_encode(['success' => false, 'message' => 'Missing required fields.']);
+        http_response_code(400);
+        return;
+    }
+    if (!isValidBatchDateRange($data['start_date'], $data['end_date'])) {
+        echo json_encode(['success' => false, 'message' => 'End date must be on or after the start date.']);
         http_response_code(400);
         return;
     }
@@ -310,12 +302,13 @@ function deleteBatch($conn) {
     }
 
     try {
-        $query = "DELETE FROM tbl_batch WHERE batch_id = :id";
+        // Deletion is prohibited. Closing a batch preserves its history.
+        $query = "UPDATE tbl_batch SET status = 'closed' WHERE batch_id = :id";
         $stmt = $conn->prepare($query);
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
 
         if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Batch deleted successfully.']);
+            echo json_encode(['success' => true, 'message' => 'Batch archived (closed) successfully.']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to delete batch.']);
             http_response_code(500);
@@ -383,6 +376,19 @@ function normalizeMaxTrainees($value): int {
 
 function normalizeBatchStatus($value): string {
     return strtolower((string)$value) === 'closed' ? 'closed' : 'open';
+}
+
+function isValidBatchDateRange($startDate, $endDate): bool {
+    $start = DateTime::createFromFormat('Y-m-d', (string)$startDate);
+    $end = DateTime::createFromFormat('Y-m-d', (string)$endDate);
+    return $start && $end && $start->format('Y-m-d') === $startDate && $end->format('Y-m-d') === $endDate && $end >= $start;
+}
+
+function isValidBatchStartDate($startDate): bool {
+    $start = DateTime::createFromFormat('Y-m-d', (string)$startDate);
+    $today = new DateTime('today');
+
+    return $start && $start->format('Y-m-d') === $startDate && $start >= $today;
 }
 
 function buildBatchTrainerSummary(array $batch, ?array $summary): string {

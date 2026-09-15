@@ -10,6 +10,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../../database/db.php';
+require_once '../../utils/input_sanitization.php';
+require_once '../../utils/AuthGuard.php';
 
 function sendJsonResponse(int $statusCode, array $payload): void
 {
@@ -196,7 +198,7 @@ function updateTrainerProfile(PDO $conn): void
     $params = [];
 
     if (array_key_exists('first_name', $payload)) {
-        $firstName = trim((string)$payload['first_name']);
+        $firstName = sanitize_person_name($payload['first_name']);
         if ($firstName === '') {
             fail('First name is required.');
         }
@@ -205,7 +207,7 @@ function updateTrainerProfile(PDO $conn): void
     }
 
     if (array_key_exists('last_name', $payload)) {
-        $lastName = trim((string)$payload['last_name']);
+        $lastName = sanitize_person_name($payload['last_name']);
         if ($lastName === '') {
             fail('Last name is required.');
         }
@@ -214,7 +216,7 @@ function updateTrainerProfile(PDO $conn): void
     }
 
     if (array_key_exists('email', $payload)) {
-        $email = trim((string)$payload['email']);
+        $email = sanitize_email_value($payload['email']);
         if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             fail('A valid email address is required.');
         }
@@ -224,7 +226,7 @@ function updateTrainerProfile(PDO $conn): void
 
     if (array_key_exists('phone_number', $payload) || array_key_exists('phone', $payload)) {
         $updateFields[] = 'phone_number = ?';
-        $params[] = trim((string)($payload['phone_number'] ?? $payload['phone']));
+        $params[] = sanitize_phone_number($payload['phone_number'] ?? $payload['phone']);
     }
 
     if (array_key_exists('address', $payload)) {
@@ -316,6 +318,7 @@ function changeTrainerPassword(PDO $conn): void
 
 $database = new Database();
 $conn = $database->getConnection();
+AuthGuard::requireRole($conn, ['trainer', 'admin']);
 $action = $_GET['action'] ?? '';
 
 try {

@@ -452,7 +452,7 @@ if (!function_exists('ta_fetch_batch_module_assignments')) {
 }
 
 if (!function_exists('ta_fetch_trainee_accessible_module_ids')) {
-    function ta_fetch_trainee_accessible_module_ids(PDO $conn, int $traineeId, int $qualificationId): array
+    function ta_fetch_trainee_accessible_module_ids(PDO $conn, int $traineeId, int $qualificationId, int $batchId = 0): array
     {
         ta_ensure_schema($conn);
 
@@ -464,6 +464,7 @@ if (!function_exists('ta_fetch_trainee_accessible_module_ids')) {
             ? 'e.qualification_id'
             : 'NULL';
 
+        $batchFilter = $batchId > 0 ? ' AND e.batch_id = ?' : '';
         $stmt = $conn->prepare("
             SELECT
                 b.batch_id,
@@ -475,8 +476,13 @@ if (!function_exists('ta_fetch_trainee_accessible_module_ids')) {
             WHERE e.trainee_id = ?
               AND e.status = 'approved'
               AND COALESCE($enrollmentQualificationExpr, oq.qualification_id, b.qualification_id) = ?
+              $batchFilter
         ");
-        $stmt->execute([$traineeId, $qualificationId]);
+        $params = [$traineeId, $qualificationId];
+        if ($batchId > 0) {
+            $params[] = $batchId;
+        }
+        $stmt->execute($params);
         $enrollments = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
         $singleTrainerIds = [];

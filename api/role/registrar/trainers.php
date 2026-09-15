@@ -10,9 +10,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../../database/db.php';
+require_once '../../utils/input_sanitization.php';
+require_once '../../utils/AuthGuard.php';
 
 $database = new Database();
 $conn = $database->getConnection();
+$identity = AuthGuard::requireRole($conn, ['registrar']);
 
 $action = $_GET['action'] ?? '';
 
@@ -279,6 +282,11 @@ function resolveNcLevelCode($conn, $ncLevelId) {
 function addTrainer($conn) {
     $data = $_POST;
     $files = $_FILES;
+    $data['first_name'] = sanitize_person_name($data['first_name'] ?? '');
+    $data['last_name'] = sanitize_person_name($data['last_name'] ?? '');
+    $data['email'] = sanitize_email_value($data['email'] ?? '');
+    $data['phone'] = sanitize_phone_number($data['phone'] ?? '');
+    $data['nttc_no'] = sanitize_identifier($data['nttc_no'] ?? '');
 
     $qualificationIds = $data['qualification_ids'] ?? [];
     $ncLevelIds = $data['nc_level_ids'] ?? [];  // Changed from nc_levels to nc_level_ids
@@ -441,6 +449,11 @@ function addTrainer($conn) {
 function updateTrainer($conn) {
     $data = $_POST;
     $files = $_FILES;
+    $data['first_name'] = sanitize_person_name($data['first_name'] ?? '');
+    $data['last_name'] = sanitize_person_name($data['last_name'] ?? '');
+    $data['email'] = sanitize_email_value($data['email'] ?? '');
+    $data['phone'] = sanitize_phone_number($data['phone'] ?? '');
+    $data['nttc_no'] = sanitize_identifier($data['nttc_no'] ?? '');
     $trainerId = $data['trainer_id'] ?? 0;
     $qualificationIds = $data['qualification_ids'] ?? [];
     $ncLevelIds = $data['nc_level_ids'] ?? [];  // Changed from nc_levels to nc_level_ids
@@ -629,33 +642,16 @@ function deleteTrainer($conn) {
         $trainer = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($trainer) {
-            $qualStmt = $conn->prepare("SELECT nc_file, experience_file FROM tbl_trainer_qualifications WHERE trainer_id = ?");
-            $qualStmt->execute([$id]);
-            $qualFiles = $qualStmt->fetchAll(PDO::FETCH_ASSOC);
-
-            $delStmt = $conn->prepare("DELETE FROM tbl_trainer WHERE trainer_id = ?");
-            $delStmt->execute([$id]);
-
-            $delUserStmt = $conn->prepare("DELETE FROM tbl_users WHERE user_id = ?");
-            $delUserStmt->execute([$trainer['user_id']]);
-
-            $upload_dir = '../../../../uploads/trainers/';
-            foreach (['nttc_file', 'tm_file'] as $file_key) {
-                if (!empty($trainer[$file_key]) && file_exists($upload_dir . $trainer[$file_key])) {
-                    unlink($upload_dir . $trainer[$file_key]);
-                }
-            }
-            foreach ($qualFiles as $row) {
-                if (!empty($row['nc_file']) && file_exists($upload_dir . $row['nc_file'])) {
-                    unlink($upload_dir . $row['nc_file']);
-                }
-                if (!empty($row['experience_file']) && file_exists($upload_dir . $row['experience_file'])) {
-                    unlink($upload_dir . $row['experience_file']);
-                }
+            // Archive the trainer and account; preserve credential files and audit history.
+            $archiveTrainerStmt = $conn->prepare("UPDATE tbl_trainer SET status = 'inactive' WHERE trainer_id = ?");
+            $archiveTrainerStmt->execute([$id]);
+            if (!empty($trainer['user_id'])) {
+                $archiveUserStmt = $conn->prepare("UPDATE tbl_users SET status = 'inactive', is_archived = 1, archived_at = NOW(), active_session_id = NULL, active_session_started_at = NULL WHERE user_id = ?");
+                $archiveUserStmt->execute([$trainer['user_id']]);
             }
         }
         $conn->commit();
-        echo json_encode(['success' => true, 'message' => 'Trainer deleted successfully.']);
+        echo json_encode(['success' => true, 'message' => 'Trainer archived successfully.']);
     } catch (Exception $e) {
         $conn->rollBack();
         http_response_code(500);

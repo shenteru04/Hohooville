@@ -259,7 +259,7 @@
                             <label for="maxTrainees" class="mb-1 block text-sm font-medium text-slate-700">Max Trainees</label>
                             <input type="number" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="maxTrainees" min="1" required placeholder="e.g. 25">
                         </div>
-                        <div>
+                        <div id="batchStatusField">
                             <label for="status" class="mb-1 block text-sm font-medium text-slate-700">Status</label>
                             <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="status" required>
                                 <option value="open">Open</option>
@@ -587,6 +587,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
     <script src="../../../js/session_timeout.js"></script>
     <script src="../../../js/table_manager.js"></script>
+    <script src="../../../js/input_sanitation.js"></script>
     <script src="../../../js/notifications.js"></script>
     <script src="../../../js/registrar/pages/manage_batches.js"></script>
 </body>

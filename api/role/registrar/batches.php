@@ -12,10 +12,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once __DIR__ . '/../../database/db.php';
 require_once __DIR__ . '/../../utils/trainer_assignment_helper.php';
+require_once __DIR__ . '/../../utils/AuthGuard.php';
 
 $database = new Database();
 $conn = $database->getConnection();
 ta_ensure_schema($conn);
+$identity = AuthGuard::requireRole($conn, ['registrar']);
 
 $action = $_GET['action'] ?? '';
 
@@ -55,7 +57,7 @@ switch ($action) {
 
 function listBatches($conn) {
     try {
-        // Close batches that have passed their enrollment deadline (start_date)
+        // Close batches only after the training period has ended.
         closeExpiredBatches($conn);
         
         $query = "SELECT
@@ -288,13 +290,24 @@ function addBatch($conn) {
         http_response_code(400);
         return;
     }
+    if (!isValidBatchStartDate($data->start_date)) {
+        echo json_encode(['success' => false, 'message' => 'Start date cannot be before today.']);
+        http_response_code(400);
+        return;
+    }
+    if (!isValidBatchDateRange($data->start_date, $data->end_date)) {
+        echo json_encode(['success' => false, 'message' => 'End date must be on or after the start date.']);
+        http_response_code(400);
+        return;
+    }
 
     try {
         $trainerAssignmentMode = ta_normalize_mode($data->trainer_assignment_mode ?? 'single');
         $trainerId = normalizeNullableInt($data->trainer_id ?? null);
         $scholarshipTypeId = normalizeNullableInt($data->scholarship_type_id ?? null);
         $maxTrainees = normalizeMaxTrainees($data->max_trainees ?? null);
-        $status = normalizeBatchStatus($data->status ?? 'open');
+        // A new batch always opens; clients cannot select its initial status.
+        $status = 'open';
         $unitAssignments = normalizeUnitAssignments($data->unit_assignments ?? []);
 
         $conn->beginTransaction();
@@ -341,6 +354,11 @@ function updateBatch($conn) {
 
     if (empty($data->batch_id) || empty($data->batch_name) || empty($data->start_date) || empty($data->end_date) || empty($data->qualification_id)) {
         echo json_encode(['success' => false, 'message' => 'Missing required fields.']);
+        http_response_code(400);
+        return;
+    }
+    if (!isValidBatchDateRange($data->start_date, $data->end_date)) {
+        echo json_encode(['success' => false, 'message' => 'End date must be on or after the start date.']);
         http_response_code(400);
         return;
     }
@@ -414,12 +432,13 @@ function deleteBatch($conn) {
     }
 
     try {
-        $query = "DELETE FROM tbl_batch WHERE batch_id = :id";
+        // Preserve enrollment history by archiving through the closed status.
+        $query = "UPDATE tbl_batch SET status = 'closed' WHERE batch_id = :id";
         $stmt = $conn->prepare($query);
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
 
         if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Batch deleted successfully.']);
+            echo json_encode(['success' => true, 'message' => 'Batch archived (closed) successfully.']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to delete batch.']);
             http_response_code(500);
@@ -525,14 +544,14 @@ function getTraineeDetails($conn) {
 }
 
 /**
- * Closes batches that have passed their enrollment deadline (start_date)
+ * Closes batches that have passed their training end date.
  */
 function closeExpiredBatches($conn) {
     try {
         $query = "UPDATE tbl_batch 
                   SET status = 'closed' 
-                  WHERE status = 'open' 
-                  AND start_date <= CURDATE()";
+                  WHERE status = 'open'
+                  AND end_date < CURDATE()";
         $stmt = $conn->prepare($query);
         $stmt->execute();
     } catch (Exception $e) {
@@ -561,6 +580,19 @@ function normalizeMaxTrainees($value): int {
 
 function normalizeBatchStatus($value): string {
     return strtolower((string)$value) === 'closed' ? 'closed' : 'open';
+}
+
+function isValidBatchDateRange($startDate, $endDate): bool {
+    $start = DateTime::createFromFormat('Y-m-d', (string)$startDate);
+    $end = DateTime::createFromFormat('Y-m-d', (string)$endDate);
+    return $start && $end && $start->format('Y-m-d') === $startDate && $end->format('Y-m-d') === $endDate && $end >= $start;
+}
+
+function isValidBatchStartDate($startDate): bool {
+    $start = DateTime::createFromFormat('Y-m-d', (string)$startDate);
+    $today = new DateTime('today');
+
+    return $start && $start->format('Y-m-d') === $startDate && $start >= $today;
 }
 
 function normalizeUnitAssignments($value): array

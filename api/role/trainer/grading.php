@@ -4,12 +4,14 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 
 require_once '../../database/db.php';
+require_once '../../utils/AuthGuard.php';
 
 class TrainerGrading {
     private $conn;
 
     public function __construct($db) {
         $this->conn = $db;
+        AuthGuard::requireRole($this->conn, ['trainer', 'admin']);
     }
 
     public function handleRequest() {

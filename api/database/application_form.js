@@ -36,7 +36,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const emailInput = document.getElementById('emailInput');
     const phoneError = document.getElementById('phoneError');
     const emailError = document.getElementById('emailError');
+    const credentialResubmissionNotice = document.getElementById('credentialResubmissionNotice');
     const checkSchoolIdInput = document.getElementById('check_school_id');
+    let emailExists = false;
+    let emailCheckTimer = null;
+    let emailCheckRequestId = 0;
+    let credentialResubmission = null;
+    let hasActiveEnrollment = false;
     const DOCUMENT_FILE_RULES = {
         valid_id: { label: 'Valid ID', required: true, maxBytes: 10 * 1024 * 1024, allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'] },
         birth_cert: { label: 'Birth Certificate', required: true, maxBytes: 10 * 1024 * 1024, allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'] },
@@ -663,6 +669,123 @@ document.addEventListener('DOMContentLoaded', function() {
         if (errorEl) errorEl.style.display = 'none';
     }
 
+    // Show an inline message as soon as a required field is skipped.
+    function getRequiredFieldContainer(field) {
+        if (field.type === 'radio') return field.closest('.mb-3') || field.closest('.option-grid')?.parentElement;
+        if (field.type === 'checkbox') return field.closest('.form-check') || field.parentElement;
+        return field.closest('.col-md-3, .col-md-4, .col-md-6, .col-md-12, .mb-3, .form-group') || field.parentElement;
+    }
+
+    function getRequiredFieldError(container) {
+        let error = container?.querySelector(':scope > .required-field-error');
+        if (!error && container) {
+            error = document.createElement('div');
+            error.className = 'field-error required-field-error';
+            error.setAttribute('role', 'alert');
+            container.appendChild(error);
+        }
+        return error;
+    }
+
+    function setRequiredFieldState(field, showError = false) {
+        if (!field || !field.required || field.disabled) return true;
+
+        const isRadio = field.type === 'radio';
+        const isCheckbox = field.type === 'checkbox';
+        const valid = isRadio
+            ? Boolean(applicationForm.querySelector(`input[name="${CSS.escape(field.name)}"]:checked`))
+            : isCheckbox ? field.checked : field.checkValidity();
+        const relatedFields = isRadio
+            ? applicationForm.querySelectorAll(`input[name="${CSS.escape(field.name)}"]`)
+            : [field];
+        const container = getRequiredFieldContainer(field);
+
+        relatedFields.forEach(item => {
+            item.classList.toggle('is-invalid', !valid && showError);
+            item.toggleAttribute('aria-invalid', !valid && showError);
+        });
+        container?.classList.toggle('required-group-invalid', !valid && showError && (isRadio || isCheckbox));
+
+        const error = getRequiredFieldError(container);
+        if (error) {
+            error.textContent = field.validity.valueMissing || (isRadio && !valid) || (isCheckbox && !valid)
+                ? 'This field is required.'
+                : 'Please enter a valid value.';
+            error.style.display = !valid && showError ? 'block' : 'none';
+        }
+        return valid;
+    }
+
+    // Validate only fields that come before the field currently being filled.
+    // Fields later in the section have not been skipped yet, so they remain
+    // neutral until the user reaches or leaves them.
+    function validateSkippedFieldsBefore(field) {
+        const step = field.closest('#step1, #step2');
+        if (!step) return;
+
+        let sectionHeading = null;
+        step.querySelectorAll('h5').forEach(heading => {
+            if (heading.compareDocumentPosition(field) & Node.DOCUMENT_POSITION_FOLLOWING) sectionHeading = heading;
+        });
+        if (!sectionHeading) return;
+
+        const processedRadioGroups = new Set();
+        let element = sectionHeading.nextElementSibling;
+        while (element && element.tagName !== 'H5') {
+            element.querySelectorAll?.('[required]').forEach(requiredField => {
+                if (requiredField.disabled || requiredField.type === 'hidden') return;
+                const isCurrentOrLater = requiredField === field
+                    || Boolean(field.compareDocumentPosition(requiredField) & Node.DOCUMENT_POSITION_FOLLOWING);
+                if (isCurrentOrLater) return;
+                if (requiredField.type === 'radio') {
+                    if (processedRadioGroups.has(requiredField.name)) return;
+                    processedRadioGroups.add(requiredField.name);
+                }
+                setRequiredFieldState(requiredField, true);
+            });
+            element = element.nextElementSibling;
+        }
+    }
+
+    function validateRequiredFields(scope = applicationForm) {
+        const processedRadioGroups = new Set();
+        let firstInvalid = null;
+        scope.querySelectorAll('[required]').forEach(field => {
+            if (field.disabled || field.type === 'hidden') return;
+            if (field.type === 'radio') {
+                if (processedRadioGroups.has(field.name)) return;
+                processedRadioGroups.add(field.name);
+            }
+            if (!setRequiredFieldState(field, true) && !firstInvalid) firstInvalid = field;
+        });
+        if (firstInvalid) firstInvalid.focus();
+        return !firstInvalid;
+    }
+
+    // Listen to every control, including optional ones. Filling Middle Name,
+    // Facebook, or any other later optional field also means an earlier
+    // required field was skipped and must receive its inline warning.
+    applicationForm?.querySelectorAll('input, select, textarea').forEach(field => {
+        if (field.type === 'hidden' || field.type === 'file') return;
+        field.addEventListener('input', () => {
+            if (field.disabled) return;
+            validateSkippedFieldsBefore(field);
+            // A non-empty value can still be invalid (such as a ZIP code with letters).
+            if (field.value) setRequiredFieldState(field, true);
+        });
+        field.addEventListener('change', () => {
+            if (field.disabled) return;
+            validateSkippedFieldsBefore(field);
+            if (field.value || field.checked) setRequiredFieldState(field, true);
+        });
+        field.addEventListener('blur', () => {
+            if (field.disabled) return;
+            // Leaving this field blank means it has now been skipped.
+            setRequiredFieldState(field, true);
+            validateSkippedFieldsBefore(field);
+        });
+    });
+
     function validatePhilippinePhone(showInline = true) {
         if (!phoneInput || phoneInput.disabled) return true;
 
@@ -708,6 +831,51 @@ document.addEventListener('DOMContentLoaded', function() {
         return true;
     }
 
+    async function checkEmailAvailability() {
+        if (!emailInput || emailInput.disabled || isReturningTrainee) return true;
+        if (!validateEmailAddress(true)) return false;
+
+        const email = emailInput.value.trim();
+        if (!email) return true;
+
+        const requestId = ++emailCheckRequestId;
+        try {
+            const response = await axios.get(`${API_BASE_URL}/public/submit_application.php`, {
+                params: { action: 'check-email', email }
+            });
+
+            // Ignore a response for an email value the applicant has already changed.
+            if (requestId !== emailCheckRequestId || email !== emailInput.value.trim()) return !emailExists;
+
+            emailExists = Boolean(response.data?.exists);
+            credentialResubmission = response.data?.resubmission || null;
+            if (credentialResubmission) {
+                emailExists = false;
+                const reason = String(credentialResubmission.reason || 'The registrar requested corrected credentials.');
+                if (credentialResubmissionNotice) {
+                    credentialResubmissionNotice.textContent = `Corrected credentials may be submitted. Registrar's reason: ${reason}`;
+                    credentialResubmissionNotice.style.display = 'block';
+                }
+                clearFieldError(emailInput, emailError);
+                return true;
+            }
+            if (credentialResubmissionNotice) credentialResubmissionNotice.style.display = 'none';
+            if (emailExists) {
+                const message = 'This email address is already registered. Please use a different email address.';
+                emailInput.setCustomValidity(message);
+                showFieldError(emailInput, emailError, message);
+                return false;
+            }
+
+            clearFieldError(emailInput, emailError);
+            return true;
+        } catch (error) {
+            // Submission remains protected by the server if this optional live check is unavailable.
+            if (requestId === emailCheckRequestId) emailExists = false;
+            return true;
+        }
+    }
+
     if (phoneInput) {
         phoneInput.addEventListener('beforeinput', function(e) {
             if (e.data && /\D/.test(e.data)) {
@@ -726,11 +894,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (emailInput) {
         emailInput.addEventListener('input', function() {
+            emailExists = false;
+            credentialResubmission = null;
+            if (credentialResubmissionNotice) credentialResubmissionNotice.style.display = 'none';
+            emailCheckRequestId += 1;
             validateEmailAddress(true);
+            clearTimeout(emailCheckTimer);
+            if (this.value.trim() && this.validity.valid && !isReturningTrainee) {
+                emailCheckTimer = setTimeout(checkEmailAvailability, 450);
+            }
         });
 
         emailInput.addEventListener('blur', function() {
             validateEmailAddress(true);
+            clearTimeout(emailCheckTimer);
+            if (this.value.trim() && this.validity.valid && !isReturningTrainee) {
+                checkEmailAvailability();
+            }
         });
     }
 
@@ -771,6 +951,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     if (response.data.exists) {
                         isReturningTrainee = true;
+                        hasActiveEnrollment = Boolean(response.data.data?.has_active_enrollment);
+                        if (hasActiveEnrollment) {
+                            const message = 'You already have an active or unfinished qualification. You can apply for another qualification only after it is marked Completed.';
+                            Swal.fire('Application Not Available', message, 'info');
+                            preCheckSection.style.display = 'block';
+                            applicationContainer.style.display = 'none';
+                            return;
+                        }
                         handleReturningTrainee(response.data.data);
                         queueApplicationProgressSave();
                     } else {
@@ -1009,6 +1197,10 @@ document.addEventListener('DOMContentLoaded', function() {
     applicationForm.addEventListener('submit', async function(e) {
         e.preventDefault();
 
+        if (!validateRequiredFields(applicationForm)) {
+            return;
+        }
+
         const isPhoneValid = validatePhilippinePhone(true);
         const isEmailValid = validateEmailAddress(true);
         if (!isPhoneValid || !isEmailValid) {
@@ -1018,6 +1210,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 : 'Please enter a valid email address.';
             Swal.fire('Invalid Input', invalidMessage, 'warning');
             invalidInput?.focus();
+            return;
+        }
+
+        if (!isReturningTrainee && !(await checkEmailAvailability())) {
+            emailInput?.focus();
             return;
         }
 
@@ -1035,6 +1232,9 @@ document.addEventListener('DOMContentLoaded', function() {
         submitBtn.innerHTML = '<span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white align-[-2px]"></span> <span class="ml-2">Submitting...</span>';
 
         const formData = new FormData(this);
+        if (credentialResubmission?.enrollment_id) {
+            formData.append('resubmit_enrollment_id', credentialResubmission.enrollment_id);
+        }
 
         if (isReturningTrainee) {
             formData.delete('valid_id');
@@ -1078,6 +1278,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Validation (existing) ---
     function validateStep1() {
         const form = document.getElementById('applicationForm');
+        if (!validateRequiredFields(document.getElementById('step1'))) {
+            return false;
+        }
         const inputs = form.querySelectorAll('#step1 [required]');
         const validatedRadioGroups = new Set(); // To avoid re-validating radio groups
 

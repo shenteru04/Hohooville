@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 ctpr_number: document.getElementById('ctprNumber').value,
                 duration: document.getElementById('duration').value,
                 description: document.getElementById('description').value,
-                status: document.getElementById('qualificationStatus')?.value || 'active'
+                status: 'active'
             };
 
             try {

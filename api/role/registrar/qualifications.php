@@ -4,9 +4,11 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 
 require_once '../../database/db.php';
+require_once '../../utils/AuthGuard.php';
 
 $database = new Database();
 $conn = $database->getConnection();
+$identity = AuthGuard::requireRole($conn, ['registrar']);
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
@@ -24,7 +26,8 @@ switch ($action) {
 function getApprovedQualifications($conn) {
     try {
         autoActivatePendingQualifications($conn);
-        $stmt = $conn->query("SELECT q.qualification_id, q.qualification_name, q.ctpr_number, q.duration, q.training_cost, q.status, q.nc_level_id, nc.nc_level_code, nc.nc_level_name FROM tbl_qualifications q LEFT JOIN tbl_nc_levels nc ON q.nc_level_id = nc.nc_level_id WHERE q.status = 'active' AND q.is_archived = 0 ORDER BY q.qualification_name ASC");
+        // LIFO: most recently created qualifications appear first.
+        $stmt = $conn->query("SELECT q.qualification_id, q.qualification_name, q.ctpr_number, q.duration, q.training_cost, q.status, q.nc_level_id, nc.nc_level_code, nc.nc_level_name FROM tbl_qualifications q LEFT JOIN tbl_nc_levels nc ON q.nc_level_id = nc.nc_level_id WHERE q.status = 'active' AND q.is_archived = 0 ORDER BY q.qualification_id DESC");
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(['success' => true, 'data' => $data]);
     } catch (Exception $e) {
@@ -63,7 +66,7 @@ function createQualification($conn) {
             $data['ctpr_number'] ?? null,
             $data['duration'] ?? null,
             $data['description'] ?? null,
-            $data['status'] ?? 'active'
+            'active'
         ]);
 
         echo json_encode(['success' => true, 'message' => 'Qualification created successfully']);

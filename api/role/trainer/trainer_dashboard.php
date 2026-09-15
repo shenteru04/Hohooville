@@ -12,6 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once '../../database/db.php';
 require_once '../../utils/trainer_assignment_helper.php';
 require_once '../../utils/schedule_workflow_helper.php';
+require_once '../../utils/AuthGuard.php';
 
 class TrainerDashboard
 {
@@ -23,6 +24,7 @@ class TrainerDashboard
         $this->conn = $db;
         ta_ensure_schema($this->conn);
         sw_ensure_schema($this->conn);
+        AuthGuard::requireRole($this->conn, ['trainer', 'admin']);
         $decoded = json_decode(file_get_contents('php://input'), true);
         $this->requestBody = is_array($decoded) ? $decoded : [];
     }
@@ -31,6 +33,7 @@ class TrainerDashboard
     {
         $action = $_GET['action'] ?? ($this->requestBody['action'] ?? '');
         $trainerId = (int)($_GET['trainer_id'] ?? ($this->requestBody['trainer_id'] ?? 0));
+        AuthGuard::requireTrainerAccess($this->conn, $trainerId);
 
         if ($trainerId <= 0) {
             echo json_encode(['success' => false, 'message' => 'Trainer ID required']);

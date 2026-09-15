@@ -6,9 +6,11 @@ header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 require_once '../../database/db.php';
 require_once '../../utils/EnrollmentStatusConstraint.php';
 require_once '../../utils/EmailService.php';
+require_once '../../utils/AuthGuard.php';
 
 $database = new Database();
 $conn = $database->getConnection();
+$identity = AuthGuard::requireRole($conn, ['registrar']);
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
@@ -31,6 +33,7 @@ switch ($action) {
 
 function getPendingApplications($conn) {
     try {
+        ensureApplicationReviewColumns($conn);
         $query = "SELECT e.enrollment_id, DATE_FORMAT(e.enrollment_date, '%Y-%m-%d %H:%i:%s') as enrollment_date, e.status, e.scholarship_type,
                          h.*, 
                          d.civil_status, d.birthdate, d.age, d.birthplace_city, d.birthplace_province, d.birthplace_region, d.nationality, 
@@ -58,7 +61,9 @@ function getPendingApplications($conn) {
 
 function getUnqualifiedApplications($conn) {
     try {
+        ensureApplicationReviewColumns($conn);
         $query = "SELECT e.enrollment_id, DATE_FORMAT(e.enrollment_date, '%Y-%m-%d %H:%i:%s') as enrollment_date, e.status, e.scholarship_type,
+                          e.unqualification_reason, e.resubmitted_at,
                          h.*, 
                          d.civil_status, d.birthdate, d.age, d.birthplace_city, d.birthplace_province, d.birthplace_region, d.nationality, 
                          d.house_no_street, d.barangay, d.district, d.city_municipality, d.province, d.region,
@@ -92,8 +97,19 @@ function updateStatus($conn, $status) {
         return;
     }
 
+    $reason = trim((string)($data['unqualification_reason'] ?? ''));
+    if ($status === 'unqualified' && $reason === '') {
+        echo json_encode(['success' => false, 'message' => 'A reason for marking the application unqualified is required.']);
+        return;
+    }
+    if (mb_strlen($reason) > 1000) {
+        echo json_encode(['success' => false, 'message' => 'The reason must not exceed 1,000 characters.']);
+        return;
+    }
+
     try {
         ensureEnrollmentStatusSchema($conn);
+        ensureApplicationReviewColumns($conn);
 
         // Fetch details for email notification
         $stmtDetails = $conn->prepare("
@@ -110,12 +126,12 @@ function updateStatus($conn, $status) {
         $stmtDetails->execute([$id]);
         $traineeDetails = $stmtDetails->fetch(PDO::FETCH_ASSOC);
 
-        $stmt = $conn->prepare("UPDATE tbl_enrollment SET status = ? WHERE enrollment_id = ?");
-        $stmt->execute([$status, $id]);
+        $stmt = $conn->prepare("UPDATE tbl_enrollment SET status = ?, unqualification_reason = ?, resubmitted_at = NULL WHERE enrollment_id = ?");
+        $stmt->execute([$status, $status === 'unqualified' ? $reason : null, $id]);
 
         $emailSent = false;
         if ($traineeDetails && !empty($traineeDetails['email'])) {
-            $emailSent = sendQualificationEmail($traineeDetails, $status);
+            $emailSent = sendQualificationEmail($traineeDetails, $status, $reason);
         }
 
         $message = 'Status updated to ' . $status;
@@ -129,7 +145,17 @@ function updateStatus($conn, $status) {
     }
 }
 
-function sendQualificationEmail($details, $status) {
+function ensureApplicationReviewColumns($conn) {
+    $columns = $conn->query("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tbl_enrollment' AND COLUMN_NAME IN ('unqualification_reason', 'resubmitted_at')")->fetchAll(PDO::FETCH_COLUMN);
+    if (!in_array('unqualification_reason', $columns, true)) {
+        $conn->exec("ALTER TABLE tbl_enrollment ADD COLUMN unqualification_reason TEXT NULL AFTER scholarship_type_id");
+    }
+    if (!in_array('resubmitted_at', $columns, true)) {
+        $conn->exec("ALTER TABLE tbl_enrollment ADD COLUMN resubmitted_at DATETIME NULL AFTER unqualification_reason");
+    }
+}
+
+function sendQualificationEmail($details, $status, $reason = '') {
     $to = $details['email'];
     $name = trim(($details['first_name'] ?? '') . ' ' . ($details['last_name'] ?? ''));
     $course = $details['course_name'] ?? 'your course';
@@ -216,8 +242,10 @@ function sendQualificationEmail($details, $status) {
                     <p>Thank you for your application for <strong>$course</strong> (<em>$batch</em>).</p>
                     <p><span class='badge'>NOT QUALIFIED</span></p>
                     <div class='info'>
-                        We are unable to move your application forward at this time. You may reapply in the next intake.
+                        <strong>Reason for unqualification:</strong><br>
+                        " . nl2br(htmlspecialchars($reason !== '' ? $reason : 'Please contact the registrar for details.', ENT_QUOTES, 'UTF-8')) . "
                     </div>
+                    <p>You may correct and resubmit your credentials through the application form. Your corrected documents will be returned to the registrar for review.</p>
                     <p>If you have questions, please contact the registrar's office.</p>
                     <p>Thank you,<br><strong>Hohoo-Ville Technical School</strong></p>
                 </div>

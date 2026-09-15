@@ -13,12 +13,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once '../../database/db.php';
 require_once '../../utils/EmailService.php';
 require_once '../../utils/trainer_assignment_helper.php';
+require_once '../../utils/AuthGuard.php';
 
 const QUIZ_MAX_RETRIES = 3;
 const QUIZ_MAX_ATTEMPTS = QUIZ_MAX_RETRIES + 1;
 
 $database = new Database();
 $conn = $database->getConnection();
+AuthGuard::requireRole($conn, ['trainee']);
 ta_ensure_schema($conn);
 authenticateTrainee($conn);
 

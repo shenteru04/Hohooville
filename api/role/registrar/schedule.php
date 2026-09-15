@@ -11,11 +11,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once __DIR__ . '/../../database/db.php';
 require_once __DIR__ . '/../../utils/trainer_assignment_helper.php';
+require_once __DIR__ . '/../../utils/AuthGuard.php';
 require_once __DIR__ . '/../../utils/schedule_workflow_helper.php';
 
 $database = new Database();
 $conn = $database->getConnection();
 ta_ensure_schema($conn);
+$identity = AuthGuard::requireRole($conn, ['registrar']);
 sw_ensure_schema($conn);
 
 $action = $_GET['action'] ?? '';
@@ -30,6 +32,15 @@ switch ($action) {
 
     case 'available-rooms':
         getAvailableRooms($conn);
+        break;
+
+    case 'assign':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Schedule assignment requires a POST request.']);
+            break;
+        }
+        assignSchedule($conn);
         break;
 
     default:
@@ -255,6 +266,82 @@ function getAvailableRooms(PDO $conn): void
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         http_response_code(400);
+    }
+}
+
+function assignSchedule(PDO $conn): void
+{
+    try {
+        $data = json_decode(file_get_contents('php://input'), true) ?: [];
+        $batchId = (int)($data['batch_id'] ?? 0);
+        $moduleId = normalizeNullableInt($data['module_id'] ?? null);
+        $mode = ta_normalize_mode($data['trainer_assignment_mode'] ?? 'single');
+        $scopeType = sw_normalize_scope_type((string)($data['scope_type'] ?? ''), $moduleId, $mode);
+
+        if ($batchId <= 0) throw new Exception('Batch is required.');
+        $batch = sw_fetch_batch_context($conn, $batchId);
+        if (!$batch) throw new Exception('Batch not found.');
+        if (!empty($data['remove_assignment'])) {
+            if ($mode !== 'multiple' || !$moduleId) throw new Exception('A unit assignment is required to remove it.');
+            $stmt = $conn->prepare('DELETE FROM tbl_batch_trainer_assignments WHERE batch_id = ? AND module_id = ?');
+            $stmt->execute([$batchId, $moduleId]);
+            echo json_encode(['success' => true, 'message' => 'Unit schedule removed.']);
+            return;
+        }
+
+        $trainerId = (int)($data['trainer_id'] ?? 0);
+        $roomId = (int)($data['room_id'] ?? 0);
+        $schedule = trim((string)($data['schedule'] ?? ''));
+        $effectiveDate = trim((string)($data['effective_date'] ?? ''));
+        if ($trainerId <= 0 || $roomId <= 0 || $schedule === '' || $effectiveDate === '') throw new Exception('Trainer, schedule, room, and effective date are required.');
+        if (!sw_parse_schedule($schedule)['days'] || !sw_parse_schedule($schedule)['ranges']) throw new Exception('Choose a valid day and time schedule.');
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $effectiveDate)) throw new Exception('Effective date must be a valid date.');
+        if ((!empty($batch['start_date']) && $effectiveDate < $batch['start_date']) || (!empty($batch['end_date']) && $effectiveDate > $batch['end_date'])) throw new Exception('Effective date must be within the batch schedule window.');
+
+        $trainerStmt = $conn->prepare("SELECT trainer_id FROM tbl_trainer WHERE trainer_id = ? AND status = 'active'");
+        $trainerStmt->execute([$trainerId]);
+        if (!$trainerStmt->fetchColumn()) throw new Exception('Selected trainer is unavailable.');
+        $roomStmt = $conn->prepare('SELECT room_id FROM tbl_rooms WHERE room_id = ? AND COALESCE(is_archived, 0) = 0');
+        $roomStmt->execute([$roomId]);
+        if (!$roomStmt->fetchColumn()) throw new Exception('Selected room is unavailable.');
+
+        $availableIds = array_column(sw_fetch_available_rooms($conn, ['batch_id' => $batchId, 'schedule' => $schedule]), 'room_id');
+        if (!in_array($roomId, array_map('intval', $availableIds), true)) throw new Exception('Selected room conflicts with an existing schedule.');
+
+        $conn->beginTransaction();
+        if ($mode === 'multiple' && $scopeType === 'module' && $moduleId) {
+            $existing = $conn->prepare('SELECT assignment_id FROM tbl_batch_trainer_assignments WHERE batch_id = ? AND module_id = ? LIMIT 1');
+            $existing->execute([$batchId, $moduleId]);
+            $assignmentId = $existing->fetchColumn();
+            if ($assignmentId) {
+                $save = $conn->prepare('UPDATE tbl_batch_trainer_assignments SET trainer_id = ?, schedule = ?, room_id = ?, updated_at = NOW() WHERE assignment_id = ?');
+                $save->execute([$trainerId, $schedule, $roomId, $assignmentId]);
+            } else {
+                $save = $conn->prepare('INSERT INTO tbl_batch_trainer_assignments (batch_id, module_id, trainer_id, schedule, room_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())');
+                $save->execute([$batchId, $moduleId, $trainerId, $schedule, $roomId]);
+            }
+        } else {
+            $existing = $conn->prepare('SELECT schedule_id FROM tbl_schedule WHERE batch_id = ? LIMIT 1');
+            $existing->execute([$batchId]);
+            $scheduleId = $existing->fetchColumn();
+            if ($scheduleId) {
+                $save = $conn->prepare('UPDATE tbl_schedule SET schedule = ?, room_id = ?, updated_at = NOW() WHERE schedule_id = ?');
+                $save->execute([$schedule, $roomId, $scheduleId]);
+            } else {
+                $save = $conn->prepare('INSERT INTO tbl_schedule (batch_id, schedule, room_id, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())');
+                $save->execute([$batchId, $schedule, $roomId]);
+            }
+            if ($mode === 'single') {
+                $saveTrainer = $conn->prepare('UPDATE tbl_batch SET trainer_id = ? WHERE batch_id = ?');
+                $saveTrainer->execute([$trainerId, $batchId]);
+            }
+        }
+        $conn->commit();
+        echo json_encode(['success' => true, 'message' => 'Schedule successfully assigned.']);
+    } catch (Exception $e) {
+        if ($conn->inTransaction()) $conn->rollBack();
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
 }
 

@@ -10,6 +10,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../../database/db.php';
+require_once '../../utils/input_sanitization.php';
+require_once '../../utils/AuthGuard.php';
 
 class RegistrarProfile {
     private $conn;
@@ -106,10 +108,10 @@ class RegistrarProfile {
         }
 
         $userId = $this->resolveAuthenticatedUserId($payload);
-        $firstName = trim((string)($payload['first_name'] ?? ''));
-        $lastName = trim((string)($payload['last_name'] ?? ''));
-        $email = trim((string)($payload['email'] ?? ''));
-        $phone = trim((string)($payload['phone_number'] ?? ''));
+        $firstName = sanitize_person_name($payload['first_name'] ?? '');
+        $lastName = sanitize_person_name($payload['last_name'] ?? '');
+        $email = sanitize_email_value($payload['email'] ?? '');
+        $phone = sanitize_phone_number($payload['phone_number'] ?? '');
         $profileImage = trim((string)($payload['profile_image'] ?? ''));
 
         if ($firstName === '' || $lastName === '' || $email === '') {
@@ -273,6 +275,7 @@ class RegistrarProfile {
 
 $database = new Database();
 $db = $database->getConnection();
+$identity = AuthGuard::requireRole($db, ['registrar']);
 $api = new RegistrarProfile($db);
 $api->handleRequest();
 ?>

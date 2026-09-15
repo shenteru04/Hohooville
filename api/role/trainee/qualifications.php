@@ -10,9 +10,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../../database/db.php';
+require_once '../../utils/AuthGuard.php';
 
 $database = new Database();
 $conn = $database->getConnection();
+AuthGuard::requireRole($conn, ['trainee']);
 $action = $_GET['action'] ?? '';
 
 switch ($action) {
@@ -36,6 +38,7 @@ function getTraineeQualifications($conn) {
         http_response_code(400);
         return;
     }
+    AuthGuard::requireTraineeAccess($conn, $traineeId);
 
     try {
         // Get qualifications from active enrollments in open batches.

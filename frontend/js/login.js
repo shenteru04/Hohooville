@@ -89,8 +89,8 @@ function redirectToDashboard(role) {
         default: return;
     }
     
-    // Prevent infinite redirect loop
-    window.location.href = path;
+    // Do not leave the login page in history after authentication.
+    window.location.replace(path);
 }
 
 function showError(msg) {

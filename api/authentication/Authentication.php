@@ -11,8 +11,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once '../database/db.php';
 require_once '../utils/PermissionChecker.php';
+require_once '../utils/SecuritySession.php';
 // Load Composer's autoloader
 require_once '../../vendor/autoload.php';
+
+startSecureSession();
+applyNoStoreHeaders();
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -22,6 +26,7 @@ class Authentication {
     private $table = 'tbl_users';
     private const LOGIN_RETRY_LIMIT = 5;
     private const LOGIN_LOCKOUT_MINUTES = 15;
+    private const PASSWORD_PATTERN = '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/';
 
     public function __construct($db) {
         $this->conn = $db;
@@ -93,6 +98,12 @@ class Authentication {
             return;
         }
 
+        $identifier = trim((string)$data->username);
+        if (str_contains($identifier, '@') && !filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+            $this->sendResponse(400, false, 'Enter a valid email address or username.');
+            return;
+        }
+
         try {
             $query = "SELECT u.*, r.role_name as role,
                       CASE 
@@ -108,10 +119,11 @@ class Authentication {
                       LEFT JOIN tbl_trainee_hdr t ON u.user_id = t.user_id
                       LEFT JOIN tbl_trainer tr ON u.user_id = tr.user_id
                       WHERE (u.username = :username OR u.email = :username) 
-                      AND u.status = 'active'";
+                      AND u.status = 'active'
+                      AND COALESCE(u.is_archived, 0) = 0";
 
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':username', $data->username);
+            $stmt->bindParam(':username', $identifier);
             $stmt->execute();
 
             if ($stmt->rowCount() === 0) {
@@ -179,7 +191,7 @@ class Authentication {
         }
 
         // Generate token
-        $token = $this->generateToken($user['user_id']);
+        $token = $this->startSessionAndGenerateToken((int)$user['user_id']);
 
         $this->logActivity($user['user_id'], 'login_success', 'tbl_users', $user['user_id'], 'User logged in successfully');
 
@@ -329,8 +341,12 @@ class Authentication {
         $stmt->execute([':user_id' => $data->user_id]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        // Login Success
-        $token = $this->generateToken($user['user_id']);
+        if (!$user || $user['status'] !== 'active') {
+            $this->sendResponse(401, false, 'User not found or inactive.');
+            return;
+        }
+        // A new login invalidates any previously active browser session.
+        $token = $this->startSessionAndGenerateToken((int)$user['user_id']);
         
         // Fetch role name again for frontend redirection
         $roleStmt = $this->conn->prepare("SELECT role_name FROM tbl_role WHERE role_id = ?");
@@ -352,17 +368,16 @@ class Authentication {
         $headers = getallheaders();
         $token = isset($headers['Authorization']) ? str_replace('Bearer ', '', $headers['Authorization']) : null;
 
-        if (!$token) {
-            $this->sendResponse(400, false, 'Token is required');
-            return;
-        }
-
-        $userId = $this->validateToken($token);
+        $userId = $token ? $this->validateToken($token) : (int)($_SESSION['user_id'] ?? 0);
 
         if ($userId) {
+            $clearSession = $this->conn->prepare("UPDATE {$this->table} SET active_session_id = NULL, active_session_started_at = NULL WHERE user_id = ?");
+            $clearSession->execute([$userId]);
             $this->logActivity($userId, 'logout', 'tbl_users', $userId, 'User logged out');
+            destroySecureSession();
             $this->sendResponse(200, true, 'Logout successful');
         } else {
+            destroySecureSession();
             $this->sendResponse(401, false, 'Invalid token');
         }
     }
@@ -380,6 +395,11 @@ class Authentication {
 
         if (!$userId) {
             $this->sendResponse(401, false, 'Invalid or expired token');
+            return;
+        }
+
+        if (empty($_SESSION['authenticated']) || (int)($_SESSION['user_id'] ?? 0) !== (int)$userId) {
+            $this->sendResponse(401, false, 'PHP session is not valid');
             return;
         }
 
@@ -439,6 +459,10 @@ class Authentication {
             $this->sendResponse(400, false, 'Old and new passwords are required');
             return;
         }
+        if (!$this->isStrongPassword((string)$data->new_password)) {
+            $this->sendResponse(400, false, $this->passwordRequirementMessage());
+            return;
+        }
 
         // Verify old password
         $query = "SELECT password FROM " . $this->table . " WHERE user_id = :user_id";
@@ -454,7 +478,7 @@ class Authentication {
 
         // Update password
         $hashedPassword = password_hash($data->new_password, PASSWORD_BCRYPT);
-        $updateQuery = "UPDATE " . $this->table . " SET password = :password WHERE user_id = :user_id";
+        $updateQuery = "UPDATE " . $this->table . " SET password = :password, active_session_id = NULL, active_session_started_at = NULL WHERE user_id = :user_id";
         $updateStmt = $this->conn->prepare($updateQuery);
         if ($updateStmt->execute([':password' => $hashedPassword, ':user_id' => $userId])) {
             $this->logActivity($userId, 'password_changed', 'tbl_users', $userId, 'Password changed successfully');
@@ -469,6 +493,10 @@ class Authentication {
 
         if (empty($data->user_id) || empty($data->new_password)) {
             $this->sendResponse(400, false, 'User ID and new password are required');
+            return;
+        }
+        if (!$this->isStrongPassword((string)$data->new_password)) {
+            $this->sendResponse(400, false, $this->passwordRequirementMessage());
             return;
         }
 
@@ -501,7 +529,7 @@ class Authentication {
 
         // Reset password
         $hashedPassword = password_hash($data->new_password, PASSWORD_BCRYPT);
-        $updateQuery = "UPDATE " . $this->table . " SET password = :password WHERE user_id = :user_id";
+        $updateQuery = "UPDATE " . $this->table . " SET password = :password, active_session_id = NULL, active_session_started_at = NULL WHERE user_id = :user_id";
         $updateStmt = $this->conn->prepare($updateQuery);
         if ($updateStmt->execute([':password' => $hashedPassword, ':user_id' => $data->user_id])) {
             $this->logActivity($adminId, 'password_reset', 'tbl_users', $data->user_id, 'Password reset by admin');
@@ -514,8 +542,8 @@ class Authentication {
     private function forgotPassword() {
         $data = json_decode(file_get_contents("php://input"));
 
-        if (empty($data->email)) {
-            $this->sendResponse(400, false, 'Email is required');
+        if (empty($data->email) || !filter_var(trim((string)$data->email), FILTER_VALIDATE_EMAIL)) {
+            $this->sendResponse(400, false, 'A valid email address is required');
             return;
         }
 
@@ -558,6 +586,10 @@ class Authentication {
             $this->sendResponse(400, false, 'All fields are required');
             return;
         }
+        if (!$this->isStrongPassword((string)$data->new_password)) {
+            $this->sendResponse(400, false, $this->passwordRequirementMessage());
+            return;
+        }
 
         $payload = $this->decodeJwt($data->otp_token);
 
@@ -572,7 +604,7 @@ class Authentication {
         }
 
         $hashedPassword = password_hash($data->new_password, PASSWORD_BCRYPT);
-        $updateQuery = "UPDATE " . $this->table . " SET password = :password WHERE user_id = :user_id";
+        $updateQuery = "UPDATE " . $this->table . " SET password = :password, active_session_id = NULL, active_session_started_at = NULL WHERE user_id = :user_id";
         $stmt = $this->conn->prepare($updateQuery);
         if ($stmt->execute([':password' => $hashedPassword, ':user_id' => $data->user_id])) {
             $this->logActivity($data->user_id, 'password_reset', 'tbl_users', $data->user_id, 'Password reset via OTP');
@@ -582,17 +614,35 @@ class Authentication {
         }
     }
 
-    public function generateToken($userId) {
+    private function startSessionAndGenerateToken(int $userId): string {
+        $sessionId = bin2hex(random_bytes(32));
+        $stmt = $this->conn->prepare("UPDATE {$this->table} SET active_session_id = ?, active_session_started_at = NOW(), last_login = NOW() WHERE user_id = ?");
+        $stmt->execute([$sessionId, $userId]);
+        $identityStmt = $this->conn->prepare("SELECT u.role_id, th.trainee_id, tr.trainer_id FROM {$this->table} u LEFT JOIN tbl_trainee_hdr th ON th.user_id = u.user_id LEFT JOIN tbl_trainer tr ON tr.user_id = u.user_id WHERE u.user_id = ? LIMIT 1");
+        $identityStmt->execute([$userId]);
+        $identity = $identityStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+        establishSecureSession(
+            $userId,
+            (int)($identity['role_id'] ?? 0),
+            !empty($identity['trainee_id']) ? (int)$identity['trainee_id'] : null,
+            !empty($identity['trainer_id']) ? (int)$identity['trainer_id'] : null
+        );
+        return $this->generateToken($userId, $sessionId);
+    }
+
+    public function generateToken($userId, ?string $sessionId = null) {
         // Get user role_id for permission checking
-        $stmt = $this->conn->prepare("SELECT role_id FROM tbl_users WHERE user_id = ?");
+        $stmt = $this->conn->prepare("SELECT role_id, active_session_id FROM tbl_users WHERE user_id = ?");
         $stmt->execute([$userId]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         $roleId = $user ? $user['role_id'] : null;
+        $sessionId = $sessionId ?? ($user['active_session_id'] ?? null);
 
         $header = json_encode(['typ' => 'JWT', 'alg' => 'HS256']);
         $payload = json_encode([
             'user_id' => $userId,
             'role_id' => $roleId,
+            'sid' => $sessionId,
             'exp' => time() + (86400 * 7) // 7 days
         ]);
 
@@ -644,7 +694,12 @@ class Authentication {
             return false;
         }
 
-        return $payloadData->user_id;
+        if (empty($payloadData->sid)) {
+            return false;
+        }
+        $stmt = $this->conn->prepare("SELECT 1 FROM {$this->table} WHERE user_id = ? AND role_id = ? AND status = 'active' AND is_archived = 0 AND active_session_id = ?");
+        $stmt->execute([(int)$payloadData->user_id, (int)$payloadData->role_id, $payloadData->sid]);
+        return $stmt->fetchColumn() ? $payloadData->user_id : false;
     }
 
     private function encodeJwt($payload) {
@@ -687,6 +742,14 @@ class Authentication {
 
     private function base64UrlEncode($text) {
         return str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($text));
+    }
+
+    private function isStrongPassword(string $password): bool {
+        return (bool)preg_match(self::PASSWORD_PATTERN, $password);
+    }
+
+    private function passwordRequirementMessage(): string {
+        return 'Password must be at least 8 characters and include an uppercase letter, lowercase letter, number, and special character.';
     }
 
     private function logActivity($userId, $action, $tableName, $recordId, $details) {

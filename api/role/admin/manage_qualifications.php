@@ -10,9 +10,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../../database/db.php';
+require_once __DIR__ . '/../../utils/AuthGuard.php';
 
 $database = new Database();
 $conn = $database->getConnection();
+AuthGuard::requireRole($conn, ['admin']);
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
@@ -39,7 +41,7 @@ switch ($action) {
         unarchiveQualification($conn);
         break;
     case 'delete':
-        deleteQualification($conn);
+        archiveQualification($conn);
         break;
     default:
         http_response_code(400);
@@ -102,7 +104,7 @@ function addQualification($conn) {
             $data['ctpr_number'] ?? null,
             $data['description'] ?? null, 
             $data['duration'] ?? null, 
-            $data['status'] ?? 'active'
+            'active'
         ]);
         $qualificationId = $conn->lastInsertId();
 
@@ -240,17 +242,6 @@ function unarchiveQualification($conn) {
 }
 
 function deleteQualification($conn) {
-    try {
-        $id = $_GET['id'] ?? null;
-        if (!$id) throw new Exception('ID required');
-        
-        $stmt = $conn->prepare("DELETE FROM tbl_qualifications WHERE qualification_id = ?");
-        $stmt->execute([$id]);
-        
-        echo json_encode(['success' => true, 'message' => 'Qualification deleted successfully']);
-    } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
-    }
+    archiveQualification($conn);
 }
 ?>

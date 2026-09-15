@@ -236,6 +236,10 @@ function getProgramLabel(trainee) {
     return trainee?.course_name || 'Not Assigned';
 }
 
+function getEnrollmentStatusLabel(trainee) {
+    return String(trainee?.enrollment_status || '').toLowerCase() === 'completed' ? 'Completed' : 'Active / Ongoing';
+}
+
 function getTraineeImageUrl(trainee) {
     const imageFile = trainee?.profile_image || trainee?.photo_file;
     if (!imageFile) return '';
@@ -390,9 +394,10 @@ function renderTraineesTable(data) {
     }
 
     const html = data.map((trainee, index) => {
-        const statusBadge = trainee.status === 'active'
-            ? '<span class="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">active</span>'
-            : '<span class="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">inactive</span>';
+        const enrollmentStatus = String(trainee.enrollment_status || '').toLowerCase();
+        const statusBadge = enrollmentStatus === 'completed'
+            ? '<span class="inline-flex rounded-full bg-sky-100 px-2 py-1 text-xs font-semibold text-sky-700">Completed</span>'
+            : '<span class="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">Active / Ongoing</span>';
 
         const enrolledDate = trainee.formatted_enrollment_date 
             ? trainee.formatted_enrollment_date 
@@ -451,7 +456,7 @@ function renderTraineesTable(data) {
                     ${qualification}
                 </td>
                 <td class="px-3 py-3 text-sm text-slate-600">${enrolledDate}</td>
-                <td class="px-3 py-3 text-sm" data-filter-value="${escapeHtml(String(trainee.status || ''))}">
+                <td class="px-3 py-3 text-sm" data-filter-value="${escapeHtml(getEnrollmentStatusLabel(trainee))}">
                     ${statusBadge}
                 </td>
                 <td class="px-3 py-3 text-sm">
@@ -614,7 +619,7 @@ function viewProfile(id) {
     const address = trainee.address || 'No address provided';
     const program = getProgramLabel(trainee);
     const enrollmentDate = getEnrollmentLabel(trainee);
-    const statusMeta = getStatusMeta(trainee.status);
+    const enrollmentStatus = getEnrollmentStatusLabel(trainee);
     const accountMeta = getAccountMeta(trainee);
 
     setText('viewName', fullName);
@@ -634,8 +639,10 @@ function viewProfile(id) {
 
     const statusBadge = document.getElementById('viewStatus');
     if (statusBadge) {
-        statusBadge.textContent = statusMeta.label;
-        statusBadge.className = statusMeta.className;
+        statusBadge.textContent = enrollmentStatus;
+        statusBadge.className = enrollmentStatus === 'Completed'
+            ? 'inline-flex rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700'
+            : 'inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700';
     }
 
     const accountBadge = document.getElementById('viewAccountStatus');
@@ -705,28 +712,28 @@ function setupDocLink(elementId, filename, title) {
     return false;
 }
 
-async function deleteTrainee(id) {
+async function archiveTrainee(id) {
     const result = await Swal.fire({
-        title: 'Are you sure?',
-        text: "You won't be able to revert this!",
+        title: 'Archive Trainee?',
+        text: 'The trainee record and enrollment history will be preserved, but account access will be disabled.',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
-        confirmButtonText: 'Yes, delete it!'
+        confirmButtonText: 'Yes, archive it'
     });
     if (!result.isConfirmed) return;
 
     try {
-        const response = await axios.delete(`${API_BASE_URL}/role/admin/trainees.php?action=delete&id=${id}`);
+        const response = await axios.delete(`${API_BASE_URL}/role/admin/trainees.php?action=archive&id=${id}`);
         if (!response.data.success) {
-            Swal.fire('Error', response.data.message || 'Error deleting trainee', 'error');
+            Swal.fire('Error', response.data.message || 'Error archiving trainee', 'error');
             return;
         }
-        Swal.fire('Deleted!', 'Trainee deleted successfully.', 'success');
+        Swal.fire('Archived!', 'Trainee archived successfully.', 'success');
         loadTrainees();
     } catch (error) {
-        console.error('Error deleting trainee:', error);
-        Swal.fire('Error', 'Error deleting trainee', 'error');
+        console.error('Error archiving trainee:', error);
+        Swal.fire('Error', 'Error archiving trainee', 'error');
     }
 }
 
@@ -801,5 +808,5 @@ function clearAllFilters() {
 
 window.openAccountModal = openAccountModal;
 window.viewProfile = viewProfile;
-window.deleteTrainee = deleteTrainee;
+window.archiveTrainee = archiveTrainee;
 window.clearAllFilters = clearAllFilters;

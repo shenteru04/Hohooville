@@ -10,6 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../../database/db.php';
+require_once '../../utils/AuthGuard.php';
 
 class ActivityLogs {
     private $conn;
@@ -20,6 +21,14 @@ class ActivityLogs {
     }
 
     public function handleRequest() {
+        $identity = AuthGuard::requireAuthenticated($this->conn);
+        $roleStmt = $this->conn->prepare('SELECT LOWER(role_name) FROM tbl_role WHERE role_id = ?');
+        $roleStmt->execute([$identity['role_id']]);
+        if ($roleStmt->fetchColumn() !== 'admin') {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Administrator access is required.']);
+            return;
+        }
         $action = isset($_GET['action']) ? $_GET['action'] : '';
 
         switch ($action) {
@@ -45,7 +54,8 @@ class ActivityLogs {
         $offset = ($page - 1) * $limit;
 
         $actionType = isset($_GET['action_type']) ? $_GET['action_type'] : '';
-        $date = isset($_GET['date']) ? $_GET['date'] : '';
+        $startDate = isset($_GET['start_date']) ? $_GET['start_date'] : '';
+        $endDate = isset($_GET['end_date']) ? $_GET['end_date'] : '';
         $userId = isset($_GET['user_id']) ? $_GET['user_id'] : '';
 
         $query = "SELECT l.activity_log_id, l.user_id, l.action as action_type, l.table_name as entity_type, l.record_id as entity_id, l.details, l.ip_address, l.timestamp as created_at, u.username 
@@ -59,9 +69,13 @@ class ActivityLogs {
             $query .= " AND l.action = :action";
             $params[':action'] = $actionType;
         }
-        if (!empty($date)) {
-            $query .= " AND DATE(l.timestamp) = :date";
-            $params[':date'] = $date;
+        if (!empty($startDate)) {
+            $query .= " AND DATE(l.timestamp) >= :start_date";
+            $params[':start_date'] = $startDate;
+        }
+        if (!empty($endDate)) {
+            $query .= " AND DATE(l.timestamp) <= :end_date";
+            $params[':end_date'] = $endDate;
         }
         if (!empty($userId)) {
             $query .= " AND l.user_id = :user_id";
@@ -72,7 +86,8 @@ class ActivityLogs {
         $countQuery = "SELECT COUNT(*) as total FROM " . $this->table . " l WHERE 1=1";
         // Re-apply filters for count
         if (!empty($actionType)) $countQuery .= " AND l.action = :action";
-        if (!empty($date)) $countQuery .= " AND DATE(l.timestamp) = :date";
+        if (!empty($startDate)) $countQuery .= " AND DATE(l.timestamp) >= :start_date";
+        if (!empty($endDate)) $countQuery .= " AND DATE(l.timestamp) <= :end_date";
         if (!empty($userId)) $countQuery .= " AND l.user_id = :user_id";
 
         $stmt = $this->conn->prepare($countQuery);

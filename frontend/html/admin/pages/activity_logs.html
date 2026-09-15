@@ -47,7 +47,7 @@
 
         <main class="space-y-6 p-4 sm:p-6 lg:p-8">
             <section class="rounded-2xl border border-blue-100 bg-white p-4 shadow-sm sm:p-6">
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-5">
                     <div>
                         <label class="mb-1 block text-sm font-medium text-slate-700">Action Type</label>
                         <select id="filterAction" onchange="loadLogs()" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
@@ -55,14 +55,23 @@
                         </select>
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700">Date</label>
-                        <input type="date" id="filterDate" onchange="loadLogs()" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                        <label class="mb-1 block text-sm font-medium text-slate-700">Start Date</label>
+                        <input type="date" id="filterStartDate" onchange="loadLogs()" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700">End Date</label>
+                        <input type="date" id="filterEndDate" onchange="loadLogs()" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
                     </div>
                     <div>
                         <label class="mb-1 block text-sm font-medium text-slate-700">User</label>
                         <select id="filterUser" onchange="loadLogs()" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
                             <option value="">All Users</option>
                         </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button type="button" id="downloadLogsBtn" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">
+                            <i class="fas fa-download"></i> Download CSV
+                        </button>
                     </div>
                 </div>
             </section>
@@ -131,6 +140,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
     <script src="../../../js/session_timeout.js"></script>
+    <script src="../../../js/input_sanitation.js"></script>
     <script src="../../../js/sidebar.js"></script>
     <script src="../../../js/table_manager.js"></script>
     <script src="../../../js/admin/pages/activity_logs.js"></script>

@@ -9,7 +9,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-require_once '../database/db.php';
+require_once '../../database/db.php';
+require_once __DIR__ . '/../../utils/AuthGuard.php';
+
+$database = new Database();
+$conn = $database->getConnection();
+AuthGuard::requireRole($conn, ['admin']);
 
 /**
  * Extract abbreviation from qualification name

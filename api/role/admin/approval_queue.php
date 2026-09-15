@@ -12,9 +12,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once __DIR__ . '/../../utils/EmailService.php';
 require_once '../../database/db.php';
 require_once '../../utils/EnrollmentStatusConstraint.php';
+require_once __DIR__ . '/../../utils/AuthGuard.php';
 
 $database = new Database();
 $conn = $database->getConnection();
+AuthGuard::requireRole($conn, ['admin']);
 
 // Immediately check for a valid database connection
 if (!$conn) {

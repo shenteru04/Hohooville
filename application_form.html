@@ -137,6 +137,12 @@
             font-size: 0.85rem;
             font-weight: 500;
         }
+        .required-group-invalid {
+            border: 1px solid #ef4444 !important;
+            border-radius: 0.75rem;
+            background: #fff7f7 !important;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+        }
         .alert {
             padding: 0.875rem 1rem;
             border-radius: 0.75rem;
@@ -363,7 +369,7 @@
                 <div id="welcomeBackMessage" class="alert alert-info" style="display: none;">
                     <strong>Welcome back!</strong> Your personal information is on file. Please select a new qualification to enroll in and submit.
                 </div>
-                <form id="applicationForm" enctype="multipart/form-data">
+                <form id="applicationForm" enctype="multipart/form-data" novalidate>
                     
                     <!-- Page 1 -->
                     <div id="step1">
@@ -471,8 +477,8 @@
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">District</label>
-                                <input type="text" class="form-control" name="district" id="addr_district">
+                                <label class="form-label">ZIP Code <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="zip_code" id="addr_district" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" placeholder="0000" title="Enter a 4-digit Philippine ZIP code." required>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">House No. / Street <span class="text-danger">*</span></label>
@@ -487,8 +493,9 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Email Address <span class="text-danger">*</span></label>
-                                <input type="email" class="form-control" name="email" id="emailInput" autocomplete="email" placeholder="name@example.com" required>
-                                <div id="emailError" class="field-error">Enter a valid email address.</div>
+                                 <input type="email" class="form-control" name="email" id="emailInput" autocomplete="email" placeholder="name@example.com" required>
+                                 <div id="emailError" class="field-error">Enter a valid email address.</div>
+                                 <div id="credentialResubmissionNotice" class="alert alert-warning mt-2 mb-0 small" style="display: none;" role="status"></div>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Facebook Account</label>
@@ -766,6 +773,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
     <script src="api/database/application_form.js"></script>
+    <script src="frontend/js/input_sanitation.js"></script>
     <script>
         // Set current date
         const now = new Date();

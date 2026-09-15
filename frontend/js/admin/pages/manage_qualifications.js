@@ -324,7 +324,7 @@ async function addQualification() {
         ctpr_number: document.getElementById('ctprNumber')?.value?.trim() || '',
         duration: document.getElementById('duration')?.value?.trim(),
         description: document.getElementById('description')?.value?.trim() || '',
-        status: document.getElementById('qualificationStatus')?.value || 'active'
+        status: 'active'
     };
 
     try {
@@ -475,6 +475,8 @@ function editQualification(id) {
     setValue('ctprNumber', item.ctpr_number || '');
     setValue('duration', item.duration || '');
     setValue('qualificationStatus', item.status || 'active');
+    const statusInput = document.getElementById('qualificationStatus');
+    if (statusInput) statusInput.disabled = false;
     setValue('description', item.description || '');
 
     setText('submitBtn', 'Update Qualification');
@@ -491,6 +493,9 @@ function resetForm() {
     if (form) form.reset();
 
     setValue('qualificationId', '');
+    setValue('qualificationStatus', 'active');
+    const statusInput = document.getElementById('qualificationStatus');
+    if (statusInput) statusInput.disabled = true;
     setText('submitBtn', 'Add Qualification');
     setText('addQualificationModalLabel', 'Add New Qualification');
 

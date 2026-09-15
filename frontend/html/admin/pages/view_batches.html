@@ -202,12 +202,13 @@
                             <label class="mb-1 block text-sm font-medium text-slate-700">Max Trainees</label>
                             <input type="number" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="newBatchMaxTrainees" min="1" required placeholder="e.g. 25">
                         </div>
-                        <div>
+                        <div id="newBatchStatusField">
                             <label class="mb-1 block text-sm font-medium text-slate-700">Status <span class="text-rose-600">*</span></label>
                             <select class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="newBatchStatus" required>
                                 <option value="open">Open</option>
                                 <option value="closed">Closed</option>
                             </select>
+                            <p class="mt-1 text-xs text-slate-500">New batches are automatically Active (Open).</p>
                         </div>
                     </div>
                 </form>
@@ -223,6 +224,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
     <script src="../../../js/session_timeout.js"></script>
     <script src="../../../js/table_manager.js"></script>
+    <script src="../../../js/input_sanitation.js"></script>
     <script src="../../../js/admin/pages/view_batches.js"></script>
     <script src="../../../js/sidebar.js"></script>
 </body>

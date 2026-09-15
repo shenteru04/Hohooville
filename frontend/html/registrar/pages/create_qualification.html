@@ -134,12 +134,7 @@
                                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div>
                                         <label class="mb-1 block text-sm font-medium text-slate-700" for="qualificationStatus">Status</label>
-                                        <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="qualificationStatus">
-                                            <option value="active">Active</option>
-                                            <option value="inactive">Inactive</option>
-                                            <option value="pending">Pending</option>
-                                            <option value="rejected">Rejected</option>
-                                        </select>
+                                        <input class="w-full cursor-not-allowed rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700" id="qualificationStatus" value="Active" readonly aria-readonly="true">
                                     </div>
                                     <div>
                                         <label class="mb-1 block text-sm font-medium text-slate-700" for="ctprNumber">CTPR (Certificate of TVET Program Registration) Number</label>
@@ -155,7 +150,7 @@
                                     <textarea class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="description" rows="3"></textarea>
                                 </div>
                                 <div class="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">
-                                    <i class="fas fa-info-circle mr-2"></i>Qualifications created here become available immediately for batches and modules. Training cost is set when you create a batch.
+                                    <i class="fas fa-info-circle mr-2"></i>New qualifications are automatically set to Active and become available immediately for batches and modules. Training cost is set when you create a batch.
                                 </div>
                                 <button type="submit" class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">Create Qualification</button>
                             </form>
@@ -191,6 +186,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
     <script src="../../../js/session_timeout.js"></script>
     <script src="../../../js/table_manager.js"></script>
+    <script src="../../../js/input_sanitation.js"></script>
     <script src="../../../js/notifications.js"></script>
     <script src="../../../js/registrar/pages/create_qualification.js"></script>
 </body>

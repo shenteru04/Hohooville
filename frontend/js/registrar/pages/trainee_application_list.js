@@ -560,6 +560,10 @@ window.viewApplication = function(id, canReview = false) {
     setText('appCourseStat', courseName);
     setText('appBatchStat', batchName);
     setText('appAppliedAt', formatDateTime(item.enrollment_date));
+    const reasonPanel = document.getElementById('unqualificationReasonPanel');
+    const isUnqualified = !currentViewCanReview && Boolean(item.unqualification_reason);
+    if (reasonPanel) reasonPanel.classList.toggle('hidden', !isUnqualified);
+    if (isUnqualified) setText('unqualificationReasonText', item.unqualification_reason);
 
     setText('appSex', item.sex || 'N/A');
     setText('appCivilStatus', item.civil_status || 'N/A');
@@ -658,10 +662,15 @@ window.qualifyApplication = async function(id) {
 window.unqualifyApplication = async function(id) {
     const result = await Swal.fire({
         title: 'Unqualify Application?',
-        text: "Are you sure you want to mark this as unqualified?",
+        text: 'Provide the reason so the applicant can correct and resubmit their credentials.',
         icon: 'warning',
+        input: 'textarea',
+        inputLabel: 'Reason for unqualification',
+        inputPlaceholder: 'Example: Submitted valid ID is unreadable. Please upload a clear, current copy.',
+        inputAttributes: { 'aria-label': 'Reason for unqualification', maxlength: '1000' },
         showCancelButton: true,
-        confirmButtonText: 'Yes, unqualify'
+        confirmButtonText: 'Mark as unqualified',
+        inputValidator: (value) => !value || !value.trim() ? 'A reason is required.' : undefined
     });
 
     if (!result.isConfirmed) return;
@@ -673,10 +682,13 @@ window.unqualifyApplication = async function(id) {
             allowOutsideClick: false,
             didOpen: () => Swal.showLoading()
         });
-        const response = await apiClient.post('/role/registrar/trainee_application.php?action=unqualify', { enrollment_id: id });
+        const response = await apiClient.post('/role/registrar/trainee_application.php?action=unqualify', {
+            enrollment_id: id,
+            unqualification_reason: result.value.trim()
+        });
         Swal.close();
         if (response.data.success) {
-            Swal.fire({title: 'Info', text: 'Application marked as Unqualified.', icon: 'info'});
+            Swal.fire({title: 'Unqualified', text: 'The reason was saved and the applicant was notified to submit corrected credentials.', icon: 'info'});
             if (viewModal) viewModal.hide();
             loadApprovalQueue(); // Reload to refresh list and filters
         } else {

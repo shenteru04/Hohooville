@@ -15,6 +15,12 @@ let lastActivityTime = Date.now();
 let isWarningShown = false;
 let isSessionExpired = false;
 let activityListenersBound = false;
+let browserNavigationGuardInstalled = false;
+let browserNavigationGuardUrl = '';
+let browserNavigationPromptOpen = false;
+let serverSessionValidationTimer = null;
+let serverSessionValidationInProgress = false;
+const SERVER_SESSION_VALIDATION_INTERVAL_MS = 30000;
 
 function hasSweetAlert2() {
     return typeof window.Swal !== 'undefined' && typeof window.Swal.fire === 'function';
@@ -27,7 +33,62 @@ function hasSweetAlert1() {
 // Initialize session timeout on page load
 document.addEventListener('DOMContentLoaded', initializeSessionTimeout);
 
+// Browser back/forward navigation can restore a page from bfcache without
+// rerunning DOMContentLoaded, so re-check the session when that happens.
+window.addEventListener('pageshow', (event) => {
+    if (!event.persisted) return;
+
+    if (handleStartupSessionState()) {
+        return;
+    }
+
+    if (enforceRolePageAccess()) {
+        return;
+    }
+
+    verifyServerSession().then((isValid) => {
+        if (!isValid || isSessionExpired || !hasStoredSession()) {
+            return;
+        }
+
+        installBrowserNavigationGuard();
+        startServerSessionValidation();
+    });
+});
+
+// Handle every shared logout control before page-specific click handlers can
+// clear local storage.
+document.addEventListener('click', async (event) => {
+    const logoutControl = event.target.closest('#logoutBtn, [data-logout]');
+    if (!logoutControl) return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (!window.confirm('Are you sure you want to log out?')) return;
+
+    await invalidateServerSession();
+    clearAuthenticatedSession();
+    redirect();
+}, true);
+
 async function initializeSessionTimeout() {
+    if (handleStartupSessionState()) {
+        return;
+    }
+
+    if (enforceRolePageAccess()) {
+        return;
+    }
+
+    if (!(await verifyServerSession())) {
+        return;
+    }
+
+    // Install this before any optional settings request. Trainer and trainee
+    // accounts are not allowed to read admin settings, so waiting for that
+    // request could leave a short window where browser Back was unguarded.
+    installBrowserNavigationGuard();
+
     try {
         // Fetch the session timeout setting from admin settings
         const apiBase = `${window.location.origin}/Hohoo-ville/api`;
@@ -41,11 +102,161 @@ async function initializeSessionTimeout() {
         console.warn('Could not load session timeout settings, using default:', error);
     }
 
-    if (handleStartupSessionState()) {
+    if (isSessionExpired || !hasStoredSession()) {
         return;
     }
 
     startInactivityMonitoring();
+    startServerSessionValidation();
+}
+
+function enforceRolePageAccess() {
+    const path = window.location.pathname.toLowerCase();
+    const roleSegments = ['admin', 'registrar', 'trainer', 'trainee'];
+    const pageRole = roleSegments.find((role) => path.includes(`/html/${role}/`));
+    if (!pageRole) {
+        return false;
+    }
+
+    let storedUser;
+    try {
+        storedUser = JSON.parse(localStorage.getItem('user') || 'null');
+    } catch (error) {
+        storedUser = null;
+    }
+
+    const currentUser = storedUser?.user && typeof storedUser.user === 'object'
+        ? storedUser.user
+        : storedUser;
+    const userRole = String(currentUser?.role || '').toLowerCase();
+    if (!userRole || userRole === pageRole) {
+        return false;
+    }
+
+    const dashboardPaths = {
+        admin: 'html/admin/admin_dashboard.html',
+        registrar: 'html/registrar/registrar_dashboard.html',
+        trainer: 'html/trainer/trainer_dashboard.html',
+        trainee: 'html/trainee/trainee_dashboard.html'
+    };
+    const dashboardUrl = `${window.location.origin}/Hohoo-ville/frontend/${dashboardPaths[userRole] || 'login.html'}`;
+    window.location.replace(dashboardUrl);
+    return true;
+}
+
+// The API stores one active session ID per account. An older browser receives
+// a 401 after another login changes that ID, then returns to the login page.
+async function verifyServerSession() {
+    if (isSessionExpired || !hasStoredSession() || serverSessionValidationInProgress) return !isSessionExpired;
+
+    serverSessionValidationInProgress = true;
+    try {
+        const response = await fetch(`${window.location.origin}/Hohoo-ville/api/authentication/Authentication.php?action=verify`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+            cache: 'no-store'
+        });
+        if (response.status === 401) {
+            expireSessionReplacedByNewLogin();
+            return false;
+        }
+        return true;
+    } catch (error) {
+        // Do not sign out a valid user because of a temporary network issue.
+        console.warn('Could not verify active server session:', error);
+        return true;
+    } finally {
+        serverSessionValidationInProgress = false;
+    }
+}
+
+function startServerSessionValidation() {
+    if (serverSessionValidationTimer || isSessionExpired) return;
+    serverSessionValidationTimer = setInterval(verifyServerSession, SERVER_SESSION_VALIDATION_INTERVAL_MS);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') verifyServerSession();
+    });
+}
+
+function expireSessionReplacedByNewLogin() {
+    if (isSessionExpired) return;
+    isSessionExpired = true;
+    clearTimers();
+    if (serverSessionValidationTimer) clearInterval(serverSessionValidationTimer);
+    serverSessionValidationTimer = null;
+    clearAuthenticatedSession();
+    showSessionReplacedMessage();
+}
+
+// Keep browser Back/Forward navigation on the current authenticated page.
+function installBrowserNavigationGuard() {
+    if (browserNavigationGuardInstalled || !hasStoredSession() || isSessionExpired) {
+        return;
+    }
+
+    browserNavigationGuardInstalled = true;
+    browserNavigationGuardUrl = window.location.href;
+    history.pushState({ ...(history.state || {}), sessionNavigationGuard: true }, document.title, browserNavigationGuardUrl);
+    window.addEventListener('popstate', handleBrowserNavigation);
+}
+
+function handleBrowserNavigation(event) {
+    if (isSessionExpired || !hasStoredSession()) {
+        return;
+    }
+
+    // Ignore the popstate generated by the guard's own history.go(1).
+    if (event.state?.sessionNavigationGuard) {
+        return;
+    }
+
+    // A Back navigation has already moved the history pointer. Reverse it
+    // immediately so repeated Back clicks cannot consume older page entries.
+    history.go(1);
+
+    // Repeated arrow clicks while the prompt is open must not move the page
+    // away before the user chooses an explicit action.
+    if (browserNavigationPromptOpen) {
+        return;
+    }
+
+    browserNavigationPromptOpen = true;
+
+    const stayLoggedIn = () => {
+        browserNavigationPromptOpen = false;
+        resetInactivityTimer();
+    };
+    const logOut = async () => {
+        await invalidateServerSession();
+        clearAuthenticatedSession();
+        browserNavigationPromptOpen = false;
+        redirect();
+    };
+
+    if (hasSweetAlert2()) {
+        Swal.fire({
+            title: 'Leave this session?',
+            text: 'Do you want to stay logged in or log out securely?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Log out',
+            cancelButtonText: 'Stay logged in',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                logOut();
+            } else {
+                stayLoggedIn();
+            }
+        });
+        return;
+    }
+
+    if (window.confirm('You used browser navigation. Press OK to log out, or Cancel to stay logged in.')) {
+        logOut();
+    } else {
+        stayLoggedIn();
+    }
 }
 
 function startInactivityMonitoring() {
@@ -146,6 +357,21 @@ function expireCurrentSession(expiredAt = Date.now()) {
     clearAuthenticatedSession();
 }
 
+async function invalidateServerSession() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+        await fetch(`${window.location.origin}/Hohoo-ville/api/authentication/Authentication.php?action=logout`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            keepalive: true
+        });
+    } catch (error) {
+        // Local credentials are still removed; the server token will expire.
+        console.warn('Server logout could not be completed:', error);
+    }
+}
+
 function showSessionExpiredMessage() {
     const message = `Your ${sessionTimeoutMinutes}-minute session expired due to inactivity. Click OK to log in again.`;
 
@@ -177,6 +403,23 @@ function showSessionExpiredMessage() {
         return;
     }
 
+    alert(message);
+    redirect();
+}
+
+function showSessionReplacedMessage() {
+    const message = 'This account was signed in from another browser or device. Please log in again if you need to continue.';
+    if (hasSweetAlert2()) {
+        Swal.fire({
+            title: 'Session Ended',
+            text: message,
+            icon: 'info',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            confirmButtonText: 'Go to Login'
+        }).then(redirect);
+        return;
+    }
     alert(message);
     redirect();
 }
@@ -267,7 +510,7 @@ function handleSessionStorageChange(event) {
 
 function redirect() {
     const loginUrl = `${window.location.origin}/Hohoo-ville/frontend/login.html`;
-    window.location.href = loginUrl;
+    window.location.replace(loginUrl);
 }
 
 // Optional: Expose functions to window for external control

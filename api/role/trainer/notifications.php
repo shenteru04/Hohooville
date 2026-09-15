@@ -10,9 +10,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../../database/db.php';
+require_once '../../utils/AuthGuard.php';
 
 $database = new Database();
 $db = $database->getConnection();
+AuthGuard::requireRole($db, ['trainer', 'admin']);
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 

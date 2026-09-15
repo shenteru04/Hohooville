@@ -10,12 +10,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../../database/db.php';
+require_once '../../utils/input_sanitization.php';
+require_once '../../utils/AuthGuard.php';
 
 class TraineeProfile {
     private $conn;
 
     public function __construct($db) {
         $this->conn = $db;
+        AuthGuard::requireRole($this->conn, ['trainee']);
     }
 
     public function handleRequest() {
@@ -93,6 +96,7 @@ class TraineeProfile {
             echo json_encode(['success' => false, 'message' => 'Trainee ID required']);
             return;
         }
+        AuthGuard::requireTraineeAccess($this->conn, (int)$traineeId);
 
         try {
             $query = "SELECT
@@ -184,6 +188,7 @@ class TraineeProfile {
             echo json_encode(['success' => false, 'message' => 'Trainee ID required']);
             return;
         }
+        AuthGuard::requireTraineeAccess($this->conn, (int)$traineeId);
 
         try {
             $updateFields = [];
@@ -191,19 +196,19 @@ class TraineeProfile {
 
             if (array_key_exists('first_name', $data)) {
                 $updateFields[] = "first_name = ?";
-                $params[] = $data['first_name'];
+                $params[] = sanitize_person_name($data['first_name']);
             }
             if (array_key_exists('last_name', $data)) {
                 $updateFields[] = "last_name = ?";
-                $params[] = $data['last_name'];
+                $params[] = sanitize_person_name($data['last_name']);
             }
             if (array_key_exists('email', $data)) {
                 $updateFields[] = "email = ?";
-                $params[] = $data['email'];
+                $params[] = sanitize_email_value($data['email']);
             }
             if (array_key_exists('phone_number', $data) || array_key_exists('phone', $data)) {
                 $updateFields[] = "phone_number = ?";
-                $params[] = $data['phone_number'] ?? $data['phone'];
+                $params[] = sanitize_phone_number($data['phone_number'] ?? $data['phone']);
             }
             if (array_key_exists('facebook_account', $data) || array_key_exists('facebook', $data)) {
                 $updateFields[] = "facebook_account = ?";

@@ -10,9 +10,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../../database/db.php';
+require_once '../../utils/input_sanitization.php';
+require_once '../../utils/AuthGuard.php';
 
 $database = new Database();
 $conn = $database->getConnection();
+$identity = AuthGuard::requireRole($conn, ['admin']);
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
@@ -33,9 +36,8 @@ switch ($action) {
 }
 
 function getUserProfile($conn) {
-    // In a real app, extract User ID from JWT Token. 
-    // For this fix, we assume ID 1 (Admin) if not passed, or passed via GET.
-    $userId = $_GET['id'] ?? 1; 
+    $identity = AuthGuard::requireRole($conn, ['admin']);
+    $userId = isset($_GET['id']) ? (int)$_GET['id'] : (int)$identity['user_id'];
 
     try {
         $query = "
@@ -67,8 +69,13 @@ function getUserProfile($conn) {
 
 function updateUserProfile($conn) {
     try {
+        $identity = AuthGuard::requireRole($conn, ['admin']);
         $data = json_decode(file_get_contents('php://input'), true);
-        $userId = $data['user_id'] ?? 1;
+        $data['first_name'] = sanitize_person_name($data['first_name'] ?? '');
+        $data['last_name'] = sanitize_person_name($data['last_name'] ?? '');
+        $data['email'] = sanitize_email_value($data['email'] ?? '');
+        $data['phone'] = sanitize_phone_number($data['phone'] ?? '');
+        $userId = isset($data['user_id']) ? (int)$data['user_id'] : (int)$identity['user_id'];
 
         if (empty($userId)) throw new Exception('User ID required');
 
@@ -120,8 +127,9 @@ function updateUserProfile($conn) {
 
 function changePassword($conn) {
     try {
+        $identity = AuthGuard::requireRole($conn, ['admin']);
         $data = json_decode(file_get_contents('php://input'), true);
-        $userId = $data['user_id'] ?? null;
+        $userId = isset($data['user_id']) ? (int)$data['user_id'] : (int)$identity['user_id'];
 
         if (empty($userId)) throw new Exception('User ID required');
         if (empty($data['current_password'])) throw new Exception('Current password required');

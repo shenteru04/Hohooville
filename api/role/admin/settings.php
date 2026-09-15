@@ -19,11 +19,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 try {
     require_once '../../database/db.php';
+    require_once '../../utils/AuthGuard.php';
 
     $database = new Database();
     $conn = $database->getConnection();
-
     $action = isset($_GET['action']) ? $_GET['action'] : '';
+
+    // All authenticated roles may read the timeout used by the shared
+    // session manager; administrative settings remain admin-only.
+    $allowedRoles = $action === 'get-system-settings'
+        ? ['admin', 'registrar', 'trainer', 'trainee']
+        : ['admin'];
+    AuthGuard::requireRole($conn, $allowedRoles);
 
     switch ($action) {
         case 'change-password':

@@ -10,9 +10,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../../database/db.php';
+require_once '../../utils/input_sanitization.php';
+require_once __DIR__ . '/../../utils/AuthGuard.php';
 
 $database = new Database();
 $conn = $database->getConnection();
+AuthGuard::requireRole($conn, ['admin']);
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
@@ -112,21 +115,41 @@ function getTrainers($conn) {
             }
             
             // Get all qualification and NC level names
-            $allQualStmt = $conn->prepare("
-                SELECT DISTINCT q.qualification_name, COALESCE(nc.nc_level_code, nc_q.nc_level_code) AS nc_level_code
-                FROM tbl_trainer_qualifications tq
-                LEFT JOIN tbl_qualifications q ON tq.qualification_id = q.qualification_id
-                LEFT JOIN tbl_nc_levels nc ON tq.nc_level_id = nc.nc_level_id
-                LEFT JOIN tbl_nc_levels nc_q ON q.nc_level_id = nc_q.nc_level_id
-                WHERE tq.trainer_id = ?
-                UNION
-                SELECT q.qualification_name, nc.nc_level_code
-                FROM tbl_qualifications q
-                LEFT JOIN tbl_nc_levels nc ON q.nc_level_id = nc.nc_level_id
-                WHERE q.qualification_id = ?
-            ");
-            $allQualStmt->execute([$trainer['trainer_id'], $trainer['qualification_id']]);
-            $allQuals = $allQualStmt->fetchAll(PDO::FETCH_ASSOC);
+            // Support both schema versions: newer databases use nc_level_id,
+            // while the deployed database stores the code in nc_level.
+            try {
+                $allQualStmt = $conn->prepare("
+                    SELECT DISTINCT q.qualification_name, COALESCE(nc.nc_level_code, nc_q.nc_level_code) AS nc_level_code
+                    FROM tbl_trainer_qualifications tq
+                    LEFT JOIN tbl_qualifications q ON tq.qualification_id = q.qualification_id
+                    LEFT JOIN tbl_nc_levels nc ON tq.nc_level_id = nc.nc_level_id
+                    LEFT JOIN tbl_nc_levels nc_q ON q.nc_level_id = nc_q.nc_level_id
+                    WHERE tq.trainer_id = ?
+                    UNION
+                    SELECT q.qualification_name, nc.nc_level_code
+                    FROM tbl_qualifications q
+                    LEFT JOIN tbl_nc_levels nc ON q.nc_level_id = nc.nc_level_id
+                    WHERE q.qualification_id = ?
+                ");
+                $allQualStmt->execute([$trainer['trainer_id'], $trainer['qualification_id']]);
+                $allQuals = $allQualStmt->fetchAll(PDO::FETCH_ASSOC);
+            } catch (Exception $schemaErr) {
+                $allQualStmt = $conn->prepare("
+                    SELECT DISTINCT q.qualification_name, COALESCE(nc.nc_level_code, tq.nc_level, nc_q.nc_level_code) AS nc_level_code
+                    FROM tbl_trainer_qualifications tq
+                    LEFT JOIN tbl_qualifications q ON tq.qualification_id = q.qualification_id
+                    LEFT JOIN tbl_nc_levels nc ON nc.nc_level_code = tq.nc_level
+                    LEFT JOIN tbl_nc_levels nc_q ON q.nc_level_id = nc_q.nc_level_id
+                    WHERE tq.trainer_id = ?
+                    UNION
+                    SELECT q.qualification_name, nc.nc_level_code
+                    FROM tbl_qualifications q
+                    LEFT JOIN tbl_nc_levels nc ON q.nc_level_id = nc.nc_level_id
+                    WHERE q.qualification_id = ?
+                ");
+                $allQualStmt->execute([$trainer['trainer_id'], $trainer['qualification_id']]);
+                $allQuals = $allQualStmt->fetchAll(PDO::FETCH_ASSOC);
+            }
             
             $qualNames = [];
             $ncLevels = [];
@@ -151,6 +174,11 @@ function addTrainer($conn) {
     try {
         $data = $_POST;
         $files = $_FILES;
+        $data['first_name'] = sanitize_person_name($data['first_name'] ?? '');
+        $data['last_name'] = sanitize_person_name($data['last_name'] ?? '');
+        $data['email'] = sanitize_email_value($data['email'] ?? '');
+        $data['phone'] = sanitize_phone_number($data['phone'] ?? '');
+        $data['nttc_no'] = sanitize_identifier($data['nttc_no'] ?? '');
         
         if (empty($data['first_name']) || empty($data['last_name'])) {
             http_response_code(400);
@@ -739,6 +767,11 @@ function updateTrainer($conn) {
 
     try {
         $data = json_decode(file_get_contents('php://input'), true);
+        $data['first_name'] = sanitize_person_name($data['first_name'] ?? '');
+        $data['last_name'] = sanitize_person_name($data['last_name'] ?? '');
+        $data['email'] = sanitize_email_value($data['email'] ?? '');
+        $data['phone'] = sanitize_phone_number($data['phone'] ?? '');
+        $data['nttc_no'] = sanitize_identifier($data['nttc_no'] ?? '');
         
         if (empty($data['trainer_id'])) {
             throw new Exception('Trainer ID is required');
@@ -789,6 +822,11 @@ function updateTrainer($conn) {
 function updateTrainerMultipart($conn) {
     $data = $_POST;
     $files = $_FILES;
+    $data['first_name'] = sanitize_person_name($data['first_name'] ?? '');
+    $data['last_name'] = sanitize_person_name($data['last_name'] ?? '');
+    $data['email'] = sanitize_email_value($data['email'] ?? '');
+    $data['phone'] = sanitize_phone_number($data['phone'] ?? '');
+    $data['nttc_no'] = sanitize_identifier($data['nttc_no'] ?? '');
     $trainerId = (int)($data['trainer_id'] ?? 0);
     $qualificationIds = $data['qualification_ids'] ?? [];
     $ncLevelIds = $data['nc_level_ids'] ?? [];

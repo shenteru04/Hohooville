@@ -12,9 +12,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once '../../database/db.php';
 require_once '../../utils/EmailService.php';
 require_once '../../utils/trainer_assignment_helper.php';
+require_once '../../utils/AuthGuard.php';
 
 $database = new Database();
 $conn = $database->getConnection();
+AuthGuard::requireRole($conn, ['trainer', 'admin']);
 ta_ensure_schema($conn);
 
 $action = $_GET['action'] ?? '';
@@ -138,6 +140,21 @@ function ensureModuleDraftSchema($conn) {
         }
     } catch (Exception $e) {
         error_log('Unable to add tbl_module.module_status: ' . $e->getMessage());
+    }
+
+    // Archived learning materials remain in the database for audit/history,
+    // but must no longer appear in trainer or trainee module pages.
+    foreach (['tbl_module', 'tbl_lessons', 'tbl_lesson_contents', 'tbl_task_sheets'] as $table) {
+        try {
+            if (!columnExists($conn, $table, 'is_archived')) {
+                $conn->exec("ALTER TABLE `{$table}` ADD COLUMN `is_archived` TINYINT(1) NOT NULL DEFAULT 0");
+            }
+            if (!columnExists($conn, $table, 'archived_at')) {
+                $conn->exec("ALTER TABLE `{$table}` ADD COLUMN `archived_at` DATETIME NULL");
+            }
+        } catch (Exception $e) {
+            error_log("Unable to add archive columns to {$table}: " . $e->getMessage());
+        }
     }
 
     $ensured = true;
@@ -405,19 +422,30 @@ switch ($action) {
     case 'list':
         listModules($conn);
         break;
+    case 'archived-list':
+        listArchivedModules($conn);
+        break;
     case 'add-module':
     case 'update-module':
         saveModule($conn, $action);
         break;
-    case 'delete-module':
-        deleteModule($conn);
+    case 'archive-module':
+    case 'delete-module': // Legacy route: deletion is prohibited; archive instead.
+        archiveModule($conn);
+        break;
+    case 'restore-module':
+        restoreModule($conn);
         break;
     case 'add-competency':
     case 'update-competency':
         saveCompetency($conn, $action);
         break;
-    case 'delete-competency':
-        deleteCompetency($conn);
+    case 'archive-competency':
+    case 'delete-competency': // Legacy route: deletion is prohibited; archive instead.
+        archiveCompetency($conn);
+        break;
+    case 'restore-competency':
+        restoreCompetency($conn);
         break;
     case 'get-lesson-details':
         getLessonDetails($conn);
@@ -431,8 +459,12 @@ switch ($action) {
     case 'save-content':
         saveContentItem($conn, 'tbl_lesson_contents', 'content_id');
         break;
-    case 'delete-content':
-        deleteContentItem($conn, 'tbl_lesson_contents', 'content_id');
+    case 'archive-content':
+    case 'delete-content': // Legacy route: deletion is prohibited; archive instead.
+        archiveContentItem($conn, 'tbl_lesson_contents', 'content_id');
+        break;
+    case 'restore-content':
+        restoreContentItem($conn, 'tbl_lesson_contents', 'content_id');
         break;
     case 'get-task':
         getContentItem($conn, 'tbl_task_sheets', 'task_sheet_id');
@@ -440,8 +472,12 @@ switch ($action) {
     case 'save-task':
         saveContentItem($conn, 'tbl_task_sheets', 'task_sheet_id');
         break;
-    case 'delete-task':
-        deleteContentItem($conn, 'tbl_task_sheets', 'task_sheet_id');
+    case 'archive-task':
+    case 'delete-task': // Legacy route: deletion is prohibited; archive instead.
+        archiveContentItem($conn, 'tbl_task_sheets', 'task_sheet_id');
+        break;
+    case 'restore-task':
+        restoreContentItem($conn, 'tbl_task_sheets', 'task_sheet_id');
         break;
     // NEW: Unified module upload with learning outcomes, quizzes, and task sheets
     case 'upload-complete-module':
@@ -490,12 +526,13 @@ function listModules($conn) {
             SELECT *
             FROM tbl_module
             WHERE qualification_id = ? AND competency_type = ? AND trainer_id = ?
+              AND COALESCE(is_archived, 0) = 0
             ORDER BY CASE WHEN module_status = 'draft' THEN 0 ELSE 1 END, module_id DESC
         ");
         $stmt->execute([$qualificationId, $type, $trainerId]);
         $modules = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $lessonStmt = $conn->prepare("SELECT * FROM tbl_lessons WHERE module_id = ? ORDER BY lesson_id");
+        $lessonStmt = $conn->prepare("SELECT * FROM tbl_lessons WHERE module_id = ? AND COALESCE(is_archived, 0) = 0 ORDER BY lesson_id");
         foreach ($modules as &$module) {
             $lessonStmt->execute([$module['module_id']]);
             $module['lessons'] = $lessonStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -505,6 +542,63 @@ function listModules($conn) {
     } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    }
+}
+
+function listArchivedModules($conn) {
+    $trainerId = (int)($_GET['trainer_id'] ?? 0);
+    $qualificationId = (int)($_GET['qualification_id'] ?? 0);
+
+    if (!$trainerId) {
+        echo json_encode(['success' => false, 'message' => 'Trainer ID is required.']);
+        return;
+    }
+
+    try {
+        $sql = "SELECT m.module_id, m.qualification_id, m.competency_type, m.module_title,
+                       m.module_description, m.is_archived, m.archived_at, q.qualification_name
+                FROM tbl_module m
+                LEFT JOIN tbl_qualifications q ON q.qualification_id = m.qualification_id
+                WHERE m.trainer_id = ? AND (
+                    COALESCE(m.is_archived, 0) = 1
+                    OR EXISTS (
+                        SELECT 1 FROM tbl_lessons l
+                        WHERE l.module_id = m.module_id AND (
+                            COALESCE(l.is_archived, 0) = 1
+                            OR EXISTS (SELECT 1 FROM tbl_lesson_contents c WHERE c.lesson_id = l.lesson_id AND COALESCE(c.is_archived, 0) = 1)
+                            OR EXISTS (SELECT 1 FROM tbl_task_sheets t WHERE t.lesson_id = l.lesson_id AND COALESCE(t.is_archived, 0) = 1)
+                        )
+                    )
+                )";
+        $params = [$trainerId];
+        if ($qualificationId) {
+            $sql .= " AND m.qualification_id = ?";
+            $params[] = $qualificationId;
+        }
+        $sql .= " ORDER BY m.archived_at DESC, m.module_id DESC";
+
+        $stmt = $conn->prepare($sql);
+        $stmt->execute($params);
+        $modules = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $lessonStmt = $conn->prepare("SELECT lesson_id, module_id, lesson_title, lesson_description, is_archived, archived_at FROM tbl_lessons WHERE module_id = ? AND (COALESCE(is_archived, 0) = 1 OR EXISTS (SELECT 1 FROM tbl_lesson_contents c WHERE c.lesson_id = tbl_lessons.lesson_id AND COALESCE(c.is_archived, 0) = 1) OR EXISTS (SELECT 1 FROM tbl_task_sheets t WHERE t.lesson_id = tbl_lessons.lesson_id AND COALESCE(t.is_archived, 0) = 1)) ORDER BY lesson_id");
+        $contentStmt = $conn->prepare("SELECT content_id, lesson_id, title, is_archived, archived_at FROM tbl_lesson_contents WHERE lesson_id = ? AND COALESCE(is_archived, 0) = 1 ORDER BY display_order, content_id");
+        $taskStmt = $conn->prepare("SELECT task_sheet_id, lesson_id, title, is_archived, archived_at FROM tbl_task_sheets WHERE lesson_id = ? AND COALESCE(is_archived, 0) = 1 ORDER BY display_order, task_sheet_id");
+
+        foreach ($modules as &$module) {
+            $lessonStmt->execute([$module['module_id']]);
+            $module['lessons'] = $lessonStmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($module['lessons'] as &$lesson) {
+                $contentStmt->execute([$lesson['lesson_id']]);
+                $taskStmt->execute([$lesson['lesson_id']]);
+                $lesson['contents'] = $contentStmt->fetchAll(PDO::FETCH_ASSOC);
+                $lesson['task_sheets'] = $taskStmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+        }
+
+        echo json_encode(['success' => true, 'data' => $modules]);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Error loading archived modules: ' . $e->getMessage()]);
     }
 }
 
@@ -541,15 +635,43 @@ function saveModule($conn, $action) {
     }
 }
 
-function deleteModule($conn) {
+function archiveModule($conn) {
     $id = $_GET['id'] ?? 0;
     try {
-        $stmt = $conn->prepare("DELETE FROM tbl_module WHERE module_id = ?");
+        $conn->beginTransaction();
+        $stmt = $conn->prepare("UPDATE tbl_module SET is_archived = 1, archived_at = NOW() WHERE module_id = ?");
         $stmt->execute([$id]);
-        echo json_encode(['success' => true]);
+        $conn->prepare("UPDATE tbl_lessons SET is_archived = 1, archived_at = NOW() WHERE module_id = ?")->execute([$id]);
+        $conn->prepare("UPDATE tbl_lesson_contents c JOIN tbl_lessons l ON l.lesson_id = c.lesson_id SET c.is_archived = 1, c.archived_at = NOW() WHERE l.module_id = ?")->execute([$id]);
+        $conn->prepare("UPDATE tbl_task_sheets ts JOIN tbl_lessons l ON l.lesson_id = ts.lesson_id SET ts.is_archived = 1, ts.archived_at = NOW() WHERE l.module_id = ?")->execute([$id]);
+        $conn->commit();
+        echo json_encode(['success' => true, 'message' => 'Module archived successfully.']);
     } catch (Exception $e) {
+        if ($conn->inTransaction()) $conn->rollBack();
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    }
+}
+
+function restoreModule($conn) {
+    $id = (int)($_GET['id'] ?? 0);
+    $trainerId = (int)($_GET['trainer_id'] ?? 0);
+    try {
+        $conn->beginTransaction();
+        $stmt = $conn->prepare("UPDATE tbl_module SET is_archived = 0, archived_at = NULL WHERE module_id = ? AND trainer_id = ?");
+        $stmt->execute([$id, $trainerId]);
+        if ($stmt->rowCount() < 1) {
+            throw new Exception('Archived module not found or access denied.');
+        }
+        $conn->prepare("UPDATE tbl_lessons SET is_archived = 0, archived_at = NULL WHERE module_id = ?")->execute([$id]);
+        $conn->prepare("UPDATE tbl_lesson_contents c JOIN tbl_lessons l ON l.lesson_id = c.lesson_id SET c.is_archived = 0, c.archived_at = NULL WHERE l.module_id = ?")->execute([$id]);
+        $conn->prepare("UPDATE tbl_task_sheets ts JOIN tbl_lessons l ON l.lesson_id = ts.lesson_id SET ts.is_archived = 0, ts.archived_at = NULL WHERE l.module_id = ?")->execute([$id]);
+        $conn->commit();
+        echo json_encode(['success' => true, 'message' => 'Module restored successfully.']);
+    } catch (Exception $e) {
+        if ($conn->inTransaction()) $conn->rollBack();
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Error restoring module: ' . $e->getMessage()]);
     }
 }
 
@@ -595,15 +717,38 @@ function saveCompetency($conn, $action) {
     }
 }
 
-function deleteCompetency($conn) {
+function archiveCompetency($conn) {
     $id = $_GET['id'] ?? 0;
     try {
-        $stmt = $conn->prepare("DELETE FROM tbl_lessons WHERE lesson_id = ?");
+        $conn->beginTransaction();
+        $stmt = $conn->prepare("UPDATE tbl_lessons SET is_archived = 1, archived_at = NOW() WHERE lesson_id = ?");
         $stmt->execute([$id]);
-        echo json_encode(['success' => true]);
+        $conn->prepare("UPDATE tbl_lesson_contents SET is_archived = 1, archived_at = NOW() WHERE lesson_id = ?")->execute([$id]);
+        $conn->prepare("UPDATE tbl_task_sheets SET is_archived = 1, archived_at = NOW() WHERE lesson_id = ?")->execute([$id]);
+        $conn->commit();
+        echo json_encode(['success' => true, 'message' => 'Learning outcome archived successfully.']);
     } catch (Exception $e) {
+        if ($conn->inTransaction()) $conn->rollBack();
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    }
+}
+
+function restoreCompetency($conn) {
+    $id = (int)($_GET['id'] ?? 0);
+    $trainerId = (int)($_GET['trainer_id'] ?? 0);
+    try {
+        $stmt = $conn->prepare("UPDATE tbl_lessons l JOIN tbl_module m ON m.module_id = l.module_id SET l.is_archived = 0, l.archived_at = NULL WHERE l.lesson_id = ? AND m.trainer_id = ? AND COALESCE(m.is_archived, 0) = 0");
+        $stmt->execute([$id, $trainerId]);
+        if ($stmt->rowCount() < 1) {
+            throw new Exception('Archived learning outcome not found or access denied.');
+        }
+        $conn->prepare("UPDATE tbl_lesson_contents SET is_archived = 0, archived_at = NULL WHERE lesson_id = ?")->execute([$id]);
+        $conn->prepare("UPDATE tbl_task_sheets SET is_archived = 0, archived_at = NULL WHERE lesson_id = ?")->execute([$id]);
+        echo json_encode(['success' => true, 'message' => 'Learning outcome restored successfully.']);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Error restoring learning outcome: ' . $e->getMessage()]);
     }
 }
 
@@ -616,7 +761,7 @@ function getLessonDetails($conn) {
         $stmt = $conn->prepare("SELECT l.posting_date, l.lesson_file_path, {$lessonResourceSelect}, m.competency_type 
                                 FROM tbl_lessons l
                                 JOIN tbl_module m ON l.module_id = m.module_id
-                                WHERE l.lesson_id = ?");
+                                WHERE l.lesson_id = ? AND COALESCE(l.is_archived, 0) = 0 AND COALESCE(m.is_archived, 0) = 0");
         $stmt->execute([$lessonId]);
         $details = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -625,12 +770,12 @@ function getLessonDetails($conn) {
         $details['deadline'] = $stmt->fetchColumn();
 
         // Get lesson contents
-        $stmt = $conn->prepare("SELECT * FROM tbl_lesson_contents WHERE lesson_id = ? ORDER BY display_order, content_id");
+        $stmt = $conn->prepare("SELECT * FROM tbl_lesson_contents WHERE lesson_id = ? AND COALESCE(is_archived, 0) = 0 ORDER BY display_order, content_id");
         $stmt->execute([$lessonId]);
         $details['contents'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         if (moduleSupportsTaskSheets($details['competency_type'] ?? '')) {
-            $stmt = $conn->prepare("SELECT * FROM tbl_task_sheets WHERE lesson_id = ? ORDER BY display_order, task_sheet_id");
+            $stmt = $conn->prepare("SELECT * FROM tbl_task_sheets WHERE lesson_id = ? AND COALESCE(is_archived, 0) = 0 ORDER BY display_order, task_sheet_id");
             $stmt->execute([$lessonId]);
             $details['task_sheets'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
         } else {
@@ -849,15 +994,31 @@ function saveContentItem($conn, $table, $id_column) {
     }
 }
 
-function deleteContentItem($conn, $table, $id_column) {
+function archiveContentItem($conn, $table, $id_column) {
     $id = $_GET['id'] ?? 0;
     try {
-        $stmt = $conn->prepare("DELETE FROM $table WHERE $id_column = ?");
+        $stmt = $conn->prepare("UPDATE $table SET is_archived = 1, archived_at = NOW() WHERE $id_column = ?");
         $stmt->execute([$id]);
-        echo json_encode(['success' => true]);
+        echo json_encode(['success' => true, 'message' => 'Item archived successfully.']);
     } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    }
+}
+
+function restoreContentItem($conn, $table, $id_column) {
+    $id = (int)($_GET['id'] ?? 0);
+    $trainerId = (int)($_GET['trainer_id'] ?? 0);
+    try {
+        $stmt = $conn->prepare("UPDATE {$table} item JOIN tbl_lessons l ON l.lesson_id = item.lesson_id JOIN tbl_module m ON m.module_id = l.module_id SET item.is_archived = 0, item.archived_at = NULL WHERE item.{$id_column} = ? AND m.trainer_id = ? AND COALESCE(m.is_archived, 0) = 0");
+        $stmt->execute([$id, $trainerId]);
+        if ($stmt->rowCount() < 1) {
+            throw new Exception('Archived item not found or access denied.');
+        }
+        echo json_encode(['success' => true, 'message' => 'Item restored successfully.']);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Error restoring item: ' . $e->getMessage()]);
     }
 }
 
@@ -2318,4 +2479,3 @@ function updateLearningOutcomeProgress($conn) {
     }
 }
 ?>
-

@@ -18,22 +18,33 @@ let documentZoom = 1;
 class SimpleModal {
     constructor(element) {
         this.element = element;
+        this.restoreFocusElement = null;
     }
 
     show() {
         if (!this.element) return;
+        this.restoreFocusElement = document.activeElement;
         this.element.classList.remove('hidden');
         this.element.classList.add('flex');
+        this.element.setAttribute('aria-hidden', 'false');
         document.body.classList.add('overflow-hidden');
     }
 
     hide() {
         if (!this.element) return;
+        if (this.element.contains(document.activeElement)) {
+            document.activeElement.blur();
+        }
         this.element.classList.add('hidden');
         this.element.classList.remove('flex');
+        this.element.setAttribute('aria-hidden', 'true');
         if (!document.querySelector('.modal-root.flex:not(.hidden)')) {
             document.body.classList.remove('overflow-hidden');
         }
+        if (this.restoreFocusElement && this.restoreFocusElement.isConnected) {
+            this.restoreFocusElement.focus();
+        }
+        this.restoreFocusElement = null;
     }
 }
 
@@ -59,6 +70,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     const addBatchForm = document.getElementById('addBatchForm');
     if (addBatchForm) addBatchForm.addEventListener('submit', saveBatch);
+
+    const startDateInput = document.getElementById('startDate');
+    if (startDateInput) startDateInput.min = getLocalDateString();
 
     const qualificationSelect = document.getElementById('qualificationSelect');
     if (qualificationSelect) qualificationSelect.addEventListener('change', handleQualificationChange);
@@ -200,10 +214,8 @@ function initModalDismissers() {
     document.addEventListener('keydown', (event) => {
         if (event.key !== 'Escape') return;
         document.querySelectorAll('.modal-root.flex:not(.hidden)').forEach((modal) => {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
+            hideModalById(modal.id);
         });
-        document.body.classList.remove('overflow-hidden');
     });
 }
 
@@ -479,6 +491,7 @@ window.openAddModal = function() {
     document.getElementById('maxTrainees').value = '25';
     // training_cost removed from batch-level form; qualification cost used for projections
     document.getElementById('status').value = 'open';
+    setBatchStatusFieldVisible(false);
     setTrainerAssignmentMode('single');
     batchModal.show();
 }
@@ -500,10 +513,21 @@ window.editBatch = async function(id) {
         document.getElementById('maxTrainees').value = batch.max_trainees || 25;
         // training_cost removed from batch-level form; qualification cost used for projections
         document.getElementById('status').value = batch.status;
+        setBatchStatusFieldVisible(true);
         
         document.getElementById('batchModalLabel').textContent = 'Edit Batch';
         document.getElementById('submitBtn').textContent = 'Save Changes';
         batchModal.show();
+    }
+}
+
+function setBatchStatusFieldVisible(isEditing) {
+    const statusField = document.getElementById('batchStatusField');
+    const statusSelect = document.getElementById('status');
+    if (statusField) statusField.classList.toggle('hidden', !isEditing);
+    if (statusSelect) {
+        statusSelect.disabled = !isEditing;
+        if (!isEditing) statusSelect.value = 'open';
     }
 }
 
@@ -576,6 +600,24 @@ async function saveBatch(e) {
         status: document.getElementById('status').value
     };
 
+    const today = getLocalDateString();
+    if (!id && !payload.start_date) {
+        Swal.fire('Error', 'Please select a start date.', 'error');
+        return;
+    }
+    if (!id && payload.start_date < today) {
+        Swal.fire('Error', 'Start date cannot be before today.', 'error');
+        return;
+    }
+    if (!payload.end_date) {
+        Swal.fire('Error', 'Please select an end date.', 'error');
+        return;
+    }
+    if (payload.end_date < payload.start_date) {
+        Swal.fire('Error', 'End date must be on or after the start date.', 'error');
+        return;
+    }
+
     const action = id ? 'update' : 'add';
 
     try {
@@ -588,8 +630,18 @@ async function saveBatch(e) {
             Swal.fire('Error', 'Error: ' + response.data.message, 'error');
         }
     } catch (error) {
+        const message = error.response?.data?.message || 'Failed to save batch.';
         console.error('Error saving batch:', error);
+        Swal.fire('Error', message, 'error');
     }
+}
+
+function getLocalDateString() {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }
 
 function getSelectedTrainerAssignmentMode() {

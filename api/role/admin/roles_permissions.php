@@ -2,6 +2,11 @@
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 require_once '../../database/db.php';
+require_once __DIR__ . '/../../utils/AuthGuard.php';
+
+$database = new Database();
+$db = $database->getConnection();
+AuthGuard::requireRole($db, ['admin']);
 
 class RolesPermissions {
     private $conn;

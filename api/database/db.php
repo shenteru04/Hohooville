@@ -1,4 +1,5 @@
 <?php
+date_default_timezone_set('Asia/Manila');
 class Database {
     private $host = "localhost";
     private $db_name = "technical_db";
@@ -17,6 +18,7 @@ class Database {
             );
             $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $this->conn->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+            $this->conn->exec("SET time_zone = '+08:00'");
         } catch(PDOException $e) {
             http_response_code(500);
             echo json_encode([
@@ -63,6 +65,8 @@ class DatabaseSetup {
                 last_login TIMESTAMP NULL,
                 failed_login_attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
                 login_locked_until DATETIME NULL DEFAULT NULL,
+                active_session_id CHAR(64) NULL DEFAULT NULL,
+                active_session_started_at DATETIME NULL DEFAULT NULL,
                 INDEX idx_role (role),
                 INDEX idx_status (status),
                 INDEX idx_login_locked_until (login_locked_until)

@@ -252,6 +252,11 @@
                     </aside>
 
                     <div class="space-y-6">
+                        <section id="unqualificationReasonPanel" class="hidden rounded-[22px] border border-rose-200 bg-rose-50 p-5">
+                            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-rose-700">Reason for Unqualification</p>
+                            <p id="unqualificationReasonText" class="mt-2 whitespace-pre-wrap text-sm leading-6 text-rose-950"></p>
+                            <p class="mt-2 text-xs text-rose-700">The applicant can submit corrected credentials through the application form.</p>
+                        </section>
                         <section class="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 sm:p-6">
                             <div class="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
@@ -457,6 +462,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
     <script src="../../../js/session_timeout.js"></script>
+    <script src="../../../js/input_sanitation.js"></script>
     <script src="../../../js/table_manager.js"></script>
     <script src="../../../js/notifications.js"></script>
     <script src="../../../js/registrar/pages/trainee_application_list.js"></script>

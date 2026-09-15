@@ -11,14 +11,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once '../../database/db.php';
 require_once '../../utils/trainer_assignment_helper.php';
+require_once '../../utils/AuthGuard.php';
 
 $database = new Database();
 $conn = $database->getConnection();
 ta_ensure_schema($conn);
+AuthGuard::requireRole($conn, ['trainer', 'admin']);
 
 $action = isset($_GET['action']) ? $_GET['action'] : 'list';
 $trainerId = isset($_GET['trainer_id']) ? (int)$_GET['trainer_id'] : 0;
 $traineeId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+AuthGuard::requireTrainerAccess($conn, $trainerId);
 
 switch ($action) {
     case 'list':

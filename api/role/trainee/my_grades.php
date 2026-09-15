@@ -3,12 +3,14 @@ header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 
 require_once '../../database/db.php';
+require_once '../../utils/AuthGuard.php';
 
 class MyGrades {
     private $conn;
 
     public function __construct($db) {
         $this->conn = $db;
+        AuthGuard::requireRole($this->conn, ['trainee']);
     }
 
     public function handleRequest() {
@@ -17,6 +19,7 @@ class MyGrades {
             echo json_encode(['success' => false, 'message' => 'Trainee ID required']);
             return;
         }
+        AuthGuard::requireTraineeAccess($this->conn, (int)$traineeId);
 
         try {
             // Fetch Grades Header and Details

@@ -10,9 +10,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../../database/db.php';
+require_once '../../utils/AuthGuard.php';
 
 $database = new Database();
 $conn = $database->getConnection();
+AuthGuard::requireRole($conn, ['trainee']);
 
 $action = $_GET['action'] ?? '';
 
@@ -35,6 +37,7 @@ try {
 function getUnreadNotifications($conn) {
     $userId = $_GET['user_id'] ?? null;
     if (!$userId) throw new Exception('User ID required');
+    AuthGuard::requireUserAccess($conn, (int)$userId);
 
     // Check if table exists first to avoid errors on fresh install
     $stmt = $conn->prepare("SELECT * FROM tbl_notifications WHERE user_id = ? AND is_read = 0 ORDER BY created_at DESC");

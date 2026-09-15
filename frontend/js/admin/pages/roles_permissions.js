@@ -162,10 +162,7 @@ async function loadRoles() {
                 </td>
                 <td class="px-3 py-3 text-sm text-slate-700">${escapeHtml(role.description || '-')}</td>
                 <td class="px-3 py-3 text-sm">
-                    ${role.is_custom
-                        ? `<button class="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100" onclick="deleteRole(${role.role_id})">Delete</button>`
-                        : '<span class="text-xs text-slate-400">System</span>'
-                    }
+                    <span class="text-xs text-slate-400">Archived roles are retained</span>
                 </td>
             </tr>
         `).join('');
@@ -256,28 +253,7 @@ async function saveRole() {
 }
 
 async function deleteRole(id) {
-    const result = await Swal.fire({
-        title: 'Delete Role?',
-        text: 'Users with this role may lose permissions.',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        confirmButtonText: 'Yes, delete it!'
-    });
-    if (!result.isConfirmed) return;
-
-    try {
-        const response = await axios.post(`${API_BASE}/roles_permissions.php?action=delete-role`, { role_id: id });
-        if (!response.data.success) {
-            Swal.fire('Error', `Error: ${response.data.message || 'Failed to delete role'}`, 'error');
-            return;
-        }
-        Swal.fire('Deleted!', 'Role deleted successfully!', 'success');
-        loadRoles();
-    } catch (error) {
-        console.error('Error deleting role:', error);
-        Swal.fire('Error', `Error deleting role: ${error.response?.data?.message || error.message}`, 'error');
-    }
+    Swal.fire('Deletion Prohibited', 'Roles cannot be deleted. Use an inactive role policy instead.', 'info');
 }
 
 function setValue(id, value) {

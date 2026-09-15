@@ -4,6 +4,11 @@ header('Content-Type: application/json');
 
 require_once '../../database/db.php';
 require_once '../../utils/trainer_assignment_helper.php';
+require_once '../../utils/AuthGuard.php';
+
+$td_database = new Database();
+$td_conn = $td_database->getConnection();
+AuthGuard::requireRole($td_conn, ['trainer', 'admin']);
 
 function td_column_exists(PDO $conn, string $table, string $column): bool {
     try {
@@ -398,6 +403,8 @@ class TraineeDetails {
 
     public function handleRequest() {
         $traineeId = $_GET['trainee_id'] ?? null;
+        $requestedBatchId = max(0, (int)($_GET['batch_id'] ?? 0));
+        $requestedTrainerId = max(0, (int)($_GET['trainer_id'] ?? 0));
         $action = $_GET['action'] ?? '';
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'approve-task-sheet') {
@@ -412,6 +419,19 @@ class TraineeDetails {
 
         try {
             // 1. Personal Info & Enrollment
+            // A trainee can be enrolled in multiple programs. Use the selected
+            // batch when supplied; for legacy links without it, use the batch
+            // assigned to the trainer viewing the record instead of merely the
+            // newest enrollment.
+            $requestedBatchFilter = '';
+            $selectionParams = [];
+            if ($requestedBatchId > 0) {
+                $requestedBatchFilter = ' AND e2.batch_id = ?';
+                $selectionParams[] = $requestedBatchId;
+            } elseif ($requestedTrainerId > 0) {
+                $requestedBatchFilter = ' AND e2.batch_id IN (SELECT b2.batch_id FROM tbl_batch b2 WHERE b2.trainer_id = ?)';
+                $selectionParams[] = $requestedTrainerId;
+            }
             $queryInfo = "SELECT
                             t.trainee_id, t.user_id, t.trainee_school_id, t.first_name, t.middle_name, t.last_name, t.extension_name, t.sex, t.email, t.phone_number, t.facebook_account, t.status as trainee_status, t.photo_file, t.valid_id_file, t.birth_cert_file,
                             t.address,
@@ -420,6 +440,7 @@ class TraineeDetails {
                             e.enrollment_date, DATE_FORMAT(e.enrollment_date, '%Y-%m-%d %H:%i:%s') as formatted_enrollment_date,
                             c.qualification_name as course_name,
                             c.qualification_id, 
+                            b.batch_id,
                             b.batch_name, 
                             e.status as enrollment_status, 
                             e.scholarship_type
@@ -430,6 +451,7 @@ class TraineeDetails {
                              SELECT e2.enrollment_id
                              FROM tbl_enrollment e2
                              WHERE e2.trainee_id = t.trainee_id
+                             $requestedBatchFilter
                              ORDER BY
                                  CASE
                                      WHEN e2.status = 'approved' AND COALESCE(e2.is_archived, 0) = 0 THEN 0
@@ -442,18 +464,20 @@ class TraineeDetails {
                              LIMIT 1
                          )
                          LEFT JOIN tbl_offered_qualifications oc ON e.offered_qualification_id = oc.offered_qualification_id
-                         LEFT JOIN tbl_qualifications c ON oc.qualification_id = c.qualification_id
                          LEFT JOIN tbl_batch b ON e.batch_id = b.batch_id
+                         LEFT JOIN tbl_qualifications c ON c.qualification_id = COALESCE(oc.qualification_id, b.qualification_id)
                          WHERE t.trainee_id = ?";
             $stmtInfo = $this->conn->prepare($queryInfo);
-            $stmtInfo->execute([$traineeId]);
+            $queryParams = array_merge($selectionParams, [$traineeId]);
+            $stmtInfo->execute($queryParams);
             $profile = $stmtInfo->fetch(PDO::FETCH_ASSOC);
             $qualificationId = $profile['qualification_id'] ?? null;
+            $resolvedBatchId = (int)($profile['batch_id'] ?? 0);
 
             // 2. Training Progress
             $training_progress = [];
             if ($qualificationId) {
-                $accessibleModuleIds = ta_fetch_trainee_accessible_module_ids($this->conn, (int)$traineeId, (int)$qualificationId);
+                $accessibleModuleIds = ta_fetch_trainee_accessible_module_ids($this->conn, (int)$traineeId, (int)$qualificationId, $resolvedBatchId);
                 if (empty($accessibleModuleIds)) {
                     $accessibleModuleIds = [-1];
                 }

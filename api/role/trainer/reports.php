@@ -3,6 +3,7 @@ header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 
 require_once '../../database/db.php';
+require_once '../../utils/AuthGuard.php';
 
 class TrainerReports {
     private $conn;
@@ -78,6 +79,7 @@ class TrainerReports {
 
 $database = new Database();
 $db = $database->getConnection();
+AuthGuard::requireRole($db, ['trainer', 'admin']);
 $api = new TrainerReports($db);
 $api->handleRequest();
 ?>

@@ -119,6 +119,122 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // --- Required-field feedback ---
+    // Browsers can be bypassed, so the server validates too. These indicators
+    // make missing values clear as soon as a user leaves a required field.
+    const applicationForm = document.getElementById('applicationForm');
+
+    function getRequiredFieldContainer(field) {
+        if (field.type === 'radio') {
+            return field.closest('.mb-3') || field.closest('.option-grid')?.parentElement;
+        }
+        if (field.type === 'checkbox') {
+            return field.closest('.form-check') || field.parentElement;
+        }
+        return field.closest('.col-md-3, .col-md-4, .col-md-6, .col-md-12, .mb-3, .form-group') || field.parentElement;
+    }
+
+    function getRequiredFieldError(container) {
+        let error = container?.querySelector(':scope > .required-field-error');
+        if (!error && container) {
+            error = document.createElement('div');
+            error.className = 'field-error required-field-error';
+            error.setAttribute('role', 'alert');
+            container.appendChild(error);
+        }
+        return error;
+    }
+
+    function setRequiredFieldState(field, showError = false) {
+        if (!field || !field.required) return true;
+        const container = getRequiredFieldContainer(field);
+        const isRadio = field.type === 'radio';
+        const isCheckbox = field.type === 'checkbox';
+        const valid = isRadio
+            ? Boolean(applicationForm.querySelector(`input[name="${CSS.escape(field.name)}"]:checked`))
+            : isCheckbox
+                ? field.checked
+                : field.checkValidity();
+
+        const relatedFields = isRadio
+            ? applicationForm.querySelectorAll(`input[name="${CSS.escape(field.name)}"]`)
+            : [field];
+        relatedFields.forEach((item) => item.classList.toggle('is-invalid', !valid && showError));
+        container?.classList.toggle('required-group-invalid', !valid && showError && (isRadio || isCheckbox));
+
+        const error = getRequiredFieldError(container);
+        if (error) {
+            error.textContent = field.validity.valueMissing || (isRadio && !valid) || (isCheckbox && !valid)
+                ? 'This field is required.'
+                : 'Please enter a valid value.';
+            error.style.display = !valid && showError ? 'block' : 'none';
+        }
+        return valid;
+    }
+
+    // Mark every required field in the current numbered section. For example,
+    // choosing a city while Barangay, ZIP Code, Street, or Email is still
+    // empty immediately makes those omissions visible.
+    function validateRequiredSection(field) {
+        const step = field.closest('#step1, #step2');
+        if (!step) {
+            setRequiredFieldState(field, true);
+            return;
+        }
+
+        let sectionHeading = null;
+        step.querySelectorAll('h5').forEach((heading) => {
+            if (heading.compareDocumentPosition(field) & Node.DOCUMENT_POSITION_FOLLOWING) {
+                sectionHeading = heading;
+            }
+        });
+        if (!sectionHeading) {
+            setRequiredFieldState(field, true);
+            return;
+        }
+
+        const processedRadioGroups = new Set();
+        let element = sectionHeading.nextElementSibling;
+        while (element && element.tagName !== 'H5') {
+            element.querySelectorAll?.('[required]').forEach((requiredField) => {
+                if (requiredField.type === 'hidden') return;
+                if (requiredField.type === 'radio') {
+                    if (processedRadioGroups.has(requiredField.name)) return;
+                    processedRadioGroups.add(requiredField.name);
+                }
+                requiredField.dataset.touched = 'true';
+                setRequiredFieldState(requiredField, true);
+            });
+            element = element.nextElementSibling;
+        }
+    }
+
+    applicationForm.querySelectorAll('[required]').forEach((field) => {
+        if (field.type === 'hidden') return;
+        const triggerValidation = () => {
+            field.dataset.touched = 'true';
+            validateRequiredSection(field);
+        };
+        field.addEventListener('blur', triggerValidation);
+        field.addEventListener('input', triggerValidation);
+        field.addEventListener('change', triggerValidation);
+    });
+
+    function validateRequiredFields(scope = applicationForm) {
+        const processedRadioGroups = new Set();
+        let firstInvalid = null;
+        scope.querySelectorAll('[required]').forEach((field) => {
+            if (field.type === 'hidden') return;
+            if (field.type === 'radio') {
+                if (processedRadioGroups.has(field.name)) return;
+                processedRadioGroups.add(field.name);
+            }
+            if (!setRequiredFieldState(field, true) && !firstInvalid) firstInvalid = field;
+        });
+        if (firstInvalid) firstInvalid.focus();
+        return !firstInvalid;
+    }
+
     // --- Data Loading ---
     async function loadInitialData() {
         try {
@@ -300,6 +416,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Form Submission ---
     document.getElementById('applicationForm').addEventListener('submit', async function(e) {
         e.preventDefault();
+        if (!validateRequiredFields()) {
+            return;
+        }
         const birthdateInput = document.getElementById('birthdate');
         const ageValue = parseInt(document.getElementById('age').value, 10);
         if (!birthdateInput.value || isNaN(ageValue) || ageValue < 15) {
@@ -328,6 +447,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function validateStep1() {
         const form = document.getElementById('applicationForm');
+        if (!validateRequiredFields(document.getElementById('step1'))) {
+            return false;
+        }
         const inputs = form.querySelectorAll('#step1 [required]');
         const validatedRadioGroups = new Set(); // To avoid re-validating radio groups
 

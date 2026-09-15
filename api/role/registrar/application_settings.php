@@ -9,9 +9,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../../database/db.php';
+require_once '../../utils/AuthGuard.php';
 
 $database = new Database();
 $conn = $database->getConnection();
+$identity = AuthGuard::requireRole($conn, ['registrar']);
 
 $action = $_GET['action'] ?? '';
 
@@ -40,7 +42,7 @@ switch ($action) {
 
 function listScholarships($conn) {
     try {
-        $stmt = $conn->query("SELECT * FROM tbl_scholarship_type ORDER BY scholarship_name");
+        $stmt = $conn->query("SELECT * FROM tbl_scholarship_type ORDER BY created_at DESC, scholarship_type_id DESC");
         echo json_encode(['success' => true, 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);

@@ -2,6 +2,11 @@
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 require_once '../../database/db.php';
+require_once __DIR__ . '/../../utils/AuthGuard.php';
+
+$database = new Database();
+$db = $database->getConnection();
+AuthGuard::requireRole($db, ['admin']);
 
 class SystemSettings {
     private $conn;
@@ -83,9 +88,10 @@ class SystemSettings {
             return;
         }
         try {
-            $stmt = $this->conn->prepare("DELETE FROM tbl_holidays WHERE holiday_id = :id");
+            // Preserve the holiday record; inactive holidays are excluded from the calendar.
+            $stmt = $this->conn->prepare("UPDATE tbl_holidays SET is_active = 0 WHERE holiday_id = :id");
             $stmt->execute([':id' => $id]);
-            echo json_encode(['success' => true, 'message' => 'Holiday deleted successfully']);
+            echo json_encode(['success' => true, 'message' => 'Holiday archived successfully']);
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }

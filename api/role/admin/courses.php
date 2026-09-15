@@ -9,10 +9,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-require_once '../database/db.php';
+require_once '../../database/db.php';
+require_once __DIR__ . '/../../utils/AuthGuard.php';
 
 $database = new Database();
 $conn = $database->getConnection();
+AuthGuard::requireRole($conn, ['admin']);
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
@@ -80,10 +82,11 @@ function deleteCourse($conn) {
         $id = $_GET['id'] ?? null;
         if (!$id) throw new Exception('ID required');
         
-        $stmt = $conn->prepare("DELETE FROM tbl_course WHERE course_id = ?");
+        // Courses use their status as the archive marker.
+        $stmt = $conn->prepare("UPDATE tbl_course SET status = 'inactive' WHERE course_id = ?");
         $stmt->execute([$id]);
         
-        echo json_encode(['success' => true]);
+        echo json_encode(['success' => true, 'message' => 'Course archived successfully']);
     } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);

@@ -318,7 +318,7 @@ function renderTraineesTable(trainees) {
             </td>
             <td class="px-4 py-3 text-sm">
                 <div class="flex flex-wrap gap-2">
-                    <a href="trainee_details.html?id=${trainee.trainee_id}" class="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50" title="View Trainee Details">
+                    <a href="trainee_details.html?id=${trainee.trainee_id}&batch_id=${encodeURIComponent(trainee.batch_id || currentSelectedBatchId)}" class="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50" title="View Trainee Details">
                     <i class="fas fa-eye"></i> View
                     </a>
                     ${trainee.certificate_id

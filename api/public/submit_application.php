@@ -5,6 +5,7 @@ header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 
 require_once '../database/db.php';
 require_once '../utils/EnrollmentStatusConstraint.php';
+require_once '../utils/input_sanitization.php';
 
 $database = new Database();
 $conn = $database->getConnection();
@@ -17,6 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     getOptions($conn);
 } elseif ($action === 'check-trainee') {
     checkTrainee($conn);
+} elseif ($action === 'check-email') {
+    checkEmail($conn);
 } elseif ($action === 'update-status') {
     updateApplicationStatus($conn);
 } else {
@@ -26,9 +29,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+function checkEmail($conn) {
+    $email = trim((string)($_GET['email'] ?? ''));
+
+    if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        echo json_encode(['success' => false, 'message' => 'A valid email address is required.']);
+        return;
+    }
+
+    try {
+        ensureApplicationReviewColumns($conn);
+        // Check both applicant records and existing system accounts. Email comparisons
+        // are case-insensitive so Name@Example.com cannot be used as a duplicate.
+        $traineeStmt = $conn->prepare('SELECT 1 FROM tbl_trainee_hdr WHERE LOWER(TRIM(email)) = LOWER(?) LIMIT 1');
+        $traineeStmt->execute([$email]);
+
+        $userStmt = $conn->prepare('SELECT 1 FROM tbl_users WHERE LOWER(TRIM(email)) = LOWER(?) LIMIT 1');
+        $userStmt->execute([$email]);
+
+        $resubmissionStmt = $conn->prepare("SELECT e.enrollment_id, e.unqualification_reason
+            FROM tbl_enrollment e
+            JOIN tbl_trainee_hdr h ON h.trainee_id = e.trainee_id
+            WHERE LOWER(TRIM(h.email)) = LOWER(?) AND e.status = 'unqualified'
+            ORDER BY e.enrollment_date DESC LIMIT 1");
+        $resubmissionStmt->execute([$email]);
+        $resubmission = $resubmissionStmt->fetch(PDO::FETCH_ASSOC);
+
+        echo json_encode([
+            'success' => true,
+            'exists' => ((bool)$traineeStmt->fetchColumn() || (bool)$userStmt->fetchColumn()) && !$resubmission,
+            'resubmission' => $resubmission ? [
+                'enrollment_id' => (int)$resubmission['enrollment_id'],
+                'reason' => $resubmission['unqualification_reason']
+            ] : null
+        ]);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Unable to check the email address.']);
+    }
+}
+
+function ensureApplicationReviewColumns($conn) {
+    $columns = $conn->query("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tbl_enrollment' AND COLUMN_NAME IN ('unqualification_reason', 'resubmitted_at')")->fetchAll(PDO::FETCH_COLUMN);
+    if (!in_array('unqualification_reason', $columns, true)) {
+        $conn->exec("ALTER TABLE tbl_enrollment ADD COLUMN unqualification_reason TEXT NULL AFTER scholarship_type_id");
+    }
+    if (!in_array('resubmitted_at', $columns, true)) {
+        $conn->exec("ALTER TABLE tbl_enrollment ADD COLUMN resubmitted_at DATETIME NULL AFTER unqualification_reason");
+    }
+}
+
 function getOptions($conn) {
     try {
         // Close batches that have passed their enrollment deadline (start_date)
+        // Keep batches open until their training period has ended.
         closeExpiredBatches($conn);
         
         $courses = $conn->query("
@@ -88,14 +142,16 @@ function checkTrainee($conn) {
         $trainee = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($trainee) {
-            // Also check which qualifications the trainee is already enrolled in or has completed
+            // Let the form know whether this trainee has an unfinished enrollment.
+            // Only a completed qualification permits another application.
             $enrollmentQuery = "SELECT oq.qualification_id 
-                                FROM tbl_enrollment e
-                                JOIN tbl_offered_qualifications oq ON e.offered_qualification_id = oq.offered_qualification_id
-                                WHERE e.trainee_id = ? AND e.status IN ('pending', 'approved', 'completed')";
+                                 FROM tbl_enrollment e
+                                 JOIN tbl_offered_qualifications oq ON e.offered_qualification_id = oq.offered_qualification_id
+                                 WHERE e.trainee_id = ? AND e.status <> 'completed'";
             $enrollmentStmt = $conn->prepare($enrollmentQuery);
             $enrollmentStmt->execute([$trainee['trainee_id']]);
-            $trainee['enrolled_qualifications'] = $enrollmentStmt->fetchAll(PDO::FETCH_COLUMN, 0);
+            $trainee['active_qualifications'] = $enrollmentStmt->fetchAll(PDO::FETCH_COLUMN, 0);
+            $trainee['has_active_enrollment'] = !empty($trainee['active_qualifications']);
 
             echo json_encode(['success' => true, 'exists' => true, 'data' => $trainee]);
         } else {
@@ -110,17 +166,82 @@ function checkTrainee($conn) {
 function submitApplication($conn) {
     try {
         $conn->beginTransaction();
+        $_POST['first_name'] = sanitize_person_name($_POST['first_name'] ?? '');
+        $_POST['middle_name'] = sanitize_person_name($_POST['middle_name'] ?? '');
+        $_POST['last_name'] = sanitize_person_name($_POST['last_name'] ?? '');
+        $_POST['extension_name'] = sanitize_person_name($_POST['extension_name'] ?? '');
+        $_POST['email'] = sanitize_email_value($_POST['email'] ?? '');
+        $_POST['phone'] = sanitize_phone_number($_POST['phone'] ?? '');
+        $_POST['zip_code'] = preg_replace('/[^0-9]/', '', (string)($_POST['zip_code'] ?? $_POST['district'] ?? '')) ?? '';
+        $_POST['birth_certificate_no'] = sanitize_identifier($_POST['birth_certificate_no'] ?? '');
         $email = trim((string)($_POST['email'] ?? ''));
         $firstName = trim((string)($_POST['first_name'] ?? ''));
         $lastName = trim((string)($_POST['last_name'] ?? ''));
-        if ($email === '' || $firstName === '' || $lastName === '') {
-            throw new Exception('First name, last name, and email are required.');
+        $zipCode = trim((string)($_POST['zip_code'] ?? $_POST['district'] ?? ''));
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || $firstName === '' || $lastName === '') {
+            throw new Exception('A valid first name, last name, and email address are required.');
+        }
+        if (!preg_match('/^\d{4}$/', $zipCode)) {
+            throw new Exception('ZIP Code must contain exactly 4 digits.');
+        }
+        foreach (['qualification_id', 'batch_id', 'phone', 'sex', 'birthdate', 'civil_status', 'nationality', 'house_no_street', 'barangay', 'city_municipality', 'province', 'region', 'educational_attainment', 'employment_status'] as $field) {
+            if (trim((string)($_POST[$field] ?? '')) === '') {
+                throw new Exception(ucwords(str_replace('_', ' ', $field)) . ' is required.');
+            }
+        }
+        $resubmitEnrollmentId = (int)($_POST['resubmit_enrollment_id'] ?? 0);
+        if ($resubmitEnrollmentId <= 0) {
+            $batchStmt = $conn->prepare("SELECT batch_id FROM tbl_batch WHERE batch_id = ? AND qualification_id = ? AND status = 'open'");
+            $batchStmt->execute([(int)$_POST['batch_id'], (int)$_POST['qualification_id']]);
+            if (!$batchStmt->fetchColumn()) {
+                throw new Exception('The selected batch is unavailable or does not match the selected training program.');
+            }
         }
         
-        // Check if trainee already exists
-        $checkStmt = $conn->prepare("SELECT trainee_id FROM tbl_trainee_hdr WHERE email = ? AND first_name = ? AND last_name = ?");
-        $checkStmt->execute([$email, $firstName, $lastName]);
+        // Existing applicants may only continue with their own matching record.
+        // This keeps direct API submissions from using somebody else's email.
+        $checkStmt = $conn->prepare("SELECT trainee_id, first_name, last_name FROM tbl_trainee_hdr WHERE LOWER(TRIM(email)) = LOWER(?) LIMIT 1");
+        $checkStmt->execute([$email]);
         $existingTrainee = $checkStmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($existingTrainee && (
+            strcasecmp(trim((string)$existingTrainee['first_name']), $firstName) !== 0 ||
+            strcasecmp(trim((string)$existingTrainee['last_name']), $lastName) !== 0
+        )) {
+            throw new Exception('This email address is already registered. Please use a different email address.');
+        }
+
+        if (!$existingTrainee) {
+            $userEmailStmt = $conn->prepare('SELECT 1 FROM tbl_users WHERE LOWER(TRIM(email)) = LOWER(?) LIMIT 1');
+            $userEmailStmt->execute([$email]);
+            if ($userEmailStmt->fetchColumn()) {
+                throw new Exception('This email address is already registered. Please use a different email address.');
+            }
+        }
+
+        if ($existingTrainee && $resubmitEnrollmentId > 0) {
+            ensureApplicationReviewColumns($conn);
+            $resubmissionStmt = $conn->prepare("SELECT enrollment_id FROM tbl_enrollment WHERE enrollment_id = ? AND trainee_id = ? AND status = 'unqualified'");
+            $resubmissionStmt->execute([$resubmitEnrollmentId, $existingTrainee['trainee_id']]);
+            if (!$resubmissionStmt->fetchColumn()) {
+                throw new Exception('This application is not available for credential resubmission.');
+            }
+
+            $uploadDir = '../../uploads/trainees/';
+            if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+            $validId = uploadFile($_FILES['valid_id'] ?? null, $uploadDir, 'valid_id_', ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'], 10 * 1024 * 1024, 'Valid ID');
+            $birthCert = uploadFile($_FILES['birth_cert'] ?? null, $uploadDir, 'birth_', ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'], 10 * 1024 * 1024, 'Birth Certificate');
+            $photo = uploadFile($_FILES['photo'] ?? null, $uploadDir, 'photo_', ['image/jpeg', 'image/png', 'image/webp'], 5 * 1024 * 1024, 'ID Picture');
+
+            $updateFilesStmt = $conn->prepare('UPDATE tbl_trainee_hdr SET valid_id_file = ?, birth_cert_file = ?, photo_file = ? WHERE trainee_id = ?');
+            $updateFilesStmt->execute([$validId, $birthCert, $photo, $existingTrainee['trainee_id']]);
+            $resetEnrollmentStmt = $conn->prepare("UPDATE tbl_enrollment SET status = 'pending', unqualification_reason = NULL, resubmitted_at = NOW() WHERE enrollment_id = ?");
+            $resetEnrollmentStmt->execute([$resubmitEnrollmentId]);
+
+            $conn->commit();
+            echo json_encode(['success' => true, 'message' => 'Corrected credentials submitted for registrar review.']);
+            return;
+        }
 
         if ($existingTrainee) {
             $traineeId = $existingTrainee['trainee_id'];
@@ -201,7 +322,7 @@ function submitApplication($conn) {
                 $_POST['nationality'],
                 $_POST['house_no_street'],
                 $_POST['barangay'],
-                $_POST['district'] ?? null,
+                $zipCode,
                 $_POST['city_municipality'],
                 $_POST['province'],
                 $_POST['region'] ?? null
@@ -233,16 +354,23 @@ function submitApplication($conn) {
         $qualificationId = $_POST['qualification_id'];
         $batchId = $_POST['batch_id'];
 
-        // CHECK FOR EXISTING ENROLLMENT for this qualification
-        $enrollmentCheckStmt = $conn->prepare("
-            SELECT e.enrollment_id 
+        // A trainee may only apply for another qualification once every prior
+        // enrollment is completed. This server-side rule also prevents direct
+        // API submissions from bypassing the application form.
+        $activeEnrollmentStmt = $conn->prepare("
+            SELECT c.qualification_name, e.status
             FROM tbl_enrollment e
             JOIN tbl_offered_qualifications oq ON e.offered_qualification_id = oq.offered_qualification_id
-            WHERE e.trainee_id = ? AND oq.qualification_id = ? AND e.status IN ('pending', 'approved', 'completed')
+            LEFT JOIN tbl_qualifications c ON c.qualification_id = oq.qualification_id
+            WHERE e.trainee_id = ? AND e.status <> 'completed'
+            ORDER BY e.enrollment_date DESC
+            LIMIT 1
         ");
-        $enrollmentCheckStmt->execute([$traineeId, $qualificationId]);
-        if ($enrollmentCheckStmt->fetch()) {
-            throw new Exception("You are already enrolled in or have completed this qualification.");
+        $activeEnrollmentStmt->execute([$traineeId]);
+        $activeEnrollment = $activeEnrollmentStmt->fetch(PDO::FETCH_ASSOC);
+        if ($activeEnrollment) {
+            $currentCourse = trim((string)($activeEnrollment['qualification_name'] ?? 'another qualification'));
+            throw new Exception("You have an unfinished enrollment in {$currentCourse} ({$activeEnrollment['status']}). Complete it before applying for another qualification.");
         }
 
         // Check if offered course exists for this course, if not create one
@@ -400,8 +528,8 @@ function closeExpiredBatches($conn) {
     try {
         $query = "UPDATE tbl_batch 
                   SET status = 'closed' 
-                  WHERE status = 'open' 
-                  AND start_date <= CURDATE()";
+                  WHERE status = 'open'
+                  AND end_date < CURDATE()";
         $stmt = $conn->prepare($query);
         $stmt->execute();
     } catch (Exception $e) {

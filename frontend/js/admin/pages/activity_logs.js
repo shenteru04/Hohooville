@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     loadLogs();
     loadUsers();
     loadActionTypes();
+    document.getElementById('downloadLogsBtn')?.addEventListener('click', downloadFilteredLogs);
 });
 
 async function ensureSwal() {
@@ -149,12 +150,13 @@ async function loadActionTypes() {
 
 window.loadLogs = async function () {
     const actionType = document.getElementById('filterAction').value;
-    const date = document.getElementById('filterDate').value;
+    const startDate = document.getElementById('filterStartDate').value;
+    const endDate = document.getElementById('filterEndDate').value;
     const userId = document.getElementById('filterUser').value;
     const token = localStorage.getItem('token');
 
     try {
-        const response = await axios.get(`${API_BASE}/activity_logs.php?action=list&page=${currentPage}&limit=${logsPerPage}&action_type=${encodeURIComponent(actionType)}&date=${encodeURIComponent(date)}&user_id=${encodeURIComponent(userId)}`, {
+        const response = await axios.get(`${API_BASE}/activity_logs.php?action=list&page=${currentPage}&limit=${logsPerPage}&action_type=${encodeURIComponent(actionType)}&start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}&user_id=${encodeURIComponent(userId)}`, {
             headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -327,4 +329,28 @@ function autoPageSize(total) {
     if (total <= 25) return 10;
     if (total <= 50) return 25;
     return 50;
+}
+
+async function downloadFilteredLogs() {
+    const actionType = document.getElementById('filterAction').value;
+    const startDate = document.getElementById('filterStartDate').value;
+    const endDate = document.getElementById('filterEndDate').value;
+    const userId = document.getElementById('filterUser').value;
+    const token = localStorage.getItem('token');
+    const params = new URLSearchParams({ action: 'list', page: '1', limit: '10000', action_type: actionType, start_date: startDate, end_date: endDate, user_id: userId });
+    try {
+        const response = await axios.get(`${API_BASE}/activity_logs.php?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!response.data.success) throw new Error(response.data.message || 'Unable to download logs.');
+        const columns = ['Timestamp', 'User', 'Action', 'Affected Record', 'Details', 'IP Address'];
+        const rows = (response.data.data || []).map((log) => [log.created_at, log.username || 'System', formatAction(log.action_type), formatEntity(log.entity_type, log.entity_id), log.details || '', log.ip_address || '']);
+        const csv = [columns, ...rows].map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(',')).join('\r\n');
+        const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `activity-logs-${startDate || 'all'}-to-${endDate || 'all'}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        Swal.fire('Download failed', error.response?.data?.message || error.message || 'Unable to download logs.', 'error');
+    }
 }

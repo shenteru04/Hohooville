@@ -24,7 +24,7 @@ try {
             exit;
         }
         
-        // Close batches that have passed their enrollment deadline (start_date)
+        // Close batches only after the training period has ended.
         closeExpiredBatches($conn);
         
         // Fetch batches that are currently open for enrollment or upcoming.
@@ -63,14 +63,14 @@ try {
 }
 
 /**
- * Closes batches that have passed their enrollment deadline (start_date)
+ * Closes batches that have passed their training end date.
  */
 function closeExpiredBatches($conn) {
     try {
         $query = "UPDATE tbl_batch 
                   SET status = 'closed' 
-                  WHERE status = 'open' 
-                  AND start_date <= CURDATE()";
+                  WHERE status = 'open'
+                  AND end_date < CURDATE()";
         $stmt = $conn->prepare($query);
         $stmt->execute();
     } catch (Exception $e) {

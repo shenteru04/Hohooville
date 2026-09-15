@@ -11,6 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once '../../database/db.php';
 require_once '../../utils/PermissionChecker.php';
+require_once '../../utils/AuthGuard.php';
 
 $database = new Database();
 $conn = $database->getConnection();
@@ -18,59 +19,33 @@ $conn = $database->getConnection();
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
 try {
-    // Get JWT token from headers
-    $headers = getallheaders();
-    $authHeader = $headers['Authorization'] ?? '';
-    
-    // If no auth header, allow access for now (graceful degradation)
-    if (!$authHeader) {
-        $permissionChecker = null;
-    } else {
-        // Extract token
-        $token = str_replace('Bearer ', '', $authHeader);
-        
-        // Decode JWT to get user_id and role_id
-        $tokenParts = explode('.', $token);
-        if (count($tokenParts) !== 3) {
-            $permissionChecker = null;
-        } else {
-            $payload = json_decode(base64url_decode($tokenParts[1]), true);
-            $userId = $payload['user_id'] ?? null;
-            $roleId = $payload['role_id'] ?? null;
-
-            if (!$userId || !$roleId) {
-                $permissionChecker = null;
-            } else {
-                // Initialize permission checker
-                $permissionChecker = new PermissionChecker($conn, $userId, $roleId);
-            }
-        }
-    }
+    $identity = AuthGuard::requireAuthenticated($conn);
+    $permissionChecker = new PermissionChecker($conn, $identity['user_id'], $identity['role_id']);
 
     // Check permissions based on action (only if permission checker is available)
     switch ($action) {
         case 'list':
-            if ($permissionChecker) $permissionChecker->requirePermission('users.view');
+            $permissionChecker->requirePermission('users.view');
             getUsers($conn);
             break;
         case 'get':
-            if ($permissionChecker) $permissionChecker->requirePermission('users.view');
+            $permissionChecker->requirePermission('users.view');
             getUser($conn);
             break;
         case 'add':
-            if ($permissionChecker) $permissionChecker->requirePermission('users.create');
-            addUser($conn);
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Manual user creation is disabled. Accounts are created through the registration or approved personnel workflow.']);
             break;
         case 'update':
-            if ($permissionChecker) $permissionChecker->requirePermission('users.update');
+            $permissionChecker->requirePermission('users.update');
             updateUser($conn);
             break;
         case 'archive':
-            if ($permissionChecker) $permissionChecker->requirePermission('users.delete');
+            $permissionChecker->requirePermission('users.delete');
             archiveUser($conn);
             break;
         case 'reactivate':
-            if ($permissionChecker) $permissionChecker->requirePermission('users.delete');
+            $permissionChecker->requirePermission('users.delete');
             reactivateUser($conn);
             break;
         default:

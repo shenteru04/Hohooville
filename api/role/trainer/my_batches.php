@@ -4,6 +4,7 @@ header('Content-Type: application/json');
 
 require_once '../../database/db.php';
 require_once '../../utils/trainer_assignment_helper.php';
+require_once '../../utils/AuthGuard.php';
 
 class TrainerBatches {
     private $conn;
@@ -11,10 +12,12 @@ class TrainerBatches {
     public function __construct($db) {
         $this->conn = $db;
         ta_ensure_schema($this->conn);
+        AuthGuard::requireRole($this->conn, ['trainer', 'admin']);
     }
 
     public function handleRequest() {
         $trainerId = (int)($_GET['trainer_id'] ?? 0);
+        AuthGuard::requireTrainerAccess($this->conn, $trainerId);
 
         if ($trainerId <= 0) {
             echo json_encode(['success' => false, 'message' => 'Trainer ID required']);

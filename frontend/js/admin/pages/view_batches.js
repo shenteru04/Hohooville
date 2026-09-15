@@ -1,6 +1,25 @@
 const API_BASE_URL = `${window.location.origin}/Hohoo-ville/api`;
 const TRAINER_PROGRESS_CHART_URL = `${window.location.origin}/Hohoo-ville/frontend/html/trainer/pages/progress_chart.html`;
 const TRAINER_ACHIEVEMENT_CHART_URL = `${window.location.origin}/Hohoo-ville/frontend/html/trainer/pages/achievement_chart.html`;
+const batchesApi = axios.create({ timeout: 15000 });
+
+batchesApi.interceptors.request.use((config) => {
+    const token = localStorage.getItem('token');
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+});
+
+batchesApi.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/Hohoo-ville/frontend/login.html';
+        }
+        return Promise.reject(error);
+    }
+);
 let traineesModal;
 let closedBatchesModal;
 let createBatchModal;
@@ -169,7 +188,7 @@ function bindActions() {
 
 async function loadBatches() {
     try {
-        const response = await axios.get(`${API_BASE_URL}/role/admin/batches.php?action=list`);
+        const response = await batchesApi.get(`${API_BASE_URL}/role/admin/batches.php?action=list`);
         if (!response.data.success) {
             showError('Error loading batches: ' + (response.data.message || 'Unknown error'));
             return;
@@ -349,7 +368,7 @@ async function viewBatchTrainees(batchId, batchName) {
     if (traineesModal) traineesModal.show();
 
     try {
-        const response = await axios.get(`${API_BASE_URL}/role/admin/trainees.php?action=get-batch-trainees&batch_id=${batchId}`);
+        const response = await batchesApi.get(`${API_BASE_URL}/role/admin/trainees.php?action=get-batch-trainees&batch_id=${batchId}`);
         if (!response.data.success) {
             if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-sm text-rose-600">${escapeHtml(response.data.message || 'Failed to load data.')}</td></tr>`;
             return;
@@ -468,7 +487,7 @@ async function openCreateBatchModal() {
 
 async function loadCreateBatchFormData() {
     try {
-        const response = await axios.get(`${API_BASE_URL}/role/admin/batches.php?action=get-form-data`);
+        const response = await batchesApi.get(`${API_BASE_URL}/role/admin/batches.php?action=get-form-data`);
         if (!response.data.success) return;
 
         const data = response.data.data || {};
@@ -613,10 +632,17 @@ async function handleCreateBatch(event) {
     const endDate = document.getElementById('newBatchEndDate')?.value;
     const maxTrainees = document.getElementById('newBatchMaxTrainees')?.value;
     // batch-level training_cost field removed; use qualification.training_cost for projections
-    const status = document.getElementById('newBatchStatus')?.value || 'open';
+    // A new batch must always be active/open. Status may only be changed while editing.
+    const status = batchId ? (document.getElementById('newBatchStatus')?.value || 'open') : 'open';
 
     if (!batchName || !qualificationId || !trainerId || !startDate || !endDate || !maxTrainees) {
         showError('Please fill in all required fields');
+        return;
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    if (!batchId && startDate < today) {
+        showError('Start date cannot be before today');
         return;
     }
 
@@ -648,7 +674,7 @@ async function handleCreateBatch(event) {
 
     try {
         const action = batchId ? 'update' : 'add';
-        const response = await axios.post(`${API_BASE_URL}/role/admin/batches.php?action=${action}`, payload);
+        const response = await batchesApi.post(`${API_BASE_URL}/role/admin/batches.php?action=${action}`, payload);
         if (!response.data.success) {
             showError(`Error: ${response.data.message || 'Unknown error'}`);
             return;
@@ -664,7 +690,7 @@ async function handleCreateBatch(event) {
         loadBatches();
     } catch (error) {
         console.error('Error saving batch:', error);
-        showError('Failed to save batch');
+        showError(error.response?.data?.message || 'Failed to save batch');
     }
 }
 
@@ -673,7 +699,7 @@ window.editBatch = async function(id) {
         // Load form data first to populate dropdowns
         await loadCreateBatchFormData();
         
-        const response = await axios.get(`${API_BASE_URL}/role/admin/batches.php?action=list`);
+        const response = await batchesApi.get(`${API_BASE_URL}/role/admin/batches.php?action=list`);
         const batch = response.data.data.find(b => b.batch_id == id);
 
         if (batch) {
@@ -702,6 +728,10 @@ window.editBatch = async function(id) {
 // Bind form submission
 document.addEventListener('DOMContentLoaded', () => {
     const createBatchForm = document.getElementById('createBatchForm');
+    const startDateInput = document.getElementById('newBatchStartDate');
+    if (startDateInput) {
+        startDateInput.min = new Date().toISOString().split('T')[0];
+    }
     if (createBatchForm) {
         createBatchForm.addEventListener('submit', handleCreateBatch);
     }
@@ -712,8 +742,15 @@ document.addEventListener('DOMContentLoaded', () => {
 function setBatchModalMode(isEditing) {
     const modalLabel = document.querySelector('#createBatchModal h3');
     const submitBtn = document.querySelector('#createBatchModal button[type="submit"]');
+    const statusField = document.getElementById('newBatchStatusField');
+    const statusSelect = document.getElementById('newBatchStatus');
     if (modalLabel) modalLabel.textContent = isEditing ? 'Edit Batch' : 'Create New Batch';
     if (submitBtn) submitBtn.textContent = isEditing ? 'Save Changes' : 'Create Batch';
+    if (statusField) statusField.classList.remove('hidden');
+    if (statusSelect) {
+        statusSelect.disabled = !isEditing;
+        if (!isEditing) statusSelect.value = 'open';
+    }
 }
 
 function setText(id, value) {

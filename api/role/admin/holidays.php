@@ -10,9 +10,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../../database/db.php';
+require_once __DIR__ . '/../../utils/AuthGuard.php';
 
 $database = new Database();
 $conn = $database->getConnection();
+AuthGuard::requireRole($conn, ['admin']);
 
 $action = $_GET['action'] ?? '';
 
@@ -121,10 +123,11 @@ function deleteHoliday($conn) {
         $id = $_GET['id'] ?? null;
         if (!$id) throw new Exception('Holiday ID required');
         
-        $stmt = $conn->prepare("DELETE FROM tbl_holidays WHERE holiday_id = ?");
+        // Keep historical calendar records; archived holidays are inactive.
+        $stmt = $conn->prepare("UPDATE tbl_holidays SET is_active = 0 WHERE holiday_id = ?");
         $stmt->execute([$id]);
         
-        echo json_encode(['success' => true, 'message' => 'Holiday deleted successfully']);
+        echo json_encode(['success' => true, 'message' => 'Holiday archived successfully']);
     } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);

@@ -16,6 +16,40 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     let resetData = {}; // To store user_id and otp_token
+    const passwordRules = {
+        length: (value) => value.length >= 8,
+        upper: (value) => /[A-Z]/.test(value),
+        lower: (value) => /[a-z]/.test(value),
+        number: (value) => /\d/.test(value),
+        special: (value) => /[^A-Za-z0-9]/.test(value)
+    };
+
+    elements.newPasswordInput.addEventListener('input', () => {
+        const value = elements.newPasswordInput.value;
+        Object.entries(passwordRules).forEach(([rule, test]) => {
+            const item = document.querySelector(`#password-requirements [data-rule="${rule}"]`);
+            if (!item) return;
+            const valid = test(value);
+            item.textContent = `${valid ? '✓' : '○'} ${item.textContent.slice(2)}`;
+            item.classList.toggle('text-emerald-600', valid);
+            item.classList.toggle('text-slate-500', !valid);
+        });
+    });
+
+    document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const input = document.getElementById(button.dataset.passwordToggle);
+            const icon = button.querySelector('i');
+            if (!input || !icon) return;
+
+            const willShowPassword = input.type === 'password';
+            input.type = willShowPassword ? 'text' : 'password';
+            icon.classList.toggle('fa-eye', !willShowPassword);
+            icon.classList.toggle('fa-eye-slash', willShowPassword);
+            button.setAttribute('aria-label', willShowPassword ? 'Hide password' : 'Show password');
+            button.title = willShowPassword ? 'Hide password' : 'Show password';
+        });
+    });
 
     // Handle Forgot Password (Step 1)
     elements.forgotPasswordForm.addEventListener('submit', async function(e) {
@@ -77,8 +111,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        if (newPassword.length < 8) {
-            showMessage(elements, 'Password must be at least 8 characters long.', 'warning');
+        if (!Object.values(passwordRules).every((test) => test(newPassword))) {
+            showMessage(elements, 'Password must have at least 8 characters, uppercase and lowercase letters, a number, and a special character.', 'warning');
             return;
         }
 

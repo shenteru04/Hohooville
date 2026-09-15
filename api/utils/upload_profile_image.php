@@ -15,6 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/../database/db.php';
+require_once __DIR__ . '/AuthGuard.php';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -82,6 +83,10 @@ try {
         throw new Exception('Invalid request method', 405);
     }
 
+    $database = new Database();
+    $conn = $database->getConnection();
+    $identity = AuthGuard::requireAuthenticated($conn);
+
     if (!isset($_FILES['profile_image'])) {
         throw new Exception('No file uploaded', 400);
     }
@@ -96,6 +101,15 @@ try {
     $validRoles = ['admin', 'registrar', 'trainer', 'trainee'];
     if (!in_array($role, $validRoles, true)) {
         throw new Exception('Invalid role', 400);
+    }
+
+    $roleStmt = $conn->prepare("SELECT role_name FROM tbl_users u JOIN tbl_role r ON r.role_id = u.role_id WHERE u.user_id = ? LIMIT 1");
+    $roleStmt->execute([$identity['user_id']]);
+    $actingRole = strtolower((string)$roleStmt->fetchColumn());
+    if ($actingRole !== 'admin' && $identity['user_id'] !== $userId) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Access denied.']);
+        exit;
     }
 
     $file = $_FILES['profile_image'];
@@ -139,8 +153,6 @@ try {
         throw new Exception('Failed to save uploaded file', 500);
     }
 
-    $database = new Database();
-    $conn = $database->getConnection();
     $oldImage = fetchExistingProfileImage($conn, $role, $userId);
 
     persistProfileImage($conn, $role, $userId, $filename);

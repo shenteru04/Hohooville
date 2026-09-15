@@ -12,7 +12,7 @@ async function ensureSwal() {
     });
 }
 
-let moduleModal, competencyModal, manageLessonModal, viewModuleModal, contentEditorModal, unifiedModuleUploadModal, moduleTraineeStatusModal;
+let moduleModal, competencyModal, manageLessonModal, viewModuleModal, contentEditorModal, unifiedModuleUploadModal, moduleTraineeStatusModal, archivedModulesModal;
 let currentModules = [];
 let currentCompetencyType = 'core';
 let currentViewedModuleId = null;
@@ -352,6 +352,9 @@ document.addEventListener('DOMContentLoaded', async function () {
             }
         });
     }
+
+    const archivedModulesEl = document.getElementById('archivedModulesModal');
+    if (archivedModulesEl) archivedModulesModal = new SimpleModal(archivedModulesEl);
 
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
@@ -933,8 +936,8 @@ async function loadModules(qualificationId, competencyType = 'core') {
                                     <button class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-blue-200 text-blue-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onclick="editModule(${module.module_id})" title="${editLabel}">
                                         <i class="fas fa-edit text-xs"></i>
                                     </button>
-                                    <button class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-200 text-red-700 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500" onclick="deleteModule(${module.module_id})" title="Delete module">
-                                        <i class="fas fa-trash text-xs"></i>
+                                    <button class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-amber-200 text-amber-700 hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500" onclick="archiveModule(${module.module_id})" title="Archive module">
+                                        <i class="fas fa-box-archive text-xs"></i>
                                     </button>
                                 </div>
                             </div>
@@ -959,6 +962,120 @@ async function loadModules(qualificationId, competencyType = 'core') {
         container.innerHTML = '<div class="col-span-full rounded-xl border border-red-100 bg-red-50 px-4 py-5 text-sm text-red-700">Error loading modules.</div>';
     }
 }
+
+window.openArchivedModules = async function() {
+    if (!archivedModulesModal) return;
+    archivedModulesModal.show();
+    const container = document.getElementById('archivedModulesList');
+    if (!container) return;
+    container.innerHTML = '<div class="rounded-xl border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500"><i class="fas fa-circle-notch animate-spin mr-2"></i> Loading archives...</div>';
+
+    try {
+        const response = await axios.get(`${API_BASE_URL}/role/trainer/modules.php?action=archived-list`, {
+            params: { trainer_id: trainerId }
+        });
+        const modules = response.data.success ? response.data.data : [];
+        if (!modules.length) {
+            container.innerHTML = '<div class="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-10 text-center text-sm text-slate-500"><i class="fas fa-box-open mb-2 block text-2xl text-slate-400"></i>No archived modules found.</div>';
+            return;
+        }
+
+        container.innerHTML = modules.map(module => {
+            const lessons = module.lessons || [];
+            const materialCount = lessons.reduce((total, lesson) => total + (lesson.contents || []).length + (lesson.task_sheets || []).length, 0);
+            return `
+                <article class="overflow-hidden rounded-xl border border-amber-200 bg-white shadow-sm">
+                    <div class="flex flex-wrap items-start justify-between gap-3 border-b border-amber-100 bg-amber-50/60 px-4 py-3">
+                        <div>
+                            <h3 class="font-semibold text-slate-900">${escapeHtml(module.module_title || 'Untitled Module')}</h3>
+                            <p class="mt-1 text-xs text-slate-500">${escapeHtml(module.qualification_name || 'Qualification')} · Archived ${formatArchiveDate(module.archived_at)}</p>
+                        </div>
+                        ${Number(module.is_archived) === 1 ? `<button type="button" onclick="restoreArchivedModule(${Number(module.module_id)})" class="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
+                            <i class="fas fa-box-open"></i> Restore Module
+                        </button>` : '<span class="text-xs font-semibold text-amber-700">Active module with archived items</span>'}
+                    </div>
+                    <div class="px-4 py-3">
+                        <div class="mb-3 flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
+                            <span class="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1">${lessons.length} Outcomes</span>
+                            <span class="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1">${materialCount} Materials</span>
+                        </div>
+                        ${lessons.length ? `<div class="space-y-2">${lessons.map(lesson => renderArchivedLesson(lesson, Number(module.is_archived) === 1)).join('')}</div>` : '<p class="text-sm text-slate-500">No archived learning outcomes found.</p>'}
+                    </div>
+                </article>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Error loading archived modules:', error);
+        container.innerHTML = '<div class="rounded-xl border border-red-100 bg-red-50 px-4 py-5 text-sm text-red-700">Error loading archives.</div>';
+    }
+};
+
+function renderArchivedLesson(lesson, parentModuleArchived = false) {
+    const contents = lesson.contents || [];
+    const tasks = lesson.task_sheets || [];
+    const materials = [
+        ...contents.map(item => `<li class="flex items-center justify-between gap-2"><span><i class="fas fa-file-lines mr-2 text-blue-600"></i>${escapeHtml(item.title || 'Information Sheet')}</span>${parentModuleArchived ? '' : `<button type="button" onclick="restoreArchivedItem('content', ${Number(item.content_id)})" class="text-emerald-700 hover:text-emerald-900" title="Restore information sheet" aria-label="Restore information sheet"><i class="fas fa-box-open"></i></button>`}</li>`),
+        ...tasks.map(item => `<li class="flex items-center justify-between gap-2"><span><i class="fas fa-list-check mr-2 text-emerald-600"></i>${escapeHtml(item.title || 'Task Sheet')}</span>${parentModuleArchived ? '' : `<button type="button" onclick="restoreArchivedItem('task', ${Number(item.task_sheet_id)})" class="text-emerald-700 hover:text-emerald-900" title="Restore task sheet" aria-label="Restore task sheet"><i class="fas fa-box-open"></i></button>`}</li>`)
+    ];
+    return `<div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+        <div class="flex items-center justify-between gap-2"><p class="text-sm font-semibold text-slate-800"><i class="fas fa-bookmark mr-2 text-amber-600"></i>${escapeHtml(lesson.lesson_title || 'Untitled Learning Outcome')}</p>${Number(lesson.is_archived) === 1 && !parentModuleArchived ? `<button type="button" onclick="restoreArchivedItem('competency', ${Number(lesson.lesson_id)})" class="text-emerald-700 hover:text-emerald-900" title="Restore learning outcome" aria-label="Restore learning outcome"><i class="fas fa-box-open"></i></button>` : ''}</div>
+        ${materials.length ? `<ul class="mt-2 space-y-1 pl-5 text-xs text-slate-600">${materials.join('')}</ul>` : '<p class="mt-1 pl-5 text-xs text-slate-500">No archived materials.</p>'}
+    </div>`;
+}
+
+function formatArchiveDate(value) {
+    if (!value) return 'date unavailable';
+    const date = new Date(value.replace(' ', 'T'));
+    return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString();
+}
+
+window.restoreArchivedModule = async function(id) {
+    const result = await Swal.fire({
+        title: 'Restore Module?',
+        text: 'The module and its archived learning materials will return to the module list.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#059669',
+        confirmButtonText: 'Yes, restore it'
+    });
+    if (!result.isConfirmed) return;
+
+    try {
+        const response = await axios.post(`${API_BASE_URL}/role/trainer/modules.php?action=restore-module&id=${id}&trainer_id=${trainerId}`);
+        if (!response.data.success) throw new Error(response.data.message || 'Restore failed');
+        await Swal.fire('Restored', 'The module is available in the module list again.', 'success');
+        await openArchivedModules();
+        loadDataForTab(currentCompetencyType);
+    } catch (error) {
+        console.error('Error restoring archived module:', error);
+        Swal.fire('Error', error.response?.data?.message || 'Error restoring module.', 'error');
+    }
+};
+
+window.restoreArchivedItem = async function(type, id) {
+    const labels = { competency: 'learning outcome', content: 'information sheet', task: 'task sheet' };
+    const label = labels[type] || 'item';
+    const result = await Swal.fire({
+        title: `Restore ${label}?`,
+        text: `This ${label} will return to its module.`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#059669',
+        confirmButtonText: 'Yes, restore it'
+    });
+    if (!result.isConfirmed) return;
+
+    try {
+        const response = await axios.post(`${API_BASE_URL}/role/trainer/modules.php?action=restore-${type}&id=${id}&trainer_id=${trainerId}`);
+        if (!response.data.success) throw new Error(response.data.message || 'Restore failed');
+        await Swal.fire('Restored', `The ${label} is available again.`, 'success');
+        await openArchivedModules();
+        loadDataForTab(currentCompetencyType);
+    } catch (error) {
+        console.error(`Error restoring archived ${label}:`, error);
+        Swal.fire('Error', error.response?.data?.message || `Error restoring ${label}.`, 'error');
+    }
+};
 
 function getSelectedQualificationName() {
     const select = document.getElementById('qualificationSelect');
@@ -1522,53 +1639,53 @@ async function saveCompetency() {
     }
 }
 
-async function deleteModule(id) {
+async function archiveModule(id) {
     const result = await Swal.fire({
-        title: 'Delete Module?',
-        text: "Are you sure you want to delete this module? All competencies inside it will also be deleted.",
+        title: 'Archive Module?',
+        text: "This will archive the module and all learning outcomes inside it. It will no longer be shown to trainees.",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#d33',
-        confirmButtonText: 'Yes, delete it!'
+        confirmButtonColor: '#b45309',
+        confirmButtonText: 'Yes, archive it!'
     });
     if (!result.isConfirmed) return;
 
     try {
-        const response = await axios.delete(`${API_BASE_URL}/role/trainer/modules.php?action=delete-module&id=${id}`);
+        const response = await axios.delete(`${API_BASE_URL}/role/trainer/modules.php?action=archive-module&id=${id}`);
         if (response.data.success) {
-            Swal.fire('Deleted!', 'Module deleted successfully', 'success');
+            Swal.fire('Archived!', 'Module archived successfully', 'success');
             loadModules(document.getElementById('qualificationSelect').value, currentCompetencyType);
         } else {
             Swal.fire('Error', 'Error: ' + response.data.message, 'error');
         }
     } catch (error) {
-        console.error('Error deleting module:', error);
-        Swal.fire('Error', 'Error deleting module', 'error');
+        console.error('Error archiving module:', error);
+        Swal.fire('Error', 'Error archiving module', 'error');
     }
 }
 
-async function deleteCompetency(id) {
+async function archiveCompetency(id) {
     const result = await Swal.fire({
-        title: 'Delete Learning Outcome?',
-        text: "Are you sure you want to delete this learning outcome?",
+        title: 'Archive Learning Outcome?',
+        text: "This learning outcome and its saved materials will be archived.",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#d33',
-        confirmButtonText: 'Yes, delete it!'
+        confirmButtonColor: '#b45309',
+        confirmButtonText: 'Yes, archive it!'
     });
     if (!result.isConfirmed) return;
 
     try {
-        const response = await axios.delete(`${API_BASE_URL}/role/trainer/modules.php?action=delete-competency&id=${id}`);
+        const response = await axios.delete(`${API_BASE_URL}/role/trainer/modules.php?action=archive-competency&id=${id}`);
         if (response.data.success) {
-            Swal.fire('Deleted!', 'Learning Outcome deleted successfully', 'success');
+            Swal.fire('Archived!', 'Learning outcome archived successfully', 'success');
             loadModules(document.getElementById('qualificationSelect').value, currentCompetencyType);
         } else {
             Swal.fire('Error', 'Error: ' + response.data.message, 'error');
         }
     } catch (error) {
-        console.error('Error deleting learning outcome:', error);
-        Swal.fire('Error', 'Error deleting learning outcome', 'error');
+        console.error('Error archiving learning outcome:', error);
+        Swal.fire('Error', 'Error archiving learning outcome', 'error');
     }
 }
 
@@ -1805,8 +1922,8 @@ function renderLessonContentsList(contents, lessonFilePath = '', lessonResourceU
                     <button class="inline-flex items-center gap-1 rounded-md border border-blue-200 px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onclick="openContentEditor('content', ${item.content_id})">
                         <i class="fas fa-edit"></i> Edit
                     </button>
-                    <button class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-200 text-red-700 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500" onclick="deleteContentItem('content', ${item.content_id})">
-                        <i class="fas fa-trash text-xs"></i>
+                    <button class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-amber-200 text-amber-700 hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500" onclick="archiveContentItem('content', ${item.content_id})" title="Archive information sheet">
+                        <i class="fas fa-box-archive text-xs"></i>
                     </button>
                 </div>
             </div>
@@ -1829,8 +1946,8 @@ function renderTaskSheetsList(taskSheets) {
                     <button class="inline-flex items-center gap-1 rounded-md border border-blue-200 px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onclick="openContentEditor('task', ${item.task_sheet_id})">
                         <i class="fas fa-edit"></i> Edit
                     </button>
-                    <button class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-200 text-red-700 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500" onclick="deleteContentItem('task', ${item.task_sheet_id})">
-                        <i class="fas fa-trash text-xs"></i>
+                    <button class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-amber-200 text-amber-700 hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500" onclick="archiveContentItem('task', ${item.task_sheet_id})" title="Archive task sheet">
+                        <i class="fas fa-box-archive text-xs"></i>
                     </button>
                 </div>
             </div>
@@ -2539,30 +2656,30 @@ window.saveLessonSettingsAndQuiz = async function() {
     }
 }
 
-window.deleteContentItem = async function(type, id) {
+window.archiveContentItem = async function(type, id) {
     const result = await Swal.fire({
-        title: 'Delete Item?',
-        text: `Are you sure you want to delete this ${type === 'content' ? 'information sheet' : 'task sheet'}?`,
+        title: 'Archive Item?',
+        text: `Are you sure you want to archive this ${type === 'content' ? 'information sheet' : 'task sheet'}?`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#d33',
-        confirmButtonText: 'Yes, delete it!'
+        confirmButtonColor: '#b45309',
+        confirmButtonText: 'Yes, archive it!'
     });
     if (!result.isConfirmed) return;
 
     const lessonId = document.getElementById('manageLessonId').value;
-    const action = `delete-${type}`;
+    const action = `archive-${type}`;
     try {
         const response = await axios.delete(`${API_BASE_URL}/role/trainer/modules.php?action=${action}&id=${id}`);
         if (response.data.success) {
-            Swal.fire('Deleted!', 'Item deleted successfully.', 'success');
+            Swal.fire('Archived!', 'Item archived successfully.', 'success');
             openManageLessonModal(lessonId); // Refresh the list
         } else {
             Swal.fire('Error', 'Error: ' + response.data.message, 'error');
         }
     } catch (error) {
-        console.error('Error deleting item:', error);
-        Swal.fire('Error', 'Error deleting item', 'error');
+        console.error('Error archiving item:', error);
+        Swal.fire('Error', 'Error archiving item', 'error');
     }
 }
 
@@ -2600,8 +2717,8 @@ window.openViewModuleModal = function(moduleId) {
                             <button class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onclick="editCompetency(${comp.lesson_id}, ${moduleId})">
                                 <i class="fas fa-edit text-xs"></i>
                             </button>
-                            <button class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-200 text-red-700 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500" onclick="deleteCompetency(${comp.lesson_id})">
-                                <i class="fas fa-trash text-xs"></i>
+                            <button class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-amber-200 text-amber-700 hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500" onclick="archiveCompetency(${comp.lesson_id})" title="Archive learning outcome">
+                                <i class="fas fa-box-archive text-xs"></i>
                             </button>
                         </div>
                     </div>

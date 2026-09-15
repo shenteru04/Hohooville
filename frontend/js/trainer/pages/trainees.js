@@ -168,7 +168,7 @@ async function loadTrainees(trainerId) {
                         <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${statusClass}">${trainee.status || 'N/A'}</span>
                     </td>
                     <td class="px-4 py-3"><div class="flex flex-wrap gap-2">
-                        <a href="trainee_details.html?id=${trainee.trainee_id}" class="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">
+                        <a href="trainee_details.html?id=${trainee.trainee_id}&batch_id=${encodeURIComponent(trainee.batch_id)}" class="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">
                             <i class="fas fa-eye"></i> View
                         </a>
                         ${trainee.certificate_id ? `<span class="inline-flex items-center gap-1 rounded-lg bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-700"><i class="fas fa-certificate"></i> Issued</span>` : `<button type="button" class="issue-certificate-btn inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700" data-trainee-id="${trainee.trainee_id}" data-batch-id="${trainee.batch_id}" data-qualification-id="${trainee.qualification_id}"><i class="fas fa-certificate"></i> Issue Certificate</button>`}

@@ -17,6 +17,8 @@ let documentModal = null;
 let documentZoom = 1;
 let activeDocumentUrl = '';
 let currentTraineeId = 0;
+let currentBatchId = null;
+let currentTrainerId = null;
 let currentTaskSheetModalContext = null;
 
 class SimpleModal {
@@ -88,10 +90,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const urlParams = new URLSearchParams(window.location.search);
     const traineeId = urlParams.get('id') || urlParams.get('trainee_id');
+    const batchId = urlParams.get('batch_id');
+    const trainerId = Number(user.trainer_id || 0) || null;
+    currentBatchId = Number(batchId) > 0 ? batchId : null;
+    currentTrainerId = trainerId;
     const tabParam = urlParams.get('tab');
 
     if (traineeId) {
-        loadTraineeDetails(traineeId);
+        loadTraineeDetails(traineeId, batchId, trainerId);
     } else {
         const container = document.getElementById('profile-content');
         if (container) {
@@ -427,9 +433,14 @@ function updateTaskSheetModalFooter(context) {
     }
 }
 
-async function loadTraineeDetails(traineeId) {
+async function loadTraineeDetails(traineeId, batchId = null, trainerId = null) {
     try {
-        const response = await axios.get(`${API_BASE_URL}/role/trainer/trainee_details.php?trainee_id=${traineeId}`);
+        if (Number(batchId) > 0) currentBatchId = batchId;
+        if (Number(trainerId) > 0) currentTrainerId = trainerId;
+        const params = new URLSearchParams({ trainee_id: traineeId });
+        if (Number(batchId) > 0) params.set('batch_id', batchId);
+        if (Number(trainerId) > 0) params.set('trainer_id', trainerId);
+        const response = await axios.get(`${API_BASE_URL}/role/trainer/trainee_details.php?${params.toString()}`);
         if (response.data.success) {
             populateTraineeData(response.data.data);
         } else {
@@ -688,7 +699,7 @@ async function markTaskSheetDone(lessonId, taskSheetId, title) {
                 text: response.data.message || 'The task sheet has been approved.',
                 confirmButtonColor: '#2563eb'
             });
-            loadTraineeDetails(currentTraineeId);
+            loadTraineeDetails(currentTraineeId, currentBatchId, currentTrainerId);
             setActiveTopTab('progress');
             return;
         }
